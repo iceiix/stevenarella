@@ -1,0 +1,13 @@
+[package]
+name = "steven_gl"
+version = "0.0.1"
+authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
+build = "build.rs"
+
+[build-dependencies]
+gl_generator = "0.0.27"
+khronos_api = "0.0.8"
+
+[dependencies]
+gl_common = "0.0.4"
+libc = "*"

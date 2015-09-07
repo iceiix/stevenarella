@@ -1,0 +1,14 @@
+[package]
+
+name = "steven_rust"
+version = "0.0.1"
+authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
+
+[dependencies]
+rustc-serialize = "0.3"
+glfw = "0.1.0"
+byteorder = "0.3.13"
+
+[dependencies.steven_gl]
+path = "./gl"
+version = "0"
