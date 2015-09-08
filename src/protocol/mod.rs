@@ -1,53 +1,12 @@
 #![allow(dead_code)]
 extern crate byteorder;
 
+use std::default;
 use std::net::TcpStream;
 use std::io;
 use std::io::{Write, Read};
 use std::convert;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
-
-/// Serializes types into a buffer
-macro_rules! serialize_type {
-    ($dst:expr, $name:expr, u16) => {
-        $dst.write_u16::<BigEndian>($name).unwrap();
-    };
-    ($dst:expr, $name:expr, i64) => {
-        $dst.write_i64::<BigEndian>($name).unwrap();
-    };
-    ($dst:expr, $name:expr, VarInt) => {
-        try!(write_varint($dst, $name));
-    };
-    ($dst:expr, $name:expr, String) => {
-        try!(write_varint($dst, $name.len() as i32));
-        $dst.extend($name.bytes());
-    };
-    ($dst:expr, $name:expr, Empty) => {
-
-    };
-    ($dst:expr, $name:expr, $ftype:ident) => {
-        unimplemented!()
-    };
-}
-
-/// Deserializes types from a buffer
-macro_rules! deserialize_type {
-    ($src:expr, String) => {
-        {
-            let len = read_variant(&mut $src).unwrap();
-            let mut ret = String::new();
-            (&mut $src).take(len as u64).read_to_string(&mut ret).unwrap();
-            ret
-        }
-    };
-    ($src:expr, i64) => {
-        $src.read_i64::<BigEndian>().unwrap()
-    };
-    ($src:expr, Empty) => { Empty };
-    ($src:expr, $ftype:ident) => {
-        unimplemented!()
-    };
-}
 
 /// Helper macro for defining packets
 #[macro_export]
@@ -61,8 +20,7 @@ macro_rules! state_packets {
     })+) => {
         use protocol::*;
         use std::io;
-        use std::io::{Read, Write};
-        use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+        use protocol::{Serializable};
 
         pub enum Packet {
         $(
@@ -78,12 +36,12 @@ macro_rules! state_packets {
         pub mod $state {
             $(
             pub mod $dir {
-                use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
                 use protocol::*;
                 use std::io;
-                use std::io::{Read, Write};
+                use protocol::{Serializable};
 
                 $(
+                    #[derive(Default)]
                     pub struct $name {
                         $(pub $field: $field_type),+,
                     }
@@ -94,7 +52,7 @@ macro_rules! state_packets {
 
                         fn write(self, buf: &mut Vec<u8>) -> Result<(), io::Error> {
                             $(
-                                serialize_type!(buf, self.$field, $field_type);
+                                try!(self.$field.write_to(buf));
                             )+
 
                             Result::Ok(())
@@ -108,7 +66,7 @@ macro_rules! state_packets {
 
         /// Returns the packet for the given state, direction and id after parsing the fields
         /// from the buffer.
-        pub fn packet_by_id(state: State, dir: Direction, id: i32, mut buf: &mut io::Cursor<Vec<u8>>) -> Option<Packet> {
+        pub fn packet_by_id(state: State, dir: Direction, id: i32, mut buf: &mut io::Cursor<Vec<u8>>) -> Result<Option<Packet>, io::Error> {
             match state {
                 $(
                     State::$stateName => {
@@ -117,11 +75,15 @@ macro_rules! state_packets {
                                 Direction::$dirName => {
                                     match id {
                                     $(
-                                        $id => Option::Some(Packet::$name($state::$dir::$name {
-                                            $($field: deserialize_type!(buf, $field_type)),+,
-                                        })),
+                                        $id => {
+                                            let mut packet : $state::$dir::$name = $state::$dir::$name::default();
+                                            $(
+                                                packet.$field = try!($field_type::read_from(&mut buf));
+                                            )+
+                                            Result::Ok(Option::Some(Packet::$name(packet)))
+                                        },
                                     )*
-                                        _ => Option::None
+                                        _ => Result::Ok(Option::None)
                                     }
                                 }
                             )+
@@ -135,42 +97,111 @@ macro_rules! state_packets {
 
 pub mod packet;
 
-/// VarInt have a variable size (between 1 and 5 bytes) when encoded based
-/// on the size of the number
-pub type VarInt = i32;
+trait Serializable {
+    fn read_from(buf: &mut io::Read) -> Result<Self, io::Error>;
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error>;
+}
 
-/// Encodes a VarInt into the Writer
-pub fn write_varint(buf: &mut io::Write, v: VarInt) -> Result<(), io::Error> {
-    const PART : u32 = 0x7F;
-    let mut val = v as u32;
-    loop {
-        if (val & !PART) == 0 {
-            try!(buf.write_u8(val as u8));
-            return Result::Ok(());
-        }
-        try!(buf.write_u8(((val & PART) | 0x80) as u8));
-        val >>= 7;
+impl Serializable for String {
+    fn read_from(buf: &mut io::Read) -> Result<String, io::Error> {
+        let len = try!(VarInt::read_from(buf)).0;
+        let mut ret = String::new();
+        try!(buf.take(len as u64).read_to_string(&mut ret));
+        Result::Ok(ret)
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        let bytes = self.as_bytes();
+        try!(VarInt(bytes.len() as i32).write_to(buf));
+        try!(buf.write_all(bytes));
+        Result::Ok(())
     }
 }
 
-/// Decodes a VarInt from the Reader
-pub fn read_variant(buf: &mut io::Read) -> Result<VarInt, io::Error> {
-    const PART : u32 = 0x7F;
-    let mut size = 0;
-    let mut val = 0u32;
-    loop {
-        let b = try!(buf.read_u8()) as u32;
-        val |= (b & PART) << (size * 7);
-        size+=1;
-        if size > 5 {
-            return Result::Err(io::Error::new(io::ErrorKind::InvalidInput, Error::Err("VarInt too big".to_string())))
+impl Serializable for Empty {
+    fn read_from(buf: &mut io::Read) -> Result<Empty, io::Error> {
+        Result::Ok(Empty)
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        Result::Ok(())
+    }
+}
+
+impl Default for Empty {
+    fn default() -> Empty { Empty }
+}
+
+impl Serializable for i32 {
+    fn read_from(buf: &mut io::Read) -> Result<i32, io::Error> {
+        Result::Ok(try!(buf.read_i32::<BigEndian>()))
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        try!(buf.write_i32::<BigEndian>(*self));
+        Result::Ok(())
+    }
+}
+
+impl Serializable for i64 {
+    fn read_from(buf: &mut io::Read) -> Result<i64, io::Error> {
+        Result::Ok(try!(buf.read_i64::<BigEndian>()))
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        try!(buf.write_i64::<BigEndian>(*self));
+        Result::Ok(())
+    }
+}
+
+impl Serializable for u16 {
+    fn read_from(buf: &mut io::Read) -> Result<u16, io::Error> {
+        Result::Ok(try!(buf.read_u16::<BigEndian>()))
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        try!(buf.write_u16::<BigEndian>(*self));
+        Result::Ok(())
+    }
+}
+
+/// VarInt have a variable size (between 1 and 5 bytes) when encoded based
+/// on the size of the number
+pub struct VarInt(i32);
+
+impl Serializable for VarInt {
+    /// Decodes a VarInt from the Reader
+    fn read_from(buf: &mut io::Read) -> Result<VarInt, io::Error> {
+        const PART : u32 = 0x7F;
+        let mut size = 0;
+        let mut val = 0u32;
+        loop {
+            let b = try!(buf.read_u8()) as u32;
+            val |= (b & PART) << (size * 7);
+            size+=1;
+            if size > 5 {
+                return Result::Err(io::Error::new(io::ErrorKind::InvalidInput, Error::Err("VarInt too big".to_string())))
+            }
+            if (b & 0x80) == 0 {
+                break
+            }
         }
-        if (b & 0x80) == 0 {
-            break
-        }
+
+        Result::Ok(VarInt(val as i32))
     }
 
-    Result::Ok(val as VarInt)
+    /// Encodes a VarInt into the Writer
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        const PART : u32 = 0x7F;
+        let mut val = self.0 as u32;
+        loop {
+            if (val & !PART) == 0 {
+                try!(buf.write_u8(val as u8));
+                return Result::Ok(());
+            }
+            try!(buf.write_u8(((val & PART) | 0x80) as u8));
+            val >>= 7;
+        }
+    }
+}
+
+impl default::Default for VarInt {
+    fn default() -> VarInt { VarInt(0) }
 }
 
 /// Direction is used to define whether packets are going to the
@@ -254,28 +285,28 @@ impl Conn {
 
     pub fn write_packet<T: PacketType>(&mut self, packet: T) -> Result<(), Error> {
         let mut buf = Vec::new();
-        try!(write_varint(&mut buf, packet.packet_id()));
+        try!(VarInt(packet.packet_id()).write_to(&mut buf));
         try!(packet.write(&mut buf));
-        try!(write_varint(&mut self.stream, buf.len() as i32));
+        try!(VarInt(buf.len() as i32).write_to(&mut self.stream));
         try!(self.stream.write_all(&buf.into_boxed_slice()));
 
         Result::Ok(())
     }
 
     pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
-        let len = try!(read_variant(&mut self.stream)) as usize;
+        let len = try!(VarInt::read_from(&mut self.stream)).0 as usize;
         let mut ibuf = Vec::with_capacity(len);
         try!((&mut self.stream).take(len as u64).read_to_end(&mut ibuf));
 
         let mut buf = io::Cursor::new(ibuf);
-        let id = try!(read_variant(&mut buf));
+        let id = try!(VarInt::read_from(&mut buf)).0;
 
         let dir = match self.direction {
             Direction::Clientbound => Direction::Serverbound,
             Direction::Serverbound => Direction::Clientbound,
         };
 
-        let packet = packet::packet_by_id(self.state, dir, id, &mut buf);
+        let packet = try!(packet::packet_by_id(self.state, dir, id, &mut buf));
 
         match packet {
             Some(val) => {
@@ -299,14 +330,13 @@ pub trait PacketType {
 
 #[test]
 fn test() {
-    return; // Skip
     let mut c = Conn::new("localhost:25565").unwrap();
 
     c.write_packet(packet::handshake::serverbound::Handshake{
-        protocol_version: 69,
+        protocol_version: VarInt(69),
         host: "localhost".to_string(),
         port: 25565,
-        next: 1,
+        next: VarInt(1),
     }).unwrap();
     c.state = State::Status;
     c.write_packet(packet::status::serverbound::StatusRequest{empty: Empty}).unwrap();
