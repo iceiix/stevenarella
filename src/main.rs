@@ -1,8 +1,8 @@
 extern crate glfw;
-extern crate byteorder;
 
 pub mod bit;
 pub mod protocol;
+pub mod format;
 
 mod gl;
 use glfw::{Action, Context, Key};

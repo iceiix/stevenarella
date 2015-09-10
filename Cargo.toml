@@ -8,7 +8,15 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 rustc-serialize = "0.3"
 glfw = "0.1.0"
 byteorder = "0.3.13"
+hyper = "0.6.13"
+serde = "0.6.0"
+serde_json = "0.6.0"
+flate2 = "0.2.9"
 
 [dependencies.steven_gl]
 path = "./gl"
+version = "0"
+
+[dependencies.steven_openssl]
+path = "./openssl"
 version = "0"

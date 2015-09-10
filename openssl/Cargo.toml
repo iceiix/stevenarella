@@ -1,0 +1,7 @@
+[package]
+name = "steven_openssl"
+version = "0.0.1"
+authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
+
+[dependencies]
+libc = "*"
