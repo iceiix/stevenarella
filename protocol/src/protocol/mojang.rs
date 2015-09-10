@@ -3,9 +3,9 @@ extern crate serde_json;
 extern crate hyper;
 
 pub struct Profile {
-	pub username: String,
-	pub id: String,
-	pub access_token: String
+    pub username: String,
+    pub id: String,
+    pub access_token: String
 }
 
 const JOIN_URL: &'static str = "https://sessionserver.mojang.com/session/minecraft/join";
@@ -54,12 +54,12 @@ impl Profile {
 }
 
 fn twos_compliment(data: &mut Vec<u8>) {
-	let mut carry = true;
-	for i in (0 .. data.len()).rev() {
-		data[i] = !data[i];
-		if carry {
-			carry = data[i] == 0xFF;
-			data[i] += 1;
-		}
-	}
+    let mut carry = true;
+    for i in (0 .. data.len()).rev() {
+        data[i] = !data[i];
+        if carry {
+            carry = data[i] == 0xFF;
+            data[i] += 1;
+        }
+    }
 }
