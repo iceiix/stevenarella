@@ -4,8 +4,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum Component {
-    Text(TextComponent),
-    None
+    Text(TextComponent)
 }
 
 impl Component {
@@ -16,7 +15,7 @@ impl Component {
             } else if v.find("text").is_some(){
                 Component::Text(TextComponent::from_value(v, modifier))
             } else {
-                Component::None
+                Component::Text(TextComponent{text: "".to_owned(), modifier: modifier})
             }
         }
 
@@ -29,18 +28,17 @@ impl fmt::Display for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Component::Text(ref txt) => write!(f, "{}", txt),
-            Component::None => Result::Ok(()),
         }
     }
 }
 
 impl Default for Component {
     fn default() -> Self {
-        Component::None
+        Component::Text(TextComponent{text: "".to_owned(), modifier: Default::default()})
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Modifier {
     pub extra: Option<Vec<Component>>,
     pub bold: Option<bool>,
