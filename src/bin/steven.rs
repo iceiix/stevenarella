@@ -1,10 +1,7 @@
 extern crate glfw;
+extern crate steven;
 
-pub mod bit;
-pub mod protocol;
-pub mod format;
-
-mod gl;
+use steven::*;
 use glfw::{Action, Context, Key};
 
 fn main() {

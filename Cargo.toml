@@ -1,6 +1,5 @@
 [package]
-
-name = "steven_rust"
+name = "steven"
 version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 
@@ -20,3 +19,6 @@ version = "0"
 [dependencies.steven_openssl]
 path = "./openssl"
 version = "0"
+
+[[bin]]
+name = "steven"
