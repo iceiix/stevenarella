@@ -7,7 +7,9 @@ extern crate serde_json;
 
 pub mod mojang;
 
+use nbt;
 use format;
+use std::fmt;
 use std::default;
 use std::net::TcpStream;
 use std::io;
@@ -21,7 +23,8 @@ use self::flate2::read::{ZlibDecoder, ZlibEncoder};
 macro_rules! state_packets {
      ($($state:ident $stateName:ident {
         $($dir:ident $dirName:ident {
-            $($name:ident => $id:expr {
+            $(
+                $name:ident => $id:expr {
                 $($field:ident: $field_type:ty = $(when ($cond:expr))*, )+
             })*
         })+
@@ -29,6 +32,7 @@ macro_rules! state_packets {
         use protocol::*;
         use std::io;
 
+        #[derive(Debug)]
         pub enum Packet {
         $(
             $(
@@ -47,9 +51,12 @@ macro_rules! state_packets {
                 use protocol::*;
                 use std::io;
                 use format;
+                use nbt;
+                use types;
+                use item;
 
                 $(
-                    #[derive(Default)]
+                    #[derive(Default, Debug)]
                     pub struct $name {
                         $(pub $field: $field_type),+,
                     }
@@ -58,7 +65,7 @@ macro_rules! state_packets {
 
                         fn packet_id(&self) -> i32{ $id }
 
-                        fn write(self, buf: &mut Vec<u8>) -> Result<(), io::Error> {
+                        fn write(self, buf: &mut io::Write) -> Result<(), io::Error> {
                             $(
                                 if true $(&& ($cond(&self)))* {
                                     try!(self.$field.write_to(buf));
@@ -76,7 +83,7 @@ macro_rules! state_packets {
 
         /// Returns the packet for the given state, direction and id after parsing the fields
         /// from the buffer.
-        pub fn packet_by_id(state: State, dir: Direction, id: i32, mut buf: &mut io::Cursor<Vec<u8>>) -> Result<Option<Packet>, io::Error> {
+        pub fn packet_by_id(state: State, dir: Direction, id: i32, mut buf: &mut io::Read) -> Result<Option<Packet>, io::Error> {
             match state {
                 $(
                     State::$stateName => {
@@ -113,6 +120,42 @@ pub mod packet;
 pub trait Serializable {
     fn read_from(buf: &mut io::Read) -> Result<Self, io::Error>;
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error>;
+}
+
+impl Serializable for Vec<u8> {
+    fn read_from(buf: &mut io::Read) -> Result<Vec<u8> , io::Error> {
+        let mut v = Vec::new();
+        try!(buf.read_to_end(&mut v));
+        Ok(v)
+    }
+
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        buf.write_all(&self[..])
+    }
+}
+
+impl Serializable for Option<nbt::NamedTag>{
+    fn read_from(buf: &mut io::Read) -> Result<Option<nbt::NamedTag>, io::Error> {
+        let ty = try!(buf.read_u8());
+        if ty == 0 {
+            Result::Ok(None)
+        } else {
+            let name = try!(nbt::read_string(buf));
+            let tag = try!(nbt::Tag::read_from(buf));
+            Result::Ok(Some(nbt::NamedTag(name, tag)))
+        }
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        match *self {
+            Some(ref val) => {
+                try!(buf.write_u8(10));
+                try!(nbt::write_string(buf, &val.0));
+                try!(val.1.write_to(buf));
+            }
+            None => try!(buf.write_u8(0)),
+        }
+        Result::Ok(())
+    }
 }
 
 impl <T> Serializable for Option<T> where T : Serializable {
@@ -159,46 +202,6 @@ impl Serializable for format::Component {
     }
 }
 
-pub struct Position(u64);
-
-impl Position {
-    fn new(x: i32, y: i32, z: i32) -> Position {
-        Position(
-            (((x as u64) & 0x3FFFFFF) << 38) |
-            (((y as u64) & 0xFFF) << 26) |
-            ((z as u64) & 0x3FFFFFF)
-        )
-    }
-
-    fn get_x(&self) -> i32 {
-        ((self.0 as i64) >> 38) as i32
-    }
-
-    fn get_y(&self) -> i32 {
-        (((self.0 as i64) >> 26) & 0xFFF) as i32
-    }
-
-    fn get_z(&self) -> i32 {
-        ((self.0 as i64) << 38 >> 38) as i32
-    }
-}
-
-impl Default for Position {
-    fn default() -> Position {
-        Position(0)
-    }
-}
-
-impl Serializable for Position {
-    fn read_from(buf: &mut io::Read) -> Result<Position, io::Error> {
-        Result::Ok(Position(try!(buf.read_u64::<BigEndian>())))
-    }
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
-        try!(buf.write_u64::<BigEndian>(self.0));
-        Result::Ok(())
-    }
-}
-
 impl Serializable for () {
     fn read_from(_: &mut io::Read) -> Result<(), io::Error> {
         Result::Ok(())
@@ -214,6 +217,16 @@ impl Serializable for bool {
     }
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
         try!(buf.write_u8(if *self { 1 } else { 0 }));
+        Result::Ok(())
+    }
+}
+
+impl Serializable for i8 {
+    fn read_from(buf: &mut io::Read) -> Result<i8, io::Error> {
+        Result::Ok(try!(buf.read_i8()))
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        try!(buf.write_i8(*self));
         Result::Ok(())
     }
 }
@@ -268,7 +281,54 @@ impl Serializable for u16 {
     }
 }
 
-pub trait Lengthable : Serializable + Into<usize> + From<usize> + Copy + Default {}
+impl Serializable for f32 {
+    fn read_from(buf: &mut io::Read) -> Result<f32, io::Error> {
+        Result::Ok(try!(buf.read_f32::<BigEndian>()))
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        try!(buf.write_f32::<BigEndian>(*self));
+        Result::Ok(())
+    }
+}
+
+impl Serializable for f64 {
+    fn read_from(buf: &mut io::Read) -> Result<f64, io::Error> {
+        Result::Ok(try!(buf.read_f64::<BigEndian>()))
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        try!(buf.write_f64::<BigEndian>(*self));
+        Result::Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct UUID(u64, u64);
+
+impl Default for UUID {
+    fn default() -> Self { UUID(0, 0) }
+}
+
+impl Serializable for UUID {
+    fn read_from(buf: &mut io::Read) -> Result<UUID, io::Error> {
+        Result::Ok(
+            UUID(
+                try!(buf.read_u64::<BigEndian>()),
+                try!(buf.read_u64::<BigEndian>()),
+            )
+        )
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        try!(buf.write_u64::<BigEndian>(self.0));
+        try!(buf.write_u64::<BigEndian>(self.1));
+        Result::Ok(())
+    }
+}
+
+
+pub trait Lengthable : Serializable + Copy + Default {
+    fn into(self) -> usize;
+    fn from(usize) -> Self;
+}
 
 pub struct LenPrefixed<L: Lengthable, V> {
     len: L,
@@ -296,7 +356,7 @@ impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
     }
 
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
-        let len_data : L = self.data.len().into();
+        let len_data : L = L::from(self.data.len());
         try!(len_data.write_to(buf));
         let ref data = self.data;
         for val in data {
@@ -305,6 +365,7 @@ impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
         Result::Ok(())
     }
 }
+
 
 impl <L: Lengthable, V: Default> Default for LenPrefixed<L, V> {
     fn default() -> Self {
@@ -315,12 +376,94 @@ impl <L: Lengthable, V: Default> Default for LenPrefixed<L, V> {
     }
 }
 
+impl <L: Lengthable, V: fmt::Debug> fmt::Debug for LenPrefixed<L, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.data.fmt(f)
+    }
+}
+
+// Optimization
+pub struct LenPrefixedBytes<L: Lengthable> {
+    len: L,
+    pub data: Vec<u8>
+}
+
+impl <L: Lengthable>  LenPrefixedBytes<L> {
+    fn new(data: Vec<u8>) -> LenPrefixedBytes<L> {
+        return LenPrefixedBytes {
+            len: Default::default(),
+            data: data,
+        }
+    }
+}
+
+impl <L: Lengthable>  Serializable for LenPrefixedBytes<L> {
+    fn read_from(buf: &mut io::Read) -> Result<LenPrefixedBytes<L>, io::Error> {
+        let len_data : L = try!(Serializable::read_from(buf));
+        let len : usize = len_data.into();
+        let mut data : Vec<u8> = Vec::with_capacity(len);
+        try!(buf.take(len as u64).read_to_end(&mut data));
+        Result::Ok(LenPrefixedBytes{len: len_data, data: data})
+    }
+
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        let len_data : L = L::from(self.data.len());
+        try!(len_data.write_to(buf));
+        try!(buf.write_all(&self.data[..]));
+        Result::Ok(())
+    }
+}
+
+
+impl <L: Lengthable> Default for LenPrefixedBytes<L> {
+    fn default() -> Self {
+        LenPrefixedBytes {
+            len: default::Default::default(),
+            data: default::Default::default()
+        }
+    }
+}
+
+impl <L: Lengthable> fmt::Debug for LenPrefixedBytes<L> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.data.fmt(f)
+    }
+}
+
+impl Lengthable for i16 {
+    fn into(self) -> usize {
+        self as usize
+    }
+
+    fn from(u: usize) -> i16 {
+        u as i16
+    }
+}
+
+impl Lengthable for i32 {
+    fn into(self) -> usize {
+        self as usize
+    }
+
+    fn from(u: usize) -> i32 {
+        u as i32
+    }
+}
+
 /// VarInt have a variable size (between 1 and 5 bytes) when encoded based
 /// on the size of the number
 #[derive(Clone, Copy)]
-pub struct VarInt(i32);
+pub struct VarInt(pub i32);
 
-impl Lengthable for VarInt {}
+impl Lengthable for VarInt {
+    fn into(self) -> usize {
+        self.0 as usize
+    }
+
+    fn from(u: usize) -> VarInt {
+        VarInt(u as i32)
+    }
+}
 
 impl Serializable for VarInt {
     /// Decodes a VarInt from the Reader
@@ -333,7 +476,7 @@ impl Serializable for VarInt {
             val |= (b & PART) << (size * 7);
             size+=1;
             if size > 5 {
-                return Result::Err(io::Error::new(io::ErrorKind::InvalidInput, Error::Err("VarInt too big".to_string())))
+                return Result::Err(io::Error::new(io::ErrorKind::InvalidInput, Error::Err("VarInt too big".to_owned())))
             }
             if (b & 0x80) == 0 {
                 break
@@ -362,15 +505,70 @@ impl default::Default for VarInt {
     fn default() -> VarInt { VarInt(0) }
 }
 
-impl convert::Into<usize> for VarInt {
-    fn into(self) -> usize {
-        self.0 as usize
+impl fmt::Debug for VarInt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
-impl convert::From<usize> for VarInt {
-    fn from(u: usize) -> VarInt {
-        VarInt(u as i32)
+/// VarLong have a variable size (between 1 and 10 bytes) when encoded based
+/// on the size of the number
+#[derive(Clone, Copy)]
+pub struct VarLong(pub i64);
+
+impl Lengthable for VarLong {
+    fn into(self) -> usize {
+        self.0 as usize
+    }
+
+    fn from(u: usize) -> VarLong {
+        VarLong(u as i64)
+    }
+}
+
+impl Serializable for VarLong {
+    /// Decodes a VarLong from the Reader
+    fn read_from(buf: &mut io::Read) -> Result<VarLong, io::Error> {
+        const PART : u64 = 0x7F;
+        let mut size = 0;
+        let mut val = 0u64;
+        loop {
+            let b = try!(buf.read_u8()) as u64;
+            val |= (b & PART) << (size * 7);
+            size+=1;
+            if size > 10 {
+                return Result::Err(io::Error::new(io::ErrorKind::InvalidInput, Error::Err("VarLong too big".to_owned())))
+            }
+            if (b & 0x80) == 0 {
+                break
+            }
+        }
+
+        Result::Ok(VarLong(val as i64))
+    }
+
+    /// Encodes a VarLong into the Writer
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        const PART : u64 = 0x7F;
+        let mut val = self.0 as u64;
+        loop {
+            if (val & !PART) == 0 {
+                try!(buf.write_u8(val as u8));
+                return Result::Ok(());
+            }
+            try!(buf.write_u8(((val & PART) | 0x80) as u8));
+            val >>= 7;
+        }
+    }
+}
+
+impl default::Default for VarLong {
+    fn default() -> VarLong { VarLong(0) }
+}
+
+impl fmt::Debug for VarLong {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -516,13 +714,12 @@ impl Conn {
             Some(val) => {
                 let pos = buf.position() as usize;
                 let ibuf = buf.into_inner();
-                if ibuf.len() < pos {
+                if ibuf.len() != pos {
                     return Result::Err(Error::Err(format!("Failed to read all of packet 0x{:X}, had {} bytes left", id, ibuf.len() - pos)))
                 }
                 Result::Ok(val)
             },
-            // FIXME
-            None => Result::Ok(packet::Packet::StatusRequest(packet::status::serverbound::StatusRequest{empty:()}))//Result::Err(Error::Err("missing packet".to_string()))
+            None => Result::Err(Error::Err("missing packet".to_owned()))
         }
     }
 
@@ -592,25 +789,25 @@ impl Clone for Conn {
 pub trait PacketType {
     fn packet_id(&self) -> i32;
 
-    fn write(self, buf: &mut Vec<u8>) -> Result<(), io::Error>;
+    fn write(self, buf: &mut io::Write) -> Result<(), io::Error>;
 }
 
-#[test]
-fn test() {
+// #[test]
+pub fn test() {
     let mut c = Conn::new("localhost:25565").unwrap();
 
     c.write_packet(packet::handshake::serverbound::Handshake{
-        protocol_version: VarInt(69),
-        host: "localhost".to_string(),
+        protocol_version: VarInt(71),
+        host: "localhost".to_owned(),
         port: 25565,
         next: VarInt(2),
     }).unwrap();
     c.state = State::Login;
-    c.write_packet(packet::login::serverbound::LoginStart{username: "Think".to_string()}).unwrap();
+    c.write_packet(packet::login::serverbound::LoginStart{username: "Think".to_owned()}).unwrap();
 
     let packet = match c.read_packet().unwrap() {
         packet::Packet::EncryptionRequest(val) => val,
-        _ => panic!("Wrong packet"),
+        val => panic!("Wrong packet: {:?}", val),
     };
 
     let mut key = openssl::PublicKey::new(&packet.public_key.data);
@@ -620,17 +817,17 @@ fn test() {
     let token_e = key.encrypt(&packet.verify_token.data);
 
     let profile = mojang::Profile{
-        username: "Think".to_string(),
-        id: "b1184d43168441cfa2128b9a3df3b6ab".to_string(),
-        access_token: "".to_string()
+        username: "Think".to_owned(),
+        id: "b1184d43168441cfa2128b9a3df3b6ab".to_owned(),
+        access_token: "".to_owned()
     };
 
     profile.join_server(&packet.server_id, &shared, &packet.public_key.data);
 
     c.write_packet(packet::login::serverbound::EncryptionResponse{
-        shared_secret: LenPrefixed::new(shared_e),
-        verify_token: LenPrefixed::new(token_e),
-    });
+        shared_secret: LenPrefixedBytes::new(shared_e),
+        verify_token: LenPrefixedBytes::new(token_e),
+    }).unwrap();
 
     let mut read = c.clone();
     let mut write = c.clone();
@@ -660,12 +857,13 @@ fn test() {
     let mut count = 0;
     loop { match read.read_packet().unwrap() {
             packet::Packet::ServerMessage(val) => println!("MSG: {}", val.message),
-            _ => {
+            packet::Packet::ChunkData(_) => {},
+            val => {
+                println!("{:?}", val);
                 if first {
-                    println!("got packet");
                     write.write_packet(packet::play::serverbound::ChatMessage{
-                        message: "Hello world".to_string(),
-                    });
+                        message: "Hello world".to_owned(),
+                    }).unwrap();
                     first = false;
                 }
                 count += 1;
