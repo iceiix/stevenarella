@@ -1,6 +1,8 @@
-extern crate steven_openssl as openssl;
-extern crate serde_json;
-extern crate hyper;
+
+
+use openssl;
+use serde_json;
+use hyper;
 
 pub struct Profile {
     pub username: String,

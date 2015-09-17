@@ -1,10 +1,9 @@
-extern crate byteorder;
 
 use nbt;
 use protocol::{Serializable};
 use std::io;
 use std::io::{Read, Write};
-use self::byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
 #[derive(Debug)]
 pub struct Stack {

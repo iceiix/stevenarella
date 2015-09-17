@@ -1,4 +1,3 @@
-extern crate byteorder;
 
 use std::collections::HashMap;
 use std::io;
@@ -6,7 +5,7 @@ use std::io::{Read, Write};
 
 use super::protocol::{Serializable};
 use super::protocol;
-use self::byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
 #[derive(Debug)]
 pub enum Tag {

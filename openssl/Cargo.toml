@@ -5,3 +5,4 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 
 [dependencies]
 libc = "*"
+openssl-sys = "0.6.5"

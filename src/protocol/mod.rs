@@ -1,9 +1,7 @@
 #![allow(dead_code)]
-extern crate byteorder;
-extern crate hyper;
-extern crate steven_openssl as openssl;
-extern crate flate2;
-extern crate serde_json;
+
+use openssl;
+use serde_json;
 
 pub mod mojang;
 
@@ -15,8 +13,9 @@ use std::net::TcpStream;
 use std::io;
 use std::io::{Write, Read};
 use std::convert;
-use self::byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
-use self::flate2::read::{ZlibDecoder, ZlibEncoder};
+use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use flate2::read::{ZlibDecoder, ZlibEncoder};
+use flate2;
 
 /// Helper macro for defining packets
 #[macro_export]

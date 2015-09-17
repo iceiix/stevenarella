@@ -1,5 +1,5 @@
-extern crate serde_json;
 
+use serde_json;
 use std::fmt;
 
 #[derive(Debug)]

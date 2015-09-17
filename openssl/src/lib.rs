@@ -31,7 +31,6 @@ struct ENGINE;
 
 const RSA_PKCS1_PADDING : libc::c_int = 1;
 
-#[link(name = "crypto")]
 extern {
     fn SHA1_Init(c: *mut SHA_CTX) -> libc::c_int;
     fn SHA1_Update(c: *mut SHA_CTX, data: *const u8, len: libc::size_t) -> libc::c_int;

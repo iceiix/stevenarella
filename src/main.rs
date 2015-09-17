@@ -1,10 +1,29 @@
-extern crate glfw;
-extern crate steven;
+pub mod bit;
+pub mod protocol;
+pub mod format;
+pub mod nbt;
+pub mod item;
+pub mod gl;
+pub mod types;
+pub mod resources;
+pub mod render;
 
-use steven::*;
+extern crate glfw;
+extern crate image;
+extern crate time;
+extern crate byteorder;
+extern crate serde_json;
+extern crate steven_openssl as openssl;
+extern crate hyper;
+extern crate flate2;
+
+use std::sync::{Arc, RwLock};
 use glfw::{Action, Context, Key};
 
 fn main() {
+    let resource_manager = Arc::new(RwLock::new(resources::Manager::new()));
+    { resource_manager.write().unwrap().tick(); }
+
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     glfw.window_hint(glfw::WindowHint::ContextVersion(3, 2));
@@ -22,9 +41,20 @@ fn main() {
     window.make_current();
     glfw.set_swap_interval(1);
 
+    let mut renderer = render::Renderer::new(resource_manager.clone());
+
+    let mut last_frame = time::now();
+    let frame_time = (time::Duration::seconds(1).num_nanoseconds().unwrap() as f64) / 60.0;
+
     while !window.should_close() {
-        gl::clear_color(1.0, 0.0, 0.0, 1.0);
-        gl::clear(gl::ClearFlags::Color | gl::ClearFlags::Depth);
+        { resource_manager.write().unwrap().tick(); }
+        let now = time::now();
+        let diff = now - last_frame;
+        last_frame = now;
+        let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
+
+        let (width, height) = window.get_framebuffer_size();
+        renderer.tick(delta, width as u32, height as u32);
 
         window.swap_buffers();
         glfw.poll_events();
