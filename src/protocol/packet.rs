@@ -998,7 +998,11 @@ impl Serializable for MapIcon {
 
 impl Default for MapIcon {
     fn default() -> Self {
-        MapIcon { .. Default::default() }
+        MapIcon { 
+            direction_type: 0,
+            x: 0,
+            z: 0,
+        }
     }
 }
 

@@ -17,17 +17,15 @@ struct SHA_CTX {
     num: libc::c_uint
 }
 
-#[repr(C)]
-struct RSA;
+enum RSA{}
 
-#[repr(C)]
-struct EVP_CIPHER_CTX;
+#[allow(non_camel_case_types)]
+enum EVP_CIPHER_CTX{}
 
-#[repr(C)]
-struct EVP_CIPHER;
+#[allow(non_camel_case_types)]
+enum EVP_CIPHER{}
 
-#[repr(C)]
-struct ENGINE;
+enum ENGINE{}
 
 const RSA_PKCS1_PADDING : libc::c_int = 1;
 

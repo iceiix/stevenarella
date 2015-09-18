@@ -141,6 +141,7 @@ impl UIState {
 		gl::clear(gl::ClearFlags::Depth);
 		gl::depth_func(gl::LESS_OR_EQUAL);
 		gl::enable(gl::BLEND);
+		gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 
 		self.shader.use_program();
 		self.s_texture.set_int(0);

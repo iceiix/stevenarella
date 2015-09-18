@@ -21,6 +21,7 @@ pub mod gl;
 pub mod types;
 pub mod resources;
 pub mod render;
+pub mod ui;
 
 extern crate glfw;
 extern crate image;
@@ -30,6 +31,7 @@ extern crate serde_json;
 extern crate steven_openssl as openssl;
 extern crate hyper;
 extern crate flate2;
+extern crate rand;
 
 use std::sync::{Arc, RwLock};
 use glfw::{Action, Context, Key};
@@ -56,6 +58,7 @@ fn main() {
     glfw.set_swap_interval(1);
 
     let mut renderer = render::Renderer::new(resource_manager.clone());
+    let mut ui_container = ui::Container::new();
 
     let mut last_frame = time::now();
     let frame_time = (time::Duration::seconds(1).num_nanoseconds().unwrap() as f64) / 60.0;
@@ -68,6 +71,7 @@ fn main() {
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
 
         let (width, height) = window.get_framebuffer_size();
+        ui_container.tick(&mut renderer, delta, width as f64, height as f64);
         renderer.tick(delta, width as u32, height as u32);
 
         window.swap_buffers();

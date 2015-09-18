@@ -129,6 +129,18 @@ pub fn active_texture(id: u32) {
     unsafe { gl::ActiveTexture(gl::TEXTURE0 + id); }
 }
 
+/// Factor is used in blending
+pub type Factor = u32;
+pub const SRC_ALPHA: Factor = gl::SRC_ALPHA;
+pub const ONE_MINUS_SRC_ALPHA: Factor = gl::ONE_MINUS_SRC_ALPHA;
+pub const ONE_FACTOR: Factor = gl::ONE;
+pub const ZERO_FACTOR: Factor = gl::ZERO;
+
+/// Sets the factors to be used when blending.
+pub fn blend_func(s_factor: Factor, d_factor: Factor) {
+    unsafe { gl::BlendFunc(s_factor, d_factor); }
+}
+
 /// Type is a type of data used by various operations.
 pub type Type = u32;
 pub const UNSIGNED_BYTE: Type = gl::UNSIGNED_BYTE;

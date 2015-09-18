@@ -33,15 +33,13 @@ pub struct Renderer {
 	resources: Arc<RwLock<resources::Manager>>,
 	textures: Arc<RwLock<TextureManager>>,
 	glsl: glsl::Registry,
-	ui: ui::UIState,
+	pub ui: ui::UIState,
 
 	gl_texture: gl::Texture,
 	texture_layers: usize,
 
 	last_width: u32,
 	last_height: u32,
-
-	temp_rot: f64,
 }
 
 impl Renderer {
@@ -71,8 +69,6 @@ impl Renderer {
 			texture_layers: 1,
 			last_width: 0,
 			last_height: 0,
-
-			temp_rot: 0.0,
 		}
 	}
 
@@ -99,19 +95,6 @@ impl Renderer {
 
         gl::clear_color(14.0/255.0, 48.0/255.0, 92.0/255.0, 1.0);
         gl::clear(gl::ClearFlags::Color | gl::ClearFlags::Depth);
-
-        let test = self.ui.new_text("Hello world", 10.0, 10.0, 255, 255, 255);
-        let data = test.bytes(width as f64, height as f64);
-        self.ui.add_bytes(&data);
-
-        let test = self.ui.new_text("Font rendering is complete! (ish)", 10.0, 30.0, 0, 255, 0);
-        let data = test.bytes(width as f64, height as f64);
-        self.ui.add_bytes(&data);
-
-        self.temp_rot += delta * 0.05;
-        let test = self.ui.new_text_rotated("Yay! Progress!", 150.0, 150.0, 1.0, 1.0, self.temp_rot, 255, 0, 0);
-        let data = test.bytes(width as f64, height as f64);
-        self.ui.add_bytes(&data);
 
         self.ui.tick(width, height);
 	}
