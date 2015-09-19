@@ -240,8 +240,6 @@ impl TextureManager {
 		self.textures.get(name).map(|v| v.clone())
 	}
 
-	// TODO: Animated textures
-
 	fn load_texture(&mut self, name: &str) {
 		let (plugin, name) = if let Some(pos) = name.find(':') {
 			(&name[..pos], &name[pos+1..])
@@ -271,7 +269,7 @@ impl TextureManager {
 				return;
 			}
 		}
-		self.insert_texture_dummy(name);
+		self.insert_texture_dummy(plugin, name);
 	}
 
 	fn load_animation(&mut self, plugin: &str, name: &str, img: &image::DynamicImage, data: Vec<u8>) -> Option<AnimatedTexture> {
@@ -366,10 +364,18 @@ impl TextureManager {
 		(index, rect.unwrap())
 	}
 
-	fn insert_texture_dummy(&mut self, name: &str) -> Texture {
+	fn insert_texture_dummy(&mut self, plugin: &str, name: &str) -> Texture {
 		let missing = self.get_texture("steven:missing_texture").unwrap();
+
+		let mut full_name = String::new();
+		if plugin != "minecraft" {
+			full_name.push_str(plugin);
+			full_name.push_str(":");
+		}
+		full_name.push_str(name);
+
 		let t = Texture { 
-			name: name.to_owned(), 
+			name: full_name.to_owned(), 
 			version: self.version, 
 			atlas: missing.atlas,
 			x: missing.x, 
@@ -382,7 +388,7 @@ impl TextureManager {
 			rel_height: 1.0,
 			is_rel: false,
 		};
-		self.textures.insert(name.to_owned(), t.clone());
+		self.textures.insert(full_name.to_owned(), t.clone());
 		t
 	}
 }

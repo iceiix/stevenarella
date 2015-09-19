@@ -21,6 +21,10 @@ use std::io;
 use std::fs;
 use std::sync::mpsc;
 
+mod internal {
+    include!(concat!(env!("OUT_DIR"), "/resources.rs"));
+}
+
 const RESOURCES_VERSION: &'static str = "15w37a";
 
 pub trait Pack {
@@ -41,6 +45,7 @@ impl Manager {
                 version: 0,
                 vanilla_chan: None,
         };
+        m.add_pack(Box::new(InternalPack));
         m.download_vanilla();
         m
     }
@@ -164,6 +169,17 @@ impl Pack for DirPack {
         match fs::File::open(self.root.join(name)) {
             Ok(val) => Some(Box::new(val)),
             Err(_) => None,
+        }
+    }
+}
+
+struct InternalPack;
+
+impl Pack for InternalPack {
+    fn open(&self, name: &str) -> Option<Box<io::Read>> {
+        match internal::get_file(name) {
+            Some(val) => Some(Box::new(io::Cursor::new(val))),
+            None => None,
         }
     }
 }

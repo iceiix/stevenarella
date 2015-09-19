@@ -63,6 +63,15 @@ fn main() {
     let mut last_frame = time::now();
     let frame_time = (time::Duration::seconds(1).num_nanoseconds().unwrap() as f64) / 60.0;
 
+    // Test stuff
+    let img = ui::Image::new(
+        render::Renderer::get_texture(renderer.get_textures_ref(), "steven:gui/cog"),
+        50.0, 50.0, 100.0, 100.0, 
+        0.0, 0.0, 1.0, 1.0, 
+        255, 255, 255
+    );
+    let img_ref = ui_container.add(img);
+
     while !window.should_close() {
         { resource_manager.write().unwrap().tick(); }
         let now = time::now();

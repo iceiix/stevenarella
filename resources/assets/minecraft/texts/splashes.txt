@@ -1,0 +1,52 @@
+I blame Xor
+Its not a bug its a feature!
+Don't go to #think, tis a silly place
+Tested! (In production)
+Not in scala!
+Its steven not phteven!
+Now webscale!
+Meow
+I bet one of cindy's cats broke it!
+=^.^=
+ಠ_ಠ
+Commit reverted in 5..4..3...
+Latest is greatest!
+[This space is intentionally left blank]
+ThinkBot: .... *Thinkofdeath damn it
+Now with more bugs!
+I blame Mojang
+The logo is totally not ascii art rendered as textures
+Look, it works on my machine.
+Open Source! https://github.com/thinkofdeath/steven
+Built with Go!
+try { } catch (Exception e) { }
+panic(recover())
+// Abandon hope all ye who enter here
+Its like I'm racing vanilla to see who can have the most bugs
+Using ascii art for the logo seemed like a bad idea at first
+... and still does.
+Help! I'm trapped in the splash text!
+Linux support!
+Windows support!
+Mac support! (in theory)
+Come chat on IRC!
+Knowing Murphy's Law doesn't help
+Minecraft Multi-processing: breaking three things at once
+Silly Mortal...
+Software isn't released. It's allowed to escape.
+General System Error: Please sacrifice a cow and two chickens to continue
+Do you want to build a client?
+sudo rm -rf --no-preserve-root /
+Thinkofdeath.getClass().getField("sanity").set(Thinkofdeath, null);
+Now with potatoes!
+And then you cleanse them in a ball of atomic fire!
+I'm a little matrix, square and stout,
+this is my transpose, this is my count.
+var f = function() { return f; };
+unsafe.allocateObject(Unsafe.class);
+:(){ :|:& };:
+You must pay to view this content.
+No touchy the topic
+Ceci n'est pas un splash.
+Xor is not actually a cat.
+The MD5 of md_5 is e14cfacdd442a953343ebd8529138680

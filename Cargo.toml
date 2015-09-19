@@ -2,6 +2,7 @@
 name = "steven"
 version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
+build = "build.rs"
 
 [dependencies]
 rustc-serialize = "0.3"
