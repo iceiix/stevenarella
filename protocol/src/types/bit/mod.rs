@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod blockpos;
-pub use self::blockpos::*;
+pub mod set;
+pub mod map;
 
-mod metadata;
-pub use self::metadata::*;
-
-pub mod bit;
+pub use self::set::Set;
+pub use self::map::Map;
