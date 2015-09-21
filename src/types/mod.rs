@@ -17,3 +17,5 @@ pub use self::blockpos::*;
 
 mod metadata;
 pub use self::metadata::*;
+
+pub mod bit;

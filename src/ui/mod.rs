@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub mod logo;
+
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use rand;
@@ -22,66 +24,92 @@ const SCALED_HEIGHT: f64 = 480.0;
 
 pub enum Element {
 	Image(Image),
+	Batch(Batch),
 	None,
 }
 
+macro_rules! element_impl {
+	($($name:ident),+) => (
 impl Element {
 	fn should_draw(&self) -> bool {
 		match self {
-			&Element::Image(ref img) => img.should_draw,
+			$(
+			&Element::$name(ref val) => val.should_draw,
+			)+
 			_ => unimplemented!(),
 		}
 	}
 
 	fn get_parent(&self) -> Option<ElementRefInner> {
 		match self {
-			&Element::Image(ref img) => img.parent,
+			$(
+			&Element::$name(ref val) => val.parent,
+			)+
 			_ => unimplemented!(),
 		}
 	}
 
 	fn get_attachment(&self) -> (VAttach, HAttach) {
 		match self {
-			&Element::Image(ref img) => (img.v_attach, img.h_attach),
+			$(
+			&Element::$name(ref val) => (val.v_attach, val.h_attach),
+			)+
 			_ => unimplemented!(),
 		}		
 	}
 
 	fn get_offset(&self) -> (f64, f64) {
 		match self {
-			&Element::Image(ref img) => (img.x, img.y),
+			$(
+			&Element::$name(ref val) => (val.x, val.y),
+			)+
 			_ => unimplemented!(),
 		}		
 	}
 
 	fn get_size(&self) -> (f64, f64) {
 		match self {
-			&Element::Image(ref img) => (img.width, img.height),
+			$(
+			&Element::$name(ref val) => (val.width, val.height),
+			)+
 			_ => unimplemented!(),
 		}		
 	}
 
 	fn is_dirty(&self) -> bool {
 		match self {
-			&Element::Image(ref img) => img.dirty,
+			$(
+			&Element::$name(ref val) => val.dirty,
+			)+
 			_ => unimplemented!(),
 		}				
 	}
 
-	fn set_dirty(&mut self, val: bool) {
+	fn set_dirty(&mut self, dirty: bool) {
 		match self {
-			&mut Element::Image(ref mut img) => img.dirty = val,
+			$(
+			&mut Element::$name(ref mut val) => val.dirty = dirty,
+			)+
 			_ => unimplemented!(),
 		}				
 	}
 
-	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) {
+	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8>{
 		match self {
-			&mut Element::Image(ref mut img) => img.draw(renderer, r, width, height, delta),
+			$(
+			&mut Element::$name(ref mut val) => val.draw(renderer, r, width, height, delta),
+			)+
 			_ => unimplemented!(),
 		}		
 	}
 }
+	)
+}
+
+element_impl!(
+	Image,
+	Batch
+);
 
 pub enum Mode {
 	Scaled,
@@ -137,6 +165,13 @@ const SCREEN: Region = Region{x: 0.0, y: 0.0, w: SCALED_WIDTH, h: SCALED_HEIGHT}
 pub struct Container {
 	pub mode: Mode,
 	elements: HashMap<ElementRefInner, Element>,
+	// We need the order
+	elements_list: Vec<ElementRefInner>,
+
+	last_sw: f64,
+	last_sh: f64,
+	last_width: f64,
+	last_height: f64,
 }
 
 impl Container {
@@ -144,6 +179,11 @@ impl Container {
 		Container {
 			mode: Mode::Scaled,
 			elements: HashMap::new(),
+			elements_list: Vec::new(),
+			last_sw: 0.0,
+			last_sh: 0.0,
+			last_width: 0.0,
+			last_height: 0.0,
 		}
 	}
 
@@ -153,6 +193,7 @@ impl Container {
 			r = ElementRefInner{index: rand::random()};
 		}
 		self.elements.insert(r, e.wrap());
+		self.elements_list.push(r);
 		ElementRef{inner: r, ty: PhantomData}
 	}
 
@@ -166,6 +207,10 @@ impl Container {
 
 	pub fn remove<T: UIElement>(&mut self, r: &ElementRef<T>) {
 		self.elements.remove(&r.inner);
+		self.elements_list.iter()
+			.position(|&e| e.index == r.inner.index)
+			.map(|e| self.elements_list.remove(e))
+			.unwrap();
 	}
 
 	pub fn tick(&mut self, renderer: &mut render::Renderer, delta: f64, width: f64, height: f64) {
@@ -174,16 +219,28 @@ impl Container {
 			Mode::Unscaled(scale) => (scale, scale),
 		};
 
+		if self.last_sw != sw || self.last_sh != sh || self.last_width != width || self.last_height != height {
+			self.last_sw = sw;
+			self.last_sh = sh;
+			self.last_width = width;
+			self.last_height = height;
+			for (_, e) in &mut self.elements {
+				e.set_dirty(true);
+			}
+		}
+
 		// Borrow rules seem to prevent us from doing this in the first pass
 		// so we split it.
 		let regions = self.collect_elements(sw, sh);
-		for (re, e) in &mut self.elements {
+		for re in &mut self.elements_list {
+			let mut e = self.elements.get_mut(re).unwrap();
 			if !e.should_draw() {
 				continue;
 			}
 			if let Some(&(ref r, ref dirty)) = regions.get(re) {
 				e.set_dirty(*dirty);
-				e.draw(renderer, r, width, height, delta);
+				let data = e.draw(renderer, r, width, height, delta);
+				renderer.ui.add_bytes(data);
 			}
 		}
 	}
@@ -216,6 +273,10 @@ impl Container {
 			Some(ref p) => self.get_draw_region(self.elements.get(p).unwrap(), sw, sh),
 			None => SCREEN,
 		};
+		Container::get_draw_region_raw(e, sw, sh, &super_region)
+	}
+
+	fn get_draw_region_raw(e: &Element, sw: f64, sh: f64, super_region: &Region) -> Region {
 		let mut r = Region{x:0.0,y:0.0,w:0.0,h:0.0};
 		let (w, h) = e.get_size();
 		let (ox, oy) = e.get_offset();
@@ -314,7 +375,7 @@ impl Image {
 		}
 	}
 
-	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) {
+	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
 		if self.dirty {
 			self.dirty = false;
 			self.texture = renderer.check_texture(self.texture.clone());
@@ -326,7 +387,7 @@ impl Image {
 			e.layer = self.layer;
 			self.data = e.bytes(width, height);
 		}
-		renderer.ui.add_bytes(&self.data);
+		&self.data
 	}
 
 	pub fn set_parent<T: UIElement>(&mut self, other: ElementRef<T>) {
@@ -377,6 +438,100 @@ impl UIElement for Image {
 	fn unwrap_ref_mut<'a>(e: &'a mut Element) -> &'a mut Image {
 		match e {
 			&mut Element::Image(ref mut val) => val,
+			_ => panic!("Incorrect type"),
+		}
+	}
+}
+
+
+pub struct Batch {
+	dirty: bool,
+	data: Vec<u8>,
+
+	parent: Option<ElementRefInner>,
+	should_draw: bool,
+	layer: isize,
+	x: f64,
+	y: f64,
+	width: f64,
+	height: f64,
+	v_attach: VAttach,
+	h_attach: HAttach,
+
+	elements: Vec<Element>,
+}
+
+impl Batch {
+	pub fn new(x: f64, y: f64, w: f64, h: f64) -> Batch {
+		Batch {
+			dirty: true,
+			data: Vec::new(),
+
+			parent: None,
+			should_draw: true,
+			layer: 0,
+			x: x,
+			y: y,
+			width: w,
+			height: h,
+			v_attach: VAttach::Top,
+			h_attach: HAttach::Left,
+
+			elements: Vec::new(),
+		}
+	}
+
+	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
+		if self.dirty {
+			self.dirty = false;
+			self.data.clear();
+
+			let sx = r.w / self.width;
+			let sy = r.h / self.height;
+
+			for e in &mut self.elements {
+				let reg = Container::get_draw_region_raw(e, sx, sy, r);
+				e.set_dirty(true);
+				self.data.extend(e.draw(renderer, &reg, width, height, delta));
+			}
+		}
+		&self.data
+	}
+
+	pub fn set_parent<T: UIElement>(&mut self, other: ElementRef<T>) {
+		self.parent = Some(other.inner);
+		self.dirty = true;
+	}
+
+	pub fn add<T: UIElement>(&mut self, e: T) {
+		self.elements.push(e.wrap());
+	}
+
+	lazy_field!(layer, isize, get_layer, set_layer);
+	lazy_field!(x, f64, get_x, set_x);
+	lazy_field!(y, f64, get_y, set_y);
+	lazy_field!(width, f64, get_width, set_width);
+	lazy_field!(height, f64, get_height, set_height);
+	lazy_field!(v_attach, VAttach, get_v_attach, set_v_attach);
+	lazy_field!(h_attach, HAttach, get_h_attach, set_h_attach);
+
+}
+
+impl UIElement for Batch {
+	fn wrap(self) -> Element {
+		Element::Batch(self)
+	}
+
+	fn unwrap_ref<'a>(e: &'a Element) -> &'a Batch {
+		match e {
+			&Element::Batch(ref val) => val,
+			_ => panic!("Incorrect type"),
+		}
+	}
+
+	fn unwrap_ref_mut<'a>(e: &'a mut Element) -> &'a mut Batch {
+		match e {
+			&mut Element::Batch(ref mut val) => val,
 			_ => panic!("Incorrect type"),
 		}
 	}

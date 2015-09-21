@@ -402,7 +402,7 @@ impl Attribute {
 
     pub fn vertex_pointer(&self, size: i32, ty: Type, normalized: bool, stride: i32, offset: i32) {
         unsafe {
-            gl::VertexAttribPointer(self.internal as u32, size, ty, if normalized { 1 } else { 0 }, stride, offset as *const gl::types::GLvoid);
+            gl::VertexAttribPointer(self.internal as u32, size, ty, normalized as u8, stride, offset as *const gl::types::GLvoid);
         }
     }
 
