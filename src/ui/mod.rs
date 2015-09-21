@@ -25,6 +25,7 @@ const SCALED_HEIGHT: f64 = 480.0;
 pub enum Element {
 	Image(Image),
 	Batch(Batch),
+	Text(Text),
 	None,
 }
 
@@ -70,7 +71,7 @@ impl Element {
 	fn get_size(&self) -> (f64, f64) {
 		match self {
 			$(
-			&Element::$name(ref val) => (val.width, val.height),
+			&Element::$name(ref val) => val.get_size(),
 			)+
 			_ => unimplemented!(),
 		}		
@@ -94,6 +95,15 @@ impl Element {
 		}				
 	}
 
+	fn update(&mut self, renderer: &mut render::Renderer) {
+		match self {
+			$(
+			&mut Element::$name(ref mut val) => val.update(renderer),
+			)+
+			_ => unimplemented!(),
+		}		
+	}
+
 	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8>{
 		match self {
 			$(
@@ -108,7 +118,8 @@ impl Element {
 
 element_impl!(
 	Image,
-	Batch
+	Batch,
+	Text
 );
 
 pub enum Mode {
@@ -160,6 +171,15 @@ struct ElementRefInner {
 	index: usize,
 }
 
+impl <T> Default for ElementRef<T> {
+	fn default() -> Self {
+		ElementRef {
+			inner: ElementRefInner{ index: 0 },
+			ty: PhantomData,
+		}
+	}
+}
+
 const SCREEN: Region = Region{x: 0.0, y: 0.0, w: SCALED_WIDTH, h: SCALED_HEIGHT};
 
 pub struct Container {
@@ -167,6 +187,7 @@ pub struct Container {
 	elements: HashMap<ElementRefInner, Element>,
 	// We need the order
 	elements_list: Vec<ElementRefInner>,
+	version: usize,
 
 	last_sw: f64,
 	last_sh: f64,
@@ -180,6 +201,7 @@ impl Container {
 			mode: Mode::Scaled,
 			elements: HashMap::new(),
 			elements_list: Vec::new(),
+			version: 0xFFFF,
 			last_sw: 0.0,
 			last_sh: 0.0,
 			last_width: 0.0,
@@ -219,14 +241,20 @@ impl Container {
 			Mode::Unscaled(scale) => (scale, scale),
 		};
 
-		if self.last_sw != sw || self.last_sh != sh || self.last_width != width || self.last_height != height {
+		if self.last_sw != sw || self.last_sh != sh 
+			|| self.last_width != width || self.last_height != height 
+			|| self.version != renderer.ui.version {
 			self.last_sw = sw;
 			self.last_sh = sh;
 			self.last_width = width;
 			self.last_height = height;
 			for (_, e) in &mut self.elements {
 				e.set_dirty(true);
+				if self.version != renderer.ui.version {
+					e.update(renderer);
+				}
 			}
+			self.version = renderer.ui.version;
 		}
 
 		// Borrow rules seem to prevent us from doing this in the first pass
@@ -375,6 +403,8 @@ impl Image {
 		}
 	}
 
+	fn update(&mut self, renderer: &mut render::Renderer) {}
+
 	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
 		if self.dirty {
 			self.dirty = false;
@@ -390,7 +420,11 @@ impl Image {
 		&self.data
 	}
 
-	pub fn set_parent<T: UIElement>(&mut self, other: ElementRef<T>) {
+	pub fn get_size(&self) -> (f64, f64) {
+		(self.width, self.height)
+	}
+
+	pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
 		self.parent = Some(other.inner);
 		self.dirty = true;
 	}
@@ -481,6 +515,10 @@ impl Batch {
 		}
 	}
 
+	fn update(&mut self, renderer: &mut render::Renderer) {
+
+	}
+
 	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
 		if self.dirty {
 			self.dirty = false;
@@ -498,7 +536,11 @@ impl Batch {
 		&self.data
 	}
 
-	pub fn set_parent<T: UIElement>(&mut self, other: ElementRef<T>) {
+	pub fn get_size(&self) -> (f64, f64) {
+		(self.width, self.height)
+	}
+
+	pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
 		self.parent = Some(other.inner);
 		self.dirty = true;
 	}
@@ -532,6 +574,139 @@ impl UIElement for Batch {
 	fn unwrap_ref_mut<'a>(e: &'a mut Element) -> &'a mut Batch {
 		match e {
 			&mut Element::Batch(ref mut val) => val,
+			_ => panic!("Incorrect type"),
+		}
+	}
+}
+
+pub struct Text {
+	dirty: bool,
+	data: Vec<u8>,
+
+	parent: Option<ElementRefInner>,
+	should_draw: bool,
+	layer: isize,
+	val: String,
+	x: f64,
+	y: f64,
+	width: f64,
+	height: f64,
+	v_attach: VAttach,
+	h_attach: HAttach,
+	scale_x: f64,
+	scale_y: f64,
+	rotation: f64,
+	r: u8,
+	g: u8,
+	b: u8,
+	a: u8,
+}
+
+impl Text {
+	pub fn new(renderer: &render::Renderer, val: &str, x: f64, y: f64, r: u8, g: u8, b: u8) -> Text {
+		Text {
+			dirty: true,
+			data: Vec::new(),
+
+			parent: None,
+			should_draw: true,
+			layer: 0,
+			val: val.to_owned(),
+			x: x,
+			y: y,
+			width: renderer.ui.size_of_string(val),
+			height: 18.0,
+			v_attach: VAttach::Top,
+			h_attach: HAttach::Left,
+			scale_x: 1.0,
+			scale_y: 1.0,
+			rotation: 0.0,
+			r: r,
+			g: g,
+			b: b,
+			a: 255,
+		}
+	}
+
+	fn update(&mut self, renderer: &mut render::Renderer) {
+		self.width = renderer.ui.size_of_string(&self.val);
+	}
+
+	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
+		if self.dirty {
+			self.dirty = false;
+			let sx = r.w / self.width;
+			let sy = r.h / self.height;
+			let mut text = if self.rotation == 0.0 {
+				renderer.ui.new_text_scaled(&self.val, r.x, r.y, sx*self.scale_x, sy*self.scale_y, self.r, self.g, self.b)
+			} else {
+				let c = self.rotation.cos();
+				let s = self.rotation.sin();
+				let tmpx = r.w / 2.0;
+				let tmpy = r.h / 2.0;
+				let w = (tmpx*c - tmpy*s).abs();
+				let h = (tmpy*c + tmpx*s).abs();
+				renderer.ui.new_text_rotated(&self.val, r.x+w-(r.w / 2.0), r.y+h-(r.h / 2.0), sx*self.scale_x, sy*self.scale_y, self.rotation, self.r, self.g, self.b)
+			};
+			for e in &mut text.elements {
+				e.a = self.a;
+				e.layer = self.layer;
+			}
+			self.data = text.bytes(width, height);
+		}
+		&self.data
+	}
+
+	pub fn get_size(&self) -> (f64, f64) {
+		((self.width + 2.0) * self.scale_x, self.height * self.scale_y)
+	}
+
+	pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
+		self.parent = Some(other.inner);
+		self.dirty = true;
+	}
+
+	pub fn get_text(&self) -> &str {
+		&self.val
+	}
+
+	pub fn set_text(&mut self, renderer: &render::Renderer, val: &str) {
+		self.dirty = true;
+		self.val = val.to_owned();
+		self.width = renderer.ui.size_of_string(val);
+	}
+
+	lazy_field!(layer, isize, get_layer, set_layer);
+	lazy_field!(x, f64, get_x, set_x);
+	lazy_field!(y, f64, get_y, set_y);
+	lazy_field!(width, f64, get_width, set_width);
+	lazy_field!(height, f64, get_height, set_height);
+	lazy_field!(v_attach, VAttach, get_v_attach, set_v_attach);
+	lazy_field!(h_attach, HAttach, get_h_attach, set_h_attach);
+	lazy_field!(scale_x, f64, get_scale_x, set_scale_x);
+	lazy_field!(scale_y, f64, get_scale_y, set_scale_y);
+	lazy_field!(rotation, f64, get_rotation, set_rotation);
+	lazy_field!(r, u8, get_r, set_r);
+	lazy_field!(g, u8, get_g, set_g);
+	lazy_field!(b, u8, get_b, set_b);
+
+}
+
+impl UIElement for Text {
+	fn wrap(self) -> Element {
+		Element::Text(self)
+	}
+
+	fn unwrap_ref<'a>(e: &'a Element) -> &'a Text {
+		match e {
+			&Element::Text(ref val) => val,
+			_ => panic!("Incorrect type"),
+		}
+	}
+
+	fn unwrap_ref_mut<'a>(e: &'a mut Element) -> &'a mut Text {
+		match e {
+			&mut Element::Text(ref mut val) => val,
 			_ => panic!("Incorrect type"),
 		}
 	}

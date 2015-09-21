@@ -62,7 +62,7 @@ fn main() {
     let mut last_frame = time::now();
     let frame_time = (time::Duration::seconds(1).num_nanoseconds().unwrap() as f64) / 60.0;
 
-    let logo = ui::logo::Logo::new(resource_manager.clone(), &mut renderer, &mut ui_container);
+    let mut logo = ui::logo::Logo::new(resource_manager.clone(), &mut renderer, &mut ui_container);
 
     while !window.should_close() {
         { resource_manager.write().unwrap().tick(); }
@@ -70,6 +70,8 @@ fn main() {
         let diff = now - last_frame;
         last_frame = now;
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
+
+        logo.tick(&mut renderer, &mut ui_container);
 
         let (width, height) = window.get_framebuffer_size();
         ui_container.tick(&mut renderer, delta, width as f64, height as f64);

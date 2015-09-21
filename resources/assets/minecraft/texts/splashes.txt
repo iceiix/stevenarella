@@ -18,7 +18,7 @@ I blame Mojang
 The logo is totally not ascii art rendered as textures
 Look, it works on my machine.
 Open Source! https://github.com/thinkofdeath/steven
-Built with Go!
+Built with Rust!
 try { } catch (Exception e) { }
 panic(recover())
 // Abandon hope all ye who enter here
@@ -50,3 +50,4 @@ No touchy the topic
 Ceci n'est pas un splash.
 Xor is not actually a cat.
 The MD5 of md_5 is e14cfacdd442a953343ebd8529138680
+I blame Scetch for this!

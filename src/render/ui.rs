@@ -28,7 +28,7 @@ const UI_HEIGHT: f64 = 480.0;
 pub struct UIState {	
 	textures: Arc<RwLock<render::TextureManager>>,
 	resources: Arc<RwLock<resources::Manager>>,
-	version: usize,
+	pub version: usize,
 
 	data: Vec<u8>,
 	prev_size: usize,
@@ -97,7 +97,7 @@ impl UIState {
 			pos += 1;
 		}
 
-		UIState {
+		let mut state = UIState {
 			textures: textures,
 			resources: res,
 			version: 0xFFFF,
@@ -126,7 +126,9 @@ impl UIState {
 			char_map: char_map,
 			page_width: 0.0,
 			page_height: 0.0,
-		}
+		};
+		state.load_font();
+		state
 	}
 
 	pub fn tick(&mut self, width: u32, height: u32) {
@@ -168,7 +170,6 @@ impl UIState {
 			gl::draw_elements(gl::TRIANGLES, self.count, self.index_type, 0);
 		}
 
-
 		gl::disable(gl::BLEND);
 		self.data.clear();
 		self.count = 0;
@@ -176,7 +177,7 @@ impl UIState {
 
 	pub fn add_bytes(&mut self, data: &Vec<u8>) {
 		self.data.extend(data);
-		self.count += (data.len() / (28 + 4)) * 6;
+		self.count += (data.len() / (28 * 4)) * 6;
 	}
 
 	pub fn character_texture(&mut self, c: char) -> render::Texture {
@@ -195,7 +196,7 @@ impl UIState {
 		let p = self.font_pages[page as usize].clone().unwrap();
 
 		let raw = if page == 0 {
-			self.char_map[&c] as u32
+			(*self.char_map.get(&c).unwrap_or(&c)) as u32
 		} else {
 			raw
 		};
@@ -235,7 +236,7 @@ impl UIState {
 		}
 		let r = c as u32;
 		if r >> 8 == 0 {
-			let r = self.char_map[&c] as u32;
+			let r = (*self.char_map.get(&c).unwrap_or(&c)) as u32;
 			let info = self.font_character_info[r as usize];
 			let sw = self.page_width / 16.0;
 			return (((info.1 - info.0) as f64) / sw) * 16.0;
@@ -315,7 +316,7 @@ impl UIState {
 			let page = raw >> 8;
 
 			if page == 0 {
-				raw = self.char_map[&ch] as u32;
+				raw = (*self.char_map.get(&ch).unwrap_or(&ch)) as u32;
 			}
 			let info = self.font_character_info[raw as usize];
 			let w = if page == 0 {
