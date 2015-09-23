@@ -312,19 +312,7 @@ impl UIState {
 				continue;
 			}
 			let texture = self.character_texture(ch);
-			let mut raw = ch as u32;
-			let page = raw >> 8;
-
-			if page == 0 {
-				raw = (*self.char_map.get(&ch).unwrap_or(&ch)) as u32;
-			}
-			let info = self.font_character_info[raw as usize];
-			let w = if page == 0 {
-				let sw = self.page_width / 16.0;
-				((info.1 - info.0) as f64 / sw) * 16.0
-			} else {
-				(info.1 - info.0) as f64
-			};
+			let w = self.size_of_char(ch);
 
 			let mut dsx = offset + 2.0;
 			let mut dsy = 2.0;

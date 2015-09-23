@@ -21,6 +21,7 @@ pub mod types;
 pub mod resources;
 pub mod render;
 pub mod ui;
+pub mod screen;
 
 extern crate glfw;
 extern crate image;
@@ -53,6 +54,7 @@ fn main() {
     gl::init(&mut window);
 
     window.set_key_polling(true);
+    window.set_scroll_polling(true);
     window.make_current();
     glfw.set_swap_interval(1);
 
@@ -62,7 +64,8 @@ fn main() {
     let mut last_frame = time::now();
     let frame_time = (time::Duration::seconds(1).num_nanoseconds().unwrap() as f64) / 60.0;
 
-    let mut logo = ui::logo::Logo::new(resource_manager.clone(), &mut renderer, &mut ui_container);
+    let mut screen_sys = screen::ScreenSystem::new();
+    screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
 
     while !window.should_close() {
         { resource_manager.write().unwrap().tick(); }
@@ -71,7 +74,7 @@ fn main() {
         last_frame = now;
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
 
-        logo.tick(&mut renderer, &mut ui_container);
+        screen_sys.tick(delta, &mut renderer, &mut ui_container);
 
         let (width, height) = window.get_framebuffer_size();
         ui_container.tick(&mut renderer, delta, width as f64, height as f64);
@@ -80,16 +83,19 @@ fn main() {
         window.swap_buffers();
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event);
+            handle_window_event(&mut window, &mut screen_sys, event);
         }
     }
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
+fn handle_window_event(window: &mut glfw::Window, screen_sys: &mut screen::ScreenSystem, event: glfw::WindowEvent) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
-        }
+        },
+        glfw::WindowEvent::Scroll(x, y) => {
+            screen_sys.on_scroll(x, y);
+        },
         _ => {}
     }
 }

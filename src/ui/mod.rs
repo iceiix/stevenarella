@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use rand;
 use render;
+use format;
 
 const SCALED_WIDTH: f64 = 854.0;
 const SCALED_HEIGHT: f64 = 480.0;
@@ -26,6 +27,7 @@ pub enum Element {
 	Image(Image),
 	Batch(Batch),
 	Text(Text),
+	Formatted(Formatted),
 	None,
 }
 
@@ -119,7 +121,8 @@ impl Element {
 element_impl!(
 	Image,
 	Batch,
-	Text
+	Text,
+	Formatted
 );
 
 pub enum Mode {
@@ -160,10 +163,19 @@ impl Region {
 
 /// Reference to an element currently attached to a
 /// container.
-#[derive(Clone, Copy)]
+#[derive(Copy)]
 pub struct ElementRef<T> {
 	inner: ElementRefInner,
 	ty: PhantomData<T>,
+}
+
+impl <T> Clone for ElementRef<T> {
+	fn clone(&self) -> Self {
+		ElementRef {
+			inner: self.inner,
+			ty: PhantomData,
+		}
+	}
 }
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy)]
@@ -176,6 +188,29 @@ impl <T> Default for ElementRef<T> {
 		ElementRef {
 			inner: ElementRefInner{ index: 0 },
 			ty: PhantomData,
+		}
+	}
+}
+
+/// Allows for easy cleanup
+pub struct Collection {
+	elements: Vec<ElementRefInner>,
+}
+
+impl Collection {
+	pub fn new() -> Collection {
+		Collection {
+			elements: Vec::new(),
+		}
+	}
+
+	pub fn add<T: UIElement>(&mut self, element: ElementRef<T>) {
+		self.elements.push(element.inner);
+	}
+
+	pub fn remove_all(&mut self, container: &mut Container) {
+		for e in &self.elements {
+			container.remove_raw(e);
 		}
 	}
 }
@@ -228,9 +263,13 @@ impl Container {
 	}
 
 	pub fn remove<T: UIElement>(&mut self, r: &ElementRef<T>) {
-		self.elements.remove(&r.inner);
+		self.remove_raw(&r.inner);
+	}
+	
+	fn remove_raw(&mut self, r: &ElementRefInner) {
+		self.elements.remove(&r);
 		self.elements_list.iter()
-			.position(|&e| e.index == r.inner.index)
+			.position(|&e| e.index == r.index)
 			.map(|e| self.elements_list.remove(e))
 			.unwrap();
 	}
@@ -477,6 +516,7 @@ impl UIElement for Image {
 	}
 }
 
+// TODO Getting values out?
 
 pub struct Batch {
 	dirty: bool,
@@ -711,3 +751,6 @@ impl UIElement for Text {
 		}
 	}
 }
+
+// Include instead of mod so we can access private parts
+include!("formatted.rs");

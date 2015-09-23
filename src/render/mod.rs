@@ -30,7 +30,7 @@ const ATLAS_SIZE: usize = 1024;
 
 pub struct Renderer {
 	resource_version: usize,
-	resources: Arc<RwLock<resources::Manager>>,
+	pub resources: Arc<RwLock<resources::Manager>>,
 	textures: Arc<RwLock<TextureManager>>,
 	glsl: glsl::Registry,
 	pub ui: ui::UIState,

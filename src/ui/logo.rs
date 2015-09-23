@@ -162,7 +162,7 @@ impl Logo {
 		text.set_x(self.text_orig_x * scale * self.text_base_scale);
 	}
 
-	pub fn remove(self, ui_container: &mut ui::Container) {
+	pub fn remove(&self, ui_container: &mut ui::Container) {
 		ui_container.remove(&self.shadow);
 		ui_container.remove(&self.layer0);
 		ui_container.remove(&self.text);
