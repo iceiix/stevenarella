@@ -15,26 +15,27 @@
 use serde_json;
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Component {
     Text(TextComponent)
 }
 
 impl Component {
-        pub fn from_value(v: &serde_json::Value) -> Self {
-            let modifier = Modifier::from_value(v);
-            if let Some(val) = v.as_string() {
-                Component::Text(TextComponent{text: val.to_owned(), modifier: modifier})
-            } else if v.find("text").is_some(){
-                Component::Text(TextComponent::from_value(v, modifier))
-            } else {
-                Component::Text(TextComponent{text: "".to_owned(), modifier: modifier})
-            }
+    pub fn from_value(v: &serde_json::Value) -> Self {
+        let mut modifier = Modifier::from_value(v);
+        if let Some(val) = v.as_string() {
+            Component::Text(TextComponent{text: val.to_owned(), modifier: modifier})
+        } else if v.find("text").is_some(){
+            Component::Text(TextComponent::from_value(v, modifier))
+        } else {
+            modifier.color = Some(Color::RGB(255, 0, 0));
+            Component::Text(TextComponent{text: "UNHANDLED".to_owned(), modifier: modifier})
         }
+    }
 
-        pub fn to_value(&self) -> serde_json::Value {
-            unimplemented!()
-        }
+    pub fn to_value(&self) -> serde_json::Value {
+        unimplemented!()
+    }
 }
 
 impl fmt::Display for Component {
@@ -51,7 +52,7 @@ impl Default for Component {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Modifier {
     pub extra: Option<Vec<Component>>,
     pub bold: Option<bool>,
@@ -67,50 +68,59 @@ pub struct Modifier {
 }
 
 impl Modifier {
-        pub fn from_value(v: &serde_json::Value) -> Self {
-            let mut m = Modifier {
-                bold: v.find("bold").map_or(Option::None, |v| v.as_boolean()),
-                italic: v.find("italic").map_or(Option::None, |v| v.as_boolean()),
-                underlined: v.find("underlined").map_or(Option::None, |v| v.as_boolean()),
-                strikethrough: v.find("strikethrough").map_or(Option::None, |v| v.as_boolean()),
-                obfuscated: v.find("obfuscated").map_or(Option::None, |v| v.as_boolean()),
-                color: v.find("color").map_or(Option::None, |v| v.as_string()).map(|v| Color::from_string(&v.to_owned())),
-                extra: Option::None,
-            };
-            if let Some(extra) = v.find("extra") {
-                if let Some(data) = extra.as_array() {
-                    let mut ex = Vec::new();
-                    for e in data {
-                        ex.push(Component::from_value(e));
-                    }
-                    m.extra = Some(ex);
+    pub fn from_value(v: &serde_json::Value) -> Self {
+        let mut m = Modifier {
+            bold: v.find("bold").map_or(Option::None, |v| v.as_boolean()),
+            italic: v.find("italic").map_or(Option::None, |v| v.as_boolean()),
+            underlined: v.find("underlined").map_or(Option::None, |v| v.as_boolean()),
+            strikethrough: v.find("strikethrough").map_or(Option::None, |v| v.as_boolean()),
+            obfuscated: v.find("obfuscated").map_or(Option::None, |v| v.as_boolean()),
+            color: v.find("color").map_or(Option::None, |v| v.as_string()).map(|v| Color::from_string(&v.to_owned())),
+            extra: Option::None,
+        };
+        if let Some(extra) = v.find("extra") {
+            if let Some(data) = extra.as_array() {
+                let mut ex = Vec::new();
+                for e in data {
+                    ex.push(Component::from_value(e));
                 }
+                m.extra = Some(ex);
             }
-            m
         }
+        m
+    }
 
-        pub fn to_value(&self) -> serde_json::Value {
-            unimplemented!()
-        }
+    pub fn to_value(&self) -> serde_json::Value {
+        unimplemented!()
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TextComponent {
     pub text: String,
-    pub modifier:  Modifier,
+    pub modifier: Modifier,
 }
 
 impl TextComponent {
-        pub fn from_value(v: &serde_json::Value, modifier: Modifier) -> Self {
-            TextComponent {
-                text: v.find("text").unwrap().as_string().unwrap_or("").to_owned(),
-                modifier: modifier,
+    pub fn new(val: &str) -> TextComponent {
+        TextComponent {
+            text: val.to_owned(),
+            modifier: Modifier {
+                .. Default::default()
             }
         }
+    }
 
-        pub fn to_value(&self) -> serde_json::Value {
-            unimplemented!()
+    pub fn from_value(v: &serde_json::Value, modifier: Modifier) -> Self {
+        TextComponent {
+            text: v.find("text").unwrap().as_string().unwrap_or("").to_owned(),
+            modifier: modifier,
         }
+    }
+
+    pub fn to_value(&self) -> serde_json::Value {
+        unimplemented!()
+    }
 }
 
 impl fmt::Display for TextComponent {
@@ -125,7 +135,7 @@ impl fmt::Display for TextComponent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Color {
     Black,
     DarkBlue,
@@ -194,7 +204,7 @@ impl Color {
         }
     }
 
-    fn to_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         match *self {
             Color::Black => "black".to_owned(),
             Color::DarkBlue => "dark_blue".to_owned(),
@@ -216,8 +226,7 @@ impl Color {
         }
     }
 
-    #[allow(dead_code)]
-    fn to_rgb(&self) -> (u8, u8, u8) {
+    pub fn to_rgb(&self) -> (u8, u8, u8) {
         match *self {
             Color::Black =>(0, 0, 0),
             Color::DarkBlue =>(0, 0, 170),
