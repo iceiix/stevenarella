@@ -14,6 +14,7 @@
 
 use serde_json;
 use std::fmt;
+use std::mem;
 
 #[derive(Debug, Clone)]
 pub enum Component {
@@ -270,5 +271,87 @@ fn test_color_from() {
     match test {
         Color::DarkBlue => {},
         _ => panic!("Wrong type"),
+    }
+}
+
+const LEGACY_CHAR: char = '§';
+
+pub fn convert_legacy(c: &mut Component) {
+    match c {
+        &mut Component::Text(ref mut txt) => {
+            if let Some(ref mut extra) = txt.modifier.extra.as_mut() {
+                for e in extra.iter_mut() {
+                    convert_legacy(e);
+                }
+            }
+            if txt.text.contains(LEGACY_CHAR) {
+                let mut parts = Vec::new();
+                let mut last = 0;
+                let mut current = TextComponent::new("");
+                {
+                    let mut iter = txt.text.char_indices();
+                    while let Some((i, c)) = iter.next() {
+                        if c == LEGACY_CHAR {
+                            let next = match iter.next() {
+                                Some(val) => val,
+                                None => break,
+                            };
+                            let color_char = next.1.to_lowercase().next().unwrap();
+                            current.text = txt.text[last .. i].to_owned();
+                            last = next.0 + 1;
+
+                            let mut modifier = if (color_char >= 'a' && color_char <= 'f') || (color_char >= '0' && color_char <= '9') {
+                                Default::default()
+                            } else {
+                                current.modifier.clone()
+                            };
+
+                            let new = TextComponent::new("");
+                            parts.push(Component::Text(mem::replace(&mut current, new)));
+
+                            match color_char {
+                                '0' => modifier.color = Some(Color::Black),
+                                '1' => modifier.color = Some(Color::DarkBlue),
+                                '2' => modifier.color = Some(Color::DarkGreen),
+                                '3' => modifier.color = Some(Color::DarkAqua),
+                                '4' => modifier.color = Some(Color::DarkRed),
+                                '5' => modifier.color = Some(Color::DarkPurple),
+                                '6' => modifier.color = Some(Color::Gold),
+                                '7' => modifier.color = Some(Color::Gray),
+                                '8' => modifier.color = Some(Color::DarkGray),
+                                '9' => modifier.color = Some(Color::Blue),
+                                'a' => modifier.color = Some(Color::Green),
+                                'b' => modifier.color = Some(Color::Aqua),
+                                'c' => modifier.color = Some(Color::Red),
+                                'd' => modifier.color = Some(Color::LightPurple),
+                                'e' => modifier.color = Some(Color::Yellow),
+                                'f' => modifier.color = Some(Color::White),
+                                'k' => modifier.obfuscated = Some(true),
+                                'l' => modifier.bold = Some(true),
+                                'm' => modifier.strikethrough = Some(true),
+                                'n' => modifier.underlined = Some(true),
+                                'o' => modifier.italic = Some(true),
+                                'r' => {},
+                                _ => unimplemented!(),
+                            }
+
+                            current.modifier = modifier;
+                        }
+                    }
+                }
+                if last < txt.text.len() {
+                    current.text = txt.text[last..].to_owned();
+                    parts.push(Component::Text(current));
+                }
+
+                let old = mem::replace(&mut txt.modifier.extra, Some(parts));
+                if let Some(old_extra) = old {
+                    if let Some(ref mut extra) = txt.modifier.extra.as_mut() {
+                        extra.extend(old_extra);
+                    }
+                }
+                txt.text = "".to_owned();
+            }
+        },
     }
 }
