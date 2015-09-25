@@ -3,6 +3,7 @@ use std::fs;
 use std::thread;
 use std::sync::mpsc;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use ui;
 use render;
@@ -20,6 +21,8 @@ use rand::{Rng};
 pub struct ServerList {
 	elements: Option<UIElements>,
 	disconnect_reason: Option<Component>,
+
+	needs_reload: Rc<RefCell<bool>>,
 }
 
 struct UIElements {
@@ -72,11 +75,13 @@ impl ServerList {
 		ServerList {
 			elements: None,
 			disconnect_reason: disconnect_reason,
+			needs_reload: Rc::new(RefCell::new(false)),
 		}
 	}
 
 	fn reload_server_list(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
 		let elements = self.elements.as_mut().unwrap();
+		*self.needs_reload.borrow_mut() = false;
 		{
 			let mut tex = renderer.get_textures_ref().write().unwrap();
 			for server in &mut elements.servers {
@@ -133,12 +138,12 @@ impl ServerList {
 				let back = ui_container.get_mut(&server.back);
 				let back_ref = server.back.clone();
 				let address = address.clone();
-				back.add_hover_func(Rc::new(move |over, renderer, ui_container| {
+				back.add_hover_func(Rc::new(move |over, screen_sys, renderer, ui_container| {
 					let back = ui_container.get_mut(&back_ref);
 					back.set_a(if over { 200 } else { 100 });
 				}));
 
-				back.add_click_func(Rc::new(move |renderer, ui_container| {
+				back.add_click_func(Rc::new(move |screen_sys, renderer, ui_container| {
 					println!("Connecting to {}", address);
 				}));
 			}
@@ -255,7 +260,10 @@ impl super::Screen for ServerList {
 		let re = ui_container.add(refresh);
 		txt.set_parent(&re);
 		let tre = ui_container.add(txt);
-		super::button_action(ui_container, re.clone(), Some(tre.clone()), None);
+		let nr = self.needs_reload.clone();
+		super::button_action(ui_container, re.clone(), Some(tre.clone()), Some(Rc::new(move |screen_sys, renderer, ui_container| {
+			*nr.borrow_mut() = true;
+		})));
 		elements.add(re);
 		elements.add(tre);
 
@@ -265,9 +273,7 @@ impl super::Screen for ServerList {
 		let re = ui_container.add(add);
 		txt.set_parent(&re);
 		let tre = ui_container.add(txt);
-		super::button_action(ui_container, re.clone(), Some(tre.clone()), Some(Rc::new(|renderer, ui_container| {
-
-		})));
+		super::button_action(ui_container, re.clone(), Some(tre.clone()), None);
 		elements.add(re);
 		elements.add(tre);
 
@@ -328,7 +334,11 @@ impl super::Screen for ServerList {
 	}
 
 	fn tick(&mut self, delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+		if *self.needs_reload.borrow() {
+			self.reload_server_list(renderer, ui_container);
+		}
 		let elements = self.elements.as_mut().unwrap();
+
 		elements.logo.tick(renderer, ui_container);
 
 		for s in &mut elements.servers {

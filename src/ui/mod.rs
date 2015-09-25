@@ -20,6 +20,7 @@ use std::rc::Rc;
 use rand;
 use render;
 use format;
+use screen;
 
 const SCALED_WIDTH: f64 = 854.0;
 const SCALED_HEIGHT: f64 = 480.0;
@@ -32,10 +33,13 @@ pub enum Element {
 	None,
 }
 
+pub type ClickFunc = Rc<Fn(&mut screen::ScreenSystem, &mut render::Renderer, &mut Container)>;
+pub type HoverFunc = Rc<Fn(bool, &mut screen::ScreenSystem, &mut render::Renderer, &mut Container)>;
+
 macro_rules! element_impl {
 	($($name:ident),+) => (
 impl Element {
-	fn get_click_funcs(&self) -> Vec<Rc<Fn(&mut render::Renderer, &mut Container)>> {
+	fn get_click_funcs(&self) -> Vec<ClickFunc> {
 		match self {
 			$(
 			&Element::$name(ref val) => val.click_funcs.clone(),
@@ -44,7 +48,7 @@ impl Element {
 		}		
 	}
 
-	fn get_hover_funcs(&self) -> Vec<Rc<Fn(bool, &mut render::Renderer, &mut Container)>> {
+	fn get_hover_funcs(&self) -> Vec<HoverFunc> {
 		match self {
 			$(
 			&Element::$name(ref val) => val.hover_funcs.clone(),
@@ -368,7 +372,7 @@ impl Container {
 		map
 	}
 
-	pub fn click_at(&mut self, renderer: &mut render::Renderer, x: f64, y: f64, width: f64, height: f64) {
+	pub fn click_at(&mut self, screen_sys: &mut screen::ScreenSystem, renderer: &mut render::Renderer, x: f64, y: f64, width: f64, height: f64) {
 		let (sw, sh) = match self.mode {
 			Mode::Scaled => (SCALED_WIDTH / width, SCALED_HEIGHT / height),
 			Mode::Unscaled(scale) => (scale, scale),
@@ -389,12 +393,12 @@ impl Container {
 		}
 		if let Some(click) = click {
 			for c in &click {
-				c(renderer, self);
+				c(screen_sys, renderer, self);
 			}
 		}
 	}
 
-	pub fn hover_at(&mut self, renderer: &mut render::Renderer, x: f64, y: f64, width: f64, height: f64) {
+	pub fn hover_at(&mut self, screen_sys: &mut screen::ScreenSystem, renderer: &mut render::Renderer, x: f64, y: f64, width: f64, height: f64) {
 		let (sw, sh) = match self.mode {
 			Mode::Scaled => (SCALED_WIDTH / width, SCALED_HEIGHT / height),
 			Mode::Unscaled(scale) => (scale, scale),
@@ -417,7 +421,7 @@ impl Container {
 			};
 			if call {
 				for f in &hover.1 {
-					f(hover.2, renderer, self);
+					f(hover.2, screen_sys, renderer, self);
 				}
 			}
 		}
@@ -493,8 +497,8 @@ macro_rules! ui_element {
 		y: f64,
 		v_attach: VAttach,
 		h_attach: HAttach,	
-		click_funcs: Vec<Rc<Fn(&mut render::Renderer, &mut Container)>>,
-		hover_funcs: Vec<Rc<Fn(bool, &mut render::Renderer, &mut Container)>>,
+		click_funcs: Vec<ClickFunc>,
+		hover_funcs: Vec<HoverFunc>,
 		hovered: bool,
 		$(
 			$field: $field_ty
@@ -510,11 +514,11 @@ macro_rules! base_impl {
 			self.dirty = true;
 		}
 
-		pub fn add_click_func(&mut self, f: Rc<Fn(&mut render::Renderer, &mut Container)>) {
+		pub fn add_click_func(&mut self, f: ClickFunc) {
 			self.click_funcs.push(f);
 		}
 
-		pub fn add_hover_func(&mut self, f: Rc<Fn(bool, &mut render::Renderer, &mut Container)>) {
+		pub fn add_hover_func(&mut self, f: HoverFunc) {
 			self.hover_funcs.push(f);
 		}
 

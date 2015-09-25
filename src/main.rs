@@ -109,12 +109,12 @@ fn handle_window_event(
             let (width, height) = window.get_size();
             let (xpos, ypos) = window.get_cursor_pos();
             let (fw, fh) = window.get_framebuffer_size();
-            ui_container.click_at(renderer, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)
+            ui_container.click_at(screen_sys, renderer, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)
         },
         glfw::WindowEvent::CursorPos(xpos, ypos) => {
             let (width, height) = window.get_size();
             let (fw, fh) = window.get_framebuffer_size();
-            ui_container.hover_at(renderer, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)            
+            ui_container.hover_at(screen_sys, renderer, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)            
         }
         _ => {}
     }

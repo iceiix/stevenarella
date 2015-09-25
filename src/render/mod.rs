@@ -451,6 +451,13 @@ impl TextureManager {
 				rel_height: 1.0,
 				is_rel: false,
 			};
+			let rect = atlas::Rect {
+				x: rect.x,
+				y: rect.y,
+				width: width,
+				height: height,
+			};
+			self.pending_uploads.push((atlas, rect, data));
 			self.textures.insert(full_name.to_owned(), t.clone());
 			t
 		}

@@ -147,10 +147,10 @@ pub fn new_button_text(renderer: &mut render::Renderer, val: &str, x: f64, y: f6
 
 pub fn button_action(ui_container: &mut ui::Container, 
 	btn: ui::ElementRef<ui::Batch>, txt: Option<ui::ElementRef<ui::Text>>, 
-	click: Option<Rc<Fn(&mut render::Renderer, &mut ui::Container)>>
+	click: Option<ui::ClickFunc>
 ) {
 	let batch = ui_container.get_mut(&btn);
-	batch.add_hover_func(Rc::new(move |over, renderer, ui_container| {
+	batch.add_hover_func(Rc::new(move |over, screen_sys, renderer, ui_container| {
 		let texture = render::Renderer::get_texture(renderer.get_textures_ref(), "gui/widgets").relative(
 			0.0, (if over { 86.0 } else { 66.0 }) / 256.0, 200.0 / 256.0, 20.0 / 256.0
 		);
