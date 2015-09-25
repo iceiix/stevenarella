@@ -24,6 +24,7 @@ use self::byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 pub struct Position(u64);
 
 impl Position {
+    #[allow(dead_code)]
     fn new(x: i32, y: i32, z: i32) -> Position {
         Position(
             (((x as u64) & 0x3FFFFFF) << 38) |
