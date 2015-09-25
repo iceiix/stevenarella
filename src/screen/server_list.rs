@@ -83,6 +83,7 @@ impl ServerList {
 		let elements = self.elements.as_mut().unwrap();
 		*self.needs_reload.borrow_mut() = false;
 		{
+			// Clean up previous list entries and icons.
 			let mut tex = renderer.get_textures_ref().write().unwrap();
 			for server in &mut elements.servers {
 				server.collection.remove_all(ui_container);
@@ -101,7 +102,9 @@ impl ServerList {
 		let servers = servers_info.find("servers").unwrap().as_array().unwrap();
 		let mut offset = 0.0;
 
+		// Default icon whilst we ping the servers or if the server doesn't provide one
 		let default_icon = render::Renderer::get_texture(renderer.get_textures_ref(), "misc/unknown_server");
+		// General gui icons
 		let icons = render::Renderer::get_texture(renderer.get_textures_ref(), "gui/icons");
 
 		for svr in servers {
@@ -110,6 +113,7 @@ impl ServerList {
 
 			let solid = render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid");
 
+			// Everything is attached to this
 			let mut back = ui::Image::new(solid, 0.0, offset * 100.0, 700.0, 100.0, 0.0, 0.0, 1.0, 1.0, 0, 0, 0);
 			back.set_a(100);
 			back.set_v_attach(ui::VAttach::Middle);
@@ -134,48 +138,55 @@ impl ServerList {
 			};
 			server.collection.add(server.back.clone());
 			server.update_position();
+			// Make whole entry interactable
 			{
 				let back = ui_container.get_mut(&server.back);
 				let back_ref = server.back.clone();
 				let address = address.clone();
-				back.add_hover_func(Rc::new(move |over, screen_sys, renderer, ui_container| {
+				back.add_hover_func(Rc::new(move |over, _, _, ui_container| {
 					let back = ui_container.get_mut(&back_ref);
 					back.set_a(if over { 200 } else { 100 });
 				}));
 
-				back.add_click_func(Rc::new(move |screen_sys, renderer, ui_container| {
+				back.add_click_func(Rc::new(move |_, _, _| {
 					println!("Connecting to {}", address);
 				}));
 			}
 
+			// Server name
 			let mut text = ui::Text::new(renderer, &name, 100.0, 5.0, 255, 255, 255);
 			text.set_parent(&server.back);
 			server.collection.add(ui_container.add(text));
 
+			// Server icon
 			let mut icon = ui::Image::new(default_icon.clone(), 5.0, 5.0, 90.0, 90.0, 0.0, 0.0, 1.0, 1.0, 255, 255, 255);
 			icon.set_parent(&server.back);
 			server.icon = server.collection.add(ui_container.add(icon));
 
+			// Ping indicator
 			let mut ping = ui::Image::new(icons.clone(), 5.0, 5.0, 20.0, 16.0, 0.0, 56.0/256.0, 10.0/256.0, 8.0/256.0, 255, 255, 255);
 			ping.set_h_attach(ui::HAttach::Right);
 			ping.set_parent(&server.back);
 			server.ping = server.collection.add(ui_container.add(ping));
 
+			// Player count
 			let mut players = ui::Text::new(renderer, "???", 30.0, 5.0, 255, 255, 255);
 			players.set_h_attach(ui::HAttach::Right);
 			players.set_parent(&server.back);
 			server.players = server.collection.add(ui_container.add(players));
 
+			// Server's message of the day
 			let mut motd = ui::Formatted::with_width_limit(renderer, Component::Text(TextComponent::new("Connecting...")), 100.0, 23.0, 700.0 - (90.0 + 10.0 + 5.0));
 			motd.set_parent(&server.back);
 			server.motd = server.collection.add(ui_container.add(motd));
 
+			// Version information
 			let mut version = ui::Formatted::with_width_limit(renderer, Component::Text(TextComponent::new("")), 100.0, 5.0, 700.0 - (90.0 + 10.0 + 5.0));
 			version.set_v_attach(ui::VAttach::Bottom);
 			version.set_parent(&server.back);
 			server.version = server.collection.add(ui_container.add(version));
 
-
+			// Delete entry button
 			let (mut del, mut txt) = super::new_button_text(renderer, "X", 0.0, 0.0, 25.0, 25.0);
 			del.set_v_attach(ui::VAttach::Bottom);
 			del.set_h_attach(ui::HAttach::Right);
@@ -187,6 +198,7 @@ impl ServerList {
 			server.collection.add(re);
 			server.collection.add(tre);
 
+			// Edit entry button
 			let (mut edit, mut txt) = super::new_button_text(renderer, "E", 25.0, 0.0, 25.0, 25.0);
 			edit.set_v_attach(ui::VAttach::Bottom);
 			edit.set_h_attach(ui::HAttach::Right);
@@ -201,6 +213,7 @@ impl ServerList {
 			elements.servers.push(server);
 			offset += 1.0;
 
+			// Don't block the main thread whilst pinging the server
 			thread::spawn(move || {
 				match protocol::Conn::new(&address).and_then(|conn| conn.do_status()) {
 					Ok(res) => {
@@ -247,13 +260,11 @@ impl ServerList {
 }
 
 impl super::Screen for ServerList {
-	fn init(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {}
-	fn deinit(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {}
-
 	fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
 		let logo = ui::logo::Logo::new(renderer.resources.clone(), renderer, ui_container);
 		let mut elements = ui::Collection::new();
 
+		// Refresh the server list
 		let (mut refresh, mut txt) = super::new_button_text(renderer, "Refresh", 300.0, -50.0-15.0, 100.0, 30.0);
 		refresh.set_v_attach(ui::VAttach::Middle);
 		refresh.set_h_attach(ui::HAttach::Center);
@@ -261,12 +272,13 @@ impl super::Screen for ServerList {
 		txt.set_parent(&re);
 		let tre = ui_container.add(txt);
 		let nr = self.needs_reload.clone();
-		super::button_action(ui_container, re.clone(), Some(tre.clone()), Some(Rc::new(move |screen_sys, renderer, ui_container| {
+		super::button_action(ui_container, re.clone(), Some(tre.clone()), Some(Rc::new(move |_, _, _| {
 			*nr.borrow_mut() = true;
 		})));
 		elements.add(re);
 		elements.add(tre);
 
+		// Add a new server to the list
 		let (mut add, mut txt) = super::new_button_text(renderer, "Add", 200.0, -50.0-15.0, 100.0, 30.0);
 		add.set_v_attach(ui::VAttach::Middle);
 		add.set_h_attach(ui::HAttach::Center);
@@ -277,6 +289,7 @@ impl super::Screen for ServerList {
 		elements.add(re);
 		elements.add(tre);
 
+		// Options menu
 		let mut options = super::new_button(renderer, 5.0, 25.0, 40.0, 40.0);
 		options.set_v_attach(ui::VAttach::Bottom);
 		options.set_h_attach(ui::HAttach::Right);
@@ -288,12 +301,14 @@ impl super::Screen for ServerList {
 		super::button_action(ui_container, re.clone(), None, None);
 		elements.add(re);
 		elements.add(ui_container.add(cog));
-
+		
+		// Disclaimer
 		let mut warn = ui::Text::new(renderer, "Not affiliated with Mojang/Minecraft", 5.0, 5.0, 255, 200, 200);
 		warn.set_v_attach(ui::VAttach::Bottom);
 		warn.set_h_attach(ui::HAttach::Right);
 		elements.add(ui_container.add(warn));
 
+		// If we are kicked from a server display the reason
 		if let Some(ref disconnect_reason) = self.disconnect_reason {
 			let mut dis_msg = ui::Text::new(renderer, "Disconnected", 0.0, 32.0, 255, 0, 0);
 			dis_msg.set_h_attach(ui::HAttach::Center);
@@ -320,7 +335,8 @@ impl super::Screen for ServerList {
 		});
 		self.reload_server_list(renderer, ui_container);
 	}
-	fn on_deactive(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+	fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+		// Clean up
 		{
 			let elements = self.elements.as_mut().unwrap();
 			elements.logo.remove(ui_container);
@@ -342,6 +358,7 @@ impl super::Screen for ServerList {
 		elements.logo.tick(renderer, ui_container);
 
 		for s in &mut elements.servers {
+			// Animate the entries
 			{
 				let back = ui_container.get_mut(&s.back);
 				let dy = s.y - back.get_y();
@@ -353,6 +370,8 @@ impl super::Screen for ServerList {
 				}
 			}
 
+			// Keep checking to see if the server has finished being 
+			// pinged
 			if !s.done_ping {
 				match s.recv.try_recv() {
 					Ok(res) => {
@@ -363,6 +382,7 @@ impl super::Screen for ServerList {
 						}
 						{
 							let ping = ui_container.get_mut(&s.ping);
+							// Selects the icon for the given ping range
 							let y = match res.ping.num_milliseconds() {
 								_x @ 0 ... 75 => 16.0 / 256.0,
 								_x @ 76 ... 150 => 24.0 / 256.0,
@@ -418,7 +438,7 @@ impl super::Screen for ServerList {
 		}
 	}
 
-	fn on_scroll(&mut self, x: f64, y: f64) {
+	fn on_scroll(&mut self, _: f64, y: f64) {
 		let elements = self.elements.as_mut().unwrap();
 		if elements.servers.is_empty() {
 			return;

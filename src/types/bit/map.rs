@@ -60,6 +60,14 @@ impl Map {
         map
     }
 
+    pub fn resize(self, size: usize) -> Map {
+        let mut n = Map::new(self.length, size);
+        for i in 0 .. self.length {
+            n.set(i, self.get(i));
+        }
+        n
+    }
+
     pub fn set(&mut self, i: usize, val: usize) {
         let i = i * self.bit_size;
         let pos = i / 64;
@@ -74,7 +82,7 @@ impl Map {
         }
     }
 
-    pub fn get(&mut self, i: usize) -> usize {
+    pub fn get(&self, i: usize) -> usize {
         let i = i * self.bit_size;
         let pos = i / 64;
         let mask = (1 << self.bit_size) - 1;

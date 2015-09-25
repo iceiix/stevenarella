@@ -590,9 +590,9 @@ impl Image {
 		})
 	}
 
-	fn update(&mut self, renderer: &mut render::Renderer) {}
+	fn update(&mut self, _: &mut render::Renderer) {}
 
-	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
+	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, _: f64) -> &Vec<u8> {
 		if self.dirty {
 			self.dirty = false;
 			self.texture = renderer.check_texture(self.texture.clone());
@@ -681,7 +681,7 @@ impl Batch {
 		})
 	}
 
-	fn update(&mut self, renderer: &mut render::Renderer) {}
+	fn update(&mut self, _: &mut render::Renderer) {}
 
 	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
 		if self.dirty {
@@ -788,7 +788,7 @@ impl Text {
 		self.width = renderer.ui.size_of_string(&self.val);
 	}
 
-	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
+	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, _: f64) -> &Vec<u8> {
 		if self.dirty {
 			self.dirty = false;
 			let sx = r.w / self.width;

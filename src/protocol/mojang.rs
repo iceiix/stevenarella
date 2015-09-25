@@ -38,7 +38,7 @@ impl Profile {
         if negative {
             twos_compliment(&mut hash);
         }
-        let hash_str = hash.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().connect("");
+        let hash_str = hash.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join("");
         let hash_val = hash_str.trim_matches('0');
         let hash_str = if negative {
             "-".to_owned() + &hash_val[..]

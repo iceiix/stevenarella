@@ -7,10 +7,11 @@ use std::rc::Rc;
 use render;
 use ui;
 
+#[allow(unused_variables)]
 pub trait Screen {
 	// Called once
-	fn init(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container);
-	fn deinit(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container);
+	fn init(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {}
+	fn deinit(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {}
 
 	// May be called multiple times
 	fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container);
@@ -150,7 +151,7 @@ pub fn button_action(ui_container: &mut ui::Container,
 	click: Option<ui::ClickFunc>
 ) {
 	let batch = ui_container.get_mut(&btn);
-	batch.add_hover_func(Rc::new(move |over, screen_sys, renderer, ui_container| {
+	batch.add_hover_func(Rc::new(move |over, _, renderer, ui_container| {
 		let texture = render::Renderer::get_texture(renderer.get_textures_ref(), "gui/widgets").relative(
 			0.0, (if over { 86.0 } else { 66.0 }) / 256.0, 200.0 / 256.0, 20.0 / 256.0
 		);

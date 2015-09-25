@@ -13,8 +13,6 @@
 // limitations under the License.
 
 pub struct Atlas {
-	width: usize,
-	height: usize,	
 	free_space: Vec<Rect>,
 }
 
@@ -29,8 +27,6 @@ pub struct Rect {
 impl Atlas {
 	pub fn new(width: usize, height: usize) -> Atlas {
 		let mut a = Atlas {
-			width: width,
-			height: height,
 			free_space: Vec::new(),
 		};
 		a.free_space.push(Rect{

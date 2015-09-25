@@ -41,10 +41,6 @@ pub struct UIState {
 	max_index: usize,
 
 	shader: gl::Program,
-	s_position: gl::Attribute,
-	s_texture_info: gl::Attribute,
-	s_texture_offset: gl::Attribute,
-	s_color: gl::Attribute,
 	s_texture: gl::Uniform,
 	s_screensize: gl::Uniform,
 
@@ -113,10 +109,6 @@ impl UIState {
 			max_index: 0,
 
 			shader: shader,
-			s_position: s_position,
-			s_texture_info: s_texture_info,
-			s_texture_offset: s_texture_offset,
-			s_color: s_color,
 			s_texture: s_texture,
 			s_screensize: s_screensize,
 

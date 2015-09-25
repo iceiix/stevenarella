@@ -32,7 +32,6 @@ pub struct Renderer {
 	resource_version: usize,
 	pub resources: Arc<RwLock<resources::Manager>>,
 	textures: Arc<RwLock<TextureManager>>,
-	glsl: glsl::Registry,
 	pub ui: ui::UIState,
 
 	gl_texture: gl::Texture,
@@ -62,7 +61,6 @@ impl Renderer {
 		Renderer {
 			resource_version: version,
 			textures: textures,
-			glsl: greg,
 			ui: ui,
 			resources: res,
 			gl_texture: tex,
@@ -476,6 +474,7 @@ impl TextureManager {
 	}
 }
 
+#[allow(dead_code)]
 struct AnimatedTexture {
 	frames: Vec<AnimationFrame>,
 	data: Vec<u8>,
