@@ -32,6 +32,7 @@ extern crate steven_openssl as openssl;
 extern crate hyper;
 extern crate flate2;
 extern crate rand;
+extern crate rustc_serialize;
 
 use std::sync::{Arc, RwLock};
 use glfw::{Action, Context, Key};
@@ -55,6 +56,8 @@ fn main() {
 
     window.set_key_polling(true);
     window.set_scroll_polling(true);
+    window.set_mouse_button_polling(true);
+    window.set_cursor_pos_polling(true);
     window.make_current();
     glfw.set_swap_interval(1);
 
@@ -83,12 +86,18 @@ fn main() {
         window.swap_buffers();
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, &mut screen_sys, event);
+            handle_window_event(&mut window, &mut renderer, &mut screen_sys, &mut ui_container, event);
         }
     }
 }
 
-fn handle_window_event(window: &mut glfw::Window, screen_sys: &mut screen::ScreenSystem, event: glfw::WindowEvent) {
+fn handle_window_event(
+    window: &mut glfw::Window,
+    renderer: &mut render::Renderer,
+    screen_sys: &mut screen::ScreenSystem, 
+    ui_container: &mut ui::Container, 
+    event: glfw::WindowEvent
+) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
@@ -96,6 +105,17 @@ fn handle_window_event(window: &mut glfw::Window, screen_sys: &mut screen::Scree
         glfw::WindowEvent::Scroll(x, y) => {
             screen_sys.on_scroll(x, y);
         },
+        glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, Action::Press, _) => {
+            let (width, height) = window.get_size();
+            let (xpos, ypos) = window.get_cursor_pos();
+            let (fw, fh) = window.get_framebuffer_size();
+            ui_container.click_at(renderer, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)
+        },
+        glfw::WindowEvent::CursorPos(xpos, ypos) => {
+            let (width, height) = window.get_size();
+            let (fw, fh) = window.get_framebuffer_size();
+            ui_container.hover_at(renderer, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)            
+        }
         _ => {}
     }
 }

@@ -30,6 +30,9 @@ use std::convert;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2;
+use time;
+
+pub const SUPPORTED_PROTOCOL: i32 = 73;
 
 /// Helper macro for defining packets
 #[macro_export]
@@ -130,7 +133,7 @@ macro_rules! state_packets {
 
 pub mod packet;
 
-pub trait Serializable {
+pub trait Serializable: Sized {
     fn read_from(buf: &mut io::Read) -> Result<Self, io::Error>;
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error>;
 }
@@ -651,11 +654,14 @@ pub struct Conn {
 impl Conn {
     pub fn new(target: &str) -> Result<Conn, Error>{
         // TODO SRV record support
-        let stream = match TcpStream::connect(target) {
-            Ok(val) => val,
-            Err(err) => return Result::Err(Error::IOError(err))
+        let mut parts = target.split(":").collect::<Vec<&str>>();
+        let address = if parts.len() == 1 {
+            parts.push("25565");
+            format!("{}:25565", parts[0])
+        } else {
+            format!("{}:{}", parts[0], parts[1])
         };
-        let parts = target.split(":").collect::<Vec<&str>>();
+        let stream = try!(TcpStream::connect(&*address));
         Result::Ok(Conn {
             stream: stream,
             host: parts[0].to_owned(),
@@ -748,6 +754,91 @@ impl Conn {
             self.compression_read = Some(ZlibDecoder::new(io::Cursor::new(Vec::new())));
         }
     }
+
+    pub fn do_status(mut self) -> Result<(Status, time::Duration), Error>{
+        use serde_json::Value;
+        use self::packet::status::serverbound::*;
+        use self::packet::handshake::serverbound::*;
+        use self::packet::Packet;
+        let host = self.host.clone();
+        let port = self.port;
+        try!(self.write_packet(Handshake{
+            protocol_version: VarInt(SUPPORTED_PROTOCOL),
+            host: host,
+            port: port,
+            next: VarInt(1),
+        }));
+        self.state = State::Status;
+        
+        try!(self.write_packet(StatusRequest{empty: ()}));
+
+        let status = if let Packet::StatusResponse(res) = try!(self.read_packet()) {
+            res.status
+        } else {
+            return Err(Error::Err("Wrong packet".to_owned()));
+        };
+
+        let start = time::now();
+        try!(self.write_packet(StatusPing{ping: 42}));
+
+        if let Packet::StatusPong(_) = try!(self.read_packet()) {
+        } else {
+            return Err(Error::Err("Wrong packet".to_owned()));
+        };
+
+        let ping = time::now() - start;
+
+        let val: Value = match serde_json::from_str(&status) {
+            Ok(val) => val,
+            Err(_) => return Err(Error::Err("Json parse error".to_owned())),
+        };
+
+        let invalid_status = || Error::Err("Invalid status".to_owned());
+
+        let version = try!(val.find("version").ok_or(invalid_status()));
+        let players = try!(val.find("players").ok_or(invalid_status()));
+
+        Ok((Status {
+            version: StatusVersion {
+                name: try!(version.find("name").and_then(Value::as_string).ok_or(invalid_status())).to_owned(),
+                protocol: try!(version.find("protocol").and_then(Value::as_i64).ok_or(invalid_status())) as i32,
+            },
+            players: StatusPlayers {
+                max: try!(players.find("max").and_then(Value::as_i64).ok_or(invalid_status())) as i32,
+                online: try!(players.find("online").and_then(Value::as_i64).ok_or(invalid_status())) as i32,
+                sample: Vec::new(), // TODO
+            },
+            description: format::Component::from_value(try!(val.find("description").ok_or(invalid_status()))),
+            favicon: val.find("favicon").and_then(Value::as_string).map(|v| v.to_owned()),
+        }, ping))
+    }
+}
+
+#[derive(Debug)]
+pub struct Status {
+    pub version: StatusVersion,
+    pub players: StatusPlayers,
+    pub description: format::Component,
+    pub favicon: Option<String>,
+}
+
+#[derive(Debug)]
+pub struct StatusVersion {
+    pub name: String,
+    pub protocol: i32,
+}
+
+#[derive(Debug)]
+pub struct StatusPlayers {
+    pub max: i32,
+    pub online: i32,
+    pub sample: Vec<StatusPlayer>,
+}
+
+#[derive(Debug)]
+pub struct StatusPlayer {
+    name: String,
+    id: String,
 }
 
 impl Read for Conn {
@@ -805,6 +896,7 @@ pub trait PacketType {
     fn write(self, buf: &mut io::Write) -> Result<(), io::Error>;
 }
 
+// REMOVE ME
 // #[test]
 pub fn test() {
     let mut c = Conn::new("localhost:25565").unwrap();

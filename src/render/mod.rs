@@ -193,6 +193,9 @@ pub struct TextureManager {
 
 	animated_textures: Vec<AnimatedTexture>,
 	pending_uploads: Vec<(i32, atlas::Rect, Vec<u8>)>,
+
+	dynamic_textures: HashMap<String, (i32, atlas::Rect)>,
+	free_dynamics: Vec<(i32, atlas::Rect)>,
 }
 
 impl TextureManager {
@@ -204,6 +207,9 @@ impl TextureManager {
 			atlases: Vec::new(),
 			animated_textures: Vec::new(),
 			pending_uploads: Vec::new(),
+
+			dynamic_textures: HashMap::new(),
+			free_dynamics: Vec::new(),
 		};
 		tm.add_defaults();
 		tm
@@ -222,6 +228,8 @@ impl TextureManager {
 	}
 
 	fn update_textures(&mut self, version: usize) {
+		self.dynamic_textures.clear();
+		self.free_dynamics.clear();
 		self.pending_uploads.clear();
 		self.atlases.clear();
 		self.animated_textures.clear();
@@ -390,6 +398,74 @@ impl TextureManager {
 		};
 		self.textures.insert(full_name.to_owned(), t.clone());
 		t
+	}
+
+	pub fn put_dynamic(&mut self, plugin: &str, name: &str, img: image::DynamicImage) -> Texture {
+		let (width, height) = img.dimensions();
+		let (width, height) = (width as usize, height as usize);
+		let mut rect = None;
+		let mut rect_pos = 0;
+		for (i, r) in self.free_dynamics.iter().enumerate() {
+			let (atlas, r) = *r;
+			if r.width == width && r.height == height {
+				rect_pos = i;
+				rect = Some((atlas, r));
+				break;
+			} else if r.width >= width && r.height >= height {
+				rect_pos = i;
+				rect = Some((atlas, r));
+			}
+		}
+		let data = img.to_rgba().into_vec();
+		let mut new = false;
+		let (atlas, rect) = if let Some(r) = rect {
+			self.free_dynamics.remove(rect_pos);
+			r
+		} else {
+			new = true;
+			self.find_free(width as usize, height as usize)			
+		};
+
+		let mut full_name = String::new();
+		if plugin != "minecraft" {
+			full_name.push_str(plugin);
+			full_name.push_str(":");
+		}
+		full_name.push_str(name);
+
+		self.dynamic_textures.insert(full_name.clone(), (atlas, rect));
+		if new {
+			self.put_texture(plugin, name, width as u32, height as u32, data)
+		} else {
+			let t = Texture { 
+				name: full_name.clone(), 
+				version: self.version, 
+				atlas: atlas,
+				x: rect.x, 
+				y: rect.y, 
+				width: rect.width, 
+				height: rect.height,
+				rel_x: 0.0, 
+				rel_y: 0.0,
+				rel_width: 1.0,
+				rel_height: 1.0,
+				is_rel: false,
+			};
+			self.textures.insert(full_name.to_owned(), t.clone());
+			t
+		}
+	}
+
+	pub fn remove_dynamic(&mut self, plugin: &str, name: &str) {
+		let mut full_name = String::new();
+		if plugin != "minecraft" {
+			full_name.push_str(plugin);
+			full_name.push_str(":");
+		}
+		full_name.push_str(name);
+
+		let desc = self.dynamic_textures.remove(&full_name).unwrap();
+		self.free_dynamics.push(desc);
 	}
 }
 

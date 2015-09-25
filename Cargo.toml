@@ -5,7 +5,6 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 build = "build.rs"
 
 [dependencies]
-rustc-serialize = "0.3"
 glfw = "0.1.0"
 byteorder = "0.3.13"
 hyper = "0.6.13"
@@ -16,6 +15,7 @@ zip = "0.1.12"
 image = "0.3.12"
 time = "0.1.32"
 rand = "0.3.11"
+rustc-serialize = "0.3"
 
 [dependencies.steven_gl]
 path = "./gl"

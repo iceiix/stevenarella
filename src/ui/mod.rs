@@ -16,6 +16,7 @@ pub mod logo;
 
 use std::collections::HashMap;
 use std::marker::PhantomData;
+use std::rc::Rc;
 use rand;
 use render;
 use format;
@@ -34,6 +35,37 @@ pub enum Element {
 macro_rules! element_impl {
 	($($name:ident),+) => (
 impl Element {
+	fn get_click_funcs(&self) -> Vec<Rc<Fn(&mut render::Renderer, &mut Container)>> {
+		match self {
+			$(
+			&Element::$name(ref val) => val.click_funcs.clone(),
+			)+
+			_ => unimplemented!(),
+		}		
+	}
+
+	fn get_hover_funcs(&self) -> Vec<Rc<Fn(bool, &mut render::Renderer, &mut Container)>> {
+		match self {
+			$(
+			&Element::$name(ref val) => val.hover_funcs.clone(),
+			)+
+			_ => unimplemented!(),
+		}		
+	}
+
+	fn should_call_hover(&mut self, new: bool) -> bool{
+		match self {
+			$(
+			&mut Element::$name(ref mut val) => {
+				let ret = val.hovered != new;
+				val.hovered = new;
+				ret
+			},
+			)+
+			_ => unimplemented!(),
+		}
+	}
+
 	fn should_draw(&self) -> bool {
 		match self {
 			$(
@@ -204,8 +236,9 @@ impl Collection {
 		}
 	}
 
-	pub fn add<T: UIElement>(&mut self, element: ElementRef<T>) {
+	pub fn add<T: UIElement>(&mut self, element: ElementRef<T>) -> ElementRef<T> {
 		self.elements.push(element.inner);
+		element
 	}
 
 	pub fn remove_all(&mut self, container: &mut Container) {
@@ -296,10 +329,10 @@ impl Container {
 			self.version = renderer.ui.version;
 		}
 
-		// Borrow rules seem to prevent us from doing this in the first pass
+		// Borrow rules seems to prevent us from doing this in the first pass
 		// so we split it.
 		let regions = self.collect_elements(sw, sh);
-		for re in &mut self.elements_list {
+		for re in &self.elements_list {
 			let mut e = self.elements.get_mut(re).unwrap();
 			if !e.should_draw() {
 				continue;
@@ -333,6 +366,61 @@ impl Container {
 			}
 		}		
 		map
+	}
+
+	pub fn click_at(&mut self, renderer: &mut render::Renderer, x: f64, y: f64, width: f64, height: f64) {
+		let (sw, sh) = match self.mode {
+			Mode::Scaled => (SCALED_WIDTH / width, SCALED_HEIGHT / height),
+			Mode::Unscaled(scale) => (scale, scale),
+		};
+		let mx = (x / width) * SCALED_WIDTH;
+		let my = (y / height) * SCALED_HEIGHT;
+		let mut click = None;
+		for re in self.elements_list.iter().rev() {			
+			let e = self.elements.get(re).unwrap();
+			let funcs =  e.get_click_funcs();
+			if !funcs.is_empty() {
+				let r = self.get_draw_region(e, sw, sh);
+				if mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h {
+					click = Some(funcs);
+					break;
+				}
+			}
+		}
+		if let Some(click) = click {
+			for c in &click {
+				c(renderer, self);
+			}
+		}
+	}
+
+	pub fn hover_at(&mut self, renderer: &mut render::Renderer, x: f64, y: f64, width: f64, height: f64) {
+		let (sw, sh) = match self.mode {
+			Mode::Scaled => (SCALED_WIDTH / width, SCALED_HEIGHT / height),
+			Mode::Unscaled(scale) => (scale, scale),
+		};
+		let mx = (x / width) * SCALED_WIDTH;
+		let my = (y / height) * SCALED_HEIGHT;
+		let mut hovers = Vec::new();
+		for re in self.elements_list.iter().rev() {			
+			let e = self.elements.get(re).unwrap();
+			let funcs =  e.get_hover_funcs();
+			if !funcs.is_empty() {
+				let r = self.get_draw_region(e, sw, sh);
+				hovers.push((*re, funcs, mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h));
+			}
+		}
+		for hover in &hovers {
+			let call = {
+				let e = self.elements.get_mut(&hover.0).unwrap();
+				e.should_call_hover(hover.2)
+			};
+			if call {
+				for f in &hover.1 {
+					f(hover.2, renderer, self);
+				}
+			}
+		}
 	}
 
 	fn get_draw_region(&self, e: &Element, sw: f64, sh: f64) -> Region {		
@@ -387,20 +475,82 @@ macro_rules! lazy_field {
 	)
 }
 
-pub struct Image {
-	dirty: bool,
-	data: Vec<u8>,
+macro_rules! ui_element {
+	(
+	$name:ident {
+		$(
+			$field:ident : $field_ty:ty
+		),+
+	}
+	) => (
+	pub struct $name {		
+		dirty: bool,
+		data: Vec<u8>,		
+		parent: Option<ElementRefInner>,
+		should_draw: bool,
+		layer: isize,
+		x: f64,
+		y: f64,
+		v_attach: VAttach,
+		h_attach: HAttach,	
+		click_funcs: Vec<Rc<Fn(&mut render::Renderer, &mut Container)>>,
+		hover_funcs: Vec<Rc<Fn(bool, &mut render::Renderer, &mut Container)>>,
+		hovered: bool,
+		$(
+			$field: $field_ty
+		),+
+	}
+	)
+}
 
-	parent: Option<ElementRefInner>,
-	should_draw: bool,
+macro_rules! base_impl {
+	() => (
+		pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
+			self.parent = Some(other.inner);
+			self.dirty = true;
+		}
+
+		pub fn add_click_func(&mut self, f: Rc<Fn(&mut render::Renderer, &mut Container)>) {
+			self.click_funcs.push(f);
+		}
+
+		pub fn add_hover_func(&mut self, f: Rc<Fn(bool, &mut render::Renderer, &mut Container)>) {
+			self.hover_funcs.push(f);
+		}
+
+		lazy_field!(layer, isize, get_layer, set_layer);
+		lazy_field!(x, f64, get_x, set_x);
+		lazy_field!(y, f64, get_y, set_y);
+		lazy_field!(v_attach, VAttach, get_v_attach, set_v_attach);
+		lazy_field!(h_attach, HAttach, get_h_attach, set_h_attach);
+	)
+}
+
+macro_rules! ui_create {
+	($name:ident {
+		$($field:ident: $e:expr),+
+	}) => (
+		$name {
+			dirty: true,
+			data: Vec::new(),
+
+			parent: None,
+			should_draw: true,
+			layer: 0,
+			v_attach: VAttach::Top,
+			h_attach: HAttach::Left,
+			click_funcs: Vec::new(),
+			hover_funcs: Vec::new(),
+			hovered: false,
+			$($field: $e),+
+		}
+	)
+}
+
+ui_element!(Image {
 	texture: render::Texture,
-	layer: isize,
-	x: f64,
-	y: f64,
 	width: f64,
 	height: f64,
-	v_attach: VAttach,
-	h_attach: HAttach,
 
 	t_x: f64,
 	t_y: f64,
@@ -410,25 +560,19 @@ pub struct Image {
 	r: u8,
 	g: u8,
 	b: u8,
-	a: u8,
-}
+	a: u8
+});
 
 impl Image {
-	pub fn new(texture: render::Texture, x: f64, y: f64, w: f64, h: f64, t_x: f64, t_y: f64, t_width: f64, t_height: f64, r: u8, g: u8, b: u8) -> Image {
-		Image {
-			dirty: true,
-			data: Vec::new(),
+	base_impl!();
 
-			parent: None,
-			should_draw: true,
+	pub fn new(texture: render::Texture, x: f64, y: f64, w: f64, h: f64, t_x: f64, t_y: f64, t_width: f64, t_height: f64, r: u8, g: u8, b: u8) -> Image {
+		ui_create!(Image {
 			texture: texture,
-			layer: 0,
 			x: x,
 			y: y,
 			width: w,
 			height: h,
-			v_attach: VAttach::Top,
-			h_attach: HAttach::Left,
 
 			t_x: t_x,
 			t_y: t_y,
@@ -438,8 +582,8 @@ impl Image {
 			r: r,
 			g: g,
 			b: b,
-			a: 255,
-		}
+			a: 255
+		})
 	}
 
 	fn update(&mut self, renderer: &mut render::Renderer) {}
@@ -463,11 +607,6 @@ impl Image {
 		(self.width, self.height)
 	}
 
-	pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
-		self.parent = Some(other.inner);
-		self.dirty = true;
-	}
-
 	pub fn get_texture(&self) -> render::Texture {
 		self.texture.clone()
 	}
@@ -477,13 +616,8 @@ impl Image {
 		self.dirty = true;
 	}
 
-	lazy_field!(layer, isize, get_layer, set_layer);
-	lazy_field!(x, f64, get_x, set_x);
-	lazy_field!(y, f64, get_y, set_y);
 	lazy_field!(width, f64, get_width, set_width);
 	lazy_field!(height, f64, get_height, set_height);
-	lazy_field!(v_attach, VAttach, get_v_attach, set_v_attach);
-	lazy_field!(h_attach, HAttach, get_h_attach, set_h_attach);
 
 	lazy_field!(t_x, f64, get_t_x, set_t_x);
 	lazy_field!(t_y, f64, get_t_y, set_t_y);
@@ -516,48 +650,34 @@ impl UIElement for Image {
 	}
 }
 
-// TODO Getting values out?
-
-pub struct Batch {
-	dirty: bool,
-	data: Vec<u8>,
-
-	parent: Option<ElementRefInner>,
-	should_draw: bool,
-	layer: isize,
-	x: f64,
-	y: f64,
-	width: f64,
-	height: f64,
-	v_attach: VAttach,
-	h_attach: HAttach,
-
-	elements: Vec<Element>,
+#[derive(Clone, Copy)]
+pub struct BatchRef<T: UIElement> {
+	index: usize,
+	ty: PhantomData<T>,
 }
 
-impl Batch {
-	pub fn new(x: f64, y: f64, w: f64, h: f64) -> Batch {
-		Batch {
-			dirty: true,
-			data: Vec::new(),
+ui_element!(Batch {
+	width: f64,
+	height: f64,
 
-			parent: None,
-			should_draw: true,
-			layer: 0,
+	elements: Vec<Element>
+});
+
+impl Batch {
+	base_impl!();
+
+	pub fn new(x: f64, y: f64, w: f64, h: f64) -> Batch {
+		ui_create!(Batch {
 			x: x,
 			y: y,
 			width: w,
 			height: h,
-			v_attach: VAttach::Top,
-			h_attach: HAttach::Left,
 
-			elements: Vec::new(),
-		}
+			elements: Vec::new()
+		})
 	}
 
-	fn update(&mut self, renderer: &mut render::Renderer) {
-
-	}
+	fn update(&mut self, renderer: &mut render::Renderer) {}
 
 	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
 		if self.dirty {
@@ -580,23 +700,31 @@ impl Batch {
 		(self.width, self.height)
 	}
 
-	pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
-		self.parent = Some(other.inner);
-		self.dirty = true;
-	}
-
-	pub fn add<T: UIElement>(&mut self, e: T) {
+	pub fn add<T: UIElement>(&mut self, e: T) -> BatchRef<T> {
 		self.elements.push(e.wrap());
+		BatchRef { index: self.elements.len() - 1, ty: PhantomData }
 	}
 
-	lazy_field!(layer, isize, get_layer, set_layer);
-	lazy_field!(x, f64, get_x, set_x);
-	lazy_field!(y, f64, get_y, set_y);
+	pub fn get<T: UIElement>(&self, r: BatchRef<T>) -> &T {
+		T::unwrap_ref(&self.elements[r.index])
+	}
+
+	pub fn get_mut<T: UIElement>(&mut self, r: BatchRef<T>) -> &mut T {
+		self.dirty = true;
+		T::unwrap_ref_mut(&mut self.elements[r.index])
+	}
+
+	pub fn get_mut_at<T: UIElement>(&mut self, index: usize) -> &mut T {
+		self.dirty = true;
+		T::unwrap_ref_mut(&mut self.elements[index])
+	}
+
+	pub fn len(&self) -> usize {
+		self.elements.len()
+	}
+
 	lazy_field!(width, f64, get_width, set_width);
 	lazy_field!(height, f64, get_height, set_height);
-	lazy_field!(v_attach, VAttach, get_v_attach, set_v_attach);
-	lazy_field!(h_attach, HAttach, get_h_attach, set_h_attach);
-
 }
 
 impl UIElement for Batch {
@@ -619,53 +747,37 @@ impl UIElement for Batch {
 	}
 }
 
-pub struct Text {
-	dirty: bool,
-	data: Vec<u8>,
-
-	parent: Option<ElementRefInner>,
-	should_draw: bool,
-	layer: isize,
+ui_element!(Text {
 	val: String,
-	x: f64,
-	y: f64,
 	width: f64,
 	height: f64,
-	v_attach: VAttach,
-	h_attach: HAttach,
 	scale_x: f64,
 	scale_y: f64,
 	rotation: f64,
 	r: u8,
 	g: u8,
 	b: u8,
-	a: u8,
-}
+	a: u8
+});
 
 impl Text {
-	pub fn new(renderer: &render::Renderer, val: &str, x: f64, y: f64, r: u8, g: u8, b: u8) -> Text {
-		Text {
-			dirty: true,
-			data: Vec::new(),
+	base_impl!();
 
-			parent: None,
-			should_draw: true,
-			layer: 0,
+	pub fn new(renderer: &render::Renderer, val: &str, x: f64, y: f64, r: u8, g: u8, b: u8) -> Text {
+		ui_create!(Text {
 			val: val.to_owned(),
 			x: x,
 			y: y,
 			width: renderer.ui.size_of_string(val),
 			height: 18.0,
-			v_attach: VAttach::Top,
-			h_attach: HAttach::Left,
 			scale_x: 1.0,
 			scale_y: 1.0,
 			rotation: 0.0,
 			r: r,
 			g: g,
 			b: b,
-			a: 255,
-		}
+			a: 255
+		})
 	}
 
 	fn update(&mut self, renderer: &mut render::Renderer) {
@@ -701,11 +813,6 @@ impl Text {
 		((self.width + 2.0) * self.scale_x, self.height * self.scale_y)
 	}
 
-	pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
-		self.parent = Some(other.inner);
-		self.dirty = true;
-	}
-
 	pub fn get_text(&self) -> &str {
 		&self.val
 	}
@@ -716,13 +823,8 @@ impl Text {
 		self.width = renderer.ui.size_of_string(val);
 	}
 
-	lazy_field!(layer, isize, get_layer, set_layer);
-	lazy_field!(x, f64, get_x, set_x);
-	lazy_field!(y, f64, get_y, set_y);
 	lazy_field!(width, f64, get_width, set_width);
 	lazy_field!(height, f64, get_height, set_height);
-	lazy_field!(v_attach, VAttach, get_v_attach, set_v_attach);
-	lazy_field!(h_attach, HAttach, get_h_attach, set_h_attach);
 	lazy_field!(scale_x, f64, get_scale_x, set_scale_x);
 	lazy_field!(scale_y, f64, get_scale_y, set_scale_y);
 	lazy_field!(rotation, f64, get_rotation, set_rotation);

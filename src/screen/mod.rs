@@ -2,6 +2,8 @@
 mod server_list;
 pub use self::server_list::*;
 
+use std::rc::Rc;
+
 use render;
 use ui;
 
@@ -141,4 +143,50 @@ pub fn new_button_text(renderer: &mut render::Renderer, val: &str, x: f64, y: f6
 	text.set_v_attach(ui::VAttach::Middle);
 	text.set_h_attach(ui::HAttach::Center);
 	(batch, text)
+}
+
+pub fn button_action(ui_container: &mut ui::Container, 
+	btn: ui::ElementRef<ui::Batch>, txt: Option<ui::ElementRef<ui::Text>>, 
+	click: Option<Rc<Fn(&mut render::Renderer, &mut ui::Container)>>
+) {
+	let batch = ui_container.get_mut(&btn);
+	batch.add_hover_func(Rc::new(move |over, renderer, ui_container| {
+		let texture = render::Renderer::get_texture(renderer.get_textures_ref(), "gui/widgets").relative(
+			0.0, (if over { 86.0 } else { 66.0 }) / 256.0, 200.0 / 256.0, 20.0 / 256.0
+		);
+
+		{
+			let batch = ui_container.get_mut(&btn);
+			for i in 0 .. batch.len() {
+				let img = batch.get_mut_at::<ui::Image>(i);
+				match i {
+					_i @ 0 ...3 => img.set_texture(texture.clone()),
+					4 => img.set_texture(texture.clone().relative(
+						2.0 / 200.0, 0.0, 196.0 / 200.0, 2.0 / 20.0
+					)),
+					5 => img.set_texture(texture.clone().relative(
+						2.0 / 200.0, 17.0 / 20.0, 196.0 / 200.0, 3.0 / 20.0
+					)),
+					6 => img.set_texture(texture.clone().relative(
+						0.0, 2.0 / 20.0, 2.0 / 200.0, 15.0 / 20.0
+					)),
+					7 => img.set_texture(texture.clone().relative(
+						198.0 / 200.0, 2.0 / 20.0, 2.0 / 200.0, 15.0 / 20.0
+					)),
+					8 => img.set_texture(texture.clone().relative(
+						2.0 / 200.0, 2.0 / 20.0, 196.0 / 200.0, 15.0 / 20.0
+					)),
+					_ => unreachable!(),
+				}
+			}
+		}
+		let txt = txt.clone();
+		if let Some(txt) = txt {
+			let text = ui_container.get_mut(&txt);
+			text.set_b(if over { 160 } else { 255 });
+		}
+	}));
+	if let Some(click) = click {
+		batch.add_click_func(click);
+	}
 }

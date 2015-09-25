@@ -1,80 +1,61 @@
 
-pub struct Formatted {
-	dirty: bool,
-	data: Vec<u8>,
-
-	parent: Option<ElementRefInner>,
-	should_draw: bool,
-	layer: isize,
+ui_element!(Formatted {
 	val: format::Component,
-	x: f64,
-	y: f64,
 	width: f64,
 	height: f64,
-	v_attach: VAttach,
-	h_attach: HAttach,
 	scale_x: f64,
 	scale_y: f64,
 
 	text: Vec<Element>,
 	max_width: f64,
-	lines: usize,
-}
+	lines: usize
+});
 
 impl Formatted {
-	pub fn new(renderer: &mut render::Renderer, val: format::Component, x: f64, y: f64) -> Formatted {
-		let mut f = Formatted {
-			dirty: true,
-			data: Vec::new(),
+	base_impl!();
 
-			parent: None,
-			should_draw: true,
-			layer: 0,
+	pub fn new(renderer: &mut render::Renderer, val: format::Component, x: f64, y: f64) -> Formatted {
+		let mut f = ui_create!(Formatted {
 			val: val,
 			x: x,
 			y: y,
 			width: 0.0,
 			height: 18.0,
-			v_attach: VAttach::Top,
-			h_attach: HAttach::Left,
 			scale_x: 1.0,
 			scale_y: 1.0,
 
 			text: Vec::new(),
 			max_width: -1.0,
-			lines: 0,
-		};
-		f.set_component(renderer);
+			lines: 0
+		});
+		f.init_component(renderer);
 		f
 	}
 
 	pub fn with_width_limit(renderer: &mut render::Renderer, val: format::Component, x: f64, y: f64, max_width: f64) -> Formatted {
-		let mut f = Formatted {
-			dirty: true,
-			data: Vec::new(),
-
-			parent: None,
-			should_draw: true,
-			layer: 0,
+		let mut f = ui_create!(Formatted {
 			val: val,
 			x: x,
 			y: y,
 			width: 0.0,
 			height: 18.0,
-			v_attach: VAttach::Top,
-			h_attach: HAttach::Left,
 			scale_x: 1.0,
 			scale_y: 1.0,
 
 			text: Vec::new(),
 			max_width: max_width,
-			lines: 0,
-		};
-		f.set_component(renderer);
+			lines: 0
+		});
+		f.init_component(renderer);
 		f
 	}
+	
+	pub fn set_component(&mut self, renderer: &mut render::Renderer, val: format::Component) {
+		self.val = val;
+		self.init_component(renderer);
+	}
 
-	fn set_component(&mut self, renderer: &mut render::Renderer) {
+	fn init_component(&mut self, renderer: &mut render::Renderer) {
 		self.text.clear();
 		let mut state = FormatState {
 			lines: 0,
@@ -93,7 +74,7 @@ impl Formatted {
 	}
 
 	fn update(&mut self, renderer: &mut render::Renderer) {
-		self.set_component(renderer);
+		self.init_component(renderer);
 	}
 
 	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
@@ -116,18 +97,8 @@ impl Formatted {
 		((self.width + 2.0) * self.scale_x, self.height * self.scale_y)
 	}
 
-	pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
-		self.parent = Some(other.inner);
-		self.dirty = true;
-	}
-
-	lazy_field!(layer, isize, get_layer, set_layer);
-	lazy_field!(x, f64, get_x, set_x);
-	lazy_field!(y, f64, get_y, set_y);
 	lazy_field!(width, f64, get_width, set_width);
 	lazy_field!(height, f64, get_height, set_height);
-	lazy_field!(v_attach, VAttach, get_v_attach, set_v_attach);
-	lazy_field!(h_attach, HAttach, get_h_attach, set_h_attach);
 	lazy_field!(scale_x, f64, get_scale_x, set_scale_x);
 	lazy_field!(scale_y, f64, get_scale_y, set_scale_y);
 
@@ -183,7 +154,7 @@ impl <'a> FormatState<'a> {
 	fn append_text(&mut self, txt: &str, color: format::Color) {
 		let mut width = 0.0;
 		let mut last = 0;
-		for (i, c) in txt.chars().enumerate() {
+		for (i, c) in txt.char_indices() {
 			let size = self.renderer.ui.size_of_char(c) + 2.0;
 			if (self.max_width > 0.0 && self.offset + width + size > self.max_width) || c == '\n' {
 				let (rr, gg, bb) = color.to_rgb();

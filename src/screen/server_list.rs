@@ -1,14 +1,25 @@
 
 use std::fs;
+use std::thread;
+use std::sync::mpsc;
+use std::rc::Rc;
+
 use ui;
 use render;
 use format;
+use format::{Component, TextComponent};
+use protocol;
+
 use serde_json;
-use std::cmp::max;
+use time;
+use image;
+use rustc_serialize::base64::FromBase64;
+use rand;
+use rand::{Rng};
 
 pub struct ServerList {
 	elements: Option<UIElements>,
-	disconnect_reason: Option<format::Component>,
+	disconnect_reason: Option<Component>,
 }
 
 struct UIElements {
@@ -22,6 +33,28 @@ struct Server {
 	back: ui::ElementRef<ui::Image>,
 	offset: f64,
 	y: f64,
+
+	motd: ui::ElementRef<ui::Formatted>,
+	ping: ui::ElementRef<ui::Image>,
+	players: ui::ElementRef<ui::Text>,
+	version: ui::ElementRef<ui::Formatted>,
+
+	icon: ui::ElementRef<ui::Image>,
+	icon_texture: Option<String>,
+
+	done_ping: bool,
+	recv: mpsc::Receiver<PingInfo>,
+}
+
+struct PingInfo {
+	motd: format::Component,
+	ping: time::Duration,
+	exists: bool,
+	online: i32,
+	max: i32,
+	protocol_version: i32,
+	protocol_name: String,
+	favicon: Option<image::DynamicImage>,
 }
 
 impl Server {
@@ -35,7 +68,7 @@ impl Server {
 }
 
 impl ServerList {
-	pub fn new(disconnect_reason: Option<format::Component>) -> ServerList {
+	pub fn new(disconnect_reason: Option<Component>) -> ServerList {
 		ServerList {
 			elements: None,
 			disconnect_reason: disconnect_reason,
@@ -44,14 +77,20 @@ impl ServerList {
 
 	fn reload_server_list(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
 		let elements = self.elements.as_mut().unwrap();
-		for server in &mut elements.servers {
-			server.collection.remove_all(ui_container);
+		{
+			let mut tex = renderer.get_textures_ref().write().unwrap();
+			for server in &mut elements.servers {
+				server.collection.remove_all(ui_container);
+				if let Some(ref icon) = server.icon_texture {
+					tex.remove_dynamic("steven_icon", &icon);
+				}
+			}
 		}
 		elements.servers.clear();
 
 		let file = match fs::File::open("servers.json") {
 			Ok(val) => val,
-			Err(e) => return,
+			Err(_) => return,
 		};
 		let servers_info: serde_json::Value = serde_json::from_reader(file).unwrap();
 		let servers = servers_info.find("servers").unwrap().as_array().unwrap();
@@ -62,7 +101,7 @@ impl ServerList {
 
 		for svr in servers {
 			let name = svr.find("name").unwrap().as_string().unwrap();
-			let address = svr.find("address").unwrap().as_string().unwrap();
+			let address = svr.find("address").unwrap().as_string().unwrap().to_owned();
 
 			let solid = render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid");
 
@@ -71,14 +110,38 @@ impl ServerList {
 			back.set_v_attach(ui::VAttach::Middle);
 			back.set_h_attach(ui::HAttach::Center);
 
+			let (send, recv) = mpsc::channel::<PingInfo>();
 			let mut server = Server {
 				collection: ui::Collection::new(),
 				back: ui_container.add(back),
 				offset: offset,
 				y: 0.0,
+				done_ping: false,
+				recv: recv,
+
+				motd: Default::default(),
+				ping: Default::default(),
+				players: Default::default(),
+				version: Default::default(),
+
+				icon: Default::default(),
+				icon_texture: None,
 			};
 			server.collection.add(server.back.clone());
 			server.update_position();
+			{
+				let back = ui_container.get_mut(&server.back);
+				let back_ref = server.back.clone();
+				let address = address.clone();
+				back.add_hover_func(Rc::new(move |over, renderer, ui_container| {
+					let back = ui_container.get_mut(&back_ref);
+					back.set_a(if over { 200 } else { 100 });
+				}));
+
+				back.add_click_func(Rc::new(move |renderer, ui_container| {
+					println!("Connecting to {}", address);
+				}));
+			}
 
 			let mut text = ui::Text::new(renderer, &name, 100.0, 5.0, 255, 255, 255);
 			text.set_parent(&server.back);
@@ -86,20 +149,94 @@ impl ServerList {
 
 			let mut icon = ui::Image::new(default_icon.clone(), 5.0, 5.0, 90.0, 90.0, 0.0, 0.0, 1.0, 1.0, 255, 255, 255);
 			icon.set_parent(&server.back);
-			server.collection.add(ui_container.add(icon));
+			server.icon = server.collection.add(ui_container.add(icon));
 
 			let mut ping = ui::Image::new(icons.clone(), 5.0, 5.0, 20.0, 16.0, 0.0, 56.0/256.0, 10.0/256.0, 8.0/256.0, 255, 255, 255);
 			ping.set_h_attach(ui::HAttach::Right);
 			ping.set_parent(&server.back);
-			server.collection.add(ui_container.add(ping));
+			server.ping = server.collection.add(ui_container.add(ping));
 
 			let mut players = ui::Text::new(renderer, "???", 30.0, 5.0, 255, 255, 255);
 			players.set_h_attach(ui::HAttach::Right);
 			players.set_parent(&server.back);
-			server.collection.add(ui_container.add(players));
+			server.players = server.collection.add(ui_container.add(players));
+
+			let mut motd = ui::Formatted::with_width_limit(renderer, Component::Text(TextComponent::new("Connecting...")), 100.0, 23.0, 700.0 - (90.0 + 10.0 + 5.0));
+			motd.set_parent(&server.back);
+			server.motd = server.collection.add(ui_container.add(motd));
+
+			let mut version = ui::Formatted::with_width_limit(renderer, Component::Text(TextComponent::new("")), 100.0, 5.0, 700.0 - (90.0 + 10.0 + 5.0));
+			version.set_v_attach(ui::VAttach::Bottom);
+			version.set_parent(&server.back);
+			server.version = server.collection.add(ui_container.add(version));
+
+
+			let (mut del, mut txt) = super::new_button_text(renderer, "X", 0.0, 0.0, 25.0, 25.0);
+			del.set_v_attach(ui::VAttach::Bottom);
+			del.set_h_attach(ui::HAttach::Right);
+			del.set_parent(&server.back);
+			let re = ui_container.add(del);
+			txt.set_parent(&re);
+			let tre = ui_container.add(txt);
+			super::button_action(ui_container, re.clone(), Some(tre.clone()), None);
+			server.collection.add(re);
+			server.collection.add(tre);
+
+			let (mut edit, mut txt) = super::new_button_text(renderer, "E", 25.0, 0.0, 25.0, 25.0);
+			edit.set_v_attach(ui::VAttach::Bottom);
+			edit.set_h_attach(ui::HAttach::Right);
+			edit.set_parent(&server.back);
+			let re = ui_container.add(edit);
+			txt.set_parent(&re);
+			let tre = ui_container.add(txt);
+			super::button_action(ui_container, re.clone(), Some(tre.clone()), None);
+			server.collection.add(re);
+			server.collection.add(tre);
 
 			elements.servers.push(server);
 			offset += 1.0;
+
+			thread::spawn(move || {
+				match protocol::Conn::new(&address).and_then(|conn| conn.do_status()) {
+					Ok(res) => {
+						let mut desc = res.0.description;
+						format::convert_legacy(&mut desc);
+						let favicon = if let Some(icon) = res.0.favicon {
+							let data = icon["data:image/png;base64,".len()..].from_base64().unwrap();
+							Some(image::load_from_memory(
+								&data
+							).unwrap())
+						} else {
+							None
+						};
+						send.send(PingInfo {
+							motd: desc,
+							ping: res.1,
+							exists: true,
+							online: res.0.players.online,
+							max: res.0.players.max,
+							protocol_version: res.0.version.protocol,
+							protocol_name: res.0.version.name,
+							favicon: favicon,
+						}).unwrap();
+					},
+					Err(err) => {
+						let e = format!("{}", err);
+						let mut msg = TextComponent::new(&e);
+						msg.modifier.color = Some(format::Color::Red);
+						send.send(PingInfo {
+							motd: Component::Text(msg),
+							ping: time::Duration::seconds(99999),
+							exists: false,
+							online: 0,
+							max: 0,
+							protocol_version: 0,
+							protocol_name: "".to_owned(),
+							favicon: None,
+						}).unwrap();
+					},
+				}				
+			});
 		}
 	}
 }
@@ -117,16 +254,22 @@ impl super::Screen for ServerList {
 		refresh.set_h_attach(ui::HAttach::Center);
 		let re = ui_container.add(refresh);
 		txt.set_parent(&re);
+		let tre = ui_container.add(txt);
+		super::button_action(ui_container, re.clone(), Some(tre.clone()), None);
 		elements.add(re);
-		elements.add(ui_container.add(txt));
+		elements.add(tre);
 
 		let (mut add, mut txt) = super::new_button_text(renderer, "Add", 200.0, -50.0-15.0, 100.0, 30.0);
 		add.set_v_attach(ui::VAttach::Middle);
 		add.set_h_attach(ui::HAttach::Center);
 		let re = ui_container.add(add);
 		txt.set_parent(&re);
+		let tre = ui_container.add(txt);
+		super::button_action(ui_container, re.clone(), Some(tre.clone()), Some(Rc::new(|renderer, ui_container| {
+
+		})));
 		elements.add(re);
-		elements.add(ui_container.add(txt));
+		elements.add(tre);
 
 		let mut options = super::new_button(renderer, 5.0, 25.0, 40.0, 40.0);
 		options.set_v_attach(ui::VAttach::Bottom);
@@ -136,6 +279,7 @@ impl super::Screen for ServerList {
 		cog.set_parent(&re);
 		cog.set_v_attach(ui::VAttach::Middle);
 		cog.set_h_attach(ui::HAttach::Center);				
+		super::button_action(ui_container, re.clone(), None, None);
 		elements.add(re);
 		elements.add(ui_container.add(cog));
 
@@ -188,13 +332,78 @@ impl super::Screen for ServerList {
 		elements.logo.tick(renderer, ui_container);
 
 		for s in &mut elements.servers {
-			let back = ui_container.get_mut(&s.back);
-			let dy = s.y - back.get_y();
-			if dy*dy > 1.0 {
-				let y = back.get_y();
-				back.set_y(y + delta * dy * 0.1);
-			} else {
-				back.set_y(s.y);
+			{
+				let back = ui_container.get_mut(&s.back);
+				let dy = s.y - back.get_y();
+				if dy*dy > 1.0 {
+					let y = back.get_y();
+					back.set_y(y + delta * dy * 0.1);
+				} else {
+					back.set_y(s.y);
+				}
+			}
+
+			if !s.done_ping {
+				match s.recv.try_recv() {
+					Ok(res) => {
+						s.done_ping = true;
+						{
+							let motd = ui_container.get_mut(&s.motd);
+							motd.set_component(renderer, res.motd);
+						}
+						{
+							let ping = ui_container.get_mut(&s.ping);
+							let y = match res.ping.num_milliseconds() {
+								_x @ 0 ... 75 => 16.0 / 256.0,
+								_x @ 76 ... 150 => 24.0 / 256.0,
+								_x @ 151 ... 225 => 32.0 / 256.0,
+								_x @ 226 ... 350 => 40.0 / 256.0,
+								_x @ 351 ... 999 => 48.0 / 256.0,
+								_ => 56.0 / 256.0,
+							};
+							ping.set_t_y(y);
+						}
+						if res.exists {
+							{
+								let players = ui_container.get_mut(&s.players);
+								let txt = if res.protocol_version == protocol::SUPPORTED_PROTOCOL {
+									players.set_g(255);
+									players.set_b(255);
+									format!("{}/{}", res.online, res.max)
+								} else {
+									players.set_g(85);
+									players.set_b(85);
+									format!("Out of date {}/{}", res.online, res.max)
+								};							
+								players.set_text(renderer, &txt);
+							}
+							{
+								let version = ui_container.get_mut(&s.version);
+								let mut txt = TextComponent::new(&res.protocol_name);
+								txt.modifier.color = Some(format::Color::Yellow);
+								let mut msg = Component::Text(txt);
+								format::convert_legacy(&mut msg);
+								version.set_component(renderer, msg);
+							}							
+						}
+						if let Some(favicon) = res.favicon {
+							let name: String = rand::thread_rng().gen_ascii_chars().take(30).collect();
+							let tex = renderer.get_textures_ref();
+							s.icon_texture = Some(name.clone());
+							let icon_tex = tex.write().unwrap().put_dynamic("steven_icon", &name, favicon);
+							let icon = ui_container.get_mut(&s.icon);
+							icon.set_texture(icon_tex);
+						}
+					},
+					Err(mpsc::TryRecvError::Disconnected) => {
+						s.done_ping = true;
+						let motd = ui_container.get_mut(&s.motd);
+						let mut txt = TextComponent::new("Channel dropped");
+						txt.modifier.color = Some(format::Color::Red);
+						motd.set_component(renderer, Component::Text(txt));
+					},
+					_ => {}
+				}
 			}
 		}
 	}
