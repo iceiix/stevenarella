@@ -1,22 +1,5 @@
-
-use std::fs;
-use std::thread;
-use std::sync::mpsc;
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use ui;
 use render;
-use format;
-use format::{Component, TextComponent};
-use protocol;
-
-use serde_json;
-use time;
-use image;
-use rustc_serialize::base64::FromBase64;
-use rand;
-use rand::{Rng};
 
 pub struct Login {
 	elements: Option<UIElements>,
@@ -40,6 +23,17 @@ impl super::Screen for Login {
 	fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
 		let logo = ui::logo::Logo::new(renderer.resources.clone(), renderer, ui_container);
 		let mut elements = ui::Collection::new();
+
+		// Login
+		let (mut login, mut txt) = super::new_button_text(renderer, "Login", 0.0, 100.0, 400.0, 40.0);
+		login.set_v_attach(ui::VAttach::Middle);
+		login.set_h_attach(ui::HAttach::Center);
+		let re = ui_container.add(login);
+		txt.set_parent(&re);
+		let tre = ui_container.add(txt);
+		super::button_action(ui_container, re.clone(), Some(tre.clone()), None);
+		elements.add(re);
+		elements.add(tre);
 
 		// Disclaimer
 		let mut warn = ui::Text::new(renderer, "Not affiliated with Mojang/Minecraft", 5.0, 5.0, 255, 200, 200);
