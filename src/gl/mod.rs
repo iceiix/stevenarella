@@ -191,22 +191,20 @@ pub const NEAREST_MIPMAP_LINEAR: TextureValue = gl::NEAREST_MIPMAP_LINEAR as Tex
 pub const CLAMP_TO_EDGE: TextureValue = gl::CLAMP_TO_EDGE as TextureValue;
 
 /// Texture is a buffer of data used by fragment shaders.
-pub struct Texture {
-    internal: u32,
-}
+pub struct Texture(u32);
 
 impl Texture {
     // Allocates a new texture.
     pub fn new() -> Texture {
-        let mut t = Texture{ internal: 0 };
-        unsafe { gl::GenTextures(1, &mut t.internal); }
+        let mut t = Texture(0);
+        unsafe { gl::GenTextures(1, &mut t.0); }
         t
     }
 
     /// Binds the texture to the passed target.
     pub fn bind(&self, target: TextureTarget) {
         unsafe {
-            gl::BindTexture(target, self.internal);
+            gl::BindTexture(target, self.0);
         }
     }
 
@@ -237,7 +235,7 @@ impl Texture {
 
 impl Drop for Texture {
     fn drop(&mut self) {
-        unsafe { gl::DeleteTextures(1, &self.internal); }
+        unsafe { gl::DeleteTextures(1, &self.0); }
     }
 }
 
@@ -252,80 +250,68 @@ pub type ShaderParameter = u32;
 pub const COMPILE_STATUS: ShaderParameter = gl::COMPILE_STATUS;
 pub const INFO_LOG_LENGTH: ShaderParameter = gl::INFO_LOG_LENGTH;
 
-pub struct Program {
-    internal: u32,
-}
+pub struct Program(u32);
 
 impl Program {
     pub fn new() -> Program {
-        Program {
-            internal: unsafe { gl::CreateProgram() }
-        }
+        Program(unsafe { gl::CreateProgram() })
     }
 
     pub fn attach_shader(&self, shader: Shader) {
         unsafe {
-            gl::AttachShader(self.internal, shader.internal);
+            gl::AttachShader(self.0, shader.0);
         }
     }
 
     pub fn link(&self) {
         unsafe {
-            gl::LinkProgram(self.internal);
+            gl::LinkProgram(self.0);
         }
     }
 
     pub fn use_program(&self) {
         unsafe {
-            gl::UseProgram(self.internal);
+            gl::UseProgram(self.0);
         }
     }
 
     pub fn uniform_location(&self, name: &str) -> Uniform {
-        Uniform {
-            internal: unsafe { gl::GetUniformLocation(self.internal, ffi::CString::new(name).unwrap().as_ptr()) }
-        }
+        Uniform(unsafe { gl::GetUniformLocation(self.0, ffi::CString::new(name).unwrap().as_ptr()) } )
     }
 
     pub fn attribute_location(&self, name: &str) -> Attribute {
-        Attribute {
-            internal: unsafe { gl::GetAttribLocation(self.internal, ffi::CString::new(name).unwrap().as_ptr()) }
-        }
+        Attribute(unsafe { gl::GetAttribLocation(self.0, ffi::CString::new(name).unwrap().as_ptr()) })
     }
 }
 
 impl Drop for Program {
     fn drop(&mut self) {
-        unsafe { gl::DeleteProgram(self.internal); }
+        unsafe { gl::DeleteProgram(self.0); }
     }
 }
 
-pub struct Shader {
-    internal: u32,
-}
+pub struct Shader(u32);
 
 impl Shader {
     pub fn new(ty: ShaderType) -> Shader {
-        Shader {
-            internal: unsafe { gl::CreateShader(ty) }
-        }
+        Shader(unsafe { gl::CreateShader(ty) })
     }
 
     pub fn set_source(&self, src: &str) {
         unsafe {
-            gl::ShaderSource(self.internal, 1, &ffi::CString::new(src).unwrap().as_ptr(), ptr::null());
+            gl::ShaderSource(self.0, 1, &ffi::CString::new(src).unwrap().as_ptr(), ptr::null());
         }
     }
 
     pub fn compile(&self) {
         unsafe {
-            gl::CompileShader(self.internal);
+            gl::CompileShader(self.0);
         }
     }
 
     pub fn get_parameter(&self, param: ShaderParameter) -> i32 {
         let mut ret : i32 = 0;
-        unsafe { gl::GetShaderiv(self.internal, param, &mut ret); }
+        unsafe { gl::GetShaderiv(self.0, param, &mut ret); }
         return ret;
     }
 
@@ -335,80 +321,76 @@ impl Shader {
         let mut data = Vec::<u8>::with_capacity(len as usize);
         unsafe { 
             data.set_len(len as usize);
-            gl::GetShaderInfoLog(self.internal, len, ptr::null_mut(), data.as_mut_ptr() as *mut i8);
+            gl::GetShaderInfoLog(self.0, len, ptr::null_mut(), data.as_mut_ptr() as *mut i8);
         }
         String::from_utf8(data).unwrap()
     }
 }
 
-pub struct Uniform {
-    internal: i32,
-}
+pub struct Uniform(i32);
 
 impl Uniform {
     pub fn set_int(&self, val: i32) {
         unsafe {
-            gl::Uniform1i(self.internal, val);
+            gl::Uniform1i(self.0, val);
         }
     }
 
     pub fn set_int3(&self, x: i32, y: i32, z: i32) {
         unsafe {
-            gl::Uniform3i(self.internal, x, y, z);
+            gl::Uniform3i(self.0, x, y, z);
         }
     }
 
     pub fn set_float(&self, val: f32) {
         unsafe {
-            gl::Uniform1f(self.internal, val);
+            gl::Uniform1f(self.0, val);
         }
     }
 
     pub fn set_float2(&self, x: f32, y: f32) {
         unsafe {
-            gl::Uniform2f(self.internal, x, y);
+            gl::Uniform2f(self.0, x, y);
         }
     }
 
     pub fn set_float3(&self, x: f32, y: f32, z: f32) {
         unsafe {
-            gl::Uniform3f(self.internal, x, y, z);
+            gl::Uniform3f(self.0, x, y, z);
         }
     }
 
     pub fn set_float4(&self, x: f32, y: f32, z: f32, w: f32) {
         unsafe {
-            gl::Uniform4f(self.internal, x, y, z, w);
+            gl::Uniform4f(self.0, x, y, z, w);
         }
     }
 }
 
-pub struct Attribute {
-    internal: i32,
-}
+pub struct Attribute(i32);
 
 impl Attribute {
     pub fn enable(&self) {
         unsafe {
-            gl::EnableVertexAttribArray(self.internal as u32);
+            gl::EnableVertexAttribArray(self.0 as u32);
         }
     }
 
     pub fn disable(&self) {
         unsafe {
-            gl::DisableVertexAttribArray(self.internal as u32);
+            gl::DisableVertexAttribArray(self.0 as u32);
         }
     }
 
     pub fn vertex_pointer(&self, size: i32, ty: Type, normalized: bool, stride: i32, offset: i32) {
         unsafe {
-            gl::VertexAttribPointer(self.internal as u32, size, ty, normalized as u8, stride, offset as *const gl::types::GLvoid);
+            gl::VertexAttribPointer(self.0 as u32, size, ty, normalized as u8, stride, offset as *const gl::types::GLvoid);
         }
     }
 
     pub fn vertex_pointer_int(&self, size: i32, ty: Type, stride: i32, offset: i32) {
         unsafe {
-            gl::VertexAttribIPointer(self.internal as u32, size, ty, stride, offset as *const gl::types::GLvoid);
+            gl::VertexAttribIPointer(self.0 as u32, size, ty, stride, offset as *const gl::types::GLvoid);
         }
     }
 }
@@ -416,17 +398,13 @@ impl Attribute {
 // VertexArray is used to store state needed to render vertices.
 // This includes buffers, the format of the buffers and enabled
 // attributes.
-pub struct VertexArray {
-    internal: u32,
-}
+pub struct VertexArray(u32);
 
 impl VertexArray {
     /// Allocates a new VertexArray.
     pub fn new() -> VertexArray {
-        let mut va = VertexArray {
-            internal: 0,
-        };
-        unsafe { gl::GenVertexArrays(1, &mut va.internal); }
+        let mut va = VertexArray(0);
+        unsafe { gl::GenVertexArrays(1, &mut va.0); }
         va
     }
 
@@ -434,14 +412,14 @@ impl VertexArray {
     /// means buffers/the format of the buffers etc will be bound to
     /// this VertexArray.
     pub fn bind(&self) {
-        unsafe { gl::BindVertexArray(self.internal); }
+        unsafe { gl::BindVertexArray(self.0); }
     }
 }
 
 impl Drop for VertexArray {   
     fn drop(&mut self) {
-        unsafe { gl::DeleteVertexArrays(1, &self.internal); }
-        self.internal = 0;
+        unsafe { gl::DeleteVertexArrays(1, &self.0); }
+        self.0 = 0;
     }
 }
 
@@ -474,17 +452,13 @@ pub const READ_ONLY: Access = gl::READ_ONLY;
 pub const WRITE_ONLY: Access = gl::WRITE_ONLY;
 
 /// Buffer is a storage for vertex data.
-pub struct Buffer {
-    internal: u32,
-}
+pub struct Buffer(u32);
 
 impl Buffer {
     /// Allocates a new Buffer. 
     pub fn new() -> Buffer {
-        let mut b = Buffer {
-            internal: 0,
-        };
-        unsafe { gl::GenBuffers(1, &mut b.internal); }
+        let mut b = Buffer(0);
+        unsafe { gl::GenBuffers(1, &mut b.0); }
         b
     }
 
@@ -492,7 +466,7 @@ impl Buffer {
     /// This will allow it to be the source of operations that act on a buffer
     /// (Data, Map etc).
     pub fn bind(&self, target: BufferTarget) { 
-        unsafe { gl::BindBuffer(target, self.internal); }
+        unsafe { gl::BindBuffer(target, self.0); }
     }
 
     pub fn set_data(&self, target: BufferTarget, data: &[u8], usage: BufferUsage) {
@@ -518,7 +492,7 @@ impl Buffer {
 impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteBuffers(1, &self.internal);
+            gl::DeleteBuffers(1, &self.0);
         }
     }
 }
