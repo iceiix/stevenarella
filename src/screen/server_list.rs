@@ -227,7 +227,7 @@ impl ServerList {
 						} else {
 							None
 						};
-						send.send(PingInfo {
+						drop(send.send(PingInfo {
 							motd: desc,
 							ping: res.1,
 							exists: true,
@@ -236,13 +236,13 @@ impl ServerList {
 							protocol_version: res.0.version.protocol,
 							protocol_name: res.0.version.name,
 							favicon: favicon,
-						}).unwrap();
+						}));
 					},
 					Err(err) => {
 						let e = format!("{}", err);
 						let mut msg = TextComponent::new(&e);
 						msg.modifier.color = Some(format::Color::Red);
-						send.send(PingInfo {
+						drop(send.send(PingInfo {
 							motd: Component::Text(msg),
 							ping: time::Duration::seconds(99999),
 							exists: false,
@@ -251,7 +251,7 @@ impl ServerList {
 							protocol_version: 0,
 							protocol_name: "".to_owned(),
 							favicon: None,
-						}).unwrap();
+						}));
 					},
 				}				
 			});

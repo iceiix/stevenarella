@@ -32,7 +32,7 @@ use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2;
 use time;
 
-pub const SUPPORTED_PROTOCOL: i32 = 73;
+pub const SUPPORTED_PROTOCOL: i32 = 74;
 
 /// Helper macro for defining packets
 #[macro_export]
@@ -647,7 +647,7 @@ pub struct Conn {
     cipher: Option<openssl::EVPCipher>,
 
     compression_threshold: i32,
-    compression_read: Option<ZlibDecoder<io::Cursor<Vec<u8>>>>, // Pending reset support
+    compression_read: Option<ZlibDecoder<io::Cursor<Vec<u8>>>>, 
     compression_write: Option<ZlibEncoder<io::Cursor<Vec<u8>>>>,
 }
 
@@ -890,7 +890,7 @@ impl Clone for Conn {
     }
 }
 
-pub trait PacketType {
+pub trait PacketType: Sized {
     fn packet_id(&self) -> i32;
 
     fn write(self, buf: &mut io::Write) -> Result<(), io::Error>;

@@ -333,7 +333,7 @@ impl Container {
 			self.version = renderer.ui.version;
 		}
 
-		// Borrow rules seems to prevent us from doing this in the first pass
+		// Borrow rules seem to prevent us from doing this in the first pass
 		// so we split it.
 		let regions = self.collect_elements(sw, sh);
 		for re in &self.elements_list {

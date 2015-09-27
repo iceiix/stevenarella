@@ -68,7 +68,7 @@ fn main() {
     let frame_time = (time::Duration::seconds(1).num_nanoseconds().unwrap() as f64) / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
-    screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
+    screen_sys.add_screen(Box::new(screen::Login::new()));
 
     while !window.should_close() {
         { resource_manager.write().unwrap().tick(); }
