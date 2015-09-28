@@ -1,3 +1,16 @@
+// Copyright 2015 Matthew Collins
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use std::fs;
 use std::thread;
@@ -143,12 +156,12 @@ impl ServerList {
 				let back = ui_container.get_mut(&server.back);
 				let back_ref = server.back.clone();
 				let address = address.clone();
-				back.add_hover_func(Rc::new(move |over, _, _, ui_container| {
+				back.add_hover_func(Rc::new(move |over, _, ui_container| {
 					let back = ui_container.get_mut(&back_ref);
 					back.set_a(if over { 200 } else { 100 });
 				}));
 
-				back.add_click_func(Rc::new(move |_, _, _| {
+				back.add_click_func(Rc::new(move |_, _| {
 					println!("Connecting to {}", address);
 				}));
 			}
@@ -272,7 +285,7 @@ impl super::Screen for ServerList {
 		txt.set_parent(&re);
 		let tre = ui_container.add(txt);
 		let nr = self.needs_reload.clone();
-		super::button_action(ui_container, re.clone(), Some(tre.clone()), Some(Rc::new(move |_, _, _| {
+		super::button_action(ui_container, re.clone(), Some(tre.clone()), Some(Rc::new(move |_, _| {
 			*nr.borrow_mut() = true;
 		})));
 		elements.add(re);

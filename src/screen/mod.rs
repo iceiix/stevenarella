@@ -1,3 +1,16 @@
+// Copyright 2015 Matthew Collins
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 mod server_list;
 pub use self::server_list::*;
@@ -57,6 +70,11 @@ impl ScreenSystem {
 		if let Some(screen) = self.screens.pop() {
 			self.remove_queue.push(screen);
 		}
+	}
+
+	pub fn replace_screen(&mut self, screen: Box<Screen>) {
+		self.pop_screen();
+		self.add_screen(screen);
 	}
 
 	pub fn tick(&mut self, delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
@@ -153,8 +171,8 @@ pub fn button_action(ui_container: &mut ui::Container,
 	click: Option<ui::ClickFunc>
 ) {
 	let batch = ui_container.get_mut(&btn);
-	batch.add_hover_func(Rc::new(move |over, _, renderer, ui_container| {
-		let texture = render::Renderer::get_texture(renderer.get_textures_ref(), "gui/widgets").relative(
+	batch.add_hover_func(Rc::new(move |over, game, ui_container| {
+		let texture = render::Renderer::get_texture(game.renderer.get_textures_ref(), "gui/widgets").relative(
 			0.0, (if over { 86.0 } else { 66.0 }) / 256.0, 200.0 / 256.0, 20.0 / 256.0
 		);
 

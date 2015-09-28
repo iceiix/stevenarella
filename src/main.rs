@@ -22,6 +22,8 @@ pub mod resources;
 pub mod render;
 pub mod ui;
 pub mod screen;
+#[macro_use]
+pub mod console;
 
 extern crate glfw;
 extern crate image;
@@ -35,9 +37,29 @@ extern crate rand;
 extern crate rustc_serialize;
 
 use std::sync::{Arc, RwLock};
+use std::marker::PhantomData;
 use glfw::{Action, Context, Key};
 
+const CL_BRAND: console::CVar<String> = console::CVar {
+    ty: PhantomData,
+    name: "cl_brand",
+    description: "cl_brand has the value of the clients current 'brand'. e.g. \"Steven\" or \"Vanilla\"",
+    mutable: false,
+    serializable: false, 
+    default: &|| "steven".to_owned(),
+};
+
+pub struct Game {
+    renderer: render::Renderer,
+    screen_sys: screen::ScreenSystem,
+    resource_manager: Arc<RwLock<resources::Manager>>,
+    console: console::Console,
+}
+
 fn main() {
+    let mut con = console::Console::new();
+    con.register(CL_BRAND);
+
     let resource_manager = Arc::new(RwLock::new(resources::Manager::new()));
     { resource_manager.write().unwrap().tick(); }
 
@@ -61,7 +83,7 @@ fn main() {
     window.make_current();
     glfw.set_swap_interval(1);
 
-    let mut renderer = render::Renderer::new(resource_manager.clone());
+    let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
 
     let mut last_frame = time::now();
@@ -70,51 +92,52 @@ fn main() {
     let mut screen_sys = screen::ScreenSystem::new();
     screen_sys.add_screen(Box::new(screen::Login::new()));
 
+    let mut game = Game {
+        renderer: renderer,
+        screen_sys: screen_sys,
+        resource_manager: resource_manager,
+        console: con,
+    };
+
     while !window.should_close() {
-        { resource_manager.write().unwrap().tick(); }
+        { game.resource_manager.write().unwrap().tick(); }
         let now = time::now();
         let diff = now - last_frame;
         last_frame = now;
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
 
-        screen_sys.tick(delta, &mut renderer, &mut ui_container);
+        game.screen_sys.tick(delta, &mut game.renderer, &mut ui_container);
 
         let (width, height) = window.get_framebuffer_size();
-        ui_container.tick(&mut renderer, delta, width as f64, height as f64);
-        renderer.tick(delta, width as u32, height as u32);
+        ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
+        game.renderer.tick(delta, width as u32, height as u32);
 
         window.swap_buffers();
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, &mut renderer, &mut screen_sys, &mut ui_container, event);
+            handle_window_event(&mut window, &mut game, &mut ui_container, event);
         }
     }
 }
 
-fn handle_window_event(
-    window: &mut glfw::Window,
-    renderer: &mut render::Renderer,
-    screen_sys: &mut screen::ScreenSystem, 
-    ui_container: &mut ui::Container, 
-    event: glfw::WindowEvent
-) {
+fn handle_window_event(window: &mut glfw::Window, game: &mut Game, ui_container: &mut ui::Container, event: glfw::WindowEvent) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
         },
         glfw::WindowEvent::Scroll(x, y) => {
-            screen_sys.on_scroll(x, y);
+            game.screen_sys.on_scroll(x, y);
         },
-        glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, Action::Press, _) => {
+        glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, Action::Release, _) => {
             let (width, height) = window.get_size();
             let (xpos, ypos) = window.get_cursor_pos();
             let (fw, fh) = window.get_framebuffer_size();
-            ui_container.click_at(screen_sys, renderer, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)
+            ui_container.click_at(game, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)
         },
         glfw::WindowEvent::CursorPos(xpos, ypos) => {
             let (width, height) = window.get_size();
             let (fw, fh) = window.get_framebuffer_size();
-            ui_container.hover_at(screen_sys, renderer, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)            
+            ui_container.hover_at(game, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)            
         }
         _ => {}
     }

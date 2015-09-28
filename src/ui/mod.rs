@@ -20,7 +20,6 @@ use std::rc::Rc;
 use rand;
 use render;
 use format;
-use screen;
 
 const SCALED_WIDTH: f64 = 854.0;
 const SCALED_HEIGHT: f64 = 480.0;
@@ -33,8 +32,8 @@ pub enum Element {
 	None,
 }
 
-pub type ClickFunc = Rc<Fn(&mut screen::ScreenSystem, &mut render::Renderer, &mut Container)>;
-pub type HoverFunc = Rc<Fn(bool, &mut screen::ScreenSystem, &mut render::Renderer, &mut Container)>;
+pub type ClickFunc = Rc<Fn(&mut ::Game, &mut Container)>;
+pub type HoverFunc = Rc<Fn(bool, &mut ::Game, &mut Container)>;
 
 macro_rules! element_impl {
 	($($name:ident),+) => (
@@ -372,7 +371,7 @@ impl Container {
 		map
 	}
 
-	pub fn click_at(&mut self, screen_sys: &mut screen::ScreenSystem, renderer: &mut render::Renderer, x: f64, y: f64, width: f64, height: f64) {
+	pub fn click_at(&mut self, game: &mut ::Game, x: f64, y: f64, width: f64, height: f64) {
 		let (sw, sh) = match self.mode {
 			Mode::Scaled => (SCALED_WIDTH / width, SCALED_HEIGHT / height),
 			Mode::Unscaled(scale) => (scale, scale),
@@ -393,12 +392,12 @@ impl Container {
 		}
 		if let Some(click) = click {
 			for c in &click {
-				c(screen_sys, renderer, self);
+				c(game, self);
 			}
 		}
 	}
 
-	pub fn hover_at(&mut self, screen_sys: &mut screen::ScreenSystem, renderer: &mut render::Renderer, x: f64, y: f64, width: f64, height: f64) {
+	pub fn hover_at(&mut self, game: &mut ::Game, x: f64, y: f64, width: f64, height: f64) {
 		let (sw, sh) = match self.mode {
 			Mode::Scaled => (SCALED_WIDTH / width, SCALED_HEIGHT / height),
 			Mode::Unscaled(scale) => (scale, scale),
@@ -421,7 +420,7 @@ impl Container {
 			};
 			if call {
 				for f in &hover.1 {
-					f(hover.2, screen_sys, renderer, self);
+					f(hover.2, game, self);
 				}
 			}
 		}
