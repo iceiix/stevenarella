@@ -248,6 +248,7 @@ impl Collection {
 		for e in &self.elements {
 			container.remove_raw(e);
 		}
+		self.elements.clear();
 	}
 }
 

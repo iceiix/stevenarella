@@ -35,8 +35,10 @@ extern crate hyper;
 extern crate flate2;
 extern crate rand;
 extern crate rustc_serialize;
+#[macro_use]
+extern crate log;
 
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, Mutex};
 use std::marker::PhantomData;
 use glfw::{Action, Context, Key};
 
@@ -53,12 +55,19 @@ pub struct Game {
     renderer: render::Renderer,
     screen_sys: screen::ScreenSystem,
     resource_manager: Arc<RwLock<resources::Manager>>,
-    console: console::Console,
+    console: Arc<Mutex<console::Console>>,
 }
 
 fn main() {
-    let mut con = console::Console::new();
-    con.register(CL_BRAND);
+    let con = Arc::new(Mutex::new(console::Console::new()));
+    con.lock().unwrap().register(CL_BRAND);
+    let proxy = console::ConsoleProxy::new(con.clone());
+    log::set_logger(|max_log_level| {
+        max_log_level.set(log::LogLevelFilter::Trace);
+        Box::new(proxy)
+    }).unwrap();
+
+    info!("Starting steven");
 
     let resource_manager = Arc::new(RwLock::new(resources::Manager::new()));
     { resource_manager.write().unwrap().tick(); }
@@ -77,6 +86,7 @@ fn main() {
     gl::init(&mut window);
 
     window.set_key_polling(true);
+    window.set_char_polling(true);
     window.set_scroll_polling(true);
     window.set_mouse_button_polling(true);
     window.set_cursor_pos_polling(true);
@@ -109,6 +119,7 @@ fn main() {
         game.screen_sys.tick(delta, &mut game.renderer, &mut ui_container);
 
         let (width, height) = window.get_framebuffer_size();
+        game.console.lock().unwrap().tick(&mut ui_container, &mut game.renderer, delta, width as f64);
         ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
         game.renderer.tick(delta, width as u32, height as u32);
 
@@ -122,8 +133,15 @@ fn main() {
 
 fn handle_window_event(window: &mut glfw::Window, game: &mut Game, ui_container: &mut ui::Container, event: glfw::WindowEvent) {
     match event {
+        glfw::WindowEvent::Key(Key::GraveAccent, _, Action::Press, _) => {
+            game.console.lock().unwrap().toggle();
+        }
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
+        },
+
+        glfw::WindowEvent::Key(key, _, Action::Press, _) => {
+            println!("Key: {:?}", key);
         },
         glfw::WindowEvent::Scroll(x, y) => {
             game.screen_sys.on_scroll(x, y);
