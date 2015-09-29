@@ -58,13 +58,11 @@ impl Logo {
 			if line.is_empty() {
 				continue;
 			}
-			let mut i = 0;
-			for c in line.chars() {
-				i += 1;
+			for (i, c) in line.chars().enumerate() {
 				if c == ' ' {
 					continue;
 				}
-				let x = (i - 1) * 4;
+				let x = i * 4;
 				let y = row * 8;
 				let (r, g, b) = if c == ':' {
 					(255, 255, 255)

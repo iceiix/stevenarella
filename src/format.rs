@@ -277,8 +277,8 @@ fn test_color_from() {
 const LEGACY_CHAR: char = '§';
 
 pub fn convert_legacy(c: &mut Component) {
-    match c {
-        &mut Component::Text(ref mut txt) => {
+    match *c {
+        Component::Text(ref mut txt) => {
             if let Some(ref mut extra) = txt.modifier.extra.as_mut() {
                 for e in extra.iter_mut() {
                     convert_legacy(e);

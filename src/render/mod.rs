@@ -46,7 +46,7 @@ impl Renderer {
 		let version = { res.read().unwrap().version() };
 		let tex = gl::Texture::new();
 		tex.bind(gl::TEXTURE_2D_ARRAY);
-		tex.image_3d(gl::TEXTURE_2D_ARRAY, 0, ATLAS_SIZE as u32, ATLAS_SIZE as u32, 1, gl::RGBA, gl::UNSIGNED_BYTE, &[0; ATLAS_SIZE*ATLAS_SIZE*1*4]);
+		tex.image_3d(gl::TEXTURE_2D_ARRAY, 0, ATLAS_SIZE as u32, ATLAS_SIZE as u32, 1, gl::RGBA, gl::UNSIGNED_BYTE, &[0; ATLAS_SIZE*ATLAS_SIZE*4]);
 		tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
 		tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
 		tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
@@ -122,7 +122,7 @@ impl Renderer {
 			tex.pending_uploads.clear();		
 		}
 
-		for ani in self.textures.write().unwrap().animated_textures.iter_mut() {
+		for ani in &mut self.textures.write().unwrap().animated_textures {
 			if ani.remaining_time <= 0.0 {
 				ani.current_frame = (ani.current_frame + 1) % ani.frames.len();
 				ani.remaining_time += ani.frames[ani.current_frame].time as f64;
@@ -358,7 +358,7 @@ impl TextureManager {
 
 	fn find_free(&mut self, width: usize, height: usize) -> (i32, atlas::Rect) {
 		let mut index = 0;
-		for atlas in self.atlases.iter_mut() {
+		for atlas in &mut self.atlases {
 			if let Some(rect) = atlas.add(width, height) {
 				return (index, rect);
 			}
@@ -568,7 +568,7 @@ pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
 		panic!("Shader error: {}", v.get_info_log());
 	} else {
 		let log = v.get_info_log();
-		if log.len() > 0 {
+		if !log.is_empty() {
 			println!("{}", log);
 		}
 	}
@@ -582,7 +582,7 @@ pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
 		panic!("Shader error: {}", f.get_info_log());
 	} else {
 		let log = f.get_info_log();
-		if log.len() > 0 {
+		if !log.is_empty() {
 			println!("{}", log);
 		}
 	}
@@ -599,11 +599,9 @@ pub fn generate_element_buffer(size: usize) -> (Vec<u8>, gl::Type) {
 	let mut ty = gl::UNSIGNED_SHORT;
 	let mut data = if (size/6)*4*3 >= u16::max_value() as usize {
 		ty = gl::UNSIGNED_INT;
-		let data = Vec::with_capacity(size*4);
-		data
+		Vec::with_capacity(size*4)
 	} else {
-		let data = Vec::with_capacity(size*2);
-		data
+		Vec::with_capacity(size*2)
 	};
 	for i in 0 .. size/6 {
 		for val in &[0, 1, 2, 2, 1, 3] {

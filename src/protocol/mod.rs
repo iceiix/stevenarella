@@ -353,7 +353,7 @@ pub struct LenPrefixed<L: Lengthable, V> {
 
 impl <L: Lengthable, V: Default>  LenPrefixed<L, V> {
     fn new(data: Vec<V>) -> LenPrefixed<L, V> {
-        return LenPrefixed {
+        LenPrefixed {
             len: Default::default(),
             data: data,
         }
@@ -374,7 +374,7 @@ impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
         let len_data : L = L::from(self.data.len());
         try!(len_data.write_to(buf));
-        let ref data = self.data;
+        let data = &self.data;
         for val in data {
             try!(val.write_to(buf));
         }
@@ -406,7 +406,7 @@ pub struct LenPrefixedBytes<L: Lengthable> {
 
 impl <L: Lengthable>  LenPrefixedBytes<L> {
     fn new(data: Vec<u8>) -> LenPrefixedBytes<L> {
-        return LenPrefixedBytes {
+        LenPrefixedBytes {
             len: Default::default(),
             data: data,
         }
@@ -621,18 +621,18 @@ impl convert::From<io::Error> for Error {
 
 impl ::std::error::Error for Error {
     fn description(&self) -> &str {
-        match self {
-            &Error::Err(ref val) => &val[..],
-            &Error::IOError(ref e) => e.description(),
+        match *self {
+            Error::Err(ref val) => &val[..],
+            Error::IOError(ref e) => e.description(),
         }
     }
 }
 
 impl ::std::fmt::Display for Error {
     fn fmt(&self, f : &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        match self {
-            &Error::Err(ref val) => write!(f, "protocol error: {}", val),
-            &Error::IOError(ref e) => e.fmt(f)
+        match *self {
+            Error::Err(ref val) => write!(f, "protocol error: {}", val),
+            Error::IOError(ref e) => e.fmt(f)
         }
     }
 }

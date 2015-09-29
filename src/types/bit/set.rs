@@ -51,6 +51,6 @@ impl Set {
     }
 
     pub fn get(&mut self, i: usize) -> bool {
-        return (self.data[i>>6] & (1 << (i & 0x3F))) != 0
+        (self.data[i>>6] & (1 << (i & 0x3F))) != 0
     }
 }

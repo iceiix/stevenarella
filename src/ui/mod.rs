@@ -39,27 +39,27 @@ macro_rules! element_impl {
 	($($name:ident),+) => (
 impl Element {
 	fn get_click_funcs(&self) -> Vec<ClickFunc> {
-		match self {
+		match *self {
 			$(
-			&Element::$name(ref val) => val.click_funcs.clone(),
+			Element::$name(ref val) => val.click_funcs.clone(),
 			)+
 			_ => unimplemented!(),
 		}		
 	}
 
 	fn get_hover_funcs(&self) -> Vec<HoverFunc> {
-		match self {
+		match *self {
 			$(
-			&Element::$name(ref val) => val.hover_funcs.clone(),
+			Element::$name(ref val) => val.hover_funcs.clone(),
 			)+
 			_ => unimplemented!(),
 		}		
 	}
 
 	fn should_call_hover(&mut self, new: bool) -> bool{
-		match self {
+		match *self {
 			$(
-			&mut Element::$name(ref mut val) => {
+			Element::$name(ref mut val) => {
 				let ret = val.hovered != new;
 				val.hovered = new;
 				ret
@@ -70,81 +70,81 @@ impl Element {
 	}
 
 	fn should_draw(&self) -> bool {
-		match self {
+		match *self {
 			$(
-			&Element::$name(ref val) => val.should_draw,
+			Element::$name(ref val) => val.should_draw,
 			)+
 			_ => unimplemented!(),
 		}
 	}
 
 	fn get_parent(&self) -> Option<ElementRefInner> {
-		match self {
+		match *self {
 			$(
-			&Element::$name(ref val) => val.parent,
+			Element::$name(ref val) => val.parent,
 			)+
 			_ => unimplemented!(),
 		}
 	}
 
 	fn get_attachment(&self) -> (VAttach, HAttach) {
-		match self {
+		match *self {
 			$(
-			&Element::$name(ref val) => (val.v_attach, val.h_attach),
+			Element::$name(ref val) => (val.v_attach, val.h_attach),
 			)+
 			_ => unimplemented!(),
 		}		
 	}
 
 	fn get_offset(&self) -> (f64, f64) {
-		match self {
+		match *self {
 			$(
-			&Element::$name(ref val) => (val.x, val.y),
+			Element::$name(ref val) => (val.x, val.y),
 			)+
 			_ => unimplemented!(),
 		}		
 	}
 
 	fn get_size(&self) -> (f64, f64) {
-		match self {
+		match *self {
 			$(
-			&Element::$name(ref val) => val.get_size(),
+			Element::$name(ref val) => val.get_size(),
 			)+
 			_ => unimplemented!(),
 		}		
 	}
 
 	fn is_dirty(&self) -> bool {
-		match self {
+		match *self {
 			$(
-			&Element::$name(ref val) => val.dirty,
+			Element::$name(ref val) => val.dirty,
 			)+
 			_ => unimplemented!(),
 		}				
 	}
 
 	fn set_dirty(&mut self, dirty: bool) {
-		match self {
+		match *self {
 			$(
-			&mut Element::$name(ref mut val) => val.dirty = dirty,
+			Element::$name(ref mut val) => val.dirty = dirty,
 			)+
 			_ => unimplemented!(),
 		}				
 	}
 
 	fn update(&mut self, renderer: &mut render::Renderer) {
-		match self {
+		match *self {
 			$(
-			&mut Element::$name(ref mut val) => val.update(renderer),
+			Element::$name(ref mut val) => val.update(renderer),
 			)+
 			_ => unimplemented!(),
 		}		
 	}
 
 	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8>{
-		match self {
+		match *self {
 			$(
-			&mut Element::$name(ref mut val) => val.draw(renderer, r, width, height, delta),
+			Element::$name(ref mut val) => val.draw(renderer, r, width, height, delta),
 			)+
 			_ => unimplemented!(),
 		}		
@@ -459,8 +459,8 @@ impl Container {
 
 pub trait UIElement {
 	fn wrap(self) -> Element;
-	fn unwrap_ref<'a>(&'a Element) -> &'a Self;
-	fn unwrap_ref_mut<'a>(&'a mut Element) -> &'a mut Self;
+	fn unwrap_ref(&Element) -> &Self;
+	fn unwrap_ref_mut(&mut Element) -> &mut Self;
 }
 
 macro_rules! lazy_field {

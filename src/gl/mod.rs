@@ -312,7 +312,7 @@ impl Shader {
     pub fn get_parameter(&self, param: ShaderParameter) -> i32 {
         let mut ret : i32 = 0;
         unsafe { gl::GetShaderiv(self.0, param, &mut ret); }
-        return ret;
+        ret
     }
 
     pub fn get_info_log(&self) -> String {
@@ -505,13 +505,13 @@ pub struct MappedBuffer {
 impl Deref for MappedBuffer {
     type Target = Vec<u8>;
 
-    fn deref<'a>(&'a self) -> &'a Self::Target {
+    fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
 impl DerefMut for MappedBuffer {
-    fn deref_mut<'a>(&'a mut self) -> &'a mut Self::Target {
+    fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }

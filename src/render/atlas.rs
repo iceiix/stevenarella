@@ -39,10 +39,9 @@ impl Atlas {
 	pub fn add(&mut self, width: usize, height: usize) -> Option<Rect> {
 		let mut priority = usize::max_value();
 		let mut target: Option<Rect> = None;
-		let mut index = 0;
 		let mut target_index = 0;
 		// Search through and find the best fit for this texture
-		for free in &self.free_space {
+		for (index, free) in self.free_space.iter().enumerate() {
 			if free.width >= width && free.height >= height {
 				let current_priority = (free.width - width) * (free.height - height);
 				if target.is_none() || current_priority < priority {
@@ -55,7 +54,6 @@ impl Atlas {
 					break;
 				}
 			}
-			index += 1;
 		}
 		if target.is_none() {
 			return None;

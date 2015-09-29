@@ -87,10 +87,8 @@ impl UIState {
 
 		let mut char_map = HashMap::new();
 		let ascii_chars = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ        !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■";
-		let mut pos = 0u32;
-		for c in ascii_chars.chars() {
-			char_map.insert(c, ::std::char::from_u32(pos).unwrap());
-			pos += 1;
+		for (pos, c) in ascii_chars.chars().enumerate() {
+			char_map.insert(c, ::std::char::from_u32(pos as u32).unwrap());
 		}
 
 		let mut state = UIState {
@@ -206,7 +204,7 @@ impl UIState {
 				(sh as f32) / (self.page_height as f32)
 			)
 		}
-		return p.relative(
+		p.relative(
 			(cx * 16 + info.0 as u32) as f32 / 256.0,
 			(cy * 16) as f32 / 256.0,
 			(info.1 - info.0) as f32 / 256.0,
@@ -234,7 +232,7 @@ impl UIState {
 			return (((info.1 - info.0) as f64) / sw) * 16.0;
 		}
 		let info = self.font_character_info[c as usize];
-		return (info.1 - info.0) as f64;
+		(info.1 - info.0) as f64
 	}
 
 	fn load_font(&mut self) {
@@ -242,11 +240,11 @@ impl UIState {
 		if let Some(mut info) = res.open("minecraft", "font/glyph_sizes.bin") {
 			let mut data = Vec::with_capacity(0x10000);
 			info.read_to_end(&mut data).unwrap();
-			for i in 0 .. self.font_character_info.len() {				
+			for (i, info) in self.font_character_info.iter_mut().enumerate() {				
 				// Top nibble - start position
 				// Bottom nibble - end position
-				self.font_character_info[i].0 = (data[i] >> 4) as i32;
-				self.font_character_info[i].1 = (data[i] & 0xF) as i32 + 1;
+				info.0 = (data[i] >> 4) as i32;
+				info.1 = (data[i] & 0xF) as i32 + 1;
 			}
 		}
 		if let Some(mut val) = res.open("minecraft", "textures/font/ascii.png") {
