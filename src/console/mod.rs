@@ -16,6 +16,8 @@ use std::marker::PhantomData;
 use std::collections::HashMap;
 use std::any::Any;
 use std::sync::{Arc, Mutex};
+use std::fs;
+use std::io::{BufWriter, Write, BufRead, BufReader};
 use log;
 
 use ui;
@@ -31,13 +33,28 @@ pub struct CVar<T: Sized + Any + 'static> {
 	pub default: &'static Fn() -> T,
 }
 
-impl Var for CVar<String> {}
+impl Var for CVar<String> {
+	fn serialize(&self, val: &Box<Any>) -> String {
+		format!("\"{}\"", val.downcast_ref::<String>().unwrap())
+	}
+
+	fn deserialize(&self, input: &String) -> Box<Any> {
+		Box::new((&input[1..input.len() - 1]).to_owned())
+	}
+
+	fn description(&self) -> &'static str { self.description }
+	fn can_serialize(&self) -> bool { self.serializable }
+}
 
 pub trait Var {
-
+	fn serialize(&self, val: &Box<Any>) -> String;	
+	fn deserialize(&self, input: &String) -> Box<Any>;
+	fn description(&self) -> &'static str;
+	fn can_serialize(&self) -> bool;
 }
 
 pub struct Console {
+	names: HashMap<String, &'static str>,
 	vars: HashMap<&'static str, Box<Var>>,
 	var_values: HashMap<&'static str, Box<Any>>,
 
@@ -51,6 +68,7 @@ pub struct Console {
 impl Console {
 	pub fn new() -> Console {
 		let mut con = Console {
+			names: HashMap::new(),
 			vars: HashMap::new(),
 			var_values: HashMap::new(),
 
@@ -72,6 +90,7 @@ impl Console {
 		if self.vars.contains_key(var.name) {
 			panic!("Key registered twice {}", var.name);
 		}
+		self.names.insert(var.name.to_owned(), var.name);
 		self.var_values.insert(var.name, Box::new((var.default)()));
 		self.vars.insert(var.name, Box::new(var));
 	}
@@ -83,6 +102,7 @@ impl Console {
 
 	pub fn set<T: Sized + Any>(&mut self, var: CVar<T>, val: T) where CVar<T> : Var {
 		self.var_values.insert(var.name, Box::new(val));
+		self.save_config();
 	}
 
 	pub fn is_active(&self) -> bool {
@@ -143,6 +163,42 @@ impl Console {
 		for fmt in lines {
 			self.collection.add(fmt);
 		}
+	}
+
+	pub fn load_config(&mut self) {
+		if let Ok(file) = fs::File::open("conf.cfg") {
+			let reader = BufReader::new(file);
+			for line in reader.lines() {
+				let line = line.unwrap();
+				if line.starts_with("#") || line.is_empty() {
+					continue;
+				}
+				let parts = line.splitn(2, ' ').map(|v| v.to_owned()).collect::<Vec<String>>();
+				let (name, arg) = (&parts[0], &parts[1]);
+				if let Some(var_name) = self.names.get(name) {
+					let var = self.vars.get(var_name).unwrap();
+					let val = var.deserialize(&arg);
+					if var.can_serialize() {
+						self.var_values.insert(var_name, val);
+					}
+				} else {
+					println!("Missing prop");
+				}
+			}
+		}
+	}
+
+	pub fn save_config(&self) {
+    	let mut file = BufWriter::new(fs::File::create("conf.cfg").unwrap());
+    	for (name, var) in &self.vars {
+    		if !var.can_serialize() {
+    			continue;
+    		}
+    		for line in var.description().lines() {
+    			write!(file, "# {}\n", line).unwrap();
+    		}
+    		write!(file, "{} {}\n\n", name, var.serialize(self.var_values.get(name).unwrap())).unwrap();
+    	}
 	}
 
 	fn log(&mut self, record: &log::LogRecord) {

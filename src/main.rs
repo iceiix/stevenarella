@@ -45,7 +45,8 @@ use glfw::{Action, Context, Key};
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
     name: "cl_brand",
-    description: "cl_brand has the value of the clients current 'brand'. e.g. \"Steven\" or \"Vanilla\"",
+    description: "cl_brand has the value of the clients current 'brand'. \
+                e.g. \"Steven\" or \"Vanilla\"",
     mutable: false,
     serializable: false, 
     default: &|| "steven".to_owned(),
@@ -60,7 +61,12 @@ pub struct Game {
 
 fn main() {
     let con = Arc::new(Mutex::new(console::Console::new()));
-    con.lock().unwrap().register(CL_BRAND);
+    {
+        let mut con = con.lock().unwrap();
+        con.register(CL_BRAND);
+        con.load_config();
+        con.save_config();
+    }
     let proxy = console::ConsoleProxy::new(con.clone());
     log::set_logger(|max_log_level| {
         max_log_level.set(log::LogLevelFilter::Trace);
