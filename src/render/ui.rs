@@ -46,7 +46,7 @@ pub struct UIState {
 
 	// Font
 	font_pages: Vec<Option<render::Texture>>,
-	font_character_info: [(i32,i32); 0x10000],
+	font_character_info: Vec<(i32,i32)>,
 	char_map: HashMap<char, char>,
 	page_width: f64,
 	page_height: f64,
@@ -112,7 +112,7 @@ impl UIState {
 
 			// Font
 			font_pages: pages,
-			font_character_info: [(0, 0); 0x10000],
+			font_character_info: vec![(0, 0); 0x10000],
 			char_map: char_map,
 			page_width: 0.0,
 			page_height: 0.0,
