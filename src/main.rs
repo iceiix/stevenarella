@@ -155,7 +155,12 @@ fn handle_window_event(window: &glutin::Window, game: &mut Game, ui_container: &
             ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
         },
 
-        glutin::Event::MouseWheel(glutin::MouseScrollDelta::PixelDelta(x, y)) => {
+        glutin::Event::MouseWheel(delta) => {
+            let (x, y) = match delta {
+                glutin::MouseScrollDelta::LineDelta(x, y) => (x, y),
+                glutin::MouseScrollDelta::PixelDelta(x, y) => (x, y)
+            };
+
             game.screen_sys.on_scroll(x as f64, y as f64);
         },
 
