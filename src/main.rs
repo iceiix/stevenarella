@@ -25,7 +25,7 @@ pub mod screen;
 #[macro_use]
 pub mod console;
 
-extern crate glfw;
+extern crate glutin;
 extern crate image;
 extern crate time;
 extern crate byteorder;
@@ -40,7 +40,6 @@ extern crate log;
 
 use std::sync::{Arc, RwLock, Mutex};
 use std::marker::PhantomData;
-use glfw::{Action, Context, Key};
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -48,7 +47,7 @@ const CL_BRAND: console::CVar<String> = console::CVar {
     description: "cl_brand has the value of the clients current 'brand'. \
                 e.g. \"Steven\" or \"Vanilla\"",
     mutable: false,
-    serializable: false, 
+    serializable: false,
     default: &|| "steven".to_owned(),
 };
 
@@ -57,6 +56,8 @@ pub struct Game {
     screen_sys: screen::ScreenSystem,
     resource_manager: Arc<RwLock<resources::Manager>>,
     console: Arc<Mutex<console::Console>>,
+    should_close: bool,
+    mouse_pos: (i32, i32),
 }
 
 fn main() {
@@ -67,7 +68,9 @@ fn main() {
         con.load_config();
         con.save_config();
     }
+
     let proxy = console::ConsoleProxy::new(con.clone());
+
     log::set_logger(|max_log_level| {
         max_log_level.set(log::LogLevelFilter::Trace);
         Box::new(proxy)
@@ -78,26 +81,21 @@ fn main() {
     let resource_manager = Arc::new(RwLock::new(resources::Manager::new()));
     { resource_manager.write().unwrap().tick(); }
 
-    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+    let mut window = glutin::WindowBuilder::new()
+        .with_title("Steven".to_string())
+        .with_dimensions(854, 480)
+        .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (3, 2)))
+        .with_gl_profile(glutin::GlProfile::Core)
+        .with_depth_buffer(24)
+        .with_stencil_buffer(0)
+        .with_vsync()
+        .build().ok().expect("Could not create Glutin window.");
 
-    glfw.window_hint(glfw::WindowHint::ContextVersion(3, 2));
-    glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
-    glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
-    glfw.window_hint(glfw::WindowHint::DepthBits(32));
-    glfw.window_hint(glfw::WindowHint::StencilBits(0));
-
-    let (mut window, events) = glfw.create_window(854, 480, "Steven", glfw::WindowMode::Windowed)
-        .expect("Failed to create GLFW window");
+    unsafe {
+        window.make_current().ok().expect("Could not set current context.");
+    }
 
     gl::init(&mut window);
-
-    window.set_key_polling(true);
-    window.set_char_polling(true);
-    window.set_scroll_polling(true);
-    window.set_mouse_button_polling(true);
-    window.set_cursor_pos_polling(true);
-    window.make_current();
-    glfw.set_swap_interval(1);
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
@@ -113,56 +111,62 @@ fn main() {
         screen_sys: screen_sys,
         resource_manager: resource_manager,
         console: con,
+        should_close: false,
+        mouse_pos: (0, 0),
     };
 
-    while !window.should_close() {
+    while !game.should_close {
         { game.resource_manager.write().unwrap().tick(); }
+
         let now = time::now();
         let diff = now - last_frame;
         last_frame = now;
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
+        let (width, height) = window.get_inner_size_pixels().unwrap();
 
         game.screen_sys.tick(delta, &mut game.renderer, &mut ui_container);
-
-        let (width, height) = window.get_framebuffer_size();
         game.console.lock().unwrap().tick(&mut ui_container, &mut game.renderer, delta, width as f64);
         ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
-        game.renderer.tick(delta, width as u32, height as u32);
+        game.renderer.tick(delta, width, height);
 
-        window.swap_buffers();
-        glfw.poll_events();
-        for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, &mut game, &mut ui_container, event);
+        let _ = window.swap_buffers();
+
+        for event in window.poll_events() {
+            handle_window_event(&window, &mut game, &mut ui_container, event)
         }
     }
 }
 
-fn handle_window_event(window: &mut glfw::Window, game: &mut Game, ui_container: &mut ui::Container, event: glfw::WindowEvent) {
+fn handle_window_event(window: &glutin::Window, game: &mut Game, ui_container: &mut ui::Container, event: glutin::Event) {
     match event {
-        glfw::WindowEvent::Key(Key::GraveAccent, _, Action::Press, _) => {
-            game.console.lock().unwrap().toggle();
-        }
-        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
-            window.set_should_close(true)
+        glutin::Event::Closed => game.should_close = true,
+
+        glutin::Event::MouseMoved((x, y)) => {
+            game.mouse_pos = (x, y);
+            let (width, height) = window.get_inner_size_pixels().unwrap();
+
+            ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);
         },
 
-        glfw::WindowEvent::Key(key, _, Action::Press, _) => {
+        glutin::Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Left) => {
+            let (x, y) = game.mouse_pos;
+            let (width, height) = window.get_inner_size_pixels().unwrap();
+
+            ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
+        },
+
+        glutin::Event::MouseWheel(glutin::MouseScrollDelta::PixelDelta(x, y)) => {
+            game.screen_sys.on_scroll(x as f64, y as f64);
+        },
+
+        glutin::Event::KeyboardInput(glutin::ElementState::Pressed, 41 /* ` GRAVE */, _) => {
+            game.console.lock().unwrap().toggle();
+        },
+
+        glutin::Event::KeyboardInput(glutin::ElementState::Pressed, key, _) => {
             println!("Key: {:?}", key);
         },
-        glfw::WindowEvent::Scroll(x, y) => {
-            game.screen_sys.on_scroll(x, y);
-        },
-        glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, Action::Release, _) => {
-            let (width, height) = window.get_size();
-            let (xpos, ypos) = window.get_cursor_pos();
-            let (fw, fh) = window.get_framebuffer_size();
-            ui_container.click_at(game, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)
-        },
-        glfw::WindowEvent::CursorPos(xpos, ypos) => {
-            let (width, height) = window.get_size();
-            let (fw, fh) = window.get_framebuffer_size();
-            ui_container.hover_at(game, xpos*((fw as f64)/(width as f64)), ypos*((fh as f64)/(height as f64)), fw as f64, fh as f64)            
-        }
-        _ => {}
+
+        _ => ()
     }
 }

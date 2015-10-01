@@ -5,7 +5,7 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 build = "build.rs"
 
 [dependencies]
-glfw = "0.1.0"
+glutin = "0.3.7"
 byteorder = "0.3.13"
 hyper = "0.6.13"
 serde = "0.6.0"
@@ -25,13 +25,3 @@ version = "0"
 [dependencies.steven_openssl]
 path = "./openssl"
 version = "0"
-
-[target.x86_64-pc-windows-gnu.dependencies]
-glfw = { version = "0.1.0", default-features = false }
-
-[target.x86_64-pc-windows-msvc.dependencies]
-glfw = { version = "0.1.0", default-features = false }
-
-[target.i686-pc-windows-gnu.dependencies]
-glfw = { version = "0.1.0", default-features = false }
-

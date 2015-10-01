@@ -13,7 +13,7 @@
 // limitations under the License.
 
 extern crate steven_gl as gl;
-extern crate glfw;
+use glutin;
 
 use std::ops::BitOr;
 use std::ffi;
@@ -22,7 +22,7 @@ use std::ptr;
 use std::ops::{Deref, DerefMut};
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(window: &mut glfw::Window) {
+pub fn init(window: &mut glutin::Window) {
     gl::load_with(|s| window.get_proc_address(s));
 }
 
@@ -319,7 +319,7 @@ impl Shader {
         let len = self.get_parameter(INFO_LOG_LENGTH);
 
         let mut data = Vec::<u8>::with_capacity(len as usize);
-        unsafe { 
+        unsafe {
             data.set_len(len as usize);
             gl::GetShaderInfoLog(self.0, len, ptr::null_mut(), data.as_mut_ptr() as *mut i8);
         }
@@ -416,7 +416,7 @@ impl VertexArray {
     }
 }
 
-impl Drop for VertexArray {   
+impl Drop for VertexArray {
     fn drop(&mut self) {
         unsafe { gl::DeleteVertexArrays(1, &self.0); }
         self.0 = 0;
@@ -455,7 +455,7 @@ pub const WRITE_ONLY: Access = gl::WRITE_ONLY;
 pub struct Buffer(u32);
 
 impl Buffer {
-    /// Allocates a new Buffer. 
+    /// Allocates a new Buffer.
     pub fn new() -> Buffer {
         let mut b = Buffer(0);
         unsafe { gl::GenBuffers(1, &mut b.0); }
@@ -465,7 +465,7 @@ impl Buffer {
     /// Makes the buffer the currently active one for the given target.
     /// This will allow it to be the source of operations that act on a buffer
     /// (Data, Map etc).
-    pub fn bind(&self, target: BufferTarget) { 
+    pub fn bind(&self, target: BufferTarget) {
         unsafe { gl::BindBuffer(target, self.0); }
     }
 
