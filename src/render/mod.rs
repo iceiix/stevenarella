@@ -14,8 +14,9 @@
 
 mod atlas;
 pub mod glsl;
+#[macro_use]
+pub mod shaders;
 pub mod ui;
-mod shaders;
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -57,6 +58,20 @@ impl Renderer {
 		let mut greg = glsl::Registry::new();
 		shaders::add_shaders(&mut greg);
 		let ui = ui::UIState::new(&greg, textures.clone(), res.clone());
+
+		gl::enable(gl::DEPTH_TEST);
+		gl::enable(gl::CULL_FACE_FLAG);
+		gl::cull_face(gl::BACK);
+		gl::front_face(gl::CLOCK_WISE);
+
+		// Shaders
+
+		// UI
+		// Line Drawer
+		// Models
+		// Clouds
+
+		gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 
 		Renderer {
 			resource_version: version,
@@ -554,44 +569,6 @@ impl Texture {
 			rel_height: height * self.rel_height,
 		}
 	}
-}
-
-pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
-	let program = gl::Program::new();
-
-	let v = gl::Shader::new(gl::VERTEX_SHADER);
-	v.set_source(vertex);
-	v.compile();
-
-	if v.get_parameter(gl::COMPILE_STATUS) == 0 {
-		println!("Src: {}", vertex);
-		panic!("Shader error: {}", v.get_info_log());
-	} else {
-		let log = v.get_info_log();
-		if !log.is_empty() {
-			println!("{}", log);
-		}
-	}
-
-	let f = gl::Shader::new(gl::FRAGMENT_SHADER);
-	f.set_source(fragment);
-	f.compile();
-
-	if f.get_parameter(gl::COMPILE_STATUS) == 0 {
-		println!("Src: {}", fragment);
-		panic!("Shader error: {}", f.get_info_log());
-	} else {
-		let log = f.get_info_log();
-		if !log.is_empty() {
-			println!("{}", log);
-		}
-	}
-
-	program.attach_shader(v);
-	program.attach_shader(f);
-	program.link();
-	program.use_program();
-	program
 }
 
 #[allow(unused_must_use)]

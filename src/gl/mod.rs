@@ -141,6 +141,28 @@ pub fn blend_func(s_factor: Factor, d_factor: Factor) {
     unsafe { gl::BlendFunc(s_factor, d_factor); }
 }
 
+// Face specifies a face to act on.
+pub type Face = u32;
+pub const BACK: Face = gl::BACK;
+pub const FRONT: Face = gl::FRONT;
+
+/// Sets the face to be culled by the gpu.
+pub fn cull_face(face: Face) {
+    unsafe { gl::CullFace(face); }
+}
+
+// FaceDirection is used to specify an order of vertices, normally
+// used to set which is considered to be the front face.
+pub type FaceDirection = u32;
+pub const CLOCK_WISE: FaceDirection = gl::CW;
+pub const COUNTER_CLOCK_WISE: FaceDirection = gl::CCW;
+
+/// Sets the direction of vertices used to specify the
+/// front face (e.g. for culling).
+pub fn front_face(dir: FaceDirection) {
+    unsafe { gl::FrontFace(dir) }
+}
+
 /// Type is a type of data used by various operations.
 pub type Type = u32;
 pub const UNSIGNED_BYTE: Type = gl::UNSIGNED_BYTE;

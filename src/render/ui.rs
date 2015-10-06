@@ -17,7 +17,10 @@ use std::io::Write;
 use std::collections::HashMap;
 use resources;
 use gl;
+#[macro_use]
 use render;
+use render::glsl;
+use render::shaders;
 use byteorder::{WriteBytesExt, NativeEndian};
 use image;
 use image::{GenericImage};
@@ -40,9 +43,7 @@ pub struct UIState {
 	index_type: gl::Type,
 	max_index: usize,
 
-	shader: gl::Program,
-	s_texture: gl::Uniform,
-	s_screensize: gl::Uniform,
+	shader: UIShader,
 
 	// Font
 	font_pages: Vec<Option<render::Texture>>,
@@ -52,30 +53,39 @@ pub struct UIState {
 	page_height: f64,
 }
 
+init_shader! {
+	Program UIShader {
+		vert = "ui_vertex",
+		frag = "ui_frag",
+		attribute = {
+			position => "aPosition",
+			texture_info => "aTextureInfo",
+			texture_offset => "aTextureOffset",
+			color => "aColor",
+		},
+		uniform = {
+			texture => "textures",
+			screensize => "screenSize",
+		},
+	}
+}
+
 impl UIState {
-	pub fn new(glsl: &super::glsl::Registry, textures: Arc<RwLock<render::TextureManager>>, res: Arc<RwLock<resources::Manager>>) -> UIState {
-		let v = glsl.get("ui_vertex");
-		let f = glsl.get("ui_frag");
-		let shader = super::create_program(&v, &f);
-		let s_position = shader.attribute_location("aPosition");
-		let s_texture_info = shader.attribute_location("aTextureInfo");
-		let s_texture_offset = shader.attribute_location("aTextureOffset");
-		let s_color = shader.attribute_location("aColor");
-		let s_texture = shader.uniform_location("textures");
-		let s_screensize = shader.uniform_location("screenSize");
+	pub fn new(glsl: &glsl::Registry, textures: Arc<RwLock<render::TextureManager>>, res: Arc<RwLock<resources::Manager>>) -> UIState {
+		let shader = UIShader::new(glsl);
 
 		let array = gl::VertexArray::new();
 		array.bind();
 		let buffer = gl::Buffer::new();
 		buffer.bind(gl::ARRAY_BUFFER);
-		s_position.enable();
-		s_texture_info.enable();
-		s_texture_offset.enable();
-		s_color.enable();
-		s_position.vertex_pointer_int(3, gl::SHORT, 28, 0);
-		s_texture_info.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 28, 8);
-		s_texture_offset.vertex_pointer_int(3, gl::SHORT, 28, 16);
-		s_color.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 28, 24);
+		shader.position.enable();
+		shader.texture_info.enable();
+		shader.texture_offset.enable();
+		shader.color.enable();
+		shader.position.vertex_pointer_int(3, gl::SHORT, 28, 0);
+		shader.texture_info.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 28, 8);
+		shader.texture_offset.vertex_pointer_int(3, gl::SHORT, 28, 16);
+		shader.color.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 28, 24);
 
 		let index_buffer = gl::Buffer::new();
 		index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
@@ -107,8 +117,6 @@ impl UIState {
 			max_index: 0,
 
 			shader: shader,
-			s_texture: s_texture,
-			s_screensize: s_screensize,
 
 			// Font
 			font_pages: pages,
@@ -135,8 +143,8 @@ impl UIState {
 		gl::enable(gl::BLEND);
 		gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 
-		self.shader.use_program();
-		self.s_texture.set_int(0);
+		self.shader.program.use_program();
+		self.shader.texture.set_int(0);
 		if self.count > 0 {
 			self.array.bind();
 			if self.max_index < self.count {
@@ -147,7 +155,7 @@ impl UIState {
 				self.max_index = self.count;
 			}
 
-			self.s_screensize.set_float2(width as f32, height as f32);
+			self.shader.screensize.set_float2(width as f32, height as f32);
 
 			self.buffer.bind(gl::ARRAY_BUFFER);
 			if self.data.len() > self.prev_size {
