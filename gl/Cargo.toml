@@ -5,9 +5,9 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 build = "build.rs"
 
 [build-dependencies]
-gl_generator = "0.0.27"
+gl_generator = "0.1.0"
 khronos_api = "0.0.8"
 
 [dependencies]
-gl_common = "0.0.4"
+gl_common = "0.1.0"
 libc = "*"
