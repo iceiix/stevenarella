@@ -17,7 +17,6 @@ use std::io::Write;
 use std::collections::HashMap;
 use resources;
 use gl;
-#[macro_use]
 use render;
 use render::glsl;
 use render::shaders;
@@ -244,6 +243,9 @@ impl UIState {
 	}
 
 	fn load_font(&mut self) {
+		for page in &mut self.font_pages {
+			*page = None;
+		}
 		let res = self.resources.read().unwrap();
 		if let Some(mut info) = res.open("minecraft", "font/glyph_sizes.bin") {
 			let mut data = Vec::with_capacity(0x10000);
