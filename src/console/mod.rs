@@ -202,7 +202,7 @@ impl Console {
 	}
 
 	fn log(&mut self, record: &log::LogRecord) {
-		let mut file = record.location().file();
+		let mut file = &record.location().file().replace("\\", "/")[..];
 		if let Some(pos) = file.rfind("src/") {
 			file = &file[pos + 4..];
 		}
