@@ -138,24 +138,25 @@ fn main() {
 }
 
 fn handle_window_event(window: &glutin::Window, game: &mut Game, ui_container: &mut ui::Container, event: glutin::Event) {
+    use glutin::{Event, VirtualKeyCode};
     match event {
-        glutin::Event::Closed => game.should_close = true,
+        Event::Closed => game.should_close = true,
 
-        glutin::Event::MouseMoved((x, y)) => {
+        Event::MouseMoved((x, y)) => {
             game.mouse_pos = (x, y);
             let (width, height) = window.get_inner_size_pixels().unwrap();
 
             ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);
         },
 
-        glutin::Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Left) => {
+        Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Left) => {
             let (x, y) = game.mouse_pos;
             let (width, height) = window.get_inner_size_pixels().unwrap();
 
             ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
         },
 
-        glutin::Event::MouseWheel(delta) => {
+        Event::MouseWheel(delta) => {
             let (x, y) = match delta {
                 glutin::MouseScrollDelta::LineDelta(x, y) => (x, y),
                 glutin::MouseScrollDelta::PixelDelta(x, y) => (x, y)
@@ -164,12 +165,14 @@ fn handle_window_event(window: &glutin::Window, game: &mut Game, ui_container: &
             game.screen_sys.on_scroll(x as f64, y as f64);
         },
 
-        glutin::Event::KeyboardInput(glutin::ElementState::Pressed, 41 /* ` GRAVE */, _) => {
+        Event::KeyboardInput(glutin::ElementState::Pressed, 41 /* ` GRAVE */, _) => {
             game.console.lock().unwrap().toggle();
         },
-
-        glutin::Event::KeyboardInput(glutin::ElementState::Pressed, key, _) => {
-            println!("Key: {:?}", key);
+        Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(VirtualKeyCode::Grave)) => {
+            game.console.lock().unwrap().toggle();
+        },
+        Event::KeyboardInput(glutin::ElementState::Pressed, key, virt) => {
+            println!("Key: {:?} {:?}", key, virt);
         },
 
         _ => ()
