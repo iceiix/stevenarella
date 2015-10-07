@@ -48,13 +48,17 @@ pub fn draw_elements(ty: DrawType, count: usize, dty: Type, offset: usize) {
 
 /// Sets the size of the viewport of this context.
 pub fn viewport(x: i32, y: i32, w: i32, h: i32) {
-    unsafe { gl::Viewport(x, y, w, h); }
+    unsafe {
+        gl::Viewport(x, y, w, h);
+    }
 }
 
 /// Sets the color the color buffer should be cleared to
 /// when Clear is called with the color flag.
 pub fn clear_color(r: f32, g: f32, b: f32, a: f32) {
-    unsafe { gl::ClearColor(r, g, b, a); }
+    unsafe {
+        gl::ClearColor(r, g, b, a);
+    }
 }
 
 /// ClearFlags is a set of flags to mark what should be cleared during
@@ -64,7 +68,7 @@ pub enum ClearFlags {
     Color,
     /// Marks the depth buffer to be cleared
     Depth,
-    Internal(u32)
+    Internal(u32),
 }
 
 impl ClearFlags {
@@ -72,7 +76,7 @@ impl ClearFlags {
         match self {
             ClearFlags::Color => gl::COLOR_BUFFER_BIT,
             ClearFlags::Depth => gl::DEPTH_BUFFER_BIT,
-            ClearFlags::Internal(val) => val
+            ClearFlags::Internal(val) => val,
         }
     }
 }
@@ -101,7 +105,9 @@ pub const ALWAYS: Func = gl::ALWAYS;
 pub const EQUAL: Func = gl::EQUAL;
 
 pub fn depth_func(f: Func) {
-    unsafe { gl::DepthFunc(f); }
+    unsafe {
+        gl::DepthFunc(f);
+    }
 }
 
 /// Flag is a setting that can be enabled or disabled on the context.
@@ -115,18 +121,24 @@ pub const MULTISAMPLE: Flag = gl::MULTISAMPLE;
 
 /// Enables the passed flag.
 pub fn enable(f: Flag) {
-    unsafe { gl::Enable(f); }
+    unsafe {
+        gl::Enable(f);
+    }
 }
 
 /// Disables the passed flag.
 pub fn disable(f: Flag) {
-    unsafe { gl::Disable(f); }
+    unsafe {
+        gl::Disable(f);
+    }
 }
 
 /// Sets the texture slot with the passed id as the
 /// currently active one.
 pub fn active_texture(id: u32) {
-    unsafe { gl::ActiveTexture(gl::TEXTURE0 + id); }
+    unsafe {
+        gl::ActiveTexture(gl::TEXTURE0 + id);
+    }
 }
 
 /// Factor is used in blending
@@ -138,7 +150,9 @@ pub const ZERO_FACTOR: Factor = gl::ZERO;
 
 /// Sets the factors to be used when blending.
 pub fn blend_func(s_factor: Factor, d_factor: Factor) {
-    unsafe { gl::BlendFunc(s_factor, d_factor); }
+    unsafe {
+        gl::BlendFunc(s_factor, d_factor);
+    }
 }
 
 // Face specifies a face to act on.
@@ -148,7 +162,9 @@ pub const FRONT: Face = gl::FRONT;
 
 /// Sets the face to be culled by the gpu.
 pub fn cull_face(face: Face) {
-    unsafe { gl::CullFace(face); }
+    unsafe {
+        gl::CullFace(face);
+    }
 }
 
 // FaceDirection is used to specify an order of vertices, normally
@@ -219,7 +235,9 @@ impl Texture {
     // Allocates a new texture.
     pub fn new() -> Texture {
         let mut t = Texture(0);
-        unsafe { gl::GenTextures(1, &mut t.0); }
+        unsafe {
+            gl::GenTextures(1, &mut t.0);
+        }
         t
     }
 
@@ -230,25 +248,75 @@ impl Texture {
         }
     }
 
-    pub fn get_pixels(&self, target: TextureTarget, level: i32, format: TextureFormat, ty: Type, pixels: &mut [u8]) {
+    pub fn get_pixels(&self,
+                      target: TextureTarget,
+                      level: i32,
+                      format: TextureFormat,
+                      ty: Type,
+                      pixels: &mut [u8]) {
         unsafe {
-            gl::GetTexImage(target, level, format, ty, pixels.as_mut_ptr() as *mut gl::types::GLvoid);
+            gl::GetTexImage(target,
+                            level,
+                            format,
+                            ty,
+                            pixels.as_mut_ptr() as *mut gl::types::GLvoid);
         }
     }
 
-    pub fn image_3d(&self, target: TextureTarget, level: i32, width: u32, height: u32, depth: u32, format: TextureFormat, ty: Type, pix: &[u8]) {
+    pub fn image_3d(&self,
+                    target: TextureTarget,
+                    level: i32,
+                    width: u32,
+                    height: u32,
+                    depth: u32,
+                    format: TextureFormat,
+                    ty: Type,
+                    pix: &[u8]) {
         unsafe {
-            gl::TexImage3D(target, level, format as i32, width as i32, height as i32, depth as i32, 0, format, ty, pix.as_ptr() as *const gl::types::GLvoid);
+            gl::TexImage3D(target,
+                           level,
+                           format as i32,
+                           width as i32,
+                           height as i32,
+                           depth as i32,
+                           0,
+                           format,
+                           ty,
+                           pix.as_ptr() as *const gl::types::GLvoid);
         }
     }
 
-    pub fn sub_image_3d(&self, target: TextureTarget, level: i32, x: u32, y: u32, z: u32, width: u32, height: u32, depth: u32, format: TextureFormat, ty: Type, pix: &[u8]) {
+    pub fn sub_image_3d(&self,
+                        target: TextureTarget,
+                        level: i32,
+                        x: u32,
+                        y: u32,
+                        z: u32,
+                        width: u32,
+                        height: u32,
+                        depth: u32,
+                        format: TextureFormat,
+                        ty: Type,
+                        pix: &[u8]) {
         unsafe {
-            gl::TexSubImage3D(target, level, x as i32, y as i32, z as i32, width as i32, height as i32, depth as i32, format, ty, pix.as_ptr() as *const gl::types::GLvoid);
+            gl::TexSubImage3D(target,
+                              level,
+                              x as i32,
+                              y as i32,
+                              z as i32,
+                              width as i32,
+                              height as i32,
+                              depth as i32,
+                              format,
+                              ty,
+                              pix.as_ptr() as *const gl::types::GLvoid);
         }
     }
 
-    pub fn set_parameter(&self, target: TextureTarget, param: TextureParameter, value: TextureValue) {
+    pub fn set_parameter(&self,
+                         target: TextureTarget,
+                         param: TextureParameter,
+                         value: TextureValue) {
         unsafe {
             gl::TexParameteri(target, param, value);
         }
@@ -257,7 +325,9 @@ impl Texture {
 
 impl Drop for Texture {
     fn drop(&mut self) {
-        unsafe { gl::DeleteTextures(1, &self.0); }
+        unsafe {
+            gl::DeleteTextures(1, &self.0);
+        }
     }
 }
 
@@ -298,17 +368,23 @@ impl Program {
     }
 
     pub fn uniform_location(&self, name: &str) -> Uniform {
-        Uniform(unsafe { gl::GetUniformLocation(self.0, ffi::CString::new(name).unwrap().as_ptr()) } )
+        Uniform(unsafe {
+            gl::GetUniformLocation(self.0, ffi::CString::new(name).unwrap().as_ptr())
+        })
     }
 
     pub fn attribute_location(&self, name: &str) -> Attribute {
-        Attribute(unsafe { gl::GetAttribLocation(self.0, ffi::CString::new(name).unwrap().as_ptr()) })
+        Attribute(unsafe {
+            gl::GetAttribLocation(self.0, ffi::CString::new(name).unwrap().as_ptr())
+        })
     }
 }
 
 impl Drop for Program {
     fn drop(&mut self) {
-        unsafe { gl::DeleteProgram(self.0); }
+        unsafe {
+            gl::DeleteProgram(self.0);
+        }
     }
 }
 
@@ -321,7 +397,10 @@ impl Shader {
 
     pub fn set_source(&self, src: &str) {
         unsafe {
-            gl::ShaderSource(self.0, 1, &ffi::CString::new(src).unwrap().as_ptr(), ptr::null());
+            gl::ShaderSource(self.0,
+                             1,
+                             &ffi::CString::new(src).unwrap().as_ptr(),
+                             ptr::null());
         }
     }
 
@@ -332,8 +411,10 @@ impl Shader {
     }
 
     pub fn get_parameter(&self, param: ShaderParameter) -> i32 {
-        let mut ret : i32 = 0;
-        unsafe { gl::GetShaderiv(self.0, param, &mut ret); }
+        let mut ret: i32 = 0;
+        unsafe {
+            gl::GetShaderiv(self.0, param, &mut ret);
+        }
         ret
     }
 
@@ -406,13 +487,22 @@ impl Attribute {
 
     pub fn vertex_pointer(&self, size: i32, ty: Type, normalized: bool, stride: i32, offset: i32) {
         unsafe {
-            gl::VertexAttribPointer(self.0 as u32, size, ty, normalized as u8, stride, offset as *const gl::types::GLvoid);
+            gl::VertexAttribPointer(self.0 as u32,
+                                    size,
+                                    ty,
+                                    normalized as u8,
+                                    stride,
+                                    offset as *const gl::types::GLvoid);
         }
     }
 
     pub fn vertex_pointer_int(&self, size: i32, ty: Type, stride: i32, offset: i32) {
         unsafe {
-            gl::VertexAttribIPointer(self.0 as u32, size, ty, stride, offset as *const gl::types::GLvoid);
+            gl::VertexAttribIPointer(self.0 as u32,
+                                     size,
+                                     ty,
+                                     stride,
+                                     offset as *const gl::types::GLvoid);
         }
     }
 }
@@ -426,7 +516,9 @@ impl VertexArray {
     /// Allocates a new VertexArray.
     pub fn new() -> VertexArray {
         let mut va = VertexArray(0);
-        unsafe { gl::GenVertexArrays(1, &mut va.0); }
+        unsafe {
+            gl::GenVertexArrays(1, &mut va.0);
+        }
         va
     }
 
@@ -434,13 +526,17 @@ impl VertexArray {
     /// means buffers/the format of the buffers etc will be bound to
     /// this VertexArray.
     pub fn bind(&self) {
-        unsafe { gl::BindVertexArray(self.0); }
+        unsafe {
+            gl::BindVertexArray(self.0);
+        }
     }
 }
 
 impl Drop for VertexArray {
     fn drop(&mut self) {
-        unsafe { gl::DeleteVertexArrays(1, &self.0); }
+        unsafe {
+            gl::DeleteVertexArrays(1, &self.0);
+        }
         self.0 = 0;
     }
 }
@@ -480,7 +576,9 @@ impl Buffer {
     /// Allocates a new Buffer.
     pub fn new() -> Buffer {
         let mut b = Buffer(0);
-        unsafe { gl::GenBuffers(1, &mut b.0); }
+        unsafe {
+            gl::GenBuffers(1, &mut b.0);
+        }
         b
     }
 
@@ -488,12 +586,17 @@ impl Buffer {
     /// This will allow it to be the source of operations that act on a buffer
     /// (Data, Map etc).
     pub fn bind(&self, target: BufferTarget) {
-        unsafe { gl::BindBuffer(target, self.0); }
+        unsafe {
+            gl::BindBuffer(target, self.0);
+        }
     }
 
     pub fn set_data(&self, target: BufferTarget, data: &[u8], usage: BufferUsage) {
         unsafe {
-            gl::BufferData(target, data.len() as i64, data.as_ptr() as *const gl::types::GLvoid, usage);
+            gl::BufferData(target,
+                           data.len() as i64,
+                           data.as_ptr() as *const gl::types::GLvoid,
+                           usage);
         }
     }
 
@@ -506,7 +609,10 @@ impl Buffer {
     /// length is valid.
     pub fn map(&self, target: BufferTarget, access: Access, length: usize) -> MappedBuffer {
         unsafe {
-            MappedBuffer{inner: Vec::from_raw_parts(gl::MapBuffer(target, access) as *mut u8, 0, length), target: target}
+            MappedBuffer {
+                inner: Vec::from_raw_parts(gl::MapBuffer(target, access) as *mut u8, 0, length),
+                target: target,
+            }
         }
     }
 }
@@ -540,7 +646,9 @@ impl DerefMut for MappedBuffer {
 
 impl Drop for MappedBuffer {
     fn drop(&mut self) {
-        unsafe { gl::UnmapBuffer(self.target); }
+        unsafe {
+            gl::UnmapBuffer(self.target);
+        }
         mem::forget(mem::replace(&mut self.inner, Vec::new()));
     }
 }

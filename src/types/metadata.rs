@@ -18,7 +18,7 @@ use std::io;
 use std::io::{Read, Write};
 use std::fmt;
 use protocol;
-use protocol::{Serializable};
+use protocol::Serializable;
 use format;
 use item;
 
@@ -30,7 +30,7 @@ pub struct MetadataKey<T: MetaValue> {
 impl <T: MetaValue> MetadataKey<T> {
     #[allow(dead_code)]
     // TODO: Make const later when possible
-    /*const*/ fn new(index: i32) -> MetadataKey<T> {
+    /*const*/    fn new(index: i32) -> MetadataKey<T> {
         MetadataKey {
             index: index,
             ty: PhantomData,
@@ -78,11 +78,10 @@ impl Serializable for Metadata {
                 4 => m.put_raw(index, try!(format::Component::read_from(buf))),
                 5 => m.put_raw(index, try!(Option::<item::Stack>::read_from(buf))),
                 6 => m.put_raw(index, try!(bool::read_from(buf))),
-                7 => m.put_raw(index, [
-                    try!(f32::read_from(buf)),
-                    try!(f32::read_from(buf)),
-                    try!(f32::read_from(buf))
-                ]),
+                7 => m.put_raw(index,
+                               [try!(f32::read_from(buf)),
+                                try!(f32::read_from(buf)),
+                                try!(f32::read_from(buf))]),
                 8 => m.put_raw(index, try!(super::Position::read_from(buf))),
                 9 => {
                     if try!(bool::read_from(buf)) {
@@ -90,7 +89,7 @@ impl Serializable for Metadata {
                     } else {
                         m.put_raw::<Option<super::Position>>(index, None);
                     }
-                },
+                }
                 10 => m.put_raw(index, try!(protocol::VarInt::read_from(buf))),
                 11 => {
                     if try!(bool::read_from(buf)) {
@@ -98,9 +97,11 @@ impl Serializable for Metadata {
                     } else {
                         m.put_raw::<Option<protocol::UUID>>(index, None);
                     }
-                },
+                }
                 12 => m.put_raw(index, try!(protocol::VarInt::read_from(buf)).0 as u16),
-                _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, protocol::Error::Err("unknown metadata type".to_owned()))),
+                _ => return Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                               protocol::Error::Err("unknown metadata type"
+                                                                        .to_owned()))),
             }
         }
         Ok(m)
@@ -113,46 +114,46 @@ impl Serializable for Metadata {
                 Value::Byte(ref val) => {
                     try!(u8::write_to(&0, buf));
                     try!(val.write_to(buf));
-                },
+                }
                 Value::Int(ref val) => {
                     try!(u8::write_to(&1, buf));
                     try!(protocol::VarInt(*val).write_to(buf));
-                },
+                }
                 Value::Float(ref val) => {
                     try!(u8::write_to(&2, buf));
                     try!(val.write_to(buf));
-                },
+                }
                 Value::String(ref val) => {
                     try!(u8::write_to(&3, buf));
                     try!(val.write_to(buf));
-                },
+                }
                 Value::FormatComponent(ref val) => {
                     try!(u8::write_to(&4, buf));
                     try!(val.write_to(buf));
-                },
+                }
                 Value::OptionalItemStack(ref val) => {
                     try!(u8::write_to(&5, buf));
                     try!(val.write_to(buf));
-                },
+                }
                 Value::Bool(ref val) => {
                     try!(u8::write_to(&6, buf));
                     try!(val.write_to(buf));
-                },
+                }
                 Value::Vector(ref val) => {
                     try!(u8::write_to(&7, buf));
                     try!(val[0].write_to(buf));
                     try!(val[1].write_to(buf));
                     try!(val[2].write_to(buf));
-                },
+                }
                 Value::Position(ref val) => {
                     try!(u8::write_to(&8, buf));
                     try!(val.write_to(buf));
-                },
+                }
                 Value::OptionalPosition(ref val) => {
                     try!(u8::write_to(&9, buf));
                     try!(val.is_some().write_to(buf));
                     try!(val.write_to(buf));
-                },
+                }
                 Value::Direction(ref val) => {
                     try!(u8::write_to(&10, buf));
                     try!(val.write_to(buf));
@@ -161,7 +162,7 @@ impl Serializable for Metadata {
                     try!(u8::write_to(&11, buf));
                     try!(val.is_some().write_to(buf));
                     try!(val.write_to(buf));
-                },
+                }
                 Value::Block(ref val) => {
                     try!(u8::write_to(&11, buf));
                     try!(protocol::VarInt(*val as i32).write_to(buf));
@@ -374,9 +375,9 @@ mod test {
 
     const TEST: MetadataKey<String> =
         MetadataKey {
-            index: 0,
-            ty: PhantomData,
-        };
+        index: 0,
+        ty: PhantomData,
+    };
 
     #[test]
     fn basic() {

@@ -15,7 +15,7 @@
 extern crate byteorder;
 
 use std::fmt;
-use protocol::{Serializable};
+use protocol::Serializable;
 use std::io;
 use std::io::{Read, Write};
 use self::byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
@@ -26,11 +26,8 @@ pub struct Position(u64);
 impl Position {
     #[allow(dead_code)]
     fn new(x: i32, y: i32, z: i32) -> Position {
-        Position(
-            (((x as u64) & 0x3FFFFFF) << 38) |
-            (((y as u64) & 0xFFF) << 26) |
-            ((z as u64) & 0x3FFFFFF)
-        )
+        Position((((x as u64) & 0x3FFFFFF) << 38) | (((y as u64) & 0xFFF) << 26) |
+                 ((z as u64) & 0x3FFFFFF))
     }
 
     fn get_x(&self) -> i32 {

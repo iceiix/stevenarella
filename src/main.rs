@@ -44,8 +44,8 @@ use std::marker::PhantomData;
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
     name: "cl_brand",
-    description: "cl_brand has the value of the clients current 'brand'. \
-                e.g. \"Steven\" or \"Vanilla\"",
+    description: "cl_brand has the value of the clients current 'brand'. e.g. \"Steven\" or \
+                  \"Vanilla\"",
     mutable: false,
     serializable: false,
     default: &|| "steven".to_owned(),
@@ -74,22 +74,27 @@ fn main() {
     log::set_logger(|max_log_level| {
         max_log_level.set(log::LogLevelFilter::Trace);
         Box::new(proxy)
-    }).unwrap();
+    })
+        .unwrap();
 
     info!("Starting steven");
 
     let resource_manager = Arc::new(RwLock::new(resources::Manager::new()));
-    { resource_manager.write().unwrap().tick(); }
+    {
+        resource_manager.write().unwrap().tick();
+    }
 
     let mut window = glutin::WindowBuilder::new()
-        .with_title("Steven".to_string())
-        .with_dimensions(854, 480)
-        .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (3, 2)))
-        .with_gl_profile(glutin::GlProfile::Core)
-        .with_depth_buffer(24)
-        .with_stencil_buffer(0)
-        .with_vsync()
-        .build().ok().expect("Could not create Glutin window.");
+                         .with_title("Steven".to_string())
+                         .with_dimensions(854, 480)
+                         .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (3, 2)))
+                         .with_gl_profile(glutin::GlProfile::Core)
+                         .with_depth_buffer(24)
+                         .with_stencil_buffer(0)
+                         .with_vsync()
+                         .build()
+                         .ok()
+                         .expect("Could not create Glutin window.");
 
     unsafe {
         window.make_current().ok().expect("Could not set current context.");
@@ -116,7 +121,9 @@ fn main() {
     };
 
     while !game.should_close {
-        { game.resource_manager.write().unwrap().tick(); }
+        {
+            game.resource_manager.write().unwrap().tick();
+        }
 
         let now = time::now();
         let diff = now - last_frame;
@@ -125,7 +132,10 @@ fn main() {
         let (width, height) = window.get_inner_size_pixels().unwrap();
 
         game.screen_sys.tick(delta, &mut game.renderer, &mut ui_container);
-        game.console.lock().unwrap().tick(&mut ui_container, &mut game.renderer, delta, width as f64);
+        game.console
+            .lock()
+            .unwrap()
+            .tick(&mut ui_container, &mut game.renderer, delta, width as f64);
         ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
         game.renderer.tick(delta, width, height);
 
@@ -137,7 +147,10 @@ fn main() {
     }
 }
 
-fn handle_window_event(window: &glutin::Window, game: &mut Game, ui_container: &mut ui::Container, event: glutin::Event) {
+fn handle_window_event(window: &glutin::Window,
+                       game: &mut Game,
+                       ui_container: &mut ui::Container,
+                       event: glutin::Event) {
     use glutin::{Event, VirtualKeyCode};
     match event {
         Event::Closed => game.should_close = true,
@@ -147,34 +160,34 @@ fn handle_window_event(window: &glutin::Window, game: &mut Game, ui_container: &
             let (width, height) = window.get_inner_size_pixels().unwrap();
 
             ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);
-        },
+        }
 
         Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Left) => {
             let (x, y) = game.mouse_pos;
             let (width, height) = window.get_inner_size_pixels().unwrap();
 
             ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
-        },
+        }
 
         Event::MouseWheel(delta) => {
             let (x, y) = match delta {
                 glutin::MouseScrollDelta::LineDelta(x, y) => (x, y),
-                glutin::MouseScrollDelta::PixelDelta(x, y) => (x, y)
+                glutin::MouseScrollDelta::PixelDelta(x, y) => (x, y),
             };
 
             game.screen_sys.on_scroll(x as f64, y as f64);
-        },
+        }
 
         Event::KeyboardInput(glutin::ElementState::Pressed, 41 /* ` GRAVE */, _) => {
             game.console.lock().unwrap().toggle();
-        },
+        }
         Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(VirtualKeyCode::Grave)) => {
             game.console.lock().unwrap().toggle();
-        },
+        }
         Event::KeyboardInput(glutin::ElementState::Pressed, key, virt) => {
             println!("Key: {:?} {:?}", key, virt);
-        },
+        }
 
-        _ => ()
+        _ => (),
     }
 }

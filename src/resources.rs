@@ -33,7 +33,7 @@ pub trait Pack {
 
 pub struct Manager {
     packs: Vec<Box<Pack>>,
-    version: usize,    
+    version: usize,
 
     vanilla_chan: Option<mpsc::Receiver<bool>>,
 }
@@ -41,16 +41,16 @@ pub struct Manager {
 impl Manager {
     pub fn new() -> Manager {
         let mut m = Manager {
-                packs: Vec::new(),
-                version: 0,
-                vanilla_chan: None,
+            packs: Vec::new(),
+            version: 0,
+            vanilla_chan: None,
         };
         m.add_pack(Box::new(InternalPack));
         m.download_vanilla();
         m
     }
 
-    /// Returns the 'version' of the manager. The version is 
+    /// Returns the 'version' of the manager. The version is
     /// increase everytime a pack is added or removed.
     pub fn version(&self) -> usize {
         self.version
@@ -61,7 +61,7 @@ impl Manager {
             let path = format!("assets/{}/{}", plugin, name);
             match pack.open(&path) {
                 Some(val) => return Some(val),
-                None => {},
+                None => {}
             }
         }
         None
@@ -73,14 +73,14 @@ impl Manager {
             let path = format!("assets/{}/{}", plugin, name);
             match pack.open(&path) {
                 Some(val) => ret.push(val),
-                None => {},
+                None => {}
             }
         }
         ret
     }
 
     pub fn tick(&mut self) {
-        // Check to see if the download of vanilla has completed 
+        // Check to see if the download of vanilla has completed
         // (if it was started)
         let mut done = false;
         if let Some(ref recv) = self.vanilla_chan {
@@ -102,9 +102,7 @@ impl Manager {
     fn load_vanilla(&mut self) {
         let loc = format!("./resources-{}", RESOURCES_VERSION);
         let location = path::Path::new(&loc);
-        self.add_pack(Box::new(DirPack{
-            root: location.to_path_buf(),
-        }))
+        self.add_pack(Box::new(DirPack { root: location.to_path_buf() }))
     }
 
     fn download_vanilla(&mut self) {
@@ -120,9 +118,11 @@ impl Manager {
         println!("Vanilla assets missing, obtaining");
         thread::spawn(move || {
             let client = hyper::Client::new();
-            let url = format!("https://s3.amazonaws.com/Minecraft.Download/versions/{0}/{0}.jar", RESOURCES_VERSION);
+            let url = format!("https://s3.amazonaws.com/Minecraft.Download/versions/{0}/{0}.jar",
+                              RESOURCES_VERSION);
             let res = client.get(&url)
-               .send().unwrap();
+                            .send()
+                            .unwrap();
             let mut file = fs::File::create(format!("{}.tmp", RESOURCES_VERSION)).unwrap();
 
             let length = *res.headers.get::<hyper::header::ContentLength>().unwrap();
@@ -140,7 +140,7 @@ impl Manager {
             let loc = format!("./resources-{}", RESOURCES_VERSION);
             let location = path::Path::new(&loc);
             let count = zip.len();
-            for i in 0 .. count {
+            for i in 0..count {
                 let mut file = zip.by_index(i).unwrap();
                 if !file.name().starts_with("assets/") {
                     continue;
@@ -194,7 +194,8 @@ impl <T: io::Read> io::Read for ProgressRead<T> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let size = try!(self.read.read(buf));
         self.progress += size as u64;
-        println!("Progress: {:.2}", (self.progress as f64) / (self.total as f64));
+        println!("Progress: {:.2}",
+                 (self.progress as f64) / (self.total as f64));
         Ok(size)
     }
 }

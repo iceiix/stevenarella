@@ -18,19 +18,25 @@ use std::mem;
 
 #[derive(Debug, Clone)]
 pub enum Component {
-    Text(TextComponent)
+    Text(TextComponent),
 }
 
 impl Component {
     pub fn from_value(v: &serde_json::Value) -> Self {
         let mut modifier = Modifier::from_value(v);
         if let Some(val) = v.as_string() {
-            Component::Text(TextComponent{text: val.to_owned(), modifier: modifier})
-        } else if v.find("text").is_some(){
+            Component::Text(TextComponent {
+                text: val.to_owned(),
+                modifier: modifier,
+            })
+        } else if v.find("text").is_some() {
             Component::Text(TextComponent::from_value(v, modifier))
         } else {
             modifier.color = Some(Color::RGB(255, 0, 0));
-            Component::Text(TextComponent{text: "UNHANDLED".to_owned(), modifier: modifier})
+            Component::Text(TextComponent {
+                text: "UNHANDLED".to_owned(),
+                modifier: modifier,
+            })
         }
     }
 
@@ -49,7 +55,10 @@ impl fmt::Display for Component {
 
 impl Default for Component {
     fn default() -> Self {
-        Component::Text(TextComponent{text: "".to_owned(), modifier: Default::default()})
+        Component::Text(TextComponent {
+            text: "".to_owned(),
+            modifier: Default::default(),
+        })
     }
 }
 
@@ -62,11 +71,9 @@ pub struct Modifier {
     pub strikethrough: Option<bool>,
     pub obfuscated: Option<bool>,
     pub color: Option<Color>,
-
-    // click_event
-    // hover_event
-    // insertion
 }
+
+// TODO: Missing events click/hover/insert
 
 impl Modifier {
     pub fn from_value(v: &serde_json::Value) -> Self {
@@ -76,7 +83,9 @@ impl Modifier {
             underlined: v.find("underlined").map_or(Option::None, |v| v.as_boolean()),
             strikethrough: v.find("strikethrough").map_or(Option::None, |v| v.as_boolean()),
             obfuscated: v.find("obfuscated").map_or(Option::None, |v| v.as_boolean()),
-            color: v.find("color").map_or(Option::None, |v| v.as_string()).map(|v| Color::from_string(&v.to_owned())),
+            color: v.find("color")
+                    .map_or(Option::None, |v| v.as_string())
+                    .map(|v| Color::from_string(&v.to_owned())),
             extra: Option::None,
         };
         if let Some(extra) = v.find("extra") {
@@ -106,9 +115,7 @@ impl TextComponent {
     pub fn new(val: &str) -> TextComponent {
         TextComponent {
             text: val.to_owned(),
-            modifier: Modifier {
-                .. Default::default()
-            }
+            modifier: Modifier { ..Default::default() },
         }
     }
 
@@ -154,7 +161,7 @@ pub enum Color {
     LightPurple,
     Yellow,
     White,
-    RGB(u8, u8, u8)
+    RGB(u8, u8, u8),
 }
 
 impl fmt::Display for Color {
@@ -195,11 +202,7 @@ impl Color {
                     Ok(b) => b,
                     Err(_) => return Color::White,
                 };
-                Color::RGB(
-                    r,
-                    g,
-                    b
-                )
+                Color::RGB(r, g, b)
             }
             _ => Color::White,
         }
@@ -229,22 +232,22 @@ impl Color {
 
     pub fn to_rgb(&self) -> (u8, u8, u8) {
         match *self {
-            Color::Black =>(0, 0, 0),
-            Color::DarkBlue =>(0, 0, 170),
-            Color::DarkGreen =>(0, 170, 0),
-            Color::DarkAqua =>(0, 170, 170),
-            Color::DarkRed =>(170, 0, 0),
-            Color::DarkPurple =>(170, 0, 170),
-            Color::Gold =>(255, 170, 0),
-            Color::Gray =>(170, 170, 170),
-            Color::DarkGray =>(85, 85, 85),
-            Color::Blue =>(85, 85, 255),
-            Color::Green =>(85, 255, 85),
-            Color::Aqua =>(85, 255, 255),
-            Color::Red =>(255, 85, 85),
-            Color::LightPurple =>(255, 85, 255),
-            Color::Yellow =>(255, 255, 85),
-            Color::White =>(255, 255, 255),
+            Color::Black => (0, 0, 0),
+            Color::DarkBlue => (0, 0, 170),
+            Color::DarkGreen => (0, 170, 0),
+            Color::DarkAqua => (0, 170, 170),
+            Color::DarkRed => (170, 0, 0),
+            Color::DarkPurple => (170, 0, 170),
+            Color::Gold => (255, 170, 0),
+            Color::Gray => (170, 170, 170),
+            Color::DarkGray => (85, 85, 85),
+            Color::Blue => (85, 85, 255),
+            Color::Green => (85, 255, 85),
+            Color::Aqua => (85, 255, 255),
+            Color::Red => (255, 85, 85),
+            Color::LightPurple => (255, 85, 255),
+            Color::Yellow => (255, 255, 85),
+            Color::White => (255, 255, 255),
             Color::RGB(r, g, b) => (r, g, b),
         }
     }
@@ -264,12 +267,12 @@ fn test_color_from() {
     }
     let test = Color::from_string(&"red".to_owned());
     match test {
-        Color::Red => {},
+        Color::Red => {}
         _ => panic!("Wrong type"),
     }
     let test = Color::from_string(&"dark_blue".to_owned());
     match test {
-        Color::DarkBlue => {},
+        Color::DarkBlue => {}
         _ => panic!("Wrong type"),
     }
 }
@@ -297,10 +300,11 @@ pub fn convert_legacy(c: &mut Component) {
                                 None => break,
                             };
                             let color_char = next.1.to_lowercase().next().unwrap();
-                            current.text = txt.text[last .. i].to_owned();
+                            current.text = txt.text[last..i].to_owned();
                             last = next.0 + 1;
 
-                            let mut modifier = if (color_char >= 'a' && color_char <= 'f') || (color_char >= '0' && color_char <= '9') {
+                            let mut modifier = if (color_char >= 'a' && color_char <= 'f') ||
+                                                  (color_char >= '0' && color_char <= '9') {
                                 Default::default()
                             } else {
                                 current.modifier.clone()
@@ -331,7 +335,7 @@ pub fn convert_legacy(c: &mut Component) {
                                 'm' => modifier.strikethrough = Some(true),
                                 'n' => modifier.underlined = Some(true),
                                 'o' => modifier.italic = Some(true),
-                                'r' => {},
+                                'r' => {}
                                 _ => unimplemented!(),
                             }
 
@@ -352,6 +356,6 @@ pub fn convert_legacy(c: &mut Component) {
                 }
                 txt.text = "".to_owned();
             }
-        },
+        }
     }
 }

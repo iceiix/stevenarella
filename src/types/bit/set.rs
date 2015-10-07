@@ -13,19 +13,19 @@
 // limitations under the License.
 
 pub struct Set {
-    data : Vec<u64>
+    data: Vec<u64>,
 }
 
 #[test]
 fn test_set() {
     let mut set = Set::new(200);
-    for i in 0 .. 200 {
+    for i in 0..200 {
         if i % 3 == 0 {
             set.set(i, true)
         }
     }
-    for i in 0 .. 200 {
-        if set.get(i) != (i%3 == 0) {
+    for i in 0..200 {
+        if set.get(i) != (i % 3 == 0) {
             panic!("Fail")
         }
     }
@@ -33,10 +33,8 @@ fn test_set() {
 
 impl Set {
     pub fn new(size: usize) -> Set {
-        let mut set = Set {
-            data: Vec::with_capacity(size)
-        };
-        for _ in 0 .. size {
+        let mut set = Set { data: Vec::with_capacity(size) };
+        for _ in 0..size {
             set.data.push(0)
         }
         set
@@ -44,13 +42,13 @@ impl Set {
 
     pub fn set(&mut self, i: usize, v: bool) {
         if v {
-            self.data[i>>6] |= 1 << (i & 0x3F)
+            self.data[i >> 6] |= 1 << (i & 0x3F)
         } else {
-            self.data[i>>6] &= !(1 << (i & 0x3F))
+            self.data[i >> 6] &= !(1 << (i & 0x3F))
         }
     }
 
     pub fn get(&mut self, i: usize) -> bool {
-        (self.data[i>>6] & (1 << (i & 0x3F))) != 0
+        (self.data[i >> 6] & (1 << (i & 0x3F))) != 0
     }
 }

@@ -16,11 +16,12 @@ use render::glsl;
 use gl;
 
 pub fn add_shaders(reg: &mut glsl::Registry) {
-	reg.register("lookup_texture", include_str!("shaders/lookup_texture.glsl"));
-	reg.register("get_light", include_str!("shaders/get_light.glsl"));
+    reg.register("lookup_texture",
+                 include_str!("shaders/lookup_texture.glsl"));
+    reg.register("get_light", include_str!("shaders/get_light.glsl"));
 
-	reg.register("ui_vertex", include_str!("shaders/ui_vertex.glsl"));
-	reg.register("ui_frag", include_str!("shaders/ui_frag.glsl"));
+    reg.register("ui_vertex", include_str!("shaders/ui_vertex.glsl"));
+    reg.register("ui_frag", include_str!("shaders/ui_frag.glsl"));
 }
 
 #[macro_export]
@@ -71,39 +72,39 @@ macro_rules! init_shader {
 }
 
 pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
-	let program = gl::Program::new();
+    let program = gl::Program::new();
 
-	let v = gl::Shader::new(gl::VERTEX_SHADER);
-	v.set_source(vertex);
-	v.compile();
+    let v = gl::Shader::new(gl::VERTEX_SHADER);
+    v.set_source(vertex);
+    v.compile();
 
-	if v.get_parameter(gl::COMPILE_STATUS) == 0 {
-		println!("Src: {}", vertex);
-		panic!("Shader error: {}", v.get_info_log());
-	} else {
-		let log = v.get_info_log();
-		if !log.is_empty() {
-			println!("{}", log);
-		}
-	}
+    if v.get_parameter(gl::COMPILE_STATUS) == 0 {
+        println!("Src: {}", vertex);
+        panic!("Shader error: {}", v.get_info_log());
+    } else {
+        let log = v.get_info_log();
+        if !log.is_empty() {
+            println!("{}", log);
+        }
+    }
 
-	let f = gl::Shader::new(gl::FRAGMENT_SHADER);
-	f.set_source(fragment);
-	f.compile();
+    let f = gl::Shader::new(gl::FRAGMENT_SHADER);
+    f.set_source(fragment);
+    f.compile();
 
-	if f.get_parameter(gl::COMPILE_STATUS) == 0 {
-		println!("Src: {}", fragment);
-		panic!("Shader error: {}", f.get_info_log());
-	} else {
-		let log = f.get_info_log();
-		if !log.is_empty() {
-			println!("{}", log);
-		}
-	}
+    if f.get_parameter(gl::COMPILE_STATUS) == 0 {
+        println!("Src: {}", fragment);
+        panic!("Shader error: {}", f.get_info_log());
+    } else {
+        let log = f.get_info_log();
+        if !log.is_empty() {
+            println!("{}", log);
+        }
+    }
 
-	program.attach_shader(v);
-	program.attach_shader(f);
-	program.link();
-	program.use_program();
-	program
+    program.attach_shader(v);
+    program.attach_shader(f);
+    program.link();
+    program.use_program();
+    program
 }

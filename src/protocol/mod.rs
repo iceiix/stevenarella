@@ -139,7 +139,7 @@ pub trait Serializable: Sized {
 }
 
 impl Serializable for Vec<u8> {
-    fn read_from(buf: &mut io::Read) -> Result<Vec<u8> , io::Error> {
+    fn read_from(buf: &mut io::Read) -> Result<Vec<u8>, io::Error> {
         let mut v = Vec::new();
         try!(buf.read_to_end(&mut v));
         Ok(v)
@@ -206,7 +206,7 @@ impl Serializable for format::Component {
         let len = try!(VarInt::read_from(buf)).0;
         let mut ret = String::new();
         try!(buf.take(len as u64).read_to_string(&mut ret));
-        let val : serde_json::Value = serde_json::from_str(&ret[..]).unwrap();
+        let val: serde_json::Value = serde_json::from_str(&ret[..]).unwrap();
         Result::Ok(Self::from_value(&val))
     }
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
@@ -232,7 +232,11 @@ impl Serializable for bool {
         Result::Ok(try!(buf.read_u8()) != 0)
     }
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
-        try!(buf.write_u8(if *self { 1 } else { 0 }));
+        try!(buf.write_u8(if *self {
+            1
+        } else {
+            0
+        }));
         Result::Ok(())
     }
 }
@@ -321,17 +325,15 @@ impl Serializable for f64 {
 pub struct UUID(u64, u64);
 
 impl Default for UUID {
-    fn default() -> Self { UUID(0, 0) }
+    fn default() -> Self {
+        UUID(0, 0)
+    }
 }
 
 impl Serializable for UUID {
     fn read_from(buf: &mut io::Read) -> Result<UUID, io::Error> {
-        Result::Ok(
-            UUID(
-                try!(buf.read_u64::<BigEndian>()),
-                try!(buf.read_u64::<BigEndian>()),
-            )
-        )
+        Result::Ok(UUID(try!(buf.read_u64::<BigEndian>()),
+                        try!(buf.read_u64::<BigEndian>())))
     }
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
         try!(buf.write_u64::<BigEndian>(self.0));
@@ -348,7 +350,7 @@ pub trait Lengthable : Serializable + Copy + Default {
 
 pub struct LenPrefixed<L: Lengthable, V> {
     len: L,
-    pub data: Vec<V>
+    pub data: Vec<V>,
 }
 
 impl <L: Lengthable, V: Default>  LenPrefixed<L, V> {
@@ -362,17 +364,20 @@ impl <L: Lengthable, V: Default>  LenPrefixed<L, V> {
 
 impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
     fn read_from(buf: &mut io::Read) -> Result<LenPrefixed<L, V>, io::Error> {
-        let len_data : L = try!(Serializable::read_from(buf));
-        let len : usize = len_data.into();
-        let mut data : Vec<V> = Vec::with_capacity(len);
-        for _ in 0 .. len {
+        let len_data: L = try!(Serializable::read_from(buf));
+        let len: usize = len_data.into();
+        let mut data: Vec<V> = Vec::with_capacity(len);
+        for _ in 0..len {
             data.push(try!(Serializable::read_from(buf)));
         }
-        Result::Ok(LenPrefixed{len: len_data, data: data})
+        Result::Ok(LenPrefixed {
+            len: len_data,
+            data: data,
+        })
     }
 
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
-        let len_data : L = L::from(self.data.len());
+        let len_data: L = L::from(self.data.len());
         try!(len_data.write_to(buf));
         let data = &self.data;
         for val in data {
@@ -387,7 +392,7 @@ impl <L: Lengthable, V: Default> Default for LenPrefixed<L, V> {
     fn default() -> Self {
         LenPrefixed {
             len: default::Default::default(),
-            data: default::Default::default()
+            data: default::Default::default(),
         }
     }
 }
@@ -401,7 +406,7 @@ impl <L: Lengthable, V: fmt::Debug> fmt::Debug for LenPrefixed<L, V> {
 // Optimization
 pub struct LenPrefixedBytes<L: Lengthable> {
     len: L,
-    pub data: Vec<u8>
+    pub data: Vec<u8>,
 }
 
 impl <L: Lengthable>  LenPrefixedBytes<L> {
@@ -415,15 +420,18 @@ impl <L: Lengthable>  LenPrefixedBytes<L> {
 
 impl <L: Lengthable>  Serializable for LenPrefixedBytes<L> {
     fn read_from(buf: &mut io::Read) -> Result<LenPrefixedBytes<L>, io::Error> {
-        let len_data : L = try!(Serializable::read_from(buf));
-        let len : usize = len_data.into();
-        let mut data : Vec<u8> = Vec::with_capacity(len);
+        let len_data: L = try!(Serializable::read_from(buf));
+        let len: usize = len_data.into();
+        let mut data: Vec<u8> = Vec::with_capacity(len);
         try!(buf.take(len as u64).read_to_end(&mut data));
-        Result::Ok(LenPrefixedBytes{len: len_data, data: data})
+        Result::Ok(LenPrefixedBytes {
+            len: len_data,
+            data: data,
+        })
     }
 
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
-        let len_data : L = L::from(self.data.len());
+        let len_data: L = L::from(self.data.len());
         try!(len_data.write_to(buf));
         try!(buf.write_all(&self.data[..]));
         Result::Ok(())
@@ -435,7 +443,7 @@ impl <L: Lengthable> Default for LenPrefixedBytes<L> {
     fn default() -> Self {
         LenPrefixedBytes {
             len: default::Default::default(),
-            data: default::Default::default()
+            data: default::Default::default(),
         }
     }
 }
@@ -490,9 +498,10 @@ impl Serializable for VarInt {
         loop {
             let b = try!(buf.read_u8()) as u32;
             val |= (b & PART) << (size * 7);
-            size+=1;
+            size += 1;
             if size > 5 {
-                return Result::Err(io::Error::new(io::ErrorKind::InvalidInput, Error::Err("VarInt too big".to_owned())))
+                return Result::Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                                  Error::Err("VarInt too big".to_owned())))
             }
             if (b & 0x80) == 0 {
                 break
@@ -518,7 +527,9 @@ impl Serializable for VarInt {
 }
 
 impl default::Default for VarInt {
-    fn default() -> VarInt { VarInt(0) }
+    fn default() -> VarInt {
+        VarInt(0)
+    }
 }
 
 impl fmt::Debug for VarInt {
@@ -551,9 +562,10 @@ impl Serializable for VarLong {
         loop {
             let b = try!(buf.read_u8()) as u64;
             val |= (b & PART) << (size * 7);
-            size+=1;
+            size += 1;
             if size > 10 {
-                return Result::Err(io::Error::new(io::ErrorKind::InvalidInput, Error::Err("VarLong too big".to_owned())))
+                return Result::Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                                  Error::Err("VarLong too big".to_owned())))
             }
             if (b & 0x80) == 0 {
                 break
@@ -579,7 +591,9 @@ impl Serializable for VarLong {
 }
 
 impl default::Default for VarLong {
-    fn default() -> VarLong { VarLong(0) }
+    fn default() -> VarLong {
+        VarLong(0)
+    }
 }
 
 impl fmt::Debug for VarLong {
@@ -593,7 +607,7 @@ impl fmt::Debug for VarLong {
 #[derive(Clone, Copy)]
 pub enum Direction {
     Serverbound,
-    Clientbound
+    Clientbound,
 }
 
 /// The protocol has multiple 'sub-protocols' or states which control which
@@ -603,7 +617,7 @@ pub enum State {
     Handshaking,
     Play,
     Status,
-    Login
+    Login,
 }
 
 /// Return for any protocol related error.
@@ -614,7 +628,7 @@ pub enum Error {
 }
 
 impl convert::From<io::Error> for Error {
-    fn from(e : io::Error) -> Error {
+    fn from(e: io::Error) -> Error {
         Error::IOError(e)
     }
 }
@@ -629,10 +643,10 @@ impl ::std::error::Error for Error {
 }
 
 impl ::std::fmt::Display for Error {
-    fn fmt(&self, f : &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match *self {
             Error::Err(ref val) => write!(f, "protocol error: {}", val),
-            Error::IOError(ref e) => e.fmt(f)
+            Error::IOError(ref e) => e.fmt(f),
         }
     }
 }
@@ -647,12 +661,12 @@ pub struct Conn {
     cipher: Option<openssl::EVPCipher>,
 
     compression_threshold: i32,
-    compression_read: Option<ZlibDecoder<io::Cursor<Vec<u8>>>>, 
+    compression_read: Option<ZlibDecoder<io::Cursor<Vec<u8>>>>,
     compression_write: Option<ZlibEncoder<io::Cursor<Vec<u8>>>>,
 }
 
 impl Conn {
-    pub fn new(target: &str) -> Result<Conn, Error>{
+    pub fn new(target: &str) -> Result<Conn, Error> {
         // TODO SRV record support
         let mut parts = target.split(":").collect::<Vec<&str>>();
         let address = if parts.len() == 1 {
@@ -680,7 +694,11 @@ impl Conn {
         try!(VarInt(packet.packet_id()).write_to(&mut buf));
         try!(packet.write(&mut buf));
 
-        let mut extra = if self.compression_threshold >= 0 { 1 } else { 0 };
+        let mut extra = if self.compression_threshold >= 0 {
+            1
+        } else {
+            0
+        };
         if self.compression_threshold >= 0 && buf.len() as i32 > self.compression_threshold {
             extra = 0;
             let uncompressed_size = buf.len();
@@ -734,11 +752,14 @@ impl Conn {
                 let pos = buf.position() as usize;
                 let ibuf = buf.into_inner();
                 if ibuf.len() != pos {
-                    return Result::Err(Error::Err(format!("Failed to read all of packet 0x{:X}, had {} bytes left", id, ibuf.len() - pos)))
+                    return Result::Err(Error::Err(format!("Failed to read all of packet 0x{:X}, \
+                                                           had {} bytes left",
+                                                          id,
+                                                          ibuf.len() - pos)))
                 }
                 Result::Ok(val)
-            },
-            None => Result::Err(Error::Err("missing packet".to_owned()))
+            }
+            None => Result::Err(Error::Err("missing packet".to_owned())),
         }
     }
 
@@ -749,28 +770,29 @@ impl Conn {
     pub fn set_compresssion(&mut self, threshold: i32, read: bool) {
         self.compression_threshold = threshold;
         if !read {
-            self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), flate2::Compression::Default));
+            self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()),
+                                                           flate2::Compression::Default));
         } else {
             self.compression_read = Some(ZlibDecoder::new(io::Cursor::new(Vec::new())));
         }
     }
 
-    pub fn do_status(mut self) -> Result<(Status, time::Duration), Error>{
+    pub fn do_status(mut self) -> Result<(Status, time::Duration), Error> {
         use serde_json::Value;
         use self::packet::status::serverbound::*;
         use self::packet::handshake::serverbound::*;
         use self::packet::Packet;
         let host = self.host.clone();
         let port = self.port;
-        try!(self.write_packet(Handshake{
+        try!(self.write_packet(Handshake {
             protocol_version: VarInt(SUPPORTED_PROTOCOL),
             host: host,
             port: port,
             next: VarInt(1),
         }));
         self.state = State::Status;
-        
-        try!(self.write_packet(StatusRequest{empty: ()}));
+
+        try!(self.write_packet(StatusRequest { empty: () }));
 
         let status = if let Packet::StatusResponse(res) = try!(self.read_packet()) {
             res.status
@@ -779,7 +801,7 @@ impl Conn {
         };
 
         let start = time::now();
-        try!(self.write_packet(StatusPing{ping: 42}));
+        try!(self.write_packet(StatusPing { ping: 42 }));
 
         if let Packet::StatusPong(_) = try!(self.read_packet()) {
         } else {
@@ -800,17 +822,26 @@ impl Conn {
 
         Ok((Status {
             version: StatusVersion {
-                name: try!(version.find("name").and_then(Value::as_string).ok_or(invalid_status())).to_owned(),
-                protocol: try!(version.find("protocol").and_then(Value::as_i64).ok_or(invalid_status())) as i32,
+                name: try!(version.find("name").and_then(Value::as_string).ok_or(invalid_status()))
+                          .to_owned(),
+                protocol: try!(version.find("protocol")
+                                      .and_then(Value::as_i64)
+                                      .ok_or(invalid_status())) as i32,
             },
             players: StatusPlayers {
-                max: try!(players.find("max").and_then(Value::as_i64).ok_or(invalid_status())) as i32,
-                online: try!(players.find("online").and_then(Value::as_i64).ok_or(invalid_status())) as i32,
-                sample: Vec::new(), // TODO
+                max: try!(players.find("max")
+                                 .and_then(Value::as_i64)
+                                 .ok_or(invalid_status())) as i32,
+                online: try!(players.find("online")
+                                    .and_then(Value::as_i64)
+                                    .ok_or(invalid_status())) as i32,
+                sample: Vec::new(), /* TODO */
             },
-            description: format::Component::from_value(try!(val.find("description").ok_or(invalid_status()))),
+            description: format::Component::from_value(try!(val.find("description")
+                                                               .ok_or(invalid_status()))),
             favicon: val.find("favicon").and_then(Value::as_string).map(|v| v.to_owned()),
-        }, ping))
+        },
+            ping))
     }
 }
 
@@ -848,11 +879,11 @@ impl Read for Conn {
             Option::Some(cipher) => {
                 let ret = try!(self.stream.read(buf));
                 let data = cipher.decrypt(&buf[..ret]);
-                for i in 0 .. ret {
+                for i in 0..ret {
                     buf[i] = data[i];
                 }
                 Ok(ret)
-            },
+            }
         }
     }
 }
@@ -865,7 +896,7 @@ impl Write for Conn {
                 let data = cipher.encrypt(buf);
                 try!(self.stream.write_all(&data[..]));
                 Ok(buf.len())
-            },
+            }
         }
     }
 
@@ -901,14 +932,16 @@ pub trait PacketType: Sized {
 pub fn test() {
     let mut c = Conn::new("localhost:25565").unwrap();
 
-    c.write_packet(packet::handshake::serverbound::Handshake{
-        protocol_version: VarInt(71),
-        host: "localhost".to_owned(),
-        port: 25565,
-        next: VarInt(2),
-    }).unwrap();
+    c.write_packet(packet::handshake::serverbound::Handshake {
+         protocol_version: VarInt(71),
+         host: "localhost".to_owned(),
+         port: 25565,
+         next: VarInt(2),
+     })
+     .unwrap();
     c.state = State::Login;
-    c.write_packet(packet::login::serverbound::LoginStart{username: "Think".to_owned()}).unwrap();
+    c.write_packet(packet::login::serverbound::LoginStart { username: "Think".to_owned() })
+     .unwrap();
 
     let packet = match c.read_packet().unwrap() {
         packet::Packet::EncryptionRequest(val) => val,
@@ -921,18 +954,19 @@ pub fn test() {
     let shared_e = key.encrypt(&shared);
     let token_e = key.encrypt(&packet.verify_token.data);
 
-    let profile = mojang::Profile{
+    let profile = mojang::Profile {
         username: "Think".to_owned(),
         id: "b1184d43168441cfa2128b9a3df3b6ab".to_owned(),
-        access_token: "".to_owned()
+        access_token: "".to_owned(),
     };
 
     profile.join_server(&packet.server_id, &shared, &packet.public_key.data);
 
-    c.write_packet(packet::login::serverbound::EncryptionResponse{
-        shared_secret: LenPrefixedBytes::new(shared_e),
-        verify_token: LenPrefixedBytes::new(token_e),
-    }).unwrap();
+    c.write_packet(packet::login::serverbound::EncryptionResponse {
+         shared_secret: LenPrefixedBytes::new(shared_e),
+         verify_token: LenPrefixedBytes::new(token_e),
+     })
+     .unwrap();
 
     let mut read = c.clone();
     let mut write = c.clone();
@@ -940,35 +974,39 @@ pub fn test() {
     read.enable_encyption(&shared, true);
     write.enable_encyption(&shared, false);
 
-    loop { match read.read_packet().unwrap() {
-        packet::Packet::LoginDisconnect(val) => {
-            panic!("Discconect {}", val.reason);
-        },
-        packet::Packet::SetInitialCompression(val) => {
-            read.set_compresssion(val.threshold.0, true);
-            write.set_compresssion(val.threshold.0, false);
-            println!("Compression: {}", val.threshold.0)
-        },
-        packet::Packet::LoginSuccess(val) => {
-            println!("Login: {} {}", val.username, val.uuid);
-            read.state = State::Play;
-            write.state = State::Play;
-            break;
+    loop {
+        match read.read_packet().unwrap() {
+            packet::Packet::LoginDisconnect(val) => {
+                panic!("Discconect {}", val.reason);
+            }
+            packet::Packet::SetInitialCompression(val) => {
+                read.set_compresssion(val.threshold.0, true);
+                write.set_compresssion(val.threshold.0, false);
+                println!("Compression: {}", val.threshold.0)
+            }
+            packet::Packet::LoginSuccess(val) => {
+                println!("Login: {} {}", val.username, val.uuid);
+                read.state = State::Play;
+                write.state = State::Play;
+                break;
+            }
+            _ => panic!("Unknown packet"),
         }
-        _ => panic!("Unknown packet"),
-    } }
+    }
 
     let mut first = true;
     let mut count = 0;
-    loop { match read.read_packet().unwrap() {
+    loop {
+        match read.read_packet().unwrap() {
             packet::Packet::ServerMessage(val) => println!("MSG: {}", val.message),
-            packet::Packet::ChunkData(_) => {},
+            packet::Packet::ChunkData(_) => {}
             val => {
                 println!("{:?}", val);
                 if first {
-                    write.write_packet(packet::play::serverbound::ChatMessage{
-                        message: "Hello world".to_owned(),
-                    }).unwrap();
+                    write.write_packet(packet::play::serverbound::ChatMessage {
+                             message: "Hello world".to_owned(),
+                         })
+                         .unwrap();
                     first = false;
                 }
                 count += 1;
@@ -976,7 +1014,8 @@ pub fn test() {
                     break;
                 }
             }
-    } }
+        }
+    }
 
     unimplemented!();
 }
