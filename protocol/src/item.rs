@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use nbt;
-use protocol::{Serializable};
+use protocol::Serializable;
 use std::io;
 use std::io::{Read, Write};
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
@@ -44,7 +44,7 @@ impl Serializable for Option<Stack> {
         if id == -1 {
             return Ok(None);
         }
-        Ok(Some(Stack{
+        Ok(Some(Stack {
             id: id as isize,
             count: try!(buf.read_u8()) as isize,
             damage: try!(buf.read_i16::<BigEndian>()) as isize,
@@ -58,7 +58,7 @@ impl Serializable for Option<Stack> {
                 try!(buf.write_u8(val.count as u8));
                 try!(buf.write_i16::<BigEndian>(val.damage as i16));
                 try!(val.tag.write_to(buf));
-            },
+            }
             None => try!(buf.write_i16::<BigEndian>(-1)),
         }
         Result::Ok(())

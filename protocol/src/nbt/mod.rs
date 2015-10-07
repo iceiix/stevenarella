@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::io;
 use std::io::{Read, Write};
 
-use super::protocol::{Serializable};
+use super::protocol::Serializable;
 use super::protocol;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
@@ -173,52 +173,53 @@ impl Tag {
     }
 
     fn read_type(id: u8, buf: &mut io::Read) -> Result<Tag, io::Error> {
-            match id {
-                0 => unreachable!(),
-                1 => Ok(Tag::Byte(try!(buf.read_i8()))),
-                2 => Ok(Tag::Short(try!(buf.read_i16::<BigEndian>()))),
-                3 => Ok(Tag::Int(try!(buf.read_i32::<BigEndian>()))),
-                4 => Ok(Tag::Long(try!(buf.read_i64::<BigEndian>()))),
-                5 => Ok(Tag::Float(try!(buf.read_f32::<BigEndian>()))),
-                6 => Ok(Tag::Double(try!(buf.read_f64::<BigEndian>()))),
-                7 => Ok(Tag::ByteArray({
-                        let len : i32 = try!(Serializable::read_from(buf));
-                        let mut data = Vec::with_capacity(len as usize);
-                        try!(buf.take(len as u64).read_to_end(&mut data));
-                        data
-                })),
-                8 => Ok(Tag::String(try!(read_string(buf)))),
-                9 => {
-                    let mut l = Vec::new();
-                    let ty = try!(buf.read_u8());
-                    let len : i32 = try!(Serializable::read_from(buf));
-                    for _ in 0 .. len {
-                        l.push(try!(Tag::read_type(ty, buf)));
-                    }
-                    Ok(Tag::List(l))
-                },
-                10 => {
-                    let mut c = Tag::new_compound();
-                    loop {
-                        let ty = try!(buf.read_u8());
-                        if ty == 0 {
-                            break;
-                        }
-                        let name: String = try!(read_string(buf));
-                        c.put(&name[..], try!(Tag::read_type(ty, buf)));
-                    }
-                    Ok(c)
-                },
-                11 => Ok(Tag::IntArray({
-                        let len : i32 = try!(Serializable::read_from(buf));
-                        let mut data = Vec::with_capacity(len as usize);
-                        for _ in 0 .. len {
-                            data.push(try!(buf.read_i32::<BigEndian>()));
-                        }
-                        data
-                })),
-                _ => Err(io::Error::new(io::ErrorKind::InvalidData, protocol::Error::Err("invalid tag".to_owned()))),
+        match id {
+            0 => unreachable!(),
+            1 => Ok(Tag::Byte(try!(buf.read_i8()))),
+            2 => Ok(Tag::Short(try!(buf.read_i16::<BigEndian>()))),
+            3 => Ok(Tag::Int(try!(buf.read_i32::<BigEndian>()))),
+            4 => Ok(Tag::Long(try!(buf.read_i64::<BigEndian>()))),
+            5 => Ok(Tag::Float(try!(buf.read_f32::<BigEndian>()))),
+            6 => Ok(Tag::Double(try!(buf.read_f64::<BigEndian>()))),
+            7 => Ok(Tag::ByteArray({
+                let len: i32 = try!(Serializable::read_from(buf));
+                let mut data = Vec::with_capacity(len as usize);
+                try!(buf.take(len as u64).read_to_end(&mut data));
+                data
+            })),
+            8 => Ok(Tag::String(try!(read_string(buf)))),
+            9 => {
+                let mut l = Vec::new();
+                let ty = try!(buf.read_u8());
+                let len: i32 = try!(Serializable::read_from(buf));
+                for _ in 0..len {
+                    l.push(try!(Tag::read_type(ty, buf)));
+                }
+                Ok(Tag::List(l))
             }
+            10 => {
+                let mut c = Tag::new_compound();
+                loop {
+                    let ty = try!(buf.read_u8());
+                    if ty == 0 {
+                        break;
+                    }
+                    let name: String = try!(read_string(buf));
+                    c.put(&name[..], try!(Tag::read_type(ty, buf)));
+                }
+                Ok(c)
+            }
+            11 => Ok(Tag::IntArray({
+                let len: i32 = try!(Serializable::read_from(buf));
+                let mut data = Vec::with_capacity(len as usize);
+                for _ in 0..len {
+                    data.push(try!(buf.read_i32::<BigEndian>()));
+                }
+                data
+            })),
+            _ => Err(io::Error::new(io::ErrorKind::InvalidData,
+                                    protocol::Error::Err("invalid tag".to_owned()))),
+        }
     }
 }
 
@@ -229,7 +230,7 @@ impl Serializable for Tag {
 
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
         match *self {
-            Tag::End => {},
+            Tag::End => {}
             Tag::Byte(val) => try!(buf.write_i8(val)),
             Tag::Short(val) => try!(buf.write_i16::<BigEndian>(val)),
             Tag::Int(val) => try!(buf.write_i32::<BigEndian>(val)),
@@ -239,20 +240,20 @@ impl Serializable for Tag {
             Tag::ByteArray(ref val) => {
                 try!((val.len() as i32).write_to(buf));
                 try!(buf.write_all(val));
-            },
+            }
             Tag::String(ref val) => try!(write_string(buf, val)),
             Tag::List(ref val) => {
-                    if val.is_empty() {
-                        try!(buf.write_u8(0));
-                        try!(buf.write_i32::<BigEndian>(0));
-                    } else {
-                        try!(buf.write_u8(val[0].internal_id()));
-                        try!(buf.write_i32::<BigEndian>(val.len() as i32));
-                        for e in val {
-                            try!(e.write_to(buf));
-                        }
+                if val.is_empty() {
+                    try!(buf.write_u8(0));
+                    try!(buf.write_i32::<BigEndian>(0));
+                } else {
+                    try!(buf.write_u8(val[0].internal_id()));
+                    try!(buf.write_i32::<BigEndian>(val.len() as i32));
+                    for e in val {
+                        try!(e.write_to(buf));
                     }
-            },
+                }
+            }
             Tag::Compound(ref val) => {
                 for (k, v) in val {
                     try!(v.internal_id().write_to(buf));
@@ -260,19 +261,19 @@ impl Serializable for Tag {
                     try!(v.write_to(buf));
                 }
                 try!(buf.write_u8(0));
-            },
+            }
             Tag::IntArray(ref val) => {
                 try!((val.len() as i32).write_to(buf));
                 for v in val {
                     try!(v.write_to(buf));
                 }
-            },
+            }
         }
         Result::Ok(())
     }
 }
 
-pub fn write_string(buf: &mut io::Write, s: &String)-> io::Result<()> {
+pub fn write_string(buf: &mut io::Write, s: &String) -> io::Result<()> {
     let data = s.as_bytes();
     try!((data.len() as i16).write_to(buf));
     buf.write_all(data)
