@@ -19,7 +19,7 @@ use hyper;
 pub struct Profile {
     pub username: String,
     pub id: String,
-    pub access_token: String
+    pub access_token: String,
 }
 
 const JOIN_URL: &'static str = "https://sessionserver.mojang.com/session/minecraft/join";
@@ -34,7 +34,7 @@ impl Profile {
 
         // Mojang uses a hex method which allows for
         // negatives so we have to account for that.
-        let negative = hash[0]  & 0x80 == 0x80;
+        let negative = hash[0] & 0x80 == 0x80;
         if negative {
             twos_compliment(&mut hash);
         }
@@ -47,17 +47,18 @@ impl Profile {
         };
 
         let join_msg = serde_json::builder::ObjectBuilder::new()
-            .insert("accessToken", &self.access_token)
-            .insert("selectedProfile", &self.id)
-            .insert("serverId",  hash_str)
-            .unwrap();
+                           .insert("accessToken", &self.access_token)
+                           .insert("selectedProfile", &self.id)
+                           .insert("serverId", hash_str)
+                           .unwrap();
         let join = serde_json::to_string(&join_msg).unwrap();
 
         let client = hyper::Client::new();
         let res = client.post(JOIN_URL)
-            .body(&join)
-            .header(hyper::header::ContentType("application/json".parse().unwrap()))
-            .send().unwrap();
+                        .body(&join)
+                        .header(hyper::header::ContentType("application/json".parse().unwrap()))
+                        .send()
+                        .unwrap();
 
         let ret: serde_json::Value = match serde_json::from_reader(res) {
             Result::Ok(val) => val,
@@ -69,7 +70,7 @@ impl Profile {
 
 fn twos_compliment(data: &mut Vec<u8>) {
     let mut carry = true;
-    for i in (0 .. data.len()).rev() {
+    for i in (0..data.len()).rev() {
         data[i] = !data[i];
         if carry {
             carry = data[i] == 0xFF;

@@ -91,7 +91,7 @@ state_packets!(
                 button: u8 =,
                 action_number: u16 =,
                 mode: u8 =,
-                clicked_item: Option<item::Stack> =, // TODO
+                clicked_item: Option<item::Stack> =,
             }
             // CloseWindow is sent when the client closes a window.
             CloseWindow => 0x07 {
@@ -936,7 +936,7 @@ pub struct BlockChangeRecord {
 
 impl Serializable for BlockChangeRecord {
     fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
-        Ok(BlockChangeRecord{
+        Ok(BlockChangeRecord {
             xz: try!(Serializable::read_from(buf)),
             y: try!(Serializable::read_from(buf)),
             block_id: try!(Serializable::read_from(buf)),
@@ -959,7 +959,7 @@ pub struct ExplosionRecord {
 
 impl Serializable for ExplosionRecord {
     fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
-        Ok(ExplosionRecord{
+        Ok(ExplosionRecord {
             x: try!(Serializable::read_from(buf)),
             y: try!(Serializable::read_from(buf)),
             z: try!(Serializable::read_from(buf)),
@@ -982,7 +982,7 @@ pub struct MapIcon {
 
 impl Serializable for MapIcon {
     fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
-        Ok(MapIcon{
+        Ok(MapIcon {
             direction_type: try!(Serializable::read_from(buf)),
             x: try!(Serializable::read_from(buf)),
             z: try!(Serializable::read_from(buf)),
@@ -998,7 +998,7 @@ impl Serializable for MapIcon {
 
 impl Default for MapIcon {
     fn default() -> Self {
-        MapIcon { 
+        MapIcon {
             direction_type: 0,
             x: 0,
             z: 0,
@@ -1015,7 +1015,7 @@ pub struct EntityProperty {
 
 impl Serializable for EntityProperty {
     fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
-        Ok(EntityProperty{
+        Ok(EntityProperty {
             key: try!(Serializable::read_from(buf)),
             value: try!(Serializable::read_from(buf)),
             modifiers: try!(Serializable::read_from(buf)),
@@ -1038,7 +1038,7 @@ pub struct PropertyModifier {
 
 impl Serializable for PropertyModifier {
     fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
-        Ok(PropertyModifier{
+        Ok(PropertyModifier {
             uuid: try!(Serializable::read_from(buf)),
             amount: try!(Serializable::read_from(buf)),
             operation: try!(Serializable::read_from(buf)),
@@ -1060,19 +1060,19 @@ pub struct PlayerInfoData {
 
 impl Serializable for PlayerInfoData {
     fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
-        let mut m = PlayerInfoData{
+        let mut m = PlayerInfoData {
             action: try!(Serializable::read_from(buf)),
             players: Vec::new(),
         };
         let len = try!(VarInt::read_from(buf));
-        for _ in 0 .. len.0 {
-            let uuid =  try!(UUID::read_from(buf));
+        for _ in 0..len.0 {
+            let uuid = try!(UUID::read_from(buf));
             match m.action.0 {
                 0 => {
                     let name = try!(String::read_from(buf));
                     let mut props = Vec::new();
                     let plen = try!(VarInt::read_from(buf)).0;
-                    for _ in 0 .. plen {
+                    for _ in 0..plen {
                         let mut prop = PlayerProperty {
                             name: try!(String::read_from(buf)),
                             value: try!(String::read_from(buf)),
@@ -1098,21 +1098,21 @@ impl Serializable for PlayerInfoData {
                         },
                     };
                     m.players.push(p);
-                },
+                }
                 1 => {
-                    m.players.push(PlayerDetail::UpdateGamemode{
+                    m.players.push(PlayerDetail::UpdateGamemode {
                         uuid: uuid,
                         gamemode: try!(Serializable::read_from(buf)),
                     })
-                },
+                }
                 2 => {
-                    m.players.push(PlayerDetail::UpdateLatency{
+                    m.players.push(PlayerDetail::UpdateLatency {
                         uuid: uuid,
                         ping: try!(Serializable::read_from(buf)),
                     })
-                },
+                }
                 3 => {
-                    m.players.push(PlayerDetail::UpdateDisplayName{
+                    m.players.push(PlayerDetail::UpdateDisplayName {
                         uuid: uuid,
                         display: {
                             if try!(bool::read_from(buf)) {
@@ -1122,12 +1122,10 @@ impl Serializable for PlayerInfoData {
                             }
                         },
                     })
-                },
+                }
                 4 => {
-                    m.players.push(PlayerDetail::Remove{
-                        uuid: uuid,
-                    })
-                },
+                    m.players.push(PlayerDetail::Remove { uuid: uuid })
+                }
                 _ => panic!(),
             }
         }
@@ -1150,11 +1148,29 @@ impl Default for PlayerInfoData {
 
 #[derive(Debug)]
 pub enum PlayerDetail {
-    Add{uuid: UUID, name: String, properties: Vec<PlayerProperty>, gamemode: VarInt, ping: VarInt, display: Option<format::Component>},
-    UpdateGamemode{uuid: UUID, gamemode: VarInt},
-    UpdateLatency{uuid: UUID, ping: VarInt},
-    UpdateDisplayName{uuid: UUID, display: Option<format::Component>},
-    Remove{uuid: UUID},
+    Add {
+        uuid: UUID,
+        name: String,
+        properties: Vec<PlayerProperty>,
+        gamemode: VarInt,
+        ping: VarInt,
+        display: Option<format::Component>,
+    },
+    UpdateGamemode {
+        uuid: UUID,
+        gamemode: VarInt,
+    },
+    UpdateLatency {
+        uuid: UUID,
+        ping: VarInt,
+    },
+    UpdateDisplayName {
+        uuid: UUID,
+        display: Option<format::Component>,
+    },
+    Remove {
+        uuid: UUID,
+    },
 }
 
 #[derive(Debug)]
