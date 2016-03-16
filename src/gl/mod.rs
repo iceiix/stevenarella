@@ -23,7 +23,7 @@ use std::ops::{Deref, DerefMut};
 
 /// Inits the gl library. This should be called once a context is ready.
 pub fn init(window: &mut glutin::Window) {
-    gl::load_with(|s| window.get_proc_address(s));
+    gl::load_with(|s| window.get_proc_address(s) as *const _);
 }
 
 /// Dsed to specify how the vertices will be handled
@@ -594,7 +594,7 @@ impl Buffer {
     pub fn set_data(&self, target: BufferTarget, data: &[u8], usage: BufferUsage) {
         unsafe {
             gl::BufferData(target,
-                           data.len() as i64,
+                           data.len() as isize,
                            data.as_ptr() as *const gl::types::GLvoid,
                            usage);
         }

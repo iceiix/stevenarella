@@ -4,5 +4,5 @@ version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 
 [dependencies]
-libc = "*"
-openssl-sys = "0.6.5"
+libc = "0.2"
+openssl-sys = "0.7.6"

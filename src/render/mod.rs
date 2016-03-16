@@ -96,6 +96,7 @@ init_shader! {
 
 impl Renderer {
     pub fn new(res: Arc<RwLock<resources::Manager>>) -> Renderer {
+        use cgmath::Matrix;
         let version = {
             res.read().unwrap().version()
         };
@@ -175,7 +176,7 @@ impl Renderer {
 
             self.perspective_matrix = cgmath::Matrix4::from(
                 cgmath::PerspectiveFov {
-                    fovy: cgmath::Deg{s: 90f32},
+                    fovy: cgmath::Rad::from(cgmath::Deg{s: 90f32}),
                     aspect: (width / height) as f32,
                     near: 0.1f32,
                     far: 500.0f32,
@@ -277,7 +278,7 @@ impl Renderer {
 
     fn init_trans(&mut self, width: u32, height: u32) {
         self.trans = None;
-        self.trans = Some(TransInfo::new(width, height));
+        // self.trans = Some(TransInfo::new(width, height));
     }
 
     pub fn get_textures(&self) -> Arc<RwLock<TextureManager>> {
