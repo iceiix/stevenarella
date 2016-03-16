@@ -49,7 +49,7 @@ const CL_BRAND: console::CVar<String> = console::CVar {
                   \"Vanilla\"",
     mutable: false,
     serializable: false,
-    default: &|| "steven".to_owned(),
+    default: &|| "Steven".to_owned(),
 };
 
 pub struct Game {
