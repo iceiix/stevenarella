@@ -326,8 +326,8 @@ impl Renderer {
 
 struct TransInfo {
     main: gl::Framebuffer,
-    fbColor: gl::Texture,
-    fbDepth: gl::Texture,
+    fb_color: gl::Texture,
+    fb_depth: gl::Texture,
     trans: gl::Framebuffer,
     accum: gl::Texture,
     revealage: gl::Texture,
