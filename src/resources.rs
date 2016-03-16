@@ -15,15 +15,13 @@
 extern crate hyper;
 extern crate zip;
 
+extern crate steven_resources as internal;
+
 use std::thread;
 use std::path;
 use std::io;
 use std::fs;
 use std::sync::mpsc;
-
-mod internal {
-    include!(concat!(env!("OUT_DIR"), "/resources.rs"));
-}
 
 const RESOURCES_VERSION: &'static str = "15w37a";
 

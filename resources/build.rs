@@ -8,7 +8,7 @@ fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest = Path::new(&out_dir);
 
-    let base = Path::new("resources");
+    let base = Path::new("assets");
     let mut out = Vec::new();
     build_map(&mut out, &base);
 
@@ -17,7 +17,7 @@ fn main() {
     write!(file, "    match name {{\n").unwrap();
     for entry in &out {
     	let entry = entry.replace("\\", "/");
-    	let short = &entry["resources/".len()..];
+    	let short = &entry;
     	write!(file, "        {:?} => Some(include_bytes!(\"../{}\")),\n", short, entry).unwrap();
     }
     write!(file, "        _ => None\n    }}\n}}\n").unwrap();
@@ -34,4 +34,4 @@ fn build_map(out: &mut Vec<String>, path: &Path) {
     		out.push(entry.path().to_str().unwrap().to_owned());
     	}
     }
-} 
+}

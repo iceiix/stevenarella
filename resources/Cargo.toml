@@ -1,0 +1,5 @@
+[package]
+name = "steven_resources"
+version = "0.1.0"
+authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
+build = "build.rs"

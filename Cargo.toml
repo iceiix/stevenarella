@@ -2,7 +2,6 @@
 name = "steven"
 version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
-build = "build.rs"
 
 [dependencies]
 glutin = "0.4.9"
@@ -25,6 +24,10 @@ version = "0"
 
 [dependencies.steven_openssl]
 path = "./openssl"
+version = "0"
+
+[dependencies.steven_resources]
+path = "./resources"
 version = "0"
 
 [profile.dev]
