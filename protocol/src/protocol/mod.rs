@@ -40,7 +40,7 @@ macro_rules! state_packets {
      ($($state:ident $stateName:ident {
         $($dir:ident $dirName:ident {
             $(
-                $name:ident => $id:expr {
+                $name:ident => id($id:expr) {
                 $($field:ident: $field_type:ty = $(when ($cond:expr))*, )+
             })*
         })+
@@ -79,7 +79,7 @@ macro_rules! state_packets {
 
                     impl PacketType for $name {
 
-                        fn packet_id(&self) -> i32{ $id }
+                        fn packet_id(&self) -> i32 { $id }
 
                         fn write(self, buf: &mut io::Write) -> Result<(), io::Error> {
                             $(
