@@ -15,7 +15,7 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::io;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::fmt;
 use protocol;
 use protocol::Serializable;
@@ -191,7 +191,7 @@ impl Default for Metadata {
 }
 
 #[derive(Debug)]
-enum Value {
+pub enum Value {
     Byte(i8),
     Int(i32),
     Float(f32),
