@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(test)]
+#![feature(hashmap_hasher)]
+extern crate test;
+mod esc;
+
 pub mod protocol;
 pub mod format;
 pub mod nbt;
@@ -35,6 +40,7 @@ extern crate hyper;
 extern crate flate2;
 extern crate rand;
 extern crate rustc_serialize;
+extern crate cgmath;
 #[macro_use]
 extern crate log;
 

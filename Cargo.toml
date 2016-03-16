@@ -17,6 +17,7 @@ time = "0.1.32"
 rand = "0.3.11"
 rustc-serialize = "0.3"
 log = "0.3.2"
+cgmath = "0.3.1"
 
 [dependencies.steven_gl]
 path = "./gl"

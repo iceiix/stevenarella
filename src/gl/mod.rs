@@ -652,3 +652,116 @@ impl Drop for MappedBuffer {
         mem::forget(mem::replace(&mut self.inner, Vec::new()));
     }
 }
+
+// Frame buffers
+
+pub type Attachment = u32;
+pub const COLOR_ATTACHMENT_0: Attachment = gl::COLOR_ATTACHMENT0;
+pub const COLOR_ATTACHMENT_1: Attachment = gl::COLOR_ATTACHMENT1;
+pub const COLOR_ATTACHMENT_2: Attachment = gl::COLOR_ATTACHMENT2;
+pub const DEPTH_ATTACHMENT: Attachment = gl::DEPTH_ATTACHMENT;
+
+pub struct Framebuffer(u32);
+
+impl Framebuffer {
+    pub fn new() -> Framebuffer {
+        let mut fb = Framebuffer(0);
+        unsafe {
+            gl::GenFramebuffers(1, &mut fb.0);
+        }
+        fb
+    }
+
+    pub fn bind(&self) {
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.0);
+        }
+    }
+
+    pub fn bind_read(&self) {
+        unsafe {
+            gl::BindFramebuffer(gl::READ_FRAMEBUFFER, self.0);
+        }
+    }
+
+    pub fn bind_draw(&self) {
+        unsafe {
+            gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, self.0);
+        }
+    }
+
+    pub fn texture_2d(&self, attachment: Attachment, target: TextureTarget, tex: &Texture, level: i32) {
+        unsafe {
+            gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachment, target, tex.0, level);
+        }
+    }
+}
+
+impl Drop for Framebuffer {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteFramebuffers(1, &self.0);
+        }
+    }
+}
+
+pub fn unbind_framebuffer() {
+    unsafe {
+        gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+    }
+}
+
+pub fn unbind_framebuffer_read() {
+    unsafe {
+        gl::BindFramebuffer(gl::READ_FRAMEBUFFER, 0);
+    }
+}
+
+pub fn unbind_framebuffer_draw() {
+    unsafe {
+        gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, 0);
+    }
+}
+
+pub fn draw_buffers(bufs: &[Attachment]) {
+    unsafe {
+        gl::DrawBuffers(
+                bufs.len() as i32,
+                bufs.as_ptr()
+        );
+    }
+}
+
+pub fn bind_frag_data_location(p: &Program, cn: u32, name: &str) {
+    unsafe {
+        gl::BindFragDataLocation(p.0, cn, ffi::CString::new(name).unwrap().as_ptr());
+    }
+}
+
+pub fn blit_framebuffer(
+    sx0: i32, sy0: i32, sx1: i32, sy1: i32,
+    dx0: i32, dy0: i32, dx1: i32, dy1: i32,
+    mask: ClearFlags, filter: TextureValue) {
+    unsafe {
+        gl::BlitFramebuffer(
+            sx0, sy0, sx1, sy1,
+            dx0, dy0, dx1, dy1,
+            mask.internal(), filter as u32
+        );
+    }
+}
+
+pub fn read_buffer(a: Attachment) {
+    unsafe {
+        gl::ReadBuffer(a);
+    }
+}
+
+pub type TargetBuffer = u32;
+pub const COLOR: TargetBuffer = gl::COLOR;
+
+pub fn clear_buffer(buffer: TargetBuffer, draw_buffer: i32, values: &[f32]) {
+    unsafe {
+        gl::ClearBufferfv(buffer, draw_buffer, values.as_ptr());
+    }
+}

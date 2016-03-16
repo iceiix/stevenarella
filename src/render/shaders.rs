@@ -22,14 +22,29 @@ pub fn add_shaders(reg: &mut glsl::Registry) {
 
     reg.register("ui_vertex", include_str!("shaders/ui_vertex.glsl"));
     reg.register("ui_frag", include_str!("shaders/ui_frag.glsl"));
+
+    reg.register("chunk_vertex", include_str!("shaders/chunk_vertex.glsl"));
+    reg.register("chunk_frag", include_str!("shaders/chunk_frag.glsl"));
+
+    reg.register("trans_vertex", include_str!("shaders/trans_vertex.glsl"));
+    reg.register("trans_frag", include_str!("shaders/trans_frag.glsl"));
+}
+
+macro_rules! get_shader {
+    ($reg:ident, $name:expr) => (
+        $reg.get($name)
+    );
+    ($reg:ident, $name:expr, $def:expr) => (
+        $reg.get_define($name, $def)
+    )
 }
 
 #[macro_export]
 macro_rules! init_shader {
 	(
 		Program $name:ident {
-			vert = $vert:expr,
-			frag = $frag:expr,
+			vert = $vert:expr, $(#$vdef:ident)*
+			frag = $frag:expr, $(#$fdef:ident)*
 			attribute = {
 				$(
 					$field:ident => $glname:expr,
@@ -42,6 +57,7 @@ macro_rules! init_shader {
 			},
 		}
 	) => (
+        #[allow(dead_code)]
 		struct $name {
 			program: gl::Program,
 			$(
@@ -54,8 +70,8 @@ macro_rules! init_shader {
 
 		impl $name {
 			pub fn new(reg: &glsl::Registry) -> $name {
-				let v = reg.get($vert);
-				let f = reg.get($frag);
+				let v = get_shader!(reg, $vert $(,stringify!($vdef))*);
+				let f = get_shader!(reg, $frag $(,stringify!($fdef))*);
 				let shader = shaders::create_program(&v, &f);
 				$name {
 					$(

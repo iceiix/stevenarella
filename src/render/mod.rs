@@ -26,6 +26,7 @@ use image;
 use image::GenericImage;
 use byteorder::{WriteBytesExt, NativeEndian};
 use serde_json;
+use cgmath;
 
 const ATLAS_SIZE: usize = 1024;
 
@@ -38,8 +39,59 @@ pub struct Renderer {
     gl_texture: gl::Texture,
     texture_layers: usize,
 
+    chunk_shader: ChunkShader,
+    chunk_shader_alpha: ChunkShaderAlpha,
+
+    perspective_matrix: cgmath::Matrix4<f32>,
+
+    trans: Option<TransInfo>,
+
     last_width: u32,
     last_height: u32,
+}
+
+init_shader! {
+    Program ChunkShader {
+        vert = "chunk_vertex",
+        frag = "chunk_frag",
+        attribute = {
+            position => "aPosition",
+            texture_info => "aTextureInfo",
+            texture_offset => "aTextureOffset",
+            color => "aColor",
+            lighting => "aLighting",
+        },
+        uniform = {
+            perspective_matrix => "perspectiveMatrix",
+            camera_matrix => "cameraMatrix",
+            offset => "offset",
+            texture => "textures",
+            light_level => "lightLevel",
+            sky_offset => "sky_offset",
+        },
+    }
+}
+
+init_shader! {
+    Program ChunkShaderAlpha {
+        vert = "chunk_vertex",
+        frag = "chunk_frag", #alpha
+        attribute = {
+            position => "aPosition",
+            texture_info => "aTextureInfo",
+            texture_offset => "aTextureOffset",
+            color => "aColor",
+            lighting => "aLighting",
+        },
+        uniform = {
+            perspective_matrix => "perspectiveMatrix",
+            camera_matrix => "cameraMatrix",
+            offset => "offset",
+            texture => "textures",
+            light_level => "lightLevel",
+            sky_offset => "sky_offset",
+        },
+    }
 }
 
 impl Renderer {
@@ -73,12 +125,14 @@ impl Renderer {
         gl::cull_face(gl::BACK);
         gl::front_face(gl::CLOCK_WISE);
 
-		// Shaders
+        // Shaders
+        let chunk_shader = ChunkShader::new(&greg);
+        let chunk_shader_alpha = ChunkShaderAlpha::new(&greg);
 
-		// UI
-		// Line Drawer
-		// Models
-		// Clouds
+        // UI
+        // Line Drawer
+        // Models
+        // Clouds
 
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 
@@ -89,8 +143,16 @@ impl Renderer {
             resources: res,
             gl_texture: tex,
             texture_layers: 1,
+
+            chunk_shader: chunk_shader,
+            chunk_shader_alpha: chunk_shader_alpha,
+
             last_width: 0,
             last_height: 0,
+
+            perspective_matrix: cgmath::Matrix4::zero(),
+
+            trans: None,
         }
     }
 
@@ -110,10 +172,23 @@ impl Renderer {
             self.last_width = width;
             self.last_height = height;
             gl::viewport(0, 0, width as i32, height as i32);
+
+            self.perspective_matrix = cgmath::Matrix4::from(
+                cgmath::PerspectiveFov {
+                    fovy: cgmath::Deg{s: 90f32},
+                    aspect: (width / height) as f32,
+                    near: 0.1f32,
+                    far: 500.0f32,
+                }
+            );
+
+            self.init_trans(width, height);
         }
 
         gl::active_texture(0);
         self.gl_texture.bind(gl::TEXTURE_2D_ARRAY);
+
+        gl::enable(gl::MULTISAMPLE);
 
         gl::clear_color(14.0 / 255.0, 48.0 / 255.0, 92.0 / 255.0, 1.0);
         gl::clear(gl::ClearFlags::Color | gl::ClearFlags::Depth);
@@ -121,10 +196,10 @@ impl Renderer {
         self.ui.tick(width, height);
     }
 
-    fn update_textures(&mut self, delta: f64) {
-        self.gl_texture.bind(gl::TEXTURE_2D_ARRAY);
+    fn do_pending_textures(&mut self) {
         let len = {
             let tex = self.textures.read().unwrap();
+            // Rebuild the texture if it needs resizing
             if self.texture_layers != tex.atlases.len() {
                 let len = ATLAS_SIZE * ATLAS_SIZE * 4 * tex.atlases.len();
                 let mut data = Vec::with_capacity(len);
@@ -149,6 +224,7 @@ impl Renderer {
             tex.pending_uploads.len()
         };
         if len > 0 {
+            // Upload pending changes
             let mut tex = self.textures.write().unwrap();
             for upload in &tex.pending_uploads {
                 let atlas = upload.0;
@@ -168,6 +244,11 @@ impl Renderer {
             }
             tex.pending_uploads.clear();
         }
+    }
+
+    fn update_textures(&mut self, delta: f64) {
+        self.gl_texture.bind(gl::TEXTURE_2D_ARRAY);
+        self.do_pending_textures();
 
         for ani in &mut self.textures.write().unwrap().animated_textures {
             if ani.remaining_time <= 0.0 {
@@ -192,6 +273,11 @@ impl Renderer {
             }
         }
 
+    }
+
+    fn init_trans(&mut self, width: u32, height: u32) {
+        self.trans = None;
+        self.trans = Some(TransInfo::new(width, height));
     }
 
     pub fn get_textures(&self) -> Arc<RwLock<TextureManager>> {
@@ -224,8 +310,8 @@ impl Renderer {
             Some(val) => val,
             None => {
                 let mut t = textures.write().unwrap();
-				// Make sure it hasn't already been loaded since we switched
-				// locks.
+                // Make sure it hasn't already been loaded since we switched
+                // locks.
                 if let Some(val) = t.get_texture(name) {
                     val
                 } else {
@@ -234,6 +320,48 @@ impl Renderer {
                 }
             }
         }
+    }
+}
+
+struct TransInfo {
+    main: gl::Framebuffer,
+    fbColor: gl::Texture,
+    fbDepth: gl::Texture,
+    trans: gl::Framebuffer,
+    accum: gl::Texture,
+    revealage: gl::Texture,
+    depth: gl::Texture,
+
+    prgoram: TransShader,
+    array: gl::VertexArray,
+    buffer: gl::Buffer,
+}
+
+init_shader! {
+    Program TransShader {
+        vert = "trans_vertex",
+        frag = "trans_frag",
+        attribute = {
+            position => "aPosition",
+        },
+        uniform = {
+            accum => "taccum",
+            revealage => "trevealage",
+            color => "tcolor",
+            samples => "samples",
+        },
+    }
+}
+
+impl TransInfo {
+    pub fn new(width: u32, height: u32) -> TransInfo {
+        let trans = gl::Framebuffer::new();
+        trans.bind();
+
+        let accum = gl::Texture::new();
+        accum.bind(gl::TEXTURE_2D);
+
+        unimplemented!()
     }
 }
 
@@ -273,18 +401,18 @@ impl TextureManager {
                          2,
                          2,
                          vec![
-			0, 0, 0, 255,
-			255, 0, 255, 255,
-			255, 0, 255, 255,
-			0, 0, 0, 255,
-		]);
+            0, 0, 0, 255,
+            255, 0, 255, 255,
+            255, 0, 255, 255,
+            0, 0, 0, 255,
+        ]);
         self.put_texture("steven",
                          "solid",
                          1,
                          1,
                          vec![
-			255, 255, 255, 255,
-		]);
+            255, 255, 255, 255,
+        ]);
     }
 
     fn update_textures(&mut self, version: usize) {
@@ -321,7 +449,7 @@ impl TextureManager {
             val.read_to_end(&mut data).unwrap();
             if let Ok(img) = image::load_from_memory(&data) {
                 let (width, height) = img.dimensions();
-				// Might be animated
+                // Might be animated
                 if (name.starts_with("blocks/") || name.starts_with("items/")) && width != height {
                     let id = img.to_rgba().into_vec();
                     let frame = id[..(width * width * 4) as usize].to_owned();
@@ -364,9 +492,9 @@ impl TextureManager {
                         })
                     } else {
                         out.push(AnimationFrame{
-							index: frame.find("index").unwrap().as_i64().unwrap() as usize,
-							time: frame_time * frame.find("frameTime").unwrap().as_i64().unwrap(),
-						})
+                            index: frame.find("index").unwrap().as_i64().unwrap() as usize,
+                            time: frame_time * frame.find("frameTime").unwrap().as_i64().unwrap(),
+                        })
                     }
                 }
                 out
