@@ -26,3 +26,11 @@ version = "0"
 [dependencies.steven_openssl]
 path = "./openssl"
 version = "0"
+
+[profile.dev]
+opt-level = 2
+debug = true
+rpath = false
+lto = false
+debug-assertions = true
+codegen-units = 4
