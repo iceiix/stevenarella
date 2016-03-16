@@ -94,11 +94,10 @@ fn main() {
                          .with_stencil_buffer(0)
                          .with_vsync()
                          .build()
-                         .ok()
                          .expect("Could not create Glutin window.");
 
     unsafe {
-        window.make_current().ok().expect("Could not set current context.");
+        window.make_current().expect("Could not set current context.");
     }
 
     gl::init(&mut window);
@@ -179,10 +178,8 @@ fn handle_window_event(window: &glutin::Window,
             game.screen_sys.on_scroll(x as f64, y as f64);
         }
 
-        Event::KeyboardInput(glutin::ElementState::Pressed, 41 /* ` GRAVE */, _) => {
-            game.console.lock().unwrap().toggle();
-        }
-        Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(VirtualKeyCode::Grave)) => {
+        Event::KeyboardInput(glutin::ElementState::Pressed, 41 /* ` GRAVE */, _)
+            | Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(VirtualKeyCode::Grave)) => {
             game.console.lock().unwrap().toggle();
         }
         Event::KeyboardInput(glutin::ElementState::Pressed, key, virt) => {
