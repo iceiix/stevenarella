@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[derive(Clone)]
 pub struct Set {
     data: Vec<u64>,
 }
@@ -33,11 +34,11 @@ fn test_set() {
 
 impl Set {
     pub fn new(size: usize) -> Set {
-        let mut set = Set { data: Vec::with_capacity(size) };
-        for _ in 0..size {
-            set.data.push(0)
-        }
-        set
+        Set { data: vec![0; (size + 63) / 64] }
+    }
+
+    pub fn resize(&mut self, new_size: usize) {
+        self.data.resize((new_size + 63) / 64, 0);
     }
 
     pub fn set(&mut self, i: usize, v: bool) {
@@ -48,7 +49,17 @@ impl Set {
         }
     }
 
-    pub fn get(&mut self, i: usize) -> bool {
+    pub fn get(&self, i: usize) -> bool {
         (self.data[i >> 6] & (1 << (i & 0x3F))) != 0
+    }
+
+    pub fn includes_set(&self, other: &Set) -> bool {
+        debug_assert!(self.data.len() == other.data.len());
+        for (a, b) in self.data.iter().zip(&other.data) {
+            if a & b != *b {
+                return false;
+            }
+        }
+        true
     }
 }
