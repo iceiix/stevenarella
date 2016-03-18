@@ -41,6 +41,10 @@ impl Set {
         self.data.resize((new_size + 63) / 64, 0);
     }
 
+    pub fn capacity(&self) -> usize {
+        self.data.len() * 64
+    }
+
     pub fn set(&mut self, i: usize, v: bool) {
         if v {
             self.data[i >> 6] |= 1 << (i & 0x3F)
@@ -54,7 +58,6 @@ impl Set {
     }
 
     pub fn includes_set(&self, other: &Set) -> bool {
-        debug_assert!(self.data.len() == other.data.len());
         for (a, b) in self.data.iter().zip(&other.data) {
             if a & b != *b {
                 return false;
