@@ -40,6 +40,12 @@ pub const LINES: DrawType = gl::LINES;
 /// Treats each vertex as a point
 pub const POINTS: DrawType = gl::POINTS;
 
+pub fn draw_arrays(ty: DrawType, offset: usize, count: usize) {
+    unsafe {
+        gl::DrawArrays(ty, offset as i32, count as i32);
+    }
+}
+
 pub fn draw_elements(ty: DrawType, count: usize, dty: Type, offset: usize) {
     unsafe {
         gl::DrawElements(ty, count as i32, dty, offset as *const gl::types::GLvoid);
@@ -92,6 +98,10 @@ impl BitOr for ClearFlags {
 /// Clears the buffers specified by the passed flags.
 pub fn clear(flags: ClearFlags) {
     unsafe { gl::Clear(flags.internal()) }
+}
+
+pub fn depth_mask(f: bool) {
+    unsafe { gl::DepthMask(f as u8); }
 }
 
 /// Func is a function to be preformed on two values.
@@ -152,6 +162,12 @@ pub const ZERO_FACTOR: Factor = gl::ZERO;
 pub fn blend_func(s_factor: Factor, d_factor: Factor) {
     unsafe {
         gl::BlendFunc(s_factor, d_factor);
+    }
+}
+
+pub fn blend_func_separate(s_factor_rgb: Factor, d_factor_rgb: Factor, s_factor_a: Factor, d_factor_a: Factor) {
+    unsafe {
+        gl::BlendFuncSeparate(s_factor_rgb, d_factor_rgb, s_factor_a, d_factor_a);
     }
 }
 
@@ -260,6 +276,51 @@ impl Texture {
                             format,
                             ty,
                             pixels.as_mut_ptr() as *mut gl::types::GLvoid);
+        }
+    }
+
+    pub fn image_2d_ex(&self,
+                    target: TextureTarget,
+                    level: i32,
+                    width: u32,
+                    height: u32,
+                    internal_format: TextureFormat,
+                    format: TextureFormat,
+                    ty: Type,
+                    pix: Option<&[u8]>) {
+        unsafe {
+            let ptr = match pix {
+                Some(val) => val.as_ptr() as *const gl::types::GLvoid,
+                None => ptr::null(),
+            };
+            gl::TexImage2D(target,
+                           level,
+                           internal_format as i32,
+                           width as i32,
+                           height as i32,
+                           0,
+                           format,
+                           ty,
+                           ptr
+            );
+        }
+    }
+
+    pub fn image_2d_sample(&self,
+                    target: TextureTarget,
+                    samples: i32,
+                    width: u32,
+                    height: u32,
+                    format: TextureFormat,
+                    fixed: bool) {
+        unsafe {
+            gl::TexImage2DMultisample(target,
+                           samples,
+                           format,
+                           width as i32,
+                           height as i32,
+                           fixed as u8
+            );
         }
     }
 

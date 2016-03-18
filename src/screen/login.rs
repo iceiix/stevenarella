@@ -88,7 +88,7 @@ impl super::Screen for Login {
     }
 
     fn tick(&mut self,
-            delta: f64,
+            _delta: f64,
             renderer: &mut render::Renderer,
             ui_container: &mut ui::Container) {
         let elements = self.elements.as_mut().unwrap();

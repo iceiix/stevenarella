@@ -41,6 +41,7 @@ pub struct Renderer {
 
     chunk_shader: ChunkShader,
     chunk_shader_alpha: ChunkShaderAlpha,
+    trans_shader: TransShader,
 
     perspective_matrix: cgmath::Matrix4<f32>,
 
@@ -129,6 +130,7 @@ impl Renderer {
         // Shaders
         let chunk_shader = ChunkShader::new(&greg);
         let chunk_shader_alpha = ChunkShaderAlpha::new(&greg);
+        let trans_shader = TransShader::new(&greg);
 
         // UI
         // Line Drawer
@@ -147,6 +149,7 @@ impl Renderer {
 
             chunk_shader: chunk_shader,
             chunk_shader_alpha: chunk_shader_alpha,
+            trans_shader: trans_shader,
 
             last_width: 0,
             last_height: 0,
@@ -186,6 +189,9 @@ impl Renderer {
             self.init_trans(width, height);
         }
 
+        let trans = self.trans.as_mut().unwrap();
+        trans.main.bind();
+
         gl::active_texture(0);
         self.gl_texture.bind(gl::TEXTURE_2D_ARRAY);
 
@@ -193,6 +199,47 @@ impl Renderer {
 
         gl::clear_color(14.0 / 255.0, 48.0 / 255.0, 92.0 / 255.0, 1.0);
         gl::clear(gl::ClearFlags::Color | gl::ClearFlags::Depth);
+
+        // Chunk rendering
+
+        // Line rendering
+        // Mode rendering
+        // Cloud rendering
+
+        // Trans chunk rendering
+
+        // TODO: trans chunk shader stuff
+
+        // Copy the depth buffer
+        trans.main.bind_read();
+        trans.trans.bind_draw();
+        gl::blit_framebuffer(
+            0, 0, width as i32, height as i32,
+            0, 0, width as i32, height as i32,
+            gl::ClearFlags::Depth, gl::NEAREST
+        );
+
+        trans.trans.bind();
+        gl::enable(gl::BLEND);
+        gl::depth_mask(false);
+        gl::clear_color(0.0, 0.0, 0.0, 1.0);
+        gl::clear(gl::ClearFlags::Color);
+        gl::clear_buffer(gl::COLOR, 0, &[0.0, 0.0, 0.0, 1.0]);
+        gl::clear_buffer(gl::COLOR, 1, &[0.0, 0.0, 0.0, 0.0]);
+        gl::blend_func_separate(gl::ONE_FACTOR, gl::ONE_FACTOR, gl::ZERO_FACTOR, gl::ONE_MINUS_SRC_ALPHA);
+
+        // TODO: Draw chunks
+
+        gl::unbind_framebuffer();
+        gl::disable(gl::DEPTH_TEST);
+        gl::clear(gl::ClearFlags::Color);
+        gl::disable(gl::BLEND);
+        trans.draw(&self.trans_shader);
+
+        gl::enable(gl::DEPTH_TEST);
+        gl::depth_mask(true);
+        gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        gl::disable(gl::MULTISAMPLE);
 
         self.ui.tick(width, height);
     }
@@ -278,7 +325,7 @@ impl Renderer {
 
     fn init_trans(&mut self, width: u32, height: u32) {
         self.trans = None;
-        // self.trans = Some(TransInfo::new(width, height));
+        self.trans = Some(TransInfo::new(width, height, &self.trans_shader));
     }
 
     pub fn get_textures(&self) -> Arc<RwLock<TextureManager>> {
@@ -333,7 +380,6 @@ struct TransInfo {
     revealage: gl::Texture,
     depth: gl::Texture,
 
-    prgoram: TransShader,
     array: gl::VertexArray,
     buffer: gl::Buffer,
 }
@@ -354,15 +400,98 @@ init_shader! {
     }
 }
 
+const NUM_SAMPLES: i32 = 1;
+
 impl TransInfo {
-    pub fn new(width: u32, height: u32) -> TransInfo {
+    pub fn new(width: u32, height: u32, shader: &TransShader) -> TransInfo {
         let trans = gl::Framebuffer::new();
         trans.bind();
 
         let accum = gl::Texture::new();
         accum.bind(gl::TEXTURE_2D);
+        accum.image_2d_ex(gl::TEXTURE_2D, 0, width, height, gl::RGBA16F, gl::RGBA, gl::FLOAT, None);
+        accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+        accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
+        trans.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &accum, 0);
 
-        unimplemented!()
+        let revealage = gl::Texture::new();
+        revealage.bind(gl::TEXTURE_2D);
+        revealage.image_2d_ex(gl::TEXTURE_2D, 0, width, height, gl::R16F, gl::RED, gl::FLOAT, None);
+        revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+        revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
+        trans.texture_2d(gl::COLOR_ATTACHMENT_1, gl::TEXTURE_2D, &revealage, 0);
+
+        let trans_depth = gl::Texture::new();
+        trans_depth.bind(gl::TEXTURE_2D);
+        trans_depth.image_2d_ex(gl::TEXTURE_2D, 0, width, height, gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::UNSIGNED_BYTE, None);
+        trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+        trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
+        trans.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &trans_depth, 0);
+
+        shader.program.use_program();
+        gl::bind_frag_data_location(&shader.program, 0, "accum");
+        gl::bind_frag_data_location(&shader.program, 1, "revealage");
+        gl::draw_buffers(&[gl::COLOR_ATTACHMENT_0, gl::COLOR_ATTACHMENT_1]);
+
+
+        let main = gl::Framebuffer::new();
+        main.bind();
+
+        let fb_color = gl::Texture::new();
+        fb_color.bind(gl::TEXTURE_2D_MULTISAMPLE);
+        fb_color.image_2d_sample(gl::TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, width, height, gl::RGBA8, false);
+        main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D_MULTISAMPLE, &fb_color, 0);
+
+        let fb_depth = gl::Texture::new();
+        fb_depth.bind(gl::TEXTURE_2D_MULTISAMPLE);
+        fb_depth.image_2d_sample(gl::TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, width, height, gl::DEPTH_COMPONENT24, false);
+        main.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D_MULTISAMPLE, &fb_depth, 0);
+
+        gl::unbind_framebuffer();
+
+        let array = gl::VertexArray::new();
+        array.bind();
+        let buffer = gl::Buffer::new();
+        buffer.bind(gl::ARRAY_BUFFER);
+
+        let mut data = vec![];
+        for f in [-1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0].into_iter() {
+            data.write_f32::<NativeEndian>(*f).unwrap();
+        }
+        buffer.set_data(gl::ARRAY_BUFFER, &data, gl::STATIC_DRAW);
+
+        shader.position.enable();
+        shader.position.vertex_pointer(2, gl::FLOAT, false, 8, 0);
+
+        TransInfo {
+            main: main,
+            fb_color: fb_color,
+            fb_depth: fb_depth,
+            trans: trans,
+            accum: accum,
+            revealage: revealage,
+            depth: trans_depth,
+
+            array: array,
+            buffer: buffer,
+        }
+    }
+
+    fn draw(&mut self, shader: &TransShader) {
+        gl::active_texture(0);
+        self.accum.bind(gl::TEXTURE_2D);
+        gl::active_texture(1);
+        self.revealage.bind(gl::TEXTURE_2D);
+        gl::active_texture(2);
+        self.fb_color.bind(gl::TEXTURE_2D_MULTISAMPLE);
+
+        shader.program.use_program();
+        shader.accum.set_int(0);
+        shader.revealage.set_int(1);
+        shader.color.set_int(2);
+        shader.samples.set_int(NUM_SAMPLES);
+        self.array.bind();
+        gl::draw_arrays(gl::TRIANGLES, 0, 6);
     }
 }
 
