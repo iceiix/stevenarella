@@ -963,14 +963,14 @@ pub fn test() {
     let mut c = Conn::new("localhost:25565").unwrap();
 
     c.write_packet(packet::handshake::serverbound::Handshake {
-         protocol_version: VarInt(71),
+         protocol_version: VarInt(SUPPORTED_PROTOCOL),
          host: "localhost".to_owned(),
          port: 25565,
          next: VarInt(2),
      })
      .unwrap();
     c.state = State::Login;
-    c.write_packet(packet::login::serverbound::LoginStart { username: "Think".to_owned() })
+    c.write_packet(packet::login::serverbound::LoginStart { username: "Thinkofdeath".to_owned() })
      .unwrap();
 
     let packet = match c.read_packet().unwrap() {
@@ -985,8 +985,8 @@ pub fn test() {
     let token_e = key.encrypt(&packet.verify_token.data);
 
     let profile = mojang::Profile {
-        username: "Think".to_owned(),
-        id: "b1184d43168441cfa2128b9a3df3b6ab".to_owned(),
+        username: "Thinkofdeath".to_owned(),
+        id: "4566e69fc90748ee8d71d7ba5aa00d20".to_owned(),
         access_token: "".to_owned(),
     };
 
