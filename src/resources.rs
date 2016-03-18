@@ -23,7 +23,7 @@ use std::io;
 use std::fs;
 use std::sync::mpsc;
 
-const RESOURCES_VERSION: &'static str = "15w37a";
+const RESOURCES_VERSION: &'static str = "15w39c";
 
 pub trait Pack {
     fn open(&self, name: &str) -> Option<Box<io::Read>>;
