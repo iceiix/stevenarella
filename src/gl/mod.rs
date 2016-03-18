@@ -529,6 +529,13 @@ impl Uniform {
             gl::Uniform4f(self.0, x, y, z, w);
         }
     }
+
+    pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
+        use cgmath::Matrix;
+        unsafe {
+            gl::UniformMatrix4fv(self.0, 1, false as u8, m.as_ptr());
+        }
+    }
 }
 
 pub struct Attribute(i32);

@@ -26,9 +26,20 @@ use image;
 use image::GenericImage;
 use byteorder::{WriteBytesExt, NativeEndian};
 use serde_json;
-use cgmath;
+use cgmath::{self, Vector, Point};
 
 const ATLAS_SIZE: usize = 1024;
+
+// TEMP
+const NUM_SAMPLES: i32 = 1;
+const LIGHT_LEVEL: f32 = 0.8;
+const SKY_OFFSET: f32 = 1.0;
+
+pub struct Camera {
+    pub pos: cgmath::Point3<f64>,
+    pub yaw: f64,
+    pub pitch: f64,
+}
 
 pub struct Renderer {
     resource_version: usize,
@@ -43,6 +54,7 @@ pub struct Renderer {
     chunk_shader_alpha: ChunkShaderAlpha,
     trans_shader: TransShader,
 
+    camera: Camera,
     perspective_matrix: cgmath::Matrix4<f32>,
 
     trans: Option<TransInfo>,
@@ -154,6 +166,11 @@ impl Renderer {
             last_width: 0,
             last_height: 0,
 
+            camera: Camera {
+                pos: cgmath::Point3::new(0.0, 0.0, 0.0),
+                yaw: 0.0,
+                pitch: ::std::f64::consts::PI,
+            },
             perspective_matrix: cgmath::Matrix4::zero(),
 
             trans: None,
@@ -161,6 +178,7 @@ impl Renderer {
     }
 
     pub fn tick(&mut self, delta: f64, width: u32, height: u32) {
+        use std::f64::consts::PI as PI64;
         {
             let rm = self.resources.read().unwrap();
             if rm.version() != self.resource_version {
@@ -201,9 +219,31 @@ impl Renderer {
         gl::clear(gl::ClearFlags::Color | gl::ClearFlags::Depth);
 
         // Chunk rendering
+        self.chunk_shader.program.use_program();
+
+        let view_vector = cgmath::Vector3::new(
+            ((self.camera.yaw - PI64/2.0).cos() * -self.camera.pitch.cos()) as f32,
+            (-self.camera.pitch.sin()) as f32,
+            (-(self.camera.yaw - PI64/2.0).sin() * -self.camera.pitch.cos()) as f32
+        );
+        let camera = cgmath::Point3::new(-self.camera.pos.x as f32, -self.camera.pos.y as f32, self.camera.pos.z as f32);
+        let camera_matrix = cgmath::Matrix4::look_at(
+            camera,
+            camera + cgmath::Point3::new(-view_vector.x, -view_vector.y, view_vector.z).to_vec(),
+            cgmath::Vector3::new(0.0, -1.0, 0.0)
+        );
+        let camera_matrix = camera_matrix * cgmath::Matrix4::from_nonuniform_scale(-1.0, 1.0, 1.0);
+
+        // TODO Frustum
+
+        self.chunk_shader.perspective_matrix.set_matrix4(&self.perspective_matrix);
+        self.chunk_shader.camera_matrix.set_matrix4(&camera_matrix);
+        self.chunk_shader.texture.set_int(0);
+        self.chunk_shader.light_level.set_float(LIGHT_LEVEL);
+        self.chunk_shader.sky_offset.set_float(SKY_OFFSET);
 
         // Line rendering
-        // Mode rendering
+        // Model rendering
         // Cloud rendering
 
         // Trans chunk rendering
@@ -399,8 +439,6 @@ init_shader! {
         },
     }
 }
-
-const NUM_SAMPLES: i32 = 1;
 
 impl TransInfo {
     pub fn new(width: u32, height: u32, shader: &TransShader) -> TransInfo {
