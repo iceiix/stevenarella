@@ -27,16 +27,6 @@ pub struct Entity {
     generation: u32,
 }
 
-/// Stores and manages a collection of entities.
-pub struct Manager {
-    num_components: usize,
-    entities: Vec<(Option<BSet>, u32)>,
-    free_entities: Vec<usize>,
-    components: Vec<Option<ComponentMem>>,
-
-    component_ids: RefCell<HashMap<TypeId, usize>>,
-}
-
 /// Used to access compoents on an entity in an efficient
 /// way.
 #[derive(Clone, Copy)]
@@ -68,6 +58,25 @@ impl Filter {
     }
 }
 
+/// A system processes entities
+pub trait System {
+    fn update(&mut self, m: &mut Manager);
+}
+
+
+/// Stores and manages a collection of entities.
+pub struct Manager {
+    num_components: usize,
+    entities: Vec<(Option<BSet>, u32)>,
+    free_entities: Vec<usize>,
+    components: Vec<Option<ComponentMem>>,
+
+    component_ids: RefCell<HashMap<TypeId, usize>>,
+
+    systems: Vec<Box<System>>,
+    render_systems: Vec<Box<System>>,
+}
+
 impl Manager {
     /// Creates a new manager.
     pub fn new() -> Manager {
@@ -78,6 +87,8 @@ impl Manager {
             components: vec![],
 
             component_ids: RefCell::new(HashMap::new()),
+            systems: vec![],
+            render_systems: vec![],
         }
     }
 
@@ -87,6 +98,34 @@ impl Manager {
             id: 0,
             generation: 0,
         }
+    }
+
+    /// Adds a system which will be called every tick
+    pub fn add_system<S: System + 'static>(&mut self, s: S) {
+        self.systems.push(Box::new(s));
+    }
+
+    /// Adds a system which will be called every frame
+    pub fn add_render_system<S: System + 'static>(&mut self, s: S) {
+        self.render_systems.push(Box::new(s));
+    }
+
+    /// Ticks all tick systems
+    pub fn tick(&mut self) {
+        let mut systems = mem::replace(&mut self.systems, vec![]);
+        for sys in &mut systems {
+            sys.update(self);
+        }
+        mem::replace(&mut self.systems, systems);
+    }
+
+    /// Ticks all render systems
+    pub fn render_tick(&mut self) {
+        let mut systems = mem::replace(&mut self.render_systems, vec![]);
+        for sys in &mut systems {
+            sys.update(self);
+        }
+        mem::replace(&mut self.render_systems, systems);
     }
 
     /// Returns all entities matching the filter
