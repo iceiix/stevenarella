@@ -45,17 +45,65 @@ pub struct Key<T> {
     _t: PhantomData<T>,
 }
 
+/// Used to search for entities with the requested components.
+pub struct Filter {
+    bits: BSet,
+}
+
+impl Filter {
+    /// Creates an empty filter which matches everything
+    pub fn new() -> Filter {
+        Filter {
+            bits: BSet::new(0),
+        }
+    }
+
+    /// Adds the component to the filter.
+    pub fn with<T>(mut self, key: Key<T>) -> Self {
+        if self.bits.capacity() <= key.id {
+            self.bits.resize(key.id + 1);
+        }
+        self.bits.set(key.id, true);
+        self
+    }
+}
+
 impl Manager {
     /// Creates a new manager.
     pub fn new() -> Manager {
         Manager {
             num_components: 0,
-            entities: vec![],
+            entities: vec![(Some(BSet::new(0)), 0)], // Has the world entity pre-defined
             free_entities: vec![],
             components: vec![],
 
             component_ids: RefCell::new(HashMap::new()),
         }
+    }
+
+    /// Returns the world entity. This should never be removed.
+    pub fn get_world(&self) -> Entity {
+        Entity {
+            id: 0,
+            generation: 0,
+        }
+    }
+
+    /// Returns all entities matching the filter
+    pub fn find(&self, filter: &Filter) -> Vec<Entity> {
+        let mut ret = vec![];
+        // Skip the world entity.
+        for (i, &(ref set, gen)) in self.entities[1..].iter().enumerate() {
+            if let Some(set) = set.as_ref() {
+                if set.includes_set(&filter.bits) {
+                    ret.push(Entity {
+                        id: i + 1,
+                        generation: gen,
+                    });
+                }
+            }
+        }
+        ret
     }
 
     /// Allocates a new entity without any components.
