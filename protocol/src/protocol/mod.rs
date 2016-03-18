@@ -34,13 +34,37 @@ use time;
 
 pub const SUPPORTED_PROTOCOL: i32 = 74;
 
+#[doc(hidden)]
+macro_rules! create_ids {
+    ($t:ty, ) => ();
+    ($t:ty, prev($prev:ident), $name:ident) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = $prev + 1;
+    );
+    ($t:ty, prev($prev:ident), $name:ident, $($n:ident),+) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = $prev + 1;
+        create_ids!($t, prev($name), $($n),+);
+    );
+    ($t:ty, $name:ident, $($n:ident),+) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = 0;
+        create_ids!($t, prev($name), $($n),+);
+    );
+    ($t:ty, $name:ident) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = 0;
+    );
+}
+
+
 /// Helper macro for defining packets
 #[macro_export]
 macro_rules! state_packets {
      ($($state:ident $stateName:ident {
         $($dir:ident $dirName:ident {
             $(
-                $name:ident => id($id:expr) {
+                $name:ident {
                 $($field:ident: $field_type:ty = $(when ($cond:expr))*, )+
             })*
         })+
@@ -61,6 +85,7 @@ macro_rules! state_packets {
 
         $(
         pub mod $state {
+
             $(
             pub mod $dir {
                 #![allow(unused_imports)]
@@ -71,6 +96,11 @@ macro_rules! state_packets {
                 use types;
                 use item;
 
+
+                pub mod internal_ids {
+                    create_ids!(i32, $($name),*);
+                }
+
                 $(
                     #[derive(Default, Debug)]
                     pub struct $name {
@@ -79,7 +109,7 @@ macro_rules! state_packets {
 
                     impl PacketType for $name {
 
-                        fn packet_id(&self) -> i32 { $id }
+                        fn packet_id(&self) -> i32 { internal_ids::$name }
 
                         fn write(self, buf: &mut io::Write) -> Result<(), io::Error> {
                             $(
@@ -108,7 +138,7 @@ macro_rules! state_packets {
                                 Direction::$dirName => {
                                     match id {
                                     $(
-                                        $id => {
+                                        self::$state::$dir::internal_ids::$name => {
                                             use self::$state::$dir::$name;
                                             let mut packet : $name = $name::default();
                                             $(
@@ -780,7 +810,7 @@ impl Conn {
     pub fn do_status(mut self) -> Result<(Status, time::Duration), Error> {
         use serde_json::Value;
         use self::packet::status::serverbound::*;
-        use self::packet::handshake::serverbound::*;
+        use self::packet::handshake::serverbound::Handshake;
         use self::packet::Packet;
         let host = self.host.clone();
         let port = self.port;
