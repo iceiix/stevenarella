@@ -14,7 +14,7 @@
 
 pub struct Map {
     bits: Vec<u64>,
-    bit_size: usize,
+    pub bit_size: usize,
     length: usize,
 }
 
@@ -60,7 +60,7 @@ impl Map {
         map
     }
 
-    pub fn resize(self, size: usize) -> Map {
+    pub fn resize(&self, size: usize) -> Map {
         let mut n = Map::new(self.length, size);
         for i in 0..self.length {
             n.set(i, self.get(i));

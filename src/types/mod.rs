@@ -19,3 +19,4 @@ mod metadata;
 pub use self::metadata::*;
 
 pub mod bit;
+pub mod nibble;

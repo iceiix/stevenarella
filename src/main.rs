@@ -14,6 +14,8 @@
 
 #![recursion_limit="200"]
 
+#[macro_use]
+pub mod macros;
 pub mod ecs;
 pub mod protocol;
 pub mod format;
@@ -27,6 +29,8 @@ pub mod ui;
 pub mod screen;
 #[macro_use]
 pub mod console;
+pub mod server;
+pub mod world;
 
 extern crate glutin;
 extern crate image;
@@ -62,6 +66,8 @@ pub struct Game {
     console: Arc<Mutex<console::Console>>,
     should_close: bool,
     mouse_pos: (i32, i32),
+
+    server: server::Server,
 }
 
 fn main() {
@@ -78,8 +84,7 @@ fn main() {
     log::set_logger(|max_log_level| {
         max_log_level.set(log::LogLevelFilter::Trace);
         Box::new(proxy)
-    })
-        .unwrap();
+    }).unwrap();
 
     info!("Starting steven");
 
@@ -121,6 +126,7 @@ fn main() {
         console: con,
         should_close: false,
         mouse_pos: (0, 0),
+        server: server::Server::dummy_server(),
     };
 
     while !game.should_close {
