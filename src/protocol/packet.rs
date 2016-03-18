@@ -32,7 +32,7 @@ state_packets!(
             // than the hostname due to the protocol not providing
             // any system for custom information to be transfered
             // by the client to the server until after login.
-            Handshake => id(0x00) {
+            Handshake {
                 // The protocol version of the connecting client
                 protocol_version: VarInt =,
                 // The hostname the client connected to
@@ -50,22 +50,22 @@ state_packets!(
         serverbound Serverbound {
             // TabComplete is sent by the client when the client presses tab in
             // the chat box.
-            TabComplete => id(0x00) {
+            TabComplete {
                 text: String =,
                 has_target: bool =,
                 target: Option<types::Position> = when(|p: &TabComplete| p.has_target == true),
             }
             // ChatMessage is sent by the client when it sends a chat message or
             // executes a command (prefixed by '/').
-            ChatMessage => id(0x01) {
+            ChatMessage {
                 message: String =,
             }
             // ClientStatus is sent to update the client's status
-            ClientStatus => id(0x02) {
+            ClientStatus {
                 action_id: VarInt =,
             }
             // ClientSettings is sent by the client to update its current settings.
-            ClientSettings => id(0x03) {
+            ClientSettings {
                 locale: String =,
                 view_distance: u8 =,
                 chat_mode: u8 =,
@@ -74,18 +74,18 @@ state_packets!(
                 main_hand: VarInt =,
             }
             // ConfirmTransactionServerbound is a reply to ConfirmTransaction.
-            ConfirmTransactionServerbound => id(0x04) {
+            ConfirmTransactionServerbound {
                 id: u8 =,
                 action_number: i16 =,
                 accepted: bool =,
             }
             // EnchantItem is sent when the client enchants an item.
-            EnchantItem => id(0x05) {
+            EnchantItem {
                 id: u8 =,
                 enchantment: u8 =,
             }
             // ClickWindow is sent when the client clicks in a window.
-            ClickWindow => id(0x06) {
+            ClickWindow {
                 id: u8 =,
                 slot: i16 =,
                 button: u8 =,
@@ -94,19 +94,19 @@ state_packets!(
                 clicked_item: Option<item::Stack> =,
             }
             // CloseWindow is sent when the client closes a window.
-            CloseWindow => id(0x07) {
+            CloseWindow {
                 id: u8 =,
             }
             // PluginMessageServerbound is used for custom messages between the client
             // and server. This is mainly for plugins/mods but vanilla has a few channels
             // registered too.
-            PluginMessageServerbound => id(0x08) {
+            PluginMessageServerbound {
                 channel: String =,
                 data: Vec<u8> =,
             }
             // UseEntity is sent when the user interacts (right clicks) or attacks
             // (left clicks) an entity.
-            UseEntity => id(0x09) {
+            UseEntity {
                 target_id: VarInt =,
                 ty: VarInt =,
                 target_x: f32 = when(|p: &UseEntity| p.ty.0 == 2),
@@ -117,11 +117,11 @@ state_packets!(
             // KeepAliveServerbound is sent by a client as a response to a
             // KeepAliveClientbound. If the client doesn't reply the server
             // may disconnect the client.
-            KeepAliveServerbound => id(0x0A) {
+            KeepAliveServerbound {
                 id: VarInt =,
             }
             // PlayerPosition is used to update the player's position.
-            PlayerPosition => id(0x0B) {
+            PlayerPosition {
                 x: f64 =,
                 y: f64 =,
                 z: f64 =,
@@ -129,7 +129,7 @@ state_packets!(
             }
             // PlayerPositionLook is a combination of PlayerPosition and
             // PlayerLook.
-            PlayerPositionLook => id(0x0C) {
+            PlayerPositionLook {
                 x: f64 =,
                 y: f64 =,
                 z: f64 =,
@@ -138,61 +138,61 @@ state_packets!(
                 on_ground: bool =,
             }
             // PlayerLook is used to update the player's rotation.
-            PlayerLook => id(0x0D) {
+            PlayerLook {
                 yaw: f32 =,
                 pitch: f32 =,
                 on_ground: bool =,
             }
             // Player is used to update whether the player is on the ground or not.
-            Player => id(0x0E) {
+            Player {
                 on_ground: bool =,
             }
             // ClientAbilities is used to modify the players current abilities.
             // Currently flying is the only one
-            ClientAbilities => id(0x0F) {
+            ClientAbilities {
                 flags: u8 =,
                 flying_speed: f32 =,
                 walking_speed: f32 =,
             }
             // PlayerDigging is sent when the client starts/stops digging a block.
             // It also can be sent for droppping items and eating/shooting.
-            PlayerDigging => id(0x10) {
+            PlayerDigging {
                 status: u8 =,
                 location: types::Position =,
                 face: u8 =,
             }
             // PlayerAction is sent when a player preforms various actions.
-            PlayerAction => id(0x11) {
+            PlayerAction {
                 entity_id: VarInt =,
                 action_id: VarInt =,
                 jump_boost: VarInt =,
             }
             // SteerVehicle is sent by the client when steers or preforms an action
             // on a vehicle.
-            SteerVehicle => id(0x12) {
+            SteerVehicle {
                 sideways: f32 =,
                 forward: f32 =,
                 flags: u8 =,
             }
             // ResourcePackStatus informs the server of the client's current progress
             // in activating the requested resource pack
-            ResourcePackStatus => id(0x13) {
+            ResourcePackStatus {
                 hash: String =,
                 result: VarInt =,
             }
             // HeldItemChange is sent when the player changes the currently active
             // hotbar slot.
-            HeldItemChange => id(0x14) {
+            HeldItemChange {
                 slot: i16 =,
             }
             // CreativeInventoryAction is sent when the client clicks in the creative
             // inventory. This is used to spawn items in creative.
-            CreativeInventoryAction => id(0x15) {
+            CreativeInventoryAction {
                 slot: i16 =,
                 clicked_item: Option<item::Stack> =,
             }
             // SetSign sets the text on a sign after placing it.
-            SetSign => id(0x16) {
+            SetSign {
                 location: types::Position =,
                 line1: String =,
                 line2: String =,
@@ -201,15 +201,15 @@ state_packets!(
             }
             // ArmSwing is sent by the client when the player left clicks (to swing their
             // arm).
-            ArmSwing => id(0x17) {
+            ArmSwing {
                 hand: VarInt =,
             }
             // SpectateTeleport is sent by clients in spectator mode to teleport to a player.
-            SpectateTeleport => id(0x18) {
+            SpectateTeleport {
                 target: UUID =,
             }
             // PlayerBlockPlacement is sent when the client tries to place a block.
-            PlayerBlockPlacement => id(0x19) {
+            PlayerBlockPlacement {
                 location: types::Position =,
                 face: VarInt =,
                 hand: VarInt =,
@@ -218,14 +218,14 @@ state_packets!(
                 cursor_z: u8 =,
             }
             // UseItem is sent when the client tries to use an item.
-            UseItem => id(0x1A) {
+            UseItem {
                 hand: VarInt =,
             }
         }
         clientbound Clientbound {
             // SpawnObject is used to spawn an object or vehicle into the world when it
             // is in range of the client.
-            SpawnObject => id(0x00) {
+            SpawnObject {
                 entity_id: VarInt =,
                 uuid: UUID =,
                 ty: u8 =,
@@ -242,7 +242,7 @@ state_packets!(
             // SpawnExperienceOrb spawns a single experience orb into the world when
             // it is in range of the client. The count controls the amount of experience
             // gained when collected.
-            SpawnExperienceOrb => id(0x01) {
+            SpawnExperienceOrb {
                 entity_id: VarInt =,
                 x: i32 =,
                 y: i32 =,
@@ -251,7 +251,7 @@ state_packets!(
             }
             // SpawnGlobalEntity spawns an entity which is visible from anywhere in the
             // world. Currently only used for lightning.
-            SpawnGlobalEntity => id(0x02) {
+            SpawnGlobalEntity {
                 entity_id: VarInt =,
                 ty: u8 =,
                 x: i32 =,
@@ -260,7 +260,7 @@ state_packets!(
             }
             // SpawnMob is used to spawn a living entity into the world when it is in
             // range of the client.
-            SpawnMob => id(0x03) {
+            SpawnMob {
                 entity_id: VarInt =,
                 uuid: UUID =,
                 ty: u8 =,
@@ -277,7 +277,7 @@ state_packets!(
             }
             // SpawnPainting spawns a painting into the world when it is in range of
             // the client. The title effects the size and the texture of the painting.
-            SpawnPainting => id(0x04) {
+            SpawnPainting {
                 entity_id: VarInt =,
                 title: String =,
                 location: types::Position =,
@@ -286,7 +286,7 @@ state_packets!(
             // SpawnPlayer is used to spawn a player when they are in range of the client.
             // This packet alone isn't enough to display the player as the skin and username
             // information is in the player information packet.
-            SpawnPlayer => id(0x05) {
+            SpawnPlayer {
                 entity_id: VarInt =,
                 uuid: UUID =,
                 x: i32 =,
@@ -297,44 +297,44 @@ state_packets!(
                 metadata: types::Metadata =,
             }
             // Animation is sent by the server to play an animation on a specific entity.
-            Animation => id(0x06) {
+            Animation {
                 entity_id: VarInt =,
                 animation_id: u8 =,
             }
             // Statistics is used to update the statistics screen for the client.
-            Statistics => id(0x07) {
+            Statistics {
                 statistices: LenPrefixed<VarInt, packet::Statistic> =,
             }
             // BlockBreakAnimation is used to create and update the block breaking
             // animation played when a player starts digging a block.
-            BlockBreakAnimation => id(0x08) {
+            BlockBreakAnimation {
                 entity_id: VarInt =,
                 location: types::Position =,
                 stage: i8 =,
             }
             // UpdateBlockEntity updates the nbt tag of a block entity in the
             // world.
-            UpdateBlockEntity => id(0x09) {
+            UpdateBlockEntity {
                 location: types::Position =,
                 action: u8 =,
                 nbt: Option<nbt::NamedTag> =,
             }
             // BlockAction triggers different actions depending on the target block.
-            BlockAction => id(0x0A) {
+            BlockAction {
                 location: types::Position =,
                 byte1: u8 =,
                 byte2: u8 =,
                 block_type: VarInt =,
             }
             // BlockChange is used to update a single block on the client.
-            BlockChange => id(0x0B) {
+            BlockChange {
                 location: types::Position =,
                 block_id: VarInt =,
             }
             // BossBar displays and/or changes a boss bar that is displayed on the
             // top of the client's screen. This is normally used for bosses such as
             // the ender dragon or the wither.
-            BossBar => id(0x0C) {
+            BossBar {
                 uuid: UUID =,
                 action: VarInt =,
                 title: format::Component = when(|p: &BossBar| p.action.0 == 0 || p.action.0 == 3),
@@ -345,45 +345,45 @@ state_packets!(
             }
             // ServerDifficulty changes the displayed difficulty in the client's menu
             // as well as some ui changes for hardcore.
-            ServerDifficulty => id(0x0D) {
+            ServerDifficulty {
                 difficulty: u8 =,
             }
             // TabCompleteReply is sent as a reply to a tab completion request.
             // The matches should be possible completions for the command/chat the
             // player sent.
-            TabCompleteReply => id(0x0E) {
+            TabCompleteReply {
                 matches: LenPrefixed<VarInt, String> =,
             }
             // ServerMessage is a message sent by the server. It could be from a player
             // or just a system message. The Type field controls the location the
             // message is displayed at and when the message is displayed.
-            ServerMessage => id(0x0F) {
+            ServerMessage {
                 message: format::Component =,
                 // 0 - Chat message, 1 - System message, 2 - Action bar message
                 position: u8 =,
             }
             // MultiBlockChange is used to update a batch of blocks in a single packet.
-            MultiBlockChange => id(0x10) {
+            MultiBlockChange {
                 chunk_x: i32 =,
                 chunk_y: i32 =,
                 records: LenPrefixed<VarInt, packet::BlockChangeRecord> =,
             }
             // ConfirmTransaction notifies the client whether a transaction was successful
             // or failed (e.g. due to lag).
-            ConfirmTransaction => id(0x11) {
+            ConfirmTransaction {
                 id: u8 =,
                 action_number: i16 =,
                 accepted: bool =,
             }
             // WindowClose forces the client to close the window with the given id,
             // e.g. a chest getting destroyed.
-            WindowClose => id(0x12) {
+            WindowClose {
                 id: u8 =,
             }
             // WindowOpen tells the client to open the inventory window of the given
             // type. The ID is used to reference the instance of the window in
             // other packets.
-            WindowOpen => id(0x13) {
+            WindowOpen {
                 id: u8 =,
                 ty: String =,
                 title: format::Component =,
@@ -391,48 +391,48 @@ state_packets!(
                 entity_id: i32 = when(|p: &WindowOpen| p.ty == "EntityHorse"),
             }
             // WindowItems sets every item in a window.
-            WindowItems => id(0x14) {
+            WindowItems {
                 id: u8 =,
                 items: LenPrefixed<i16, Option<item::Stack>> =,
             }
             // WindowProperty changes the value of a property of a window. Properties
             // vary depending on the window type.
-            WindowProperty => id(0x15) {
+            WindowProperty {
                 id: u8 =,
                 property: i16 =,
                 value: i16 =,
             }
             // WindowSetSlot changes an itemstack in one of the slots in a window.
-            WindowSetSlot => id(0x16) {
+            WindowSetSlot {
                 id: u8 =,
                 property: i16 =,
                 item: Option<item::Stack> =,
             }
             // SetCooldown disables a set item (by id) for the set number of ticks
-            SetCooldown => id(0x17) {
+            SetCooldown {
                 item_id: VarInt =,
                 ticks: VarInt =,
             }
             // PluginMessageClientbound is used for custom messages between the client
             // and server. This is mainly for plugins/mods but vanilla has a few channels
             // registered too.
-            PluginMessageClientbound => id(0x18) {
+            PluginMessageClientbound {
                 channel: String =,
                 data: Vec<u8> =,
             }
             // Disconnect causes the client to disconnect displaying the passed reason.
-            Disconnect => id(0x19) {
+            Disconnect {
                 reason: format::Component =,
             }
             // EntityAction causes an entity to preform an action based on the passed
             // id.
-            EntityAction => id(0x1A) {
+            EntityAction {
                 entity_id: i32 =,
                 action_id: u8 =,
             }
             // Explosion is sent when an explosion is triggered (tnt, creeper etc).
             // This plays the effect and removes the effected blocks.
-            Explosion => id(0x1B) {
+            Explosion {
                 x: f32 =,
                 y: f32 =,
                 z: f32 =,
@@ -444,17 +444,17 @@ state_packets!(
             }
             // ChunkUnload tells the client to unload the chunk at the specified
             // position.
-            ChunkUnload => id(0x1C) {
+            ChunkUnload {
                 x: i32 =,
                 z: i32 =,
             }
             // SetCompression updates the compression threshold.
-            SetCompression => id(0x1D) {
+            SetCompression {
                 threshold: VarInt =,
             }
             // ChangeGameState is used to modify the game's state like gamemode or
             // weather.
-            ChangeGameState => id(0x1E) {
+            ChangeGameState {
                 reason: u8 =,
                 value: f32 =,
             }
@@ -462,12 +462,12 @@ state_packets!(
             // client is still responding and keep the connection open.
             // The client should reply with the KeepAliveServerbound
             // packet setting ID to the same as this one.
-            KeepAliveClientbound => id(0x1F) {
+            KeepAliveClientbound {
                 id: VarInt =,
             }
             // ChunkData sends or updates a single chunk on the client. If New is set
             // then biome data should be sent too.
-            ChunkData => id(0x20) {
+            ChunkData {
                 chunk_x: i32 =,
                 chunk_z: i32 =,
                 new: bool =,
@@ -477,7 +477,7 @@ state_packets!(
             // Effect plays a sound effect or particle at the target location with the
             // volume (of sounds) being relative to the player's position unless
             // DisableRelative is set to true.
-            Effect => id(0x21) {
+            Effect {
                 effect_id: i32 =,
                 location: types::Position =,
                 data: i32 =,
@@ -485,7 +485,7 @@ state_packets!(
             }
             // Particle spawns particles at the target location with the various
             // modifiers.
-            Particle => id(0x22) {
+            Particle {
                 particle_id: i32 =,
                 long_distance: bool =,
                 x: f32 =,
@@ -500,7 +500,7 @@ state_packets!(
                 data2: VarInt = when(|p: &Particle| p.particle_id == 36),
             }
             // SoundEffect plays the named sound at the target location.
-            SoundEffect => id(0x23) {
+            SoundEffect {
                 name: String =,
                 x: i32 =,
                 y: i32 =,
@@ -510,7 +510,7 @@ state_packets!(
             }
             // JoinGame is sent after completing the login process. This
             // sets the initial state for the client.
-            JoinGame => id(0x24) {
+            JoinGame {
 	            // The entity id the client will be referenced by
                 entity_id: i32 =,
 	            // The starting gamemode of the client
@@ -528,7 +528,7 @@ state_packets!(
                 reduced_debug_info: bool =,
             }
             // Maps updates a single map's contents
-            Maps => id(0x25) {
+            Maps {
                 item_damage: VarInt =,
                 scale: i8 =,
                 tracking_position: bool =,
@@ -540,7 +540,7 @@ state_packets!(
                 data: Option<LenPrefixedBytes<VarInt>> = when(|p: &Maps| p.columns > 0),
             }
             // EntityMove moves the entity with the id by the offsets provided.
-            EntityMove => id(0x26) {
+            EntityMove {
                 entity_id: VarInt =,
                 delta_x: i8 =,
                 delta_y: i8 =,
@@ -548,7 +548,7 @@ state_packets!(
                 on_ground: bool =,
             }
             // EntityLookAndMove is a combination of EntityMove and EntityLook.
-            EntityLookAndMove => id(0x27) {
+            EntityLookAndMove {
                 entity_id: VarInt =,
                 delta_x: i8 =,
                 delta_y: i8 =,
@@ -558,31 +558,31 @@ state_packets!(
                 on_ground: bool =,
             }
             // EntityLook rotates the entity to the new angles provided.
-            EntityLook => id(0x28) {
+            EntityLook {
                 entity_id: VarInt =,
                 yaw: i8 =,
                 pitch: i8 =,
                 on_ground: bool =,
             }
             // Entity does nothing. It is a result of subclassing used in Minecraft.
-            Entity => id(0x29) {
+            Entity {
                 entity_id: VarInt =,
             }
             // SignEditorOpen causes the client to open the editor for a sign so that
             // it can write to it. Only sent in vanilla when the player places a sign.
-            SignEditorOpen => id(0x2A) {
+            SignEditorOpen {
                 location: types::Position =,
             }
             // PlayerAbilities is used to modify the players current abilities. Flying,
             // creative, god mode etc.
-            PlayerAbilities => id(0x2B) {
+            PlayerAbilities {
                 flags: u8 =,
                 flying_speed: f32 =,
                 walking_speed: f32 =,
             }
             // CombatEvent is used for... you know, I never checked. I have no
             // clue.
-            CombatEvent => id(0x2C) {
+            CombatEvent {
                 event: VarInt =,
                 direction: Option<VarInt> = when(|p: &CombatEvent| p.event.0 == 1),
                 player_id: Option<VarInt> = when(|p: &CombatEvent| p.event.0 == 2),
@@ -591,13 +591,13 @@ state_packets!(
             }
             // PlayerInfo is sent by the server for every player connected to the server
             // to provide skin and username information as well as ping and gamemode info.
-            PlayerInfo => id(0x2D) {
+            PlayerInfo {
                 inner: packet::PlayerInfoData =, // Ew but watcha gonna do?
             }
             // TeleportPlayer is sent to change the player's position. The client is expected
             // to reply to the server with the same positions as contained in this packet
             // otherwise will reject future packets.
-            TeleportPlayer => id(0x2E) {
+            TeleportPlayer {
                 x: f64 =,
                 y: f64 =,
                 z: f64 =,
@@ -606,40 +606,40 @@ state_packets!(
                 flags: u8 =,
             }
             // EntityUsedBed is sent by the server when a player goes to bed.
-            EntityUsedBed => id(0x2F) {
+            EntityUsedBed {
                 entity_id: VarInt =,
                 location: types::Position =,
             }
             // EntityDestroy destroys the entities with the ids in the provided slice.
-            EntityDestroy => id(0x30) {
+            EntityDestroy {
                 entity_ids: LenPrefixed<VarInt, VarInt> =,
             }
             // EntityRemoveEffect removes an effect from an entity.
-            EntityRemoveEffect => id(0x31) {
+            EntityRemoveEffect {
                 entity_id: VarInt =,
                 effect_id: i8 =,
             }
             // ResourcePackSend causes the client to check its cache for the requested
             // resource packet and download it if its missing. Once the resource pack
             // is obtained the client will use it.
-            ResourcePackSend => id(0x32) {
+            ResourcePackSend {
                 url: String =,
                 hash: String =,
             }
             // Respawn is sent to respawn the player after death or when they move worlds.
-            Respawn => id(0x33) {
+            Respawn {
                 dimension: i32 =,
                 difficulty: u8 =,
                 gamemode: u8 =,
                 level_type: String =,
             }
             // EntityHeadLook rotates an entity's head to the new angle.
-            EntityHeadLook => id(0x34) {
+            EntityHeadLook {
                 entity_id: VarInt =,
                 head_yaw: i8 =,
             }
             // WorldBorder configures the world's border.
-            WorldBorder => id(0x35) {
+            WorldBorder {
                 action: VarInt =,
                 old_radius: Option<f64> = when(|p: &WorldBorder| p.action.0 == 3 || p.action.0 == 1),
                 new_radius: Option<f64> = when(|p: &WorldBorder| p.action.0 == 3 || p.action.0 == 1 || p.action.0 == 0),
@@ -652,33 +652,33 @@ state_packets!(
             }
             // Camera causes the client to spectate the entity with the passed id.
             // Use the player's id to de-spectate.
-            Camera => id(0x36) {
+            Camera {
                 target_id: VarInt =,
             }
             // SetCurrentHotbarSlot changes the player's currently selected hotbar item.
-            SetCurrentHotbarSlot => id(0x37) {
+            SetCurrentHotbarSlot {
                 slot: u8 =,
             }
             // ScoreboardDisplay is used to set the display position of a scoreboard.
-            ScoreboardDisplay => id(0x38) {
+            ScoreboardDisplay {
                 position: u8 =,
                 name: String =,
             }
             // EntityMetadata updates the metadata for an entity.
-            EntityMetadata => id(0x39) {
+            EntityMetadata {
                 entity_id: VarInt =,
                 metadata: types::Metadata =,
             }
             // EntityAttach attaches to entities together, either by mounting or leashing.
             // -1 can be used at the EntityID to deattach.
-            EntityAttach => id(0x3A) {
+            EntityAttach {
                 entity_id: i32 =,
                 vehicle: i32 =,
                 leash: bool =,
             }
             // EntityVelocity sets the velocity of an entity in 1/8000 of a block
             // per a tick.
-            EntityVelocity => id(0x3B) {
+            EntityVelocity {
                 entity_id: VarInt =,
                 velocity_x: i16 =,
                 velocity_y: i16 =,
@@ -687,32 +687,32 @@ state_packets!(
             // EntityEquipment is sent to display an item on an entity, like a sword
             // or armor. Slot 0 is the held item and slots 1 to 4 are boots, leggings
             // chestplate and helmet respectively.
-            EntityEquipment => id(0x3C) {
+            EntityEquipment {
                 entity_id: VarInt =,
                 slot: VarInt =,
                 item: Option<item::Stack> =,
             }
             // SetExperience updates the experience bar on the client.
-            SetExperience => id(0x3D) {
+            SetExperience {
                 experience_bar: f32 =,
                 level: VarInt =,
                 total_experience: VarInt =,
             }
             // UpdateHealth is sent by the server to update the player's health and food.
-            UpdateHealth => id(0x3E) {
+            UpdateHealth {
                 health: f32 =,
                 food: VarInt =,
                 food_saturation: f32 =,
             }
             // ScoreboardObjective creates/updates a scoreboard objective.
-            ScoreboardObjective => id(0x3F) {
+            ScoreboardObjective {
                 name: String =,
                 mode: u8 =,
                 value: String = when(|p: &ScoreboardObjective| p.mode == 0 || p.mode == 2),
                 ty: String = when(|p: &ScoreboardObjective| p.mode == 0 || p.mode == 2),
             }
             // Teams creates and updates teams
-            Teams => id(0x40) {
+            Teams {
                 name: String =,
                 mode: u8 =,
                 display_name: Option<String> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
@@ -726,7 +726,7 @@ state_packets!(
             }
             // UpdateScore is used to update or remove an item from a scoreboard
             // objective.
-            UpdateScore => id(0x41) {
+            UpdateScore {
                 name: String =,
                 action: u8 =,
                 object_name: String =,
@@ -734,19 +734,19 @@ state_packets!(
             }
             // SpawnPosition is sent to change the player's current spawn point. Currently
             // only used by the client for the compass.
-            SpawnPosition => id(0x42) {
+            SpawnPosition {
                 location: types::Position =,
             }
             // TimeUpdate is sent to sync the world's time to the client, the client
             // will manually tick the time itself so this doesn't need to sent repeatedly
             // but if the server or client has issues keeping up this can fall out of sync
             // so it is a good idea to sent this now and again
-            TimeUpdate => id(0x43) {
+            TimeUpdate {
                 world_age: i64 =,
                 time_of_day: i64 =,
             }
             // Title configures an on-screen title.
-            Title => id(0x44) {
+            Title {
                 action: VarInt =,
                 title: Option<format::Component> = when(|p: &Title| p.action.0 == 0),
                 sub_title: Option<format::Component> = when(|p: &Title| p.action.0 == 1),
@@ -755,7 +755,7 @@ state_packets!(
                 fade_out: Option<format::Component> = when(|p: &Title| p.action.0 == 2),
             }
             // UpdateSign sets or changes the text on a sign.
-            UpdateSign => id(0x45) {
+            UpdateSign {
                 location: types::Position =,
                 line1: format::Component =,
                 line2: format::Component =,
@@ -763,19 +763,19 @@ state_packets!(
                 line4: format::Component =,
             }
             // PlayerListHeaderFooter updates the header/footer of the player list.
-            PlayerListHeaderFooter => id(0x46) {
+            PlayerListHeaderFooter {
                 header: format::Component =,
                 footer: format::Component =,
             }
             // CollectItem causes the collected item to fly towards the collector. This
             // does not destroy the entity.
-            CollectItem => id(0x47) {
+            CollectItem {
                 collected_entity_id: VarInt =,
                 collector_entity_id: VarInt =,
             }
             // EntityTeleport teleports the entity to the target location. This is
             // sent if the entity moves further than EntityMove allows.
-            EntityTeleport => id(0x48) {
+            EntityTeleport {
                 entity_id: VarInt =,
                 x: i32 =,
                 y: i32 =,
@@ -785,12 +785,12 @@ state_packets!(
                 on_ground: bool =,
             }
             // EntityProperties updates the properties for an entity.
-            EntityProperties => id(0x49) {
+            EntityProperties {
                 entity_id: VarInt =,
                 properties: LenPrefixed<i32, packet::EntityProperty> =,
             }
             // EntityEffect applies a status effect to an entity for a given duration.
-            EntityEffect => id(0x4A) {
+            EntityEffect {
                 entity_id: VarInt =,
                 effect_id: i8 =,
                 amplifier: i8 =,
@@ -804,13 +804,13 @@ state_packets!(
             // LoginStart is sent immeditately after switching into the login
             // state. The passed username is used by the server to authenticate
             // the player in online mode.
-            LoginStart => id(0x00) {
+            LoginStart {
                 username: String =,
             }
             // EncryptionResponse is sent as a reply to EncryptionRequest. All
             // packets following this one must be encrypted with AES/CFB8
             // encryption.
-            EncryptionResponse => id(0x01) {
+            EncryptionResponse {
                 // The key for the AES/CFB8 cipher encrypted with the
                 // public key
                 shared_secret: LenPrefixedBytes<VarInt> =,
@@ -823,13 +823,13 @@ state_packets!(
             // LoginDisconnect is sent by the server if there was any issues
             // authenticating the player during login or the general server
             // issues (e.g. too many players).
-            LoginDisconnect => id(0x00) {
+            LoginDisconnect {
                 reason: format::Component =,
             }
             // EncryptionRequest is sent by the server if the server is in
             // online mode. If it is not sent then its assumed the server is
             // in offline mode.
-            EncryptionRequest => id(0x01) {
+            EncryptionRequest {
                 // Generally empty, left in from legacy auth
                 // but is still used by the client if provided
                 server_id: String =,
@@ -842,14 +842,14 @@ state_packets!(
             // LoginSuccess is sent by the server if the player successfully
             // authenicates with the session servers (online mode) or straight
             // after LoginStart (offline mode).
-            LoginSuccess => id(0x02) {
+            LoginSuccess {
                 // String encoding of a uuid (with hyphens)
                 uuid: String =,
                 username: String =,
             }
             // SetInitialCompression sets the compression threshold during the
             // login state.
-            SetInitialCompression => id(0x03) {
+            SetInitialCompression {
                 // Threshold where a packet should be sent compressed
                 threshold: VarInt =,
             }
@@ -861,14 +861,14 @@ state_packets!(
             // switching to the Status protocol state and is used
             // to signal the server to send a StatusResponse to the
             // client
-            StatusRequest => id(0x00) {
+            StatusRequest {
                 empty: () =,
             }
             // StatusPing is sent by the client after recieving a
             // StatusResponse. The client uses the time from sending
             // the ping until the time of recieving a pong to measure
             // the latency between the client and the server.
-            StatusPing => id(0x01) {
+            StatusPing {
                 ping: i64 =,
             }
         }
@@ -894,13 +894,13 @@ state_packets!(
             //		 "description": "Hello world",
             //		 "favicon": "data:image/png;base64,<data>"
             //	 }
-            StatusResponse => id(0x00) {
+            StatusResponse {
                 status: String =,
             }
             // StatusPong is sent as a reply to a StatusPing.
             // The Time field should be exactly the same as the
             // one sent by the client.
-            StatusPong => id(0x01) {
+            StatusPong {
                 ping: i64 =,
             }
        }
