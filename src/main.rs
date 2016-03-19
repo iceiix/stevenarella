@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #![recursion_limit="200"]
+#![feature(const_fn)]
 
 #[macro_use]
 pub mod macros;
@@ -31,6 +32,7 @@ pub mod screen;
 pub mod console;
 pub mod server;
 pub mod world;
+pub mod chunk_builder;
 
 extern crate glutin;
 extern crate image;
@@ -68,6 +70,7 @@ pub struct Game {
     mouse_pos: (i32, i32),
 
     server: server::Server,
+    chunk_builder: chunk_builder::ChunkBuilder,
 }
 
 fn main() {
@@ -119,6 +122,7 @@ fn main() {
     let mut screen_sys = screen::ScreenSystem::new();
     screen_sys.add_screen(Box::new(screen::Login::new()));
 
+    let textures = renderer.get_textures();
     let mut game = Game {
         renderer: renderer,
         screen_sys: screen_sys,
@@ -127,6 +131,7 @@ fn main() {
         should_close: false,
         mouse_pos: (0, 0),
         server: server::Server::dummy_server(),
+        chunk_builder: chunk_builder::ChunkBuilder::new(textures),
     };
 
     while !game.should_close {
@@ -139,6 +144,8 @@ fn main() {
         last_frame = now;
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
         let (width, height) = window.get_inner_size_pixels().unwrap();
+
+        game.chunk_builder.tick(&mut game.server.world);
 
         game.screen_sys.tick(delta, &mut game.renderer, &mut ui_container);
         game.console

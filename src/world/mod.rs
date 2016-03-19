@@ -44,6 +44,154 @@ impl World {
             None => block::AIR,
         }
     }
+
+    pub fn next_dirty_chunk_section(&mut self) -> Option<(i32, i32, i32)> {
+        for (_, chunk) in &mut self.chunks {
+            for sec in &mut chunk.sections {
+                if let Some(sec) = sec.as_mut() {
+                    if !sec.building && sec.dirty {
+                        sec.building = true;
+                        sec.dirty = false;
+                        return Some((chunk.position.0, sec.y as i32, chunk.position.1));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn reset_building_flag(&mut self, pos: (i32, i32, i32)) {
+        if let Some(chunk) = self.chunks.get_mut(&CPos(pos.0, pos.2)) {
+            if let Some(section) = chunk.sections[pos.1 as usize].as_mut() {
+                section.building = false;
+            }
+        }
+    }
+
+    pub fn capture_snapshot(&self, x: i32, y: i32, z: i32, w: i32, h: i32, d: i32) -> Snapshot {
+        use std::cmp::{min, max};
+        let mut snapshot = Snapshot {
+            blocks: vec![0; (w * h * d) as usize],
+            block_light: nibble::Array::new((w * h * d) as usize),
+            sky_light: nibble::Array::new((w * h * d) as usize),
+            biomes: vec![0; (w * d) as usize],
+
+            x: x, y: y, z: z,
+            w: w, h: h, d: d,
+        };
+        for i in 0 .. (w * h * d) as usize {
+            snapshot.sky_light.set(i, 0xF);
+            snapshot.blocks[i] = block::MISSING.get_id() as u16;
+        }
+
+        let cx1 = x >> 4;
+        let cy1 = y >> 4;
+        let cz1 = z >> 4;
+        let cx2 = (x + w + 15) >> 4;
+        let cy2 = (y + h + 15) >> 4;
+        let cz2 = (z + d + 15) >> 4;
+
+        for cx in cx1 .. cx2 {
+            for cz in cz1 .. cz2 {
+                let chunk = match self.chunks.get(&CPos(cx, cz)) {
+                    Some(val) => val,
+                    None => continue,
+                };
+
+                let x1 = min(16, max(0, x - (cx<<4)));
+                let x2 = min(16, max(0, x + w - (cx<<4)));
+                let z1 = min(16, max(0, z - (cz<<4)));
+                let z2 = min(16, max(0, z + d - (cz<<4)));
+
+                for cy in cy1 .. cy2 {
+                    if cy < 0 || cy > 15 {
+                        continue;
+                    }
+                    let section = &chunk.sections[cy as usize];
+                    let y1 = min(16, max(0, y - (cy<<4)));
+                    let y2 = min(16, max(0, y + h - (cy<<4)));
+
+                    for yy in y1 .. y2 {
+                        for zz in z1 .. z2 {
+                            for xx in x1 .. x2 {
+                                let ox = xx + (cx << 4);
+                                let oy = yy + (cy << 4);
+                                let oz = zz + (cz << 4);
+                                match section.as_ref() {
+                                    Some(sec) => {
+                                        snapshot.set_block(ox, oy, oz, sec.get_block(xx, yy, zz));
+                                        snapshot.set_block_light(ox, oy, oz, sec.get_block_light(xx, yy, zz));
+                                        snapshot.set_sky_light(ox, oy, oz, sec.get_sky_light(xx, yy, zz));
+                                    },
+                                    None => {
+                                        snapshot.set_block(ox, oy, oz, block::AIR);
+                                    },
+                                }
+                            }
+                        }
+                    }
+                }
+                // TODO: Biomes
+            }
+        }
+
+        snapshot
+    }
+}
+
+pub struct Snapshot {
+    blocks: Vec<u16>,
+    block_light: nibble::Array,
+    sky_light: nibble::Array,
+    biomes: Vec<u8>,
+
+    x: i32,
+    y: i32,
+    z: i32,
+    w: i32,
+    h: i32,
+    d: i32,
+}
+
+impl Snapshot {
+
+    pub fn make_relative(&mut self, x: i32, y: i32, z: i32) {
+        self.x = x;
+        self.y = y;
+        self.z = z;
+    }
+
+    pub fn get_block(&self, x: i32, y: i32, z: i32) -> &'static block::Block {
+        block::get_block_by_id(self.blocks[self.index(x, y, z)] as usize)
+    }
+
+    pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: &'static block::Block) {
+        let idx = self.index(x, y, z);
+        self.blocks[idx] = b.get_id() as u16;
+    }
+
+    pub fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {
+        self.block_light.get(self.index(x, y, z))
+    }
+
+    pub fn set_block_light(&mut self, x: i32, y: i32, z: i32, l: u8) {
+        let idx = self.index(x, y, z);
+        self.block_light.set(idx, l);
+    }
+
+    pub fn get_sky_light(&self, x: i32, y: i32, z: i32) -> u8 {
+        self.sky_light.get(self.index(x, y, z))
+    }
+
+    pub fn set_sky_light(&mut self, x: i32, y: i32, z: i32, l: u8) {
+        let idx = self.index(x, y, z);
+        self.sky_light.set(idx, l);
+    }
+
+    #[inline]
+    fn index(&self, x: i32, y: i32, z: i32) -> usize {
+        ((x - self.x) + ((z - self.z) * self.w) + ((y - self.y) * self.w * self.d)) as usize
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -108,6 +256,7 @@ struct Section {
     sky_light: nibble::Array,
 
     dirty: bool,
+    building: bool,
 }
 
 impl Section {
@@ -125,6 +274,7 @@ impl Section {
             sky_light: nibble::Array::new(16 * 16 * 16),
 
             dirty: false,
+            building: false,
         };
         for i in 0 .. 16*16*16 {
             section.sky_light.set(i, 0xF);

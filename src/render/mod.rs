@@ -601,7 +601,11 @@ impl TextureManager {
     }
 
     fn get_texture(&self, name: &str) -> Option<Texture> {
-        self.textures.get(name).map(|v| v.clone())
+        if let Some(_) = name.find(':') {
+            self.textures.get(name).map(|v| v.clone())
+        } else {
+            self.textures.get(&format!("minecraft:{}", name)).map(|v| v.clone())
+        }
     }
 
     fn load_texture(&mut self, name: &str) {
@@ -702,10 +706,8 @@ impl TextureManager {
         self.pending_uploads.push((atlas, rect, data));
 
         let mut full_name = String::new();
-        if plugin != "minecraft" {
-            full_name.push_str(plugin);
-            full_name.push_str(":");
-        }
+        full_name.push_str(plugin);
+        full_name.push_str(":");
         full_name.push_str(name);
 
         let tex = Texture {

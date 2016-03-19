@@ -25,7 +25,7 @@ use std::sync::mpsc;
 
 const RESOURCES_VERSION: &'static str = "15w39c";
 
-pub trait Pack {
+pub trait Pack: Sync + Send {
     fn open(&self, name: &str) -> Option<Box<io::Read>>;
 }
 
@@ -35,6 +35,8 @@ pub struct Manager {
 
     vanilla_chan: Option<mpsc::Receiver<bool>>,
 }
+
+unsafe impl Sync for Manager {}
 
 impl Manager {
     pub fn new() -> Manager {

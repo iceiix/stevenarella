@@ -19,7 +19,7 @@ use rand::{self, Rng};
 
 pub struct Server {
     conn: Option<protocol::Conn>,
-    world: world::World,
+    pub world: world::World,
 }
 
 impl Server {
