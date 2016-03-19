@@ -35,9 +35,12 @@ impl ChunkBuilder {
         }
     }
 
-    pub fn tick(&mut self, world: &mut world::World) {
+    pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
         while let Ok((id, val)) = self.built_recv.try_recv() {
             world.reset_building_flag(val.position);
+
+            renderer.update_chunk_solid(val.position, &val.solid_buffer, val.solid_count);
+
             self.free_builders.push(id);
         }
         if self.free_builders.is_empty() {
@@ -67,17 +70,21 @@ struct BuildReq {
 struct BuildReply {
     position: (i32, i32, i32),
     solid_buffer: Vec<u8>,
+    solid_count: usize,
 }
 
 fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
+    use rand::{self, Rng};
     loop {
         let BuildReq {
             snapshot,
             position,
         } = work_recv.recv().unwrap();
-        println!("Build request for {:?}", position);
 
         let mut solid_buffer = vec![];
+        let mut solid_count = 0;
+
+        let mut rng = rand::thread_rng();
 
         for y in 0 .. 16 {
             for x in 0 .. 16 {
@@ -88,9 +95,14 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                     }
 
                     for verts in &PRECOMPUTED_VERTS {
+                        let stone = render::Renderer::get_texture(&textures, rng.choose(&[
+                            "minecraft:blocks/lava_flow",
+                            "minecraft:blocks/stone",
+                            "minecraft:blocks/melon_side",
+                            "minecraft:blocks/sand",
+                        ]).unwrap());
+                        solid_count += 6;
                         for vert in verts {
-                            let stone = render::Renderer::get_texture(&textures, "minecraft:blocks/stone");
-
                             let mut vert = vert.clone();
                             // TODO
                             vert.r = 255;
@@ -100,6 +112,9 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                             vert.x += x as f32;
                             vert.y += y as f32;
                             vert.z += z as f32;
+
+                            vert.toffsetx *= stone.get_width() as i16 * 16;
+                            vert.toffsety *= stone.get_height() as i16 * 16;
 
                             // TODO
                             vert.block_light = 15 * 4000;
@@ -119,10 +134,10 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
             }
         }
 
-        println!("> Build request for {:?}", position);
         built_send.send((id, BuildReply {
             position: position,
             solid_buffer: solid_buffer,
+            solid_count: solid_count,
         })).unwrap();
     }
 }
@@ -138,7 +153,7 @@ const PRECOMPUTED_VERTS: [[BlockVertex; 4]; 6] = [
         BlockVertex::base(0.0, 0.0, 0.0, 0, 1),
         BlockVertex::base(0.0, 0.0, 1.0, 0, 0),
         BlockVertex::base(1.0, 0.0, 0.0, 1, 1),
-        BlockVertex::base(1.0, 0.0, 1.0, 1, 1),
+        BlockVertex::base(1.0, 0.0, 1.0, 1, 0),
     ],
     [ // North
         BlockVertex::base(0.0, 0.0, 0.0, 1, 1),

@@ -20,6 +20,7 @@ pub mod ui;
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+use std::io::Write;
 use resources;
 use gl;
 use image;
@@ -54,13 +55,32 @@ pub struct Renderer {
     chunk_shader_alpha: ChunkShaderAlpha,
     trans_shader: TransShader,
 
-    camera: Camera,
+    chunks: HashMap<(i32, i32, i32), ChunkBuffer>,
+    element_buffer: gl::Buffer,
+    element_buffer_size: usize,
+    element_buffer_type: gl::Type,
+
+    pub camera: Camera,
     perspective_matrix: cgmath::Matrix4<f32>,
 
     trans: Option<TransInfo>,
 
     last_width: u32,
     last_height: u32,
+}
+
+struct ChunkBuffer {
+    position: (i32, i32, i32),
+
+    solid: Option<ChunkRenderInfo>,
+    trans: Option<ChunkRenderInfo>,
+}
+
+struct ChunkRenderInfo {
+    array: gl::VertexArray,
+    buffer: gl::Buffer,
+    buffer_size: usize,
+    count: usize,
 }
 
 init_shader! {
@@ -163,6 +183,11 @@ impl Renderer {
             chunk_shader_alpha: chunk_shader_alpha,
             trans_shader: trans_shader,
 
+            chunks: HashMap::new(),
+            element_buffer: gl::Buffer::new(),
+            element_buffer_size: 0,
+            element_buffer_type: gl::UNSIGNED_BYTE,
+
             last_width: 0,
             last_height: 0,
 
@@ -242,6 +267,14 @@ impl Renderer {
         self.chunk_shader.light_level.set_float(LIGHT_LEVEL);
         self.chunk_shader.sky_offset.set_float(SKY_OFFSET);
 
+        for (pos, info) in &self.chunks {
+            if let Some(solid) = info.solid.as_ref() {
+                self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
+                solid.array.bind();
+                gl::draw_elements(gl::TRIANGLES, solid.count, self.element_buffer_type, 0);
+            }
+        }
+
         // Line rendering
         // Model rendering
         // Cloud rendering
@@ -282,6 +315,67 @@ impl Renderer {
         gl::disable(gl::MULTISAMPLE);
 
         self.ui.tick(width, height);
+    }
+
+    fn ensure_element_buffer(&mut self, size: usize) {
+        if self.element_buffer_size < size {
+            let (data, ty) = self::generate_element_buffer(size);
+            self.element_buffer_type = ty;
+            self.element_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
+            self.element_buffer.set_data(gl::ELEMENT_ARRAY_BUFFER, &data, gl::DYNAMIC_DRAW);
+            self.element_buffer_size = size;
+        }
+    }
+
+    pub fn update_chunk_solid(&mut self, pos: (i32, i32, i32), data: &[u8], count: usize) {
+        self.ensure_element_buffer(count);
+        let buffer = self.chunks.entry(pos).or_insert(ChunkBuffer {
+            position: pos,
+            solid: None,
+            trans: None,
+        });
+        if count == 0 {
+            if buffer.solid.is_some() {
+                buffer.solid = None;
+            }
+            return;
+        }
+        let new = buffer.solid.is_none();
+        if buffer.solid.is_none() {
+            buffer.solid = Some(ChunkRenderInfo {
+                array: gl::VertexArray::new(),
+                buffer: gl::Buffer::new(),
+                buffer_size: 0,
+                count: 0,
+            });
+        }
+        let info = buffer.solid.as_mut().unwrap();
+
+        info.array.bind();
+        self.chunk_shader.position.enable();
+        self.chunk_shader.texture_info.enable();
+        self.chunk_shader.texture_offset.enable();
+        self.chunk_shader.color.enable();
+        self.chunk_shader.lighting.enable();
+
+        self.element_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
+
+        info.buffer.bind(gl::ARRAY_BUFFER);
+        if new || info.buffer_size < data.len() {
+            info.buffer_size = data.len();
+            info.buffer.set_data(gl::ARRAY_BUFFER, data, gl::DYNAMIC_DRAW);
+        } else {
+            let mut target = info.buffer.map(gl::ARRAY_BUFFER, gl::WRITE_ONLY, data.len());
+            target.write_all(data).unwrap();
+        }
+
+        self.chunk_shader.position.vertex_pointer(3, gl::FLOAT, false, 40, 0);
+        self.chunk_shader.texture_info.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 40, 12);
+        self.chunk_shader.texture_offset.vertex_pointer(3, gl::SHORT, false, 40, 20);
+        self.chunk_shader.color.vertex_pointer(3, gl::UNSIGNED_BYTE, true, 40, 28);
+        self.chunk_shader.lighting.vertex_pointer(2, gl::UNSIGNED_SHORT, false, 40, 32);
+
+        info.count = count;
     }
 
     fn do_pending_textures(&mut self) {
@@ -404,6 +498,7 @@ impl Renderer {
                     val
                 } else {
                     t.load_texture(name);
+                    println!("{:?} {:?}", name, t.textures);
                     t.get_texture(name).unwrap()
                 }
             }
@@ -746,10 +841,8 @@ impl TextureManager {
         let missing = self.get_texture("steven:missing_texture").unwrap();
 
         let mut full_name = String::new();
-        if plugin != "minecraft" {
-            full_name.push_str(plugin);
-            full_name.push_str(":");
-        }
+        full_name.push_str(plugin);
+        full_name.push_str(":");
         full_name.push_str(name);
 
         let t = Texture {

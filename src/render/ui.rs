@@ -164,6 +164,7 @@ impl UIState {
             self.shader.screensize.set_float2(width as f32, height as f32);
 
             self.buffer.bind(gl::ARRAY_BUFFER);
+            self.index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
             if self.data.len() > self.prev_size {
                 self.prev_size = self.data.len();
                 self.buffer.set_data(gl::ARRAY_BUFFER, &self.data, gl::STREAM_DRAW);

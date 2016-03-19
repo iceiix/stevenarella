@@ -68,6 +68,16 @@ impl World {
         }
     }
 
+    pub fn flag_dirty_all(&mut self) {
+        for (_, chunk) in &mut self.chunks {
+            for sec in &mut chunk.sections {
+                if let Some(sec) = sec.as_mut() {
+                    sec.dirty = true;
+                }
+            }
+        }
+    }
+
     pub fn capture_snapshot(&self, x: i32, y: i32, z: i32, w: i32, h: i32, d: i32) -> Snapshot {
         use std::cmp::{min, max};
         let mut snapshot = Snapshot {

@@ -124,13 +124,13 @@ fn main() {
 
     let textures = renderer.get_textures();
     let mut game = Game {
+        server: server::Server::dummy_server(resource_manager.clone()),
         renderer: renderer,
         screen_sys: screen_sys,
         resource_manager: resource_manager,
         console: con,
         should_close: false,
         mouse_pos: (0, 0),
-        server: server::Server::dummy_server(),
         chunk_builder: chunk_builder::ChunkBuilder::new(textures),
     };
 
@@ -145,7 +145,18 @@ fn main() {
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
         let (width, height) = window.get_inner_size_pixels().unwrap();
 
-        game.chunk_builder.tick(&mut game.server.world);
+        // TODO: TEMP
+        game.renderer.camera.pos.x = 0.5;
+        game.renderer.camera.pos.z = 0.5;
+        game.renderer.camera.pos.y = 15.0;
+        game.renderer.camera.yaw += 0.005 * delta;
+        if game.renderer.camera.yaw > ::std::f64::consts::PI * 2.0 {
+            game.renderer.camera.yaw = 0.0;
+        }
+
+        game.server.tick();
+
+        game.chunk_builder.tick(&mut game.server.world, &mut game.renderer);
 
         game.screen_sys.tick(delta, &mut game.renderer, &mut ui_container);
         game.console

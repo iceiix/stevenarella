@@ -16,14 +16,19 @@ use protocol;
 use world;
 use world::block;
 use rand::{self, Rng};
+use std::sync::{Arc, RwLock};
+use resources;
 
 pub struct Server {
     conn: Option<protocol::Conn>,
     pub world: world::World,
+
+    resources: Arc<RwLock<resources::Manager>>,
+    version: usize,
 }
 
 impl Server {
-    pub fn dummy_server() -> Server {
+    pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>) -> Server {
         let mut world = world::World::new();
         let mut rng = rand::thread_rng();
         for x in -7*16 .. 7*16 {
@@ -34,9 +39,21 @@ impl Server {
                 }
             }
         }
+        let version = resources.read().unwrap().version();
         Server {
             conn: None,
             world: world,
+
+            version: version,
+            resources: resources,
+        }
+    }
+
+    pub fn tick(&mut self) {
+        let version = self.resources.read().unwrap().version();
+        if version != self.version {
+            self.version = version;
+            self.world.flag_dirty_all();
         }
     }
 }
