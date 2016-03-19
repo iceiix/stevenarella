@@ -668,6 +668,12 @@ impl Buffer {
         }
     }
 
+    pub fn re_set_data(&self, target: BufferTarget, data: &[u8]) {
+        unsafe {
+            gl::BufferSubData(target, 0, data.len() as isize, data.as_ptr() as *const _);
+        }
+    }
+
     /// Maps the memory in the buffer on the gpu to memory which the program
     /// can access. The access flag will specify how the program plans to use the
     /// returned data. It'll unmap itself once the returned value is dropped.

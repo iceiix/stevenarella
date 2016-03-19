@@ -211,6 +211,9 @@ fn handle_window_event(window: &glutin::Window,
         }
         Event::KeyboardInput(glutin::ElementState::Pressed, key, virt) => {
             println!("Key: {:?} {:?}", key, virt);
+            if virt == Some(VirtualKeyCode::H) {
+                game.server.world.flag_dirty_all();
+            }
         }
 
         _ => (),

@@ -365,8 +365,7 @@ impl Renderer {
             info.buffer_size = data.len();
             info.buffer.set_data(gl::ARRAY_BUFFER, data, gl::DYNAMIC_DRAW);
         } else {
-            let mut target = info.buffer.map(gl::ARRAY_BUFFER, gl::WRITE_ONLY, data.len());
-            target.write_all(data).unwrap();
+            info.buffer.re_set_data(gl::ARRAY_BUFFER, data);
         }
 
         self.chunk_shader.position.vertex_pointer(3, gl::FLOAT, false, 40, 0);
