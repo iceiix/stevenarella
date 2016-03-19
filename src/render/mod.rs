@@ -498,7 +498,6 @@ impl Renderer {
                     val
                 } else {
                     t.load_texture(name);
-                    println!("{:?} {:?}", name, t.textures);
                     t.get_texture(name).unwrap()
                 }
             }
