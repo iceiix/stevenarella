@@ -14,7 +14,7 @@
 
 use protocol;
 use world;
-use world::block;
+use world::block::{self, BlockSet};
 use rand::{self, Rng};
 use std::sync::{Arc, RwLock};
 use resources;
@@ -35,7 +35,7 @@ impl Server {
             for z in -7*16 .. 7*16 {
                 let h = rng.gen_range(3, 10);
                 for y in 0 .. h {
-                    world.set_block(x, y, z, block::MISSING);
+                    world.set_block(x, y, z, block::MISSING.base());
                 }
             }
         }

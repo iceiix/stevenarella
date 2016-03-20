@@ -17,6 +17,7 @@ rand = "0.3.14"
 rustc-serialize = "0.3.18"
 log = "0.3.5"
 cgmath = "0.7.0"
+lazy_static = "0.1.15"
 
 [dependencies.steven_gl]
 path = "./gl"

@@ -90,7 +90,7 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
             for x in 0 .. 16 {
                 for z in 0 .. 16 {
                     let block = snapshot.get_block(x, y, z);
-                    if !block.render {
+                    if !block.renderable() {
                         continue;
                     }
 

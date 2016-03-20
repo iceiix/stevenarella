@@ -15,6 +15,22 @@
 #![recursion_limit="200"]
 #![feature(const_fn)]
 
+extern crate glutin;
+extern crate image;
+extern crate time;
+extern crate byteorder;
+extern crate serde_json;
+extern crate steven_openssl as openssl;
+extern crate hyper;
+extern crate flate2;
+extern crate rand;
+extern crate rustc_serialize;
+extern crate cgmath;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate lazy_static;
+
 #[macro_use]
 pub mod macros;
 pub mod ecs;
@@ -33,20 +49,6 @@ pub mod console;
 pub mod server;
 pub mod world;
 pub mod chunk_builder;
-
-extern crate glutin;
-extern crate image;
-extern crate time;
-extern crate byteorder;
-extern crate serde_json;
-extern crate steven_openssl as openssl;
-extern crate hyper;
-extern crate flate2;
-extern crate rand;
-extern crate rustc_serialize;
-extern crate cgmath;
-#[macro_use]
-extern crate log;
 
 use std::sync::{Arc, RwLock, Mutex};
 use std::marker::PhantomData;
@@ -74,6 +76,7 @@ pub struct Game {
 }
 
 fn main() {
+    world::block::force_init();
     let con = Arc::new(Mutex::new(console::Console::new()));
     {
         let mut con = con.lock().unwrap();
