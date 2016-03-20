@@ -148,7 +148,7 @@ impl Logo {
     pub fn tick(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         let now = time::now().to_timespec();
 
-		// Splash text
+        // Splash text
         let text = ui_container.get_mut(&self.text);
         let text_index = (now.sec / 15) as isize % self.text_strings.len() as isize;
         if self.text_index != text_index {

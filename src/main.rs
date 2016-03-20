@@ -49,6 +49,7 @@ pub mod console;
 pub mod server;
 pub mod world;
 pub mod chunk_builder;
+pub mod auth;
 
 use std::sync::{Arc, RwLock, Mutex};
 use std::marker::PhantomData;
@@ -128,6 +129,7 @@ fn main() {
     {
         let mut con = con.lock().unwrap();
         con.register(CL_BRAND);
+        auth::register_vars(&mut con);
         con.load_config();
         con.save_config();
     }
@@ -170,7 +172,7 @@ fn main() {
     let frame_time = (time::Duration::seconds(1).num_nanoseconds().unwrap() as f64) / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
-    screen_sys.add_screen(Box::new(screen::Login::new()));
+    screen_sys.add_screen(Box::new(screen::Login::new(con.clone())));
 
     let textures = renderer.get_textures();
     let mut game = Game {
@@ -240,14 +242,12 @@ fn handle_window_event(window: &glutin::Window,
 
             ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);
         }
-
         Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Left) => {
             let (x, y) = game.mouse_pos;
             let (width, height) = window.get_inner_size_pixels().unwrap();
 
             ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
         }
-
         Event::MouseWheel(delta) => {
             let (x, y) = match delta {
                 glutin::MouseScrollDelta::LineDelta(x, y) => (x, y),
@@ -256,18 +256,15 @@ fn handle_window_event(window: &glutin::Window,
 
             game.screen_sys.on_scroll(x as f64, y as f64);
         }
-
-        Event::KeyboardInput(glutin::ElementState::Pressed, 41 /* ` GRAVE */, _)
-            | Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(VirtualKeyCode::Grave)) => {
+        Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(VirtualKeyCode::Grave)) => {
             game.console.lock().unwrap().toggle();
         }
-        Event::KeyboardInput(glutin::ElementState::Pressed, key, virt) => {
-            println!("Key: {:?} {:?}", key, virt);
-            if virt == Some(VirtualKeyCode::H) {
-                game.server.world.flag_dirty_all();
-            }
+        Event::KeyboardInput(state, key, virt) => {
+            ui_container.key_press(game, virt, key, state == glutin::ElementState::Pressed);
         }
-
+        Event::ReceivedCharacter(c) => {
+            ui_container.key_type(game, c);
+        }
         _ => (),
     }
 }

@@ -13,19 +13,19 @@
 // limitations under the License.
 
 ui_element!(Formatted {
-	val: format::Component,
-	width: f64,
-	height: f64,
-	scale_x: f64,
-	scale_y: f64,
+    val: format::Component,
+    width: f64,
+    height: f64,
+    scale_x: f64,
+    scale_y: f64,
 
-	text: Vec<Element>,
-	max_width: f64,
-	lines: usize
+    text: Vec<Element>,
+    max_width: f64,
+    lines: usize,
 });
 
 impl Formatted {
-	base_impl!();
+    base_impl!();
 
     pub fn new(renderer: &mut render::Renderer,
                val: format::Component,
@@ -126,10 +126,10 @@ impl Formatted {
          self.height * self.scale_y)
     }
 
-	lazy_field!(width, f64, get_width, set_width);
-	lazy_field!(height, f64, get_height, set_height);
-	lazy_field!(scale_x, f64, get_scale_x, set_scale_x);
-	lazy_field!(scale_y, f64, get_scale_y, set_scale_y);
+    lazy_field!(width, f64, get_width, set_width);
+    lazy_field!(height, f64, get_height, set_height);
+    lazy_field!(scale_x, f64, get_scale_x, set_scale_x);
+    lazy_field!(scale_y, f64, get_scale_y, set_scale_y);
 
 }
 

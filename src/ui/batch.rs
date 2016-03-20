@@ -19,14 +19,14 @@ pub struct BatchRef<T: UIElement> {
 }
 
 ui_element!(Batch {
-	width: f64,
-	height: f64,
+    width: f64,
+    height: f64,
 
-	elements: Vec<Element>
+    elements: Vec<Element>,
 });
 
 impl Batch {
-	base_impl!();
+    base_impl!();
 
     pub fn new(x: f64, y: f64, w: f64, h: f64) -> Batch {
         ui_create!(Batch {
@@ -95,8 +95,8 @@ impl Batch {
         self.elements.len()
     }
 
-	lazy_field!(width, f64, get_width, set_width);
-	lazy_field!(height, f64, get_height, set_height);
+    lazy_field!(width, f64, get_width, set_width);
+    lazy_field!(height, f64, get_height, set_height);
 }
 
 impl UIElement for Batch {

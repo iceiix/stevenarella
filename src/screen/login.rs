@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use ui;
 use render;
+use console;
 
 pub struct Login {
     elements: Option<UIElements>,
+    console: Arc<Mutex<console::Console>>,
 }
 
 struct UIElements {
@@ -28,8 +30,8 @@ struct UIElements {
 
 
 impl Login {
-    pub fn new() -> Login {
-        Login { elements: None }
+    pub fn new(console: Arc<Mutex<console::Console>>) -> Login {
+        Login { elements: None, console: console }
     }
 }
 
@@ -38,13 +40,8 @@ impl super::Screen for Login {
         let logo = ui::logo::Logo::new(renderer.resources.clone(), renderer, ui_container);
         let mut elements = ui::Collection::new();
 
-		// Login
-        let (mut login, mut txt) = super::new_button_text(renderer,
-                                                          "Login",
-                                                          0.0,
-                                                          100.0,
-                                                          400.0,
-                                                          40.0);
+        // Login
+        let (mut login, mut txt) = super::new_button_text(renderer, "Login", 0.0, 100.0, 400.0, 40.0);
         login.set_v_attach(ui::VAttach::Middle);
         login.set_h_attach(ui::HAttach::Center);
         let re = ui_container.add(login);
@@ -53,14 +50,41 @@ impl super::Screen for Login {
         super::button_action(ui_container,
                              re.clone(),
                              Some(tre.clone()),
-                             Some(Rc::new(|game, _| {
+                             |game, _| {
                                  game.screen_sys
                                      .replace_screen(Box::new(super::ServerList::new(None)));
-                             })));
+                             });
         elements.add(re);
         elements.add(tre);
 
-		// Disclaimer
+        // Username
+        let mut username = ui::TextBox::new(renderer, "", 0.0, -20.0, 400.0, 40.0);
+        username.set_v_attach(ui::VAttach::Middle);
+        username.set_h_attach(ui::HAttach::Center);
+        username.add_submit_func(|_, ui| {
+            ui.cycle_focus();
+        });
+        let ure = ui_container.add(username);
+        let mut username_label = ui::Text::new(renderer, "Username/Email:", 0.0, -18.0, 255, 255, 255);
+        username_label.set_parent(&ure);
+        elements.add(ure);
+        elements.add(ui_container.add(username_label));
+
+        // Password
+        let mut password = ui::TextBox::new(renderer, "", 0.0, 40.0, 400.0, 40.0);
+        password.set_v_attach(ui::VAttach::Middle);
+        password.set_h_attach(ui::HAttach::Center);
+        password.set_password(true);
+        password.add_submit_func(|_, _| {
+            println!("Submit!");
+        });
+        let pre = ui_container.add(password);
+        let mut password_label = ui::Text::new(renderer, "Password:", 0.0, -18.0, 255, 255, 255);
+        password_label.set_parent(&pre);
+        elements.add(pre);
+        elements.add(ui_container.add(password_label));
+
+        // Disclaimer
         let mut warn = ui::Text::new(renderer,
                                      "Not affiliated with Mojang/Minecraft",
                                      5.0,
@@ -78,7 +102,7 @@ impl super::Screen for Login {
         });
     }
     fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-		// Clean up
+        // Clean up
         {
             let elements = self.elements.as_mut().unwrap();
             elements.logo.remove(ui_container);

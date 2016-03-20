@@ -41,50 +41,50 @@ macro_rules! get_shader {
 
 #[macro_export]
 macro_rules! init_shader {
-	(
-		Program $name:ident {
-			vert = $vert:expr, $(#$vdef:ident)*
-			frag = $frag:expr, $(#$fdef:ident)*
-			attribute = {
-				$(
-					$field:ident => $glname:expr,
-				)*
-			},
-			uniform = {
-				$(
-					$ufield:ident => $uglname:expr,
-				)*
-			},
-		}
-	) => (
+    (
+        Program $name:ident {
+            vert = $vert:expr, $(#$vdef:ident)*
+            frag = $frag:expr, $(#$fdef:ident)*
+            attribute = {
+                $(
+                    $field:ident => $glname:expr,
+                )*
+            },
+            uniform = {
+                $(
+                    $ufield:ident => $uglname:expr,
+                )*
+            },
+        }
+    ) => (
         #[allow(dead_code)]
-		struct $name {
-			program: gl::Program,
-			$(
-				$field: gl::Attribute,
-			)+
-			$(
-				$ufield: gl::Uniform,
-			)+
-		}
+        struct $name {
+            program: gl::Program,
+            $(
+                $field: gl::Attribute,
+            )+
+            $(
+                $ufield: gl::Uniform,
+            )+
+        }
 
-		impl $name {
-			pub fn new(reg: &glsl::Registry) -> $name {
-				let v = get_shader!(reg, $vert $(,stringify!($vdef))*);
-				let f = get_shader!(reg, $frag $(,stringify!($fdef))*);
-				let shader = shaders::create_program(&v, &f);
-				$name {
-					$(
-						$field: shader.attribute_location($glname),
-					)+
-					$(
-						$ufield: shader.uniform_location($uglname),
-					)+
-					program: shader,
-				}
-			}
-		}
-	)
+        impl $name {
+            pub fn new(reg: &glsl::Registry) -> $name {
+                let v = get_shader!(reg, $vert $(,stringify!($vdef))*);
+                let f = get_shader!(reg, $frag $(,stringify!($fdef))*);
+                let shader = shaders::create_program(&v, &f);
+                $name {
+                    $(
+                        $field: shader.attribute_location($glname),
+                    )+
+                    $(
+                        $ufield: shader.uniform_location($uglname),
+                    )+
+                    program: shader,
+                }
+            }
+        }
+    )
 }
 
 pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {

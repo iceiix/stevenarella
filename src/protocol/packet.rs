@@ -511,20 +511,20 @@ state_packets!(
             // JoinGame is sent after completing the login process. This
             // sets the initial state for the client.
             JoinGame {
-	            // The entity id the client will be referenced by
+                // The entity id the client will be referenced by
                 entity_id: i32 =,
-	            // The starting gamemode of the client
+                // The starting gamemode of the client
                 gamemode: u8 =,
-	            // The dimension the client is starting in
+                // The dimension the client is starting in
                 dimension: i8 =,
-	            // The difficuilty setting for the server
+                // The difficuilty setting for the server
                 difficulty: u8 =,
-	            // The max number of players on the server
+                // The max number of players on the server
                 max_players: u8 =,
-	            // The level type of the server
+                // The level type of the server
                 level_type: String =,
-            	// Whether the client should reduce the amount of debug
-            	// information it displays in F3 mode
+                // Whether the client should reduce the amount of debug
+                // information it displays in F3 mode
                 reduced_debug_info: bool =,
             }
             // Maps updates a single map's contents
@@ -879,21 +879,21 @@ state_packets!(
             // and optionally a favicon.
             //
             // The structure is as follows
-            //	 {
-            //		 "version": {
-            //			 "name": "1.8.3",
-            //			 "protocol": 47,
-            //		 },
-            //		 "players": {
-            //			 "max": 20,
-            //			 "online": 1,
-            //			 "sample": [
-            //				 {"name": "Thinkofdeath", "id": "4566e69f-c907-48ee-8d71-d7ba5aa00d20"}
-            //			 ]
-            //		 },
-            //		 "description": "Hello world",
-            //		 "favicon": "data:image/png;base64,<data>"
-            //	 }
+            //     {
+            //         "version": {
+            //             "name": "1.8.3",
+            //             "protocol": 47,
+            //         },
+            //         "players": {
+            //             "max": 20,
+            //             "online": 1,
+            //             "sample": [
+            //                 {"name": "Thinkofdeath", "id": "4566e69f-c907-48ee-8d71-d7ba5aa00d20"}
+            //             ]
+            //         },
+            //         "description": "Hello world",
+            //         "favicon": "data:image/png;base64,<data>"
+            //     }
             StatusResponse {
                 status: String =,
             }

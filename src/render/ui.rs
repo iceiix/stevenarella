@@ -53,20 +53,20 @@ pub struct UIState {
 }
 
 init_shader! {
-	Program UIShader {
-		vert = "ui_vertex",
-		frag = "ui_frag",
-		attribute = {
-			position => "aPosition",
-			texture_info => "aTextureInfo",
-			texture_offset => "aTextureOffset",
-			color => "aColor",
-		},
-		uniform = {
-			texture => "textures",
-			screensize => "screenSize",
-		},
-	}
+    Program UIShader {
+        vert = "ui_vertex",
+        frag = "ui_frag",
+        attribute = {
+            position => "aPosition",
+            texture_info => "aTextureInfo",
+            texture_offset => "aTextureOffset",
+            color => "aColor",
+        },
+        uniform = {
+            texture => "textures",
+            screensize => "screenSize",
+        },
+    }
 }
 
 impl UIState {
@@ -143,7 +143,7 @@ impl UIState {
                 self.load_font();
             }
         }
-		// Prevent clipping with the world
+        // Prevent clipping with the world
         gl::clear(gl::ClearFlags::Depth);
         gl::depth_func(gl::LESS_OR_EQUAL);
         gl::enable(gl::BLEND);
@@ -187,7 +187,7 @@ impl UIState {
     pub fn character_texture(&mut self, c: char) -> render::Texture {
         let raw = c as u32;
         let page = raw >> 8;
-		// Lazy load fonts to size memory
+        // Lazy load fonts to size memory
         if self.font_pages[page as usize].is_none() {
             let name = if page == 0 {
                 "font/ascii".to_owned()
@@ -254,8 +254,8 @@ impl UIState {
             let mut data = Vec::with_capacity(0x10000);
             info.read_to_end(&mut data).unwrap();
             for (i, info) in self.font_character_info.iter_mut().enumerate() {
-				// Top nibble - start position
-				// Bottom nibble - end position
+                // Top nibble - start position
+                // Bottom nibble - end position
                 info.0 = (data[i] >> 4) as i32;
                 info.1 = (data[i] & 0xF) as i32 + 1;
             }

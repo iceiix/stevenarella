@@ -13,23 +13,23 @@
 // limitations under the License.
 
 ui_element!(Image {
-	texture: render::Texture,
-	width: f64,
-	height: f64,
+    texture: render::Texture,
+    width: f64,
+    height: f64,
 
-	t_x: f64,
-	t_y: f64,
-	t_width: f64,
-	t_height: f64,
+    t_x: f64,
+    t_y: f64,
+    t_width: f64,
+    t_height: f64,
 
-	r: u8,
-	g: u8,
-	b: u8,
-	a: u8
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
 });
 
 impl Image {
-	base_impl!();
+    base_impl!();
 
     pub fn new(texture: render::Texture,
                x: f64,
@@ -108,18 +108,18 @@ impl Image {
         self.dirty = true;
     }
 
-	lazy_field!(width, f64, get_width, set_width);
-	lazy_field!(height, f64, get_height, set_height);
+    lazy_field!(width, f64, get_width, set_width);
+    lazy_field!(height, f64, get_height, set_height);
 
-	lazy_field!(t_x, f64, get_t_x, set_t_x);
-	lazy_field!(t_y, f64, get_t_y, set_t_y);
-	lazy_field!(t_width, f64, get_t_width, set_t_width);
-	lazy_field!(t_height, f64, get_t_height, set_t_height);
+    lazy_field!(t_x, f64, get_t_x, set_t_x);
+    lazy_field!(t_y, f64, get_t_y, set_t_y);
+    lazy_field!(t_width, f64, get_t_width, set_t_width);
+    lazy_field!(t_height, f64, get_t_height, set_t_height);
 
-	lazy_field!(r, u8, get_r, set_r);
-	lazy_field!(g, u8, get_g, set_g);
-	lazy_field!(b, u8, get_b, set_b);
-	lazy_field!(a, u8, get_a, set_a);
+    lazy_field!(r, u8, get_r, set_r);
+    lazy_field!(g, u8, get_g, set_g);
+    lazy_field!(b, u8, get_b, set_b);
+    lazy_field!(a, u8, get_a, set_a);
 }
 
 impl UIElement for Image {

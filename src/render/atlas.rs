@@ -40,7 +40,7 @@ impl Atlas {
         let mut priority = usize::max_value();
         let mut target: Option<Rect> = None;
         let mut target_index = 0;
-		// Search through and find the best fit for this texture
+        // Search through and find the best fit for this texture
         for (index, free) in self.free_space.iter().enumerate() {
             if free.width >= width && free.height >= height {
                 let current_priority = (free.width - width) * (free.height - height);
@@ -49,7 +49,7 @@ impl Atlas {
                     priority = current_priority;
                     target_index = index;
                 }
-				// Perfect match, we can break early
+                // Perfect match, we can break early
                 if priority == 0 {
                     break;
                 }
@@ -70,14 +70,14 @@ impl Atlas {
             t.y += height;
             t.height -= height;
             if t.height == 0 {
-				// Remove empty sections
+                // Remove empty sections
                 self.free_space.remove(target_index);
             } else {
                 self.free_space[target_index] = t;
             }
         } else {
             if t.height > height {
-				// Split by height
+                // Split by height
                 self.free_space.insert(0,
                                        Rect {
                                            x: t.x,

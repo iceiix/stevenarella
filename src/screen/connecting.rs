@@ -63,7 +63,7 @@ impl super::Screen for Connecting {
         server_msg.set_h_attach(ui::HAttach::Center);
         elements.add(ui_container.add(server_msg));
 
-		// Disclaimer
+        // Disclaimer
         let mut warn = ui::Text::new(renderer,
                                      "Not affiliated with Mojang/Minecraft",
                                      5.0,
@@ -81,7 +81,7 @@ impl super::Screen for Connecting {
         });
     }
     fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-		// Clean up
+        // Clean up
         {
             let elements = self.elements.as_mut().unwrap();
             elements.logo.remove(ui_container);

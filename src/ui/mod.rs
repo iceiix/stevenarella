@@ -20,6 +20,7 @@ use std::rc::Rc;
 use rand;
 use render;
 use format;
+use glutin::VirtualKeyCode;
 
 const SCALED_WIDTH: f64 = 854.0;
 const SCALED_HEIGHT: f64 = 480.0;
@@ -29,135 +30,185 @@ pub enum Element {
     Batch(Batch),
     Text(Text),
     Formatted(Formatted),
+    TextBox(TextBox),
+    Button(Button),
     None,
 }
 
-pub type ClickFunc = Rc<Fn(&mut ::Game, &mut Container)>;
-pub type HoverFunc = Rc<Fn(bool, &mut ::Game, &mut Container)>;
+pub type ClickFunc = Fn(&mut ::Game, &mut Container);
+pub type HoverFunc = Fn(bool, &mut ::Game, &mut Container);
 
 macro_rules! element_impl {
-	($($name:ident),+) => (
+    ($($name:ident),+) => (
 impl Element {
-	fn get_click_funcs(&self) -> Vec<ClickFunc> {
-		match *self {
-			$(
-			Element::$name(ref val) => val.click_funcs.clone(),
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn can_focus(&self) -> bool {
+        match *self {
+            $(
+            Element::$name(ref val) => val.can_focus,
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn get_hover_funcs(&self) -> Vec<HoverFunc> {
-		match *self {
-			$(
-			Element::$name(ref val) => val.hover_funcs.clone(),
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn is_focused(&self) -> bool {
+        match *self {
+            $(
+            Element::$name(ref val) => val.focused,
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn should_call_hover(&mut self, new: bool) -> bool{
-		match *self {
-			$(
-			Element::$name(ref mut val) => {
-				let ret = val.hovered != new;
-				val.hovered = new;
-				ret
-			},
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn set_focused(&mut self, f: bool) {
+        match *self {
+            $(
+            Element::$name(ref mut val) => val.focused = f,
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn should_draw(&self) -> bool {
-		match *self {
-			$(
-			Element::$name(ref val) => val.should_draw,
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn key_press(&mut self, game: &mut ::Game, key: Option<VirtualKeyCode>, raw: u8, down: bool) -> Vec<Rc<ClickFunc>> {
+        match *self {
+            $(
+            Element::$name(ref mut val) => val.key_press(game, key, raw, down),
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn get_parent(&self) -> Option<ElementRefInner> {
-		match *self {
-			$(
-			Element::$name(ref val) => val.parent,
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn key_type(&mut self, game: &mut ::Game, c: char) -> Vec<Rc<ClickFunc>> {
+        match *self {
+            $(
+            Element::$name(ref mut val) => val.key_type(game, c),
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn get_attachment(&self) -> (VAttach, HAttach) {
-		match *self {
-			$(
-			Element::$name(ref val) => (val.v_attach, val.h_attach),
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn get_click_funcs(&self) -> Vec<Rc<ClickFunc>> {
+        match *self {
+            $(
+            Element::$name(ref val) => val.click_funcs.clone(),
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn get_offset(&self) -> (f64, f64) {
-		match *self {
-			$(
-			Element::$name(ref val) => (val.x, val.y),
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn get_hover_funcs(&self) -> Vec<Rc<HoverFunc>> {
+        match *self {
+            $(
+            Element::$name(ref val) => val.hover_funcs.clone(),
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn get_size(&self) -> (f64, f64) {
-		match *self {
-			$(
-			Element::$name(ref val) => val.get_size(),
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn should_call_hover(&mut self, new: bool) -> bool {
+        match *self {
+            $(
+            Element::$name(ref mut val) => {
+                let ret = val.hovered != new;
+                val.dirty = val.dirty || ret;
+                val.hovered = new;
+                ret
+            },
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn is_dirty(&self) -> bool {
-		match *self {
-			$(
-			Element::$name(ref val) => val.dirty,
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn should_draw(&self) -> bool {
+        match *self {
+            $(
+            Element::$name(ref val) => val.should_draw,
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn set_dirty(&mut self, dirty: bool) {
-		match *self {
-			$(
-			Element::$name(ref mut val) => val.dirty = dirty,
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn get_parent(&self) -> Option<ElementRefInner> {
+        match *self {
+            $(
+            Element::$name(ref val) => val.parent,
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn update(&mut self, renderer: &mut render::Renderer) {
-		match *self {
-			$(
-			Element::$name(ref mut val) => val.update(renderer),
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn get_attachment(&self) -> (VAttach, HAttach) {
+        match *self {
+            $(
+            Element::$name(ref val) => (val.v_attach, val.h_attach),
+            )+
+            _ => unimplemented!(),
+        }
+    }
 
-	fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
-		match *self {
-			$(
-			Element::$name(ref mut val) => val.draw(renderer, r, width, height, delta),
-			)+
-			_ => unimplemented!(),
-		}
-	}
+    fn get_offset(&self) -> (f64, f64) {
+        match *self {
+            $(
+            Element::$name(ref val) => (val.x, val.y),
+            )+
+            _ => unimplemented!(),
+        }
+    }
+
+    fn get_size(&self) -> (f64, f64) {
+        match *self {
+            $(
+            Element::$name(ref val) => val.get_size(),
+            )+
+            _ => unimplemented!(),
+        }
+    }
+
+    fn is_dirty(&self) -> bool {
+        match *self {
+            $(
+            Element::$name(ref val) => val.dirty,
+            )+
+            _ => unimplemented!(),
+        }
+    }
+
+    fn set_dirty(&mut self, dirty: bool) {
+        match *self {
+            $(
+            Element::$name(ref mut val) => val.dirty = dirty,
+            )+
+            _ => unimplemented!(),
+        }
+    }
+
+    fn update(&mut self, renderer: &mut render::Renderer) {
+        match *self {
+            $(
+            Element::$name(ref mut val) => val.update(renderer),
+            )+
+            _ => unimplemented!(),
+        }
+    }
+
+    fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, width: f64, height: f64, delta: f64) -> &Vec<u8> {
+        match *self {
+            $(
+            Element::$name(ref mut val) => val.draw(renderer, r, width, height, delta),
+            )+
+            _ => unimplemented!(),
+        }
+    }
 }
-	)
+    )
 }
 
 element_impl!(
-	Image,
-	Batch,
-	Text,
-	Formatted
+    Image,
+    Batch,
+    Text,
+    Formatted,
+    TextBox,
+    Button
 );
 
 pub enum Mode {
@@ -337,8 +388,13 @@ impl Container {
             self.version = renderer.ui.version;
         }
 
-		// Borrow rules seem to prevent us from doing this in the first pass
-		// so we split it.
+        // Try to make sure we have a focus
+        if !self.elements.iter().any(|(_, ref e)| e.is_focused()) {
+            self.cycle_focus();
+        }
+
+        // Borrow rules seem to prevent us from doing this in the first pass
+        // so we split it.
         let regions = self.collect_elements(sw, sh);
         for re in &self.elements_list {
             let mut e = self.elements.get_mut(re).unwrap();
@@ -361,8 +417,8 @@ impl Container {
             }
             let r = self.get_draw_region(e, sw, sh);
             if r.intersects(&SCREEN) {
-				// Mark this as dirty if any of its
-				// parents are dirty too.
+                // Mark this as dirty if any of its
+                // parents are dirty too.
                 let mut dirty = e.is_dirty();
                 let mut parent = e.get_parent();
                 while !dirty && parent.is_some() {
@@ -433,6 +489,80 @@ impl Container {
         }
     }
 
+    pub fn key_press(&mut self, game: &mut ::Game, key: Option<VirtualKeyCode>, raw: u8, down: bool) {
+        if key == Some(VirtualKeyCode::Tab) {
+            if !down {
+                self.cycle_focus();
+            }
+            return;
+        }
+        let mut callbacks = None;
+        for (_, e) in &mut self.elements {
+            if e.is_focused() {
+                callbacks = Some(e.key_press(game, key, raw, down));
+                break;
+            }
+        }
+        if let Some(callbacks) = callbacks {
+            for cb in callbacks {
+                cb(game, self);
+            }
+        }
+    }
+
+    pub fn key_type(&mut self, game: &mut ::Game, c: char) {
+        if c < ' ' {
+            return;
+        }
+        let mut callbacks = None;
+        for (_, e) in &mut self.elements {
+            if e.is_focused() {
+                callbacks = Some(e.key_type(game, c));
+                break;
+            }
+        }
+        if let Some(callbacks) = callbacks {
+            for cb in callbacks {
+                cb(game, self);
+            }
+        }
+    }
+
+    pub fn set_focused<T: UIElement>(&mut self, r: &ElementRef<T>) {
+        for (_, e) in &mut self.elements {
+            e.set_focused(false);
+        }
+        self.elements.get_mut(&r.inner).unwrap().set_focused(true);
+    }
+
+    pub fn cycle_focus(&mut self) {
+        // Find the last focused element
+        let i = self.elements_list.iter()
+            .map(|v| self.elements.get(v).unwrap())
+            .position(|v| v.is_focused());
+        let mut current = i.map(|v| v + 1).unwrap_or(0) % self.elements_list.len();
+
+        // Clear the old focus
+        if let Some(pos) = i {
+            let r = self.elements_list[pos];
+            self.elements.get_mut(&r).unwrap().set_focused(false);
+        }
+
+        let mut limit = 0;
+        while limit < self.elements_list.len() {
+            let r = self.elements_list[current];
+            let e = self.elements.get_mut(&r).unwrap();
+            if e.can_focus() {
+                e.set_focused(true);
+                return;
+            }
+
+            limit += 1;
+            current += 1;
+            current %= self.elements_list.len();
+        }
+    }
+
     fn get_draw_region(&self, e: &Element, sw: f64, sh: f64) -> Region {
         let super_region = match e.get_parent() {
             Some(ref p) => self.get_draw_region(self.elements.get(p).unwrap(), sw, sh),
@@ -473,93 +603,105 @@ pub trait UIElement {
     fn wrap(self) -> Element;
     fn unwrap_ref(&Element) -> &Self;
     fn unwrap_ref_mut(&mut Element) -> &mut Self;
+
+    fn key_press(&mut self, _game: &mut ::Game, _key: Option<VirtualKeyCode>, _raw: u8, _down: bool) -> Vec<Rc<ClickFunc>> {
+        vec![]
+    }
+
+    fn key_type(&mut self, _game: &mut ::Game, _c: char) -> Vec<Rc<ClickFunc>> {
+        vec![]
+    }
 }
 
 macro_rules! lazy_field {
-	($name:ident, $t:ty, $get:ident, $set:ident) => (
-		pub fn $get(&self) -> $t {
-			self.$name
-		}
+    ($name:ident, $t:ty, $get:ident, $set:ident) => (
+        pub fn $get(&self) -> $t {
+            self.$name
+        }
 
-		pub fn $set(&mut self, val: $t) {
-			if self.$name != val {
-				self.$name = val;
-				self.dirty = true;
-			}
-		}
-	)
+        pub fn $set(&mut self, val: $t) {
+            if self.$name != val {
+                self.$name = val;
+                self.dirty = true;
+            }
+        }
+    )
 }
 
 macro_rules! ui_element {
-	(
-	$name:ident {
-		$(
-			$field:ident : $field_ty:ty
-		),+
-	}
-	) => (
-	pub struct $name {
-		dirty: bool,
-		data: Vec<u8>,
-		parent: Option<ElementRefInner>,
-		should_draw: bool,
-		layer: isize,
-		x: f64,
-		y: f64,
-		v_attach: VAttach,
-		h_attach: HAttach,
-		click_funcs: Vec<ClickFunc>,
-		hover_funcs: Vec<HoverFunc>,
-		hovered: bool,
-		$(
-			$field: $field_ty
-		),+
-	}
-	)
+    (
+    $name:ident {
+        $(
+            $field:ident : $field_ty:ty,
+        )*
+    }
+    ) => (
+    pub struct $name {
+        dirty: bool,
+        data: Vec<u8>,
+        parent: Option<ElementRefInner>,
+        should_draw: bool,
+        layer: isize,
+        x: f64,
+        y: f64,
+        v_attach: VAttach,
+        h_attach: HAttach,
+        click_funcs: Vec<Rc<ClickFunc>>,
+        hover_funcs: Vec<Rc<HoverFunc>>,
+        hovered: bool,
+        can_focus: bool,
+        focused: bool,
+        $(
+            $field: $field_ty,
+        )*
+    }
+    )
 }
 
 macro_rules! base_impl {
-	() => (
-		pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
-			self.parent = Some(other.inner);
-			self.dirty = true;
-		}
+    () => (
+        pub fn set_parent<T: UIElement>(&mut self, other: &ElementRef<T>) {
+            self.parent = Some(other.inner);
+            self.dirty = true;
+        }
 
-		pub fn add_click_func(&mut self, f: ClickFunc) {
-			self.click_funcs.push(f);
-		}
+        pub fn add_click_func<F: Fn(&mut ::Game, &mut Container) + 'static>(&mut self, f: F) {
+            self.click_funcs.push(Rc::new(f));
+        }
 
-		pub fn add_hover_func(&mut self, f: HoverFunc) {
-			self.hover_funcs.push(f);
-		}
+        pub fn add_hover_func<F: Fn(bool, &mut ::Game, &mut Container) + 'static>(&mut self, f: F) {
+            self.hover_funcs.push(Rc::new(f));
+        }
 
-		lazy_field!(layer, isize, get_layer, set_layer);
-		lazy_field!(x, f64, get_x, set_x);
-		lazy_field!(y, f64, get_y, set_y);
-		lazy_field!(v_attach, VAttach, get_v_attach, set_v_attach);
-		lazy_field!(h_attach, HAttach, get_h_attach, set_h_attach);
-	)
+        lazy_field!(layer, isize, get_layer, set_layer);
+        lazy_field!(x, f64, get_x, set_x);
+        lazy_field!(y, f64, get_y, set_y);
+        lazy_field!(v_attach, VAttach, get_v_attach, set_v_attach);
+        lazy_field!(h_attach, HAttach, get_h_attach, set_h_attach);
+    )
 }
 
 macro_rules! ui_create {
-	($name:ident {
-		$($field:ident: $e:expr,)+
-	}) => (
-		$name {
-			dirty: true,
-			data: Vec::new(),
+    ($name:ident {
+        $($field:ident: $e:expr,)*
+    }) => (
+        $name {
+            dirty: true,
+            data: Vec::new(),
 
-			parent: None,
-			should_draw: true,
-			layer: 0,
-			v_attach: VAttach::Top,
-			h_attach: HAttach::Left,
-			click_funcs: Vec::new(),
-			hover_funcs: Vec::new(),
-			hovered: false,
-			$($field: $e),+
-		}
-	)
+            parent: None,
+            should_draw: true,
+            layer: 0,
+            v_attach: VAttach::Top,
+            h_attach: HAttach::Left,
+            click_funcs: Vec::new(),
+            hover_funcs: Vec::new(),
+            hovered: false,
+            can_focus: false,
+            focused: false,
+            $($field: $e,)*
+        }
+    )
 }
 
 // Include instead of mod so we can access private parts.
@@ -570,3 +712,5 @@ include!("image.rs");
 include!("batch.rs");
 include!("text.rs");
 include!("formatted.rs");
+include!("textbox.rs");
+include!("button.rs");

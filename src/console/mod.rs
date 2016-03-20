@@ -98,7 +98,7 @@ impl Console {
     pub fn get<T: Sized + Any>(&self, var: CVar<T>) -> &T
         where CVar<T>: Var
     {
-		// Should never fail
+        // Should never fail
         self.var_values.get(var.name).unwrap().downcast_ref::<T>().unwrap()
     }
 
@@ -122,9 +122,9 @@ impl Console {
                 renderer: &mut render::Renderer,
                 delta: f64,
                 width: f64) {
-		// To make sure the console is always on top it constant removes and readds itself.
-		// Its hacky but the console should never appear for normal users so its not really
-		// a major issue.
+        // To make sure the console is always on top it constant removes and readds itself.
+        // Its hacky but the console should never appear for normal users so its not really
+        // a major issue.
         self.collection.remove_all(ui_container);
         if !self.active && self.position <= -220.0 {
             return;
@@ -238,34 +238,34 @@ impl Console {
         self.history.remove(0);
         let mut msg = TextComponent::new("");
         msg.modifier.extra = Some(vec![
-			Component::Text(TextComponent::new("[")),
-			{
-				let mut msg = TextComponent::new(file);
-				msg.modifier.color = Some(Color::Green);
-				Component::Text(msg)
-			},
-			Component::Text(TextComponent::new(":")),
-			{
-				let mut msg = TextComponent::new(&format!("{}", record.location().line()));
-				msg.modifier.color = Some(Color::Aqua);
-				Component::Text(msg)
-			},
-			Component::Text(TextComponent::new("]")),
-			Component::Text(TextComponent::new("[")),
-			{
-				let mut msg = TextComponent::new(&format!("{}", record.level()));
-				msg.modifier.color = Some(match record.level() {
-					log::LogLevel::Debug => Color::Green,
-					log::LogLevel::Error => Color::Red,
-					log::LogLevel::Warn => Color::Yellow,
-					log::LogLevel::Info => Color::Aqua,
-					log::LogLevel::Trace => Color::Blue,
-				});
-				Component::Text(msg)
-			},
-			Component::Text(TextComponent::new("] ")),
-			Component::Text(TextComponent::new(&format!("{}", record.args())))
-		]);
+            Component::Text(TextComponent::new("[")),
+            {
+                let mut msg = TextComponent::new(file);
+                msg.modifier.color = Some(Color::Green);
+                Component::Text(msg)
+            },
+            Component::Text(TextComponent::new(":")),
+            {
+                let mut msg = TextComponent::new(&format!("{}", record.location().line()));
+                msg.modifier.color = Some(Color::Aqua);
+                Component::Text(msg)
+            },
+            Component::Text(TextComponent::new("]")),
+            Component::Text(TextComponent::new("[")),
+            {
+                let mut msg = TextComponent::new(&format!("{}", record.level()));
+                msg.modifier.color = Some(match record.level() {
+                    log::LogLevel::Debug => Color::Green,
+                    log::LogLevel::Error => Color::Red,
+                    log::LogLevel::Warn => Color::Yellow,
+                    log::LogLevel::Info => Color::Aqua,
+                    log::LogLevel::Trace => Color::Blue,
+                });
+                Component::Text(msg)
+            },
+            Component::Text(TextComponent::new("] ")),
+            Component::Text(TextComponent::new(&format!("{}", record.args())))
+        ]);
         self.history.push(Component::Text(msg));
     }
 }

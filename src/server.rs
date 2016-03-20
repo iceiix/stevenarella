@@ -47,10 +47,8 @@ impl Server {
 
         let packet = match conn.read_packet().unwrap() {
             protocol::packet::Packet::EncryptionRequest(val) => val,
-            protocol::packet::Packet::LoginDisconnect(val) => {
-                return Err(protocol::Error::Disconnect(val.reason));
-            },
-            val => panic!("Wrong packet: {:?}", val),
+            protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
+            val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
         };
 
         unimplemented!();

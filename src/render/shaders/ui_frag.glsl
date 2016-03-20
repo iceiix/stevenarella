@@ -10,8 +10,8 @@ out vec4 fragColor;
 #include lookup_texture
 
 void main() {
-	vec4 col = atlasTexture();
-	col *= vColor;
-	if (col.a == 0.0) discard;
-	fragColor = col;
+    vec4 col = atlasTexture();
+    col *= vColor;
+    if (col.a == 0.0) discard;
+    fragColor = col;
 }

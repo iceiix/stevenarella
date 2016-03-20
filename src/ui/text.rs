@@ -13,20 +13,20 @@
 // limitations under the License.
 
 ui_element!(Text {
-	val: String,
-	width: f64,
-	height: f64,
-	scale_x: f64,
-	scale_y: f64,
-	rotation: f64,
-	r: u8,
-	g: u8,
-	b: u8,
-	a: u8
+    val: String,
+    width: f64,
+    height: f64,
+    scale_x: f64,
+    scale_y: f64,
+    rotation: f64,
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
 });
 
 impl Text {
-	base_impl!();
+    base_impl!();
 
     pub fn new(renderer: &render::Renderer,
                val: &str,
@@ -117,14 +117,14 @@ impl Text {
         self.width = renderer.ui.size_of_string(val);
     }
 
-	lazy_field!(width, f64, get_width, set_width);
-	lazy_field!(height, f64, get_height, set_height);
-	lazy_field!(scale_x, f64, get_scale_x, set_scale_x);
-	lazy_field!(scale_y, f64, get_scale_y, set_scale_y);
-	lazy_field!(rotation, f64, get_rotation, set_rotation);
-	lazy_field!(r, u8, get_r, set_r);
-	lazy_field!(g, u8, get_g, set_g);
-	lazy_field!(b, u8, get_b, set_b);
+    lazy_field!(width, f64, get_width, set_width);
+    lazy_field!(height, f64, get_height, set_height);
+    lazy_field!(scale_x, f64, get_scale_x, set_scale_x);
+    lazy_field!(scale_y, f64, get_scale_y, set_scale_y);
+    lazy_field!(rotation, f64, get_rotation, set_rotation);
+    lazy_field!(r, u8, get_r, set_r);
+    lazy_field!(g, u8, get_g, set_g);
+    lazy_field!(b, u8, get_b, set_b);
 
 }
 
