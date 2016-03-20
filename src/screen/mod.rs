@@ -16,6 +16,7 @@ mod server_list;
 pub use self::server_list::*;
 mod login;
 pub use self::login::*;
+pub mod connecting;
 
 use std::rc::Rc;
 

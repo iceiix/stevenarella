@@ -1,3 +1,4 @@
+#![feature(unique)]
 #![allow(dead_code)]
 extern crate libc;
 use std::mem;
@@ -54,7 +55,7 @@ extern {
 }
 
 pub struct EVPCipher {
-    internal: *mut EVP_CIPHER_CTX,
+    internal: ptr::Unique<EVP_CIPHER_CTX>,
 
     block_size: usize,
 }
@@ -62,17 +63,17 @@ pub struct EVPCipher {
 impl EVPCipher {
     pub fn new(key: &Vec<u8>, iv: &Vec<u8>, decrypt: bool) -> EVPCipher {
         unsafe {
-            let e = EVPCipher {
-                internal: EVP_CIPHER_CTX_new(),
+            let mut e = EVPCipher {
+                internal: ptr::Unique::new(EVP_CIPHER_CTX_new()),
                 block_size: EVP_CIPHER_block_size(EVP_aes_128_cfb8()) as usize,
             };
-            EVP_CIPHER_CTX_init(e.internal);
+            EVP_CIPHER_CTX_init(e.internal.get_mut());
             if decrypt {
-                if EVP_DecryptInit_ex(e.internal, EVP_aes_128_cfb8(), ptr::null_mut(), key.as_ptr(), iv.as_ptr()) == 0 {
+                if EVP_DecryptInit_ex(e.internal.get_mut(), EVP_aes_128_cfb8(), ptr::null_mut(), key.as_ptr(), iv.as_ptr()) == 0 {
                     panic!("Init error");
                 }
             } else {
-                if EVP_EncryptInit_ex(e.internal, EVP_aes_128_cfb8(), ptr::null_mut(), key.as_ptr(), iv.as_ptr()) == 0 {
+                if EVP_EncryptInit_ex(e.internal.get_mut(), EVP_aes_128_cfb8(), ptr::null_mut(), key.as_ptr(), iv.as_ptr()) == 0 {
                     panic!("Init error");
                 }
             }
@@ -84,7 +85,7 @@ impl EVPCipher {
         unsafe {
             let mut out = Vec::with_capacity(data.len());
             let mut out_len: libc::c_int = 0;
-            if EVP_DecryptUpdate(self.internal, out.as_mut_ptr(), &mut out_len, data.as_ptr(), data.len() as libc::c_int) == 0 {
+            if EVP_DecryptUpdate(self.internal.get_mut(), out.as_mut_ptr(), &mut out_len, data.as_ptr(), data.len() as libc::c_int) == 0 {
                 panic!("Decrypt error")
             }
             out.set_len(out_len as usize);
@@ -96,7 +97,7 @@ impl EVPCipher {
         unsafe {
             let mut out = Vec::with_capacity(data.len());
             let mut out_len: libc::c_int = 0;
-            if EVP_EncryptUpdate(self.internal, out.as_mut_ptr(), &mut out_len, data.as_ptr(), data.len() as libc::c_int) == 0 {
+            if EVP_EncryptUpdate(self.internal.get_mut(), out.as_mut_ptr(), &mut out_len, data.as_ptr(), data.len() as libc::c_int) == 0 {
                 panic!("Encrypt error")
             }
             out.set_len(out_len as usize);
@@ -109,8 +110,8 @@ impl EVPCipher {
 impl Drop for EVPCipher {
     fn drop(&mut self) {
         unsafe {
-            EVP_CIPHER_CTX_cleanup(self.internal);
-            EVP_CIPHER_CTX_free(self.internal);
+            EVP_CIPHER_CTX_cleanup(self.internal.get_mut());
+            EVP_CIPHER_CTX_free(self.internal.get_mut());
         }
     }
 }

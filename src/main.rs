@@ -52,6 +52,8 @@ pub mod chunk_builder;
 
 use std::sync::{Arc, RwLock, Mutex};
 use std::marker::PhantomData;
+use std::thread;
+use std::sync::mpsc;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -73,6 +75,51 @@ pub struct Game {
 
     server: server::Server,
     chunk_builder: chunk_builder::ChunkBuilder,
+
+    connect_reply: Option<mpsc::Receiver<Result<server::Server, protocol::Error>>>,
+}
+
+impl Game {
+    pub fn connect_to(&mut self, address: &str) {
+        let (tx, rx) = mpsc::channel();
+        self.connect_reply = Some(rx);
+        let address = address.to_owned();
+        let resources = self.resource_manager.clone();
+        thread::spawn(move || {
+            tx.send(server::Server::connect(resources, &address)).unwrap();
+        });
+    }
+
+    pub fn tick(&mut self) {
+        let mut clear_reply = false;
+        if let Some(ref recv) = self.connect_reply {
+            if let Ok(server) = recv.try_recv() {
+                clear_reply = true;
+                match server {
+                    Ok(val) => {
+                        self.screen_sys.pop_screen();
+                        self.server = val;
+                    },
+                    Err(err) => {
+                        let msg = match err {
+                            protocol::Error::Disconnect(val) => val,
+                            err => {
+                                let mut msg = format::TextComponent::new(&format!("{}", err));
+                                msg.modifier.color = Some(format::Color::Red);
+                                format::Component::Text(msg)
+                            },
+                        };
+                        self.screen_sys.replace_screen(Box::new(screen::ServerList::new(
+                            Some(msg)
+                        )));
+                    }
+                }
+            }
+        }
+        if clear_reply {
+            self.connect_reply = None;
+        }
+    }
 }
 
 fn main() {
@@ -135,6 +182,7 @@ fn main() {
         should_close: false,
         mouse_pos: (0, 0),
         chunk_builder: chunk_builder::ChunkBuilder::new(textures),
+        connect_reply: None,
     };
 
     while !game.should_close {
@@ -157,6 +205,7 @@ fn main() {
             game.renderer.camera.yaw = 0.0;
         }
 
+        game.tick();
         game.server.tick();
 
         game.chunk_builder.tick(&mut game.server.world, &mut game.renderer);

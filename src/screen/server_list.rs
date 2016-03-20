@@ -179,8 +179,9 @@ impl ServerList {
                     });
                 }));
 
-                back.add_click_func(Rc::new(move |_, _| {
-                    println!("Connecting to {}", address);
+                back.add_click_func(Rc::new(move |game, _| {
+                    game.screen_sys.replace_screen(Box::new(super::connecting::Connecting::new(&address)));
+                    game.connect_to(&address);
                 }));
             }
 

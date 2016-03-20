@@ -28,6 +28,42 @@ pub struct Server {
 }
 
 impl Server {
+
+    pub fn connect(resources: Arc<RwLock<resources::Manager>>, address: &str) -> Result<Server, protocol::Error> {
+        let mut conn = try!(protocol::Conn::new(address));
+
+        let host = conn.host.clone();
+        let port = conn.port;
+        try!(conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
+             protocol_version: protocol::VarInt(protocol::SUPPORTED_PROTOCOL),
+             host: host,
+             port: port,
+             next: protocol::VarInt(2),
+         }));
+        conn.state = protocol::State::Login;
+        try!(conn.write_packet(protocol::packet::login::serverbound::LoginStart {
+            username: "Thinkofdeath".to_owned()
+        }));
+
+        let packet = match conn.read_packet().unwrap() {
+            protocol::packet::Packet::EncryptionRequest(val) => val,
+            protocol::packet::Packet::LoginDisconnect(val) => {
+                return Err(protocol::Error::Disconnect(val.reason));
+            },
+            val => panic!("Wrong packet: {:?}", val),
+        };
+
+        unimplemented!();
+
+        let version = resources.read().unwrap().version();
+        Ok(Server {
+            conn: Some(conn),
+            world: world::World::new(),
+            resources: resources,
+            version: version,
+        })
+    }
+
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>) -> Server {
         let mut world = world::World::new();
         let mut rng = rand::thread_rng();

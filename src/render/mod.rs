@@ -317,6 +317,10 @@ impl Renderer {
         self.ui.tick(width, height);
     }
 
+    pub fn clear_chunks(&mut self) {
+        self.chunks.clear();
+    }
+
     fn ensure_element_buffer(&mut self, size: usize) {
         if self.element_buffer_size < size {
             let (data, ty) = self::generate_element_buffer(size);
