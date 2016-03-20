@@ -16,6 +16,7 @@
 
 use openssl;
 use serde_json;
+use hyper;
 
 pub mod mojang;
 
@@ -633,11 +634,25 @@ pub enum Error {
     Err(String),
     Disconnect(format::Component),
     IOError(io::Error),
+    Json(serde_json::Error),
+    Hyper(hyper::Error),
 }
 
 impl convert::From<io::Error> for Error {
     fn from(e: io::Error) -> Error {
         Error::IOError(e)
+    }
+}
+
+impl convert::From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Error {
+        Error::Json(e)
+    }
+}
+
+impl convert::From<hyper::Error> for Error {
+    fn from(e: hyper::Error) -> Error {
+        Error::Hyper(e)
     }
 }
 
@@ -647,6 +662,8 @@ impl ::std::error::Error for Error {
             Error::Err(ref val) => &val[..],
             Error::Disconnect(_) => "Disconnect",
             Error::IOError(ref e) => e.description(),
+            Error::Json(ref e) => e.description(),
+            Error::Hyper(ref e) => e.description(),
         }
     }
 }
@@ -657,6 +674,8 @@ impl ::std::fmt::Display for Error {
             Error::Err(ref val) => write!(f, "protocol error: {}", val),
             Error::Disconnect(ref val) => write!(f, "{}", val),
             Error::IOError(ref e) => e.fmt(f),
+            Error::Json(ref e) => e.fmt(f),
+            Error::Hyper(ref e) => e.fmt(f),
         }
     }
 }

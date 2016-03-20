@@ -37,7 +37,7 @@ pub trait Screen {
     fn tick(&mut self,
             delta: f64,
             renderer: &mut render::Renderer,
-            ui_container: &mut ui::Container);
+            ui_container: &mut ui::Container) -> Option<Box<Screen>>;
 
     // Events
     fn on_scroll(&mut self, x: f64, y: f64) {
@@ -106,18 +106,22 @@ impl ScreenSystem {
                 screen.screen.on_deactive(renderer, ui_container);
             }
         }
-        let current = self.screens.last_mut().unwrap();
-        if !current.init {
-            current.init = true;
-            current.screen.init(renderer, ui_container);
-        }
-        if !current.active {
-            current.active = true;
-            current.screen.on_active(renderer, ui_container);
-        }
-
+        let swap = {
+            let current = self.screens.last_mut().unwrap();
+            if !current.init {
+                current.init = true;
+                current.screen.init(renderer, ui_container);
+            }
+            if !current.active {
+                current.active = true;
+                current.screen.on_active(renderer, ui_container);
+            }
+            current.screen.tick(delta, renderer, ui_container)
+        };
         // Handle current
-        current.screen.tick(delta, renderer, ui_container);
+        if let Some(swap) = swap {
+            self.replace_screen(swap);
+        }
     }
 
     pub fn on_scroll(&mut self, x: f64, y: f64) {
@@ -149,15 +153,19 @@ pub fn button_action<F: Fn(&mut ::Game, &mut ui::Container) + 'static>(ui_contai
                      click: F) {
     let button = ui_container.get_mut(&btn);
     button.add_hover_func(move |over, _, ui_container| {
-         let txt = txt.clone();
-         if let Some(txt) = txt {
-             let text = ui_container.get_mut(&txt);
-             text.set_b(if over {
-                 160
-             } else {
-                 255
-             });
-         }
+        let disabled = {
+            let button = ui_container.get_mut(&btn);
+            button.is_disabled()
+        };
+        let txt = txt.clone();
+        if let Some(txt) = txt {
+            let text = ui_container.get_mut(&txt);
+            text.set_b(if over && !disabled {
+                160
+            } else {
+                255
+            });
+        }
     });
     button.add_click_func(click);
 }

@@ -459,7 +459,7 @@ impl super::Screen for ServerList {
     fn tick(&mut self,
             delta: f64,
             renderer: &mut render::Renderer,
-            ui_container: &mut ui::Container) {
+            ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
         if *self.needs_reload.borrow() {
             self.reload_server_list(renderer, ui_container);
         }
@@ -551,6 +551,7 @@ impl super::Screen for ServerList {
                 }
             }
         }
+        None
     }
 
     fn on_scroll(&mut self, _: f64, y: f64) {

@@ -119,8 +119,8 @@ impl TextBox {
         (self.width, self.height)
     }
 
-    pub fn get_input(&self) -> &str {
-        &self.input
+    pub fn get_input(&self) -> String {
+        self.input.clone()
     }
 
     pub fn set_input(&mut self, renderer: &render::Renderer, input: &str) {
