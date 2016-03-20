@@ -79,7 +79,10 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
         let BuildReq {
             snapshot,
             position,
-        } = work_recv.recv().unwrap();
+        } = match work_recv.recv() {
+            Ok(val) => val,
+            Err(_) => return,
+        };
 
         let mut solid_buffer = vec![];
         let mut solid_count = 0;
