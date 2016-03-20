@@ -631,6 +631,7 @@ pub enum State {
 #[derive(Debug)]
 pub enum Error {
     Err(String),
+    Disconnect(format::Component),
     IOError(io::Error),
 }
 
@@ -644,6 +645,7 @@ impl ::std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::Err(ref val) => &val[..],
+            Error::Disconnect(_) => "Disconnect",
             Error::IOError(ref e) => e.description(),
         }
     }
@@ -653,6 +655,7 @@ impl ::std::fmt::Display for Error {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match *self {
             Error::Err(ref val) => write!(f, "protocol error: {}", val),
+            Error::Disconnect(ref val) => write!(f, "{}", val),
             Error::IOError(ref e) => e.fmt(f),
         }
     }
@@ -660,10 +663,10 @@ impl ::std::fmt::Display for Error {
 
 pub struct Conn {
     stream: TcpStream,
-    host: String,
-    port: u16,
+    pub host: String,
+    pub port: u16,
     direction: Direction,
-    state: State,
+    pub state: State,
 
     cipher: Option<openssl::EVPCipher>,
 
