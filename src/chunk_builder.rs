@@ -14,7 +14,7 @@ pub struct ChunkBuilder {
     free_builders: Vec<usize>,
     built_recv: mpsc::Receiver<(usize, BuildReply)>,
 
-    sections: Vec<(i32, i32, i32)>,
+    sections: Vec<(i32, i32, i32, Arc<world::SectionKey>)>,
     next_collection: f64,
 }
 
@@ -52,7 +52,7 @@ impl ChunkBuilder {
         while let Ok((id, val)) = self.built_recv.try_recv() {
             world.reset_building_flag(val.position);
 
-            renderer.update_chunk_solid(val.position, &val.solid_buffer, val.solid_count);
+            renderer.update_chunk_solid(val.position, val.key, &val.solid_buffer, val.solid_count);
 
             self.free_builders.push(id);
         }
@@ -82,7 +82,7 @@ impl ChunkBuilder {
             self.sections = sections;
             self.next_collection = 60.0;
         }
-        while let Some((x, y, z)) = self.sections.pop() {
+        while let Some((x, y, z, key)) = self.sections.pop() {
             let t_id = self.free_builders.pop().unwrap();
             world.set_building_flag((x, y, z));
             let (cx, cy, cz) = (x << 4, y << 4, z << 4);
@@ -91,6 +91,7 @@ impl ChunkBuilder {
             self.threads[t_id].0.send(BuildReq {
                 snapshot: snapshot,
                 position: (x, y, z),
+                key: key,
             }).unwrap();
             if self.free_builders.is_empty() {
                 return;
@@ -102,20 +103,22 @@ impl ChunkBuilder {
 struct BuildReq {
     snapshot: world::Snapshot,
     position: (i32, i32, i32),
+    key: Arc<world::SectionKey>,
 }
 
 struct BuildReply {
     position: (i32, i32, i32),
     solid_buffer: Vec<u8>,
     solid_count: usize,
+    key: Arc<world::SectionKey>,
 }
 
 fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
-    use rand::{self, Rng};
     loop {
         let BuildReq {
             snapshot,
             position,
+            key,
         } = match work_recv.recv() {
             Ok(val) => val,
             Err(_) => return,
@@ -123,8 +126,6 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
 
         let mut solid_buffer = vec![];
         let mut solid_count = 0;
-
-        let mut rng = rand::thread_rng();
 
         for y in 0 .. 16 {
             for x in 0 .. 16 {
@@ -149,12 +150,7 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                             cb = ((cb as f64) * 0.8) as u8;
                         }
 
-                        let stone = render::Renderer::get_texture(&textures, rng.choose(&[
-                            "minecraft:blocks/lava_flow",
-                            "minecraft:blocks/stone",
-                            "minecraft:blocks/melon_side",
-                            "minecraft:blocks/sand",
-                        ]).unwrap());
+                        let stone = render::Renderer::get_texture(&textures, "minecraft:blocks/stone");
                         solid_count += 6;
                         for vert in dir.get_verts() {
                             let mut vert = vert.clone();
@@ -201,6 +197,7 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
             position: position,
             solid_buffer: solid_buffer,
             solid_count: solid_count,
+            key: key,
         })).unwrap();
     }
 }
@@ -209,8 +206,11 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
                     x: f64, y: f64, z: f64, face: Direction, smooth: bool, force: bool) -> (u16, u16) {
     use std::cmp::max;
     use world::block;
-    let (ox, oy, oz) = face.get_offset();
-    // TODO: Cull against check
+    let (ox, oy, oz) = if !snapshot.get_block(orig_x, orig_y, orig_z).renderable() { // TODO: cull check
+        (0, 0, 0)
+    } else {
+        face.get_offset()
+    };
 
     let s_block_light = snapshot.get_block_light(orig_x + ox, orig_y + oy, orig_z + oz);
     let s_sky_light = snapshot.get_sky_light(orig_x + ox, orig_y + oy, orig_z + oz);

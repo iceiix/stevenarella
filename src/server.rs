@@ -19,12 +19,14 @@ use rand::{self, Rng};
 use std::sync::{Arc, RwLock, Mutex};
 use std::sync::mpsc;
 use std::thread;
+use std::collections::HashMap;
 use resources;
 use openssl;
 use console;
 use render;
 use auth;
 use cgmath::{self, Vector};
+use glutin::VirtualKeyCode;
 
 pub struct Server {
     conn: Option<protocol::Conn>,
@@ -38,6 +40,8 @@ pub struct Server {
     pub position: cgmath::Vector3<f64>,
     pub yaw: f64,
     pub pitch: f64,
+
+    pressed_keys: HashMap<VirtualKeyCode, bool>,
 
     tick_timer: f64,
 }
@@ -146,6 +150,8 @@ impl Server {
             console: console,
             version: version,
 
+            pressed_keys: HashMap::new(),
+
             position: cgmath::Vector3::zero(),
             yaw: 0.0,
             pitch: 0.0,
@@ -175,6 +181,8 @@ impl Server {
             resources: resources,
             console: console,
 
+            pressed_keys: HashMap::new(),
+
             position: cgmath::Vector3::new(0.5, 13.2, 0.5),
             yaw: 0.0,
             pitch: 0.0,
@@ -201,6 +209,7 @@ impl Server {
                         self pck {
                             KeepAliveClientbound => on_keep_alive,
                             ChunkData => on_chunk_data,
+                            ChunkUnload => on_chunk_unload,
                             TeleportPlayer => on_teleport,
                         }
                     },
@@ -208,6 +217,26 @@ impl Server {
                 }
             }
             self.read_queue = Some(rx);
+        }
+
+        let (forward, yaw) = self.calculate_movement();
+
+        if self.world.is_chunk_loaded((self.position.x as i32) >> 4, (self.position.z as i32) >> 4) {
+                let mut speed = 4.317 / 60.0;
+                if self.is_key_pressed(VirtualKeyCode::LShift) {
+                    speed = 5.612 / 60.0;
+                }
+                // TODO: only do this for flying
+                speed *= 2.5;
+
+                if self.is_key_pressed(VirtualKeyCode::Space) {
+                    self.position.y += speed * delta;
+                }
+                if self.is_key_pressed(VirtualKeyCode::LControl) {
+                    self.position.y -= speed * delta;
+                }
+                self.position.x += forward * yaw.cos() * delta * speed;
+                self.position.z -= forward * yaw.sin() * delta * speed;
         }
 
         self.tick_timer += delta;
@@ -220,6 +249,35 @@ impl Server {
         renderer.camera.pos = cgmath::Point::from_vec(self.position + cgmath::Vector3::new(0.0, 1.8, 0.0));
         renderer.camera.yaw = self.yaw;
         renderer.camera.pitch = self.pitch;
+    }
+
+    fn calculate_movement(&self) -> (f64, f64) {
+        use std::f64::consts::PI;
+        let mut forward = 0.0f64;
+        let mut yaw = self.yaw - (PI/2.0);
+        if self.is_key_pressed(VirtualKeyCode::W) || self.is_key_pressed(VirtualKeyCode::S) {
+            forward = 1.0;
+            if self.is_key_pressed(VirtualKeyCode::S) {
+                yaw += PI;
+            }
+        }
+        let mut change = 0.0;
+        if self.is_key_pressed(VirtualKeyCode::A) {
+            change = (PI / 2.0) / (forward.abs() + 1.0);
+        }
+        if self.is_key_pressed(VirtualKeyCode::D) {
+            change = -(PI / 2.0) / (forward.abs() + 1.0);
+        }
+        if self.is_key_pressed(VirtualKeyCode::A) || self.is_key_pressed(VirtualKeyCode::D) {
+            forward = 1.0;
+        }
+        if self.is_key_pressed(VirtualKeyCode::S) {
+            yaw -= change;
+        } else {
+            yaw += change;
+        }
+
+        (forward, yaw)
     }
 
     pub fn minecraft_tick(&mut self) {
@@ -236,17 +294,25 @@ impl Server {
         self.write_packet(packet);
     }
 
+    pub fn key_press(&mut self, down: bool, key: VirtualKeyCode) {
+        self.pressed_keys.insert(key, down);
+    }
+
+    fn is_key_pressed(&self, key: VirtualKeyCode) -> bool {
+        self.pressed_keys.get(&key).map(|v| *v).unwrap_or(false)
+    }
+
     pub fn write_packet<T: protocol::PacketType>(&mut self, p: T) {
         self.conn.as_mut().unwrap().write_packet(p).unwrap(); // TODO handle errors
     }
 
-    pub fn on_keep_alive(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound) {
+    fn on_keep_alive(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound) {
         self.write_packet(packet::play::serverbound::KeepAliveServerbound {
             id: keep_alive.id,
         });
     }
 
-    pub fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {
+    fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {
         // TODO: relative teleports
         self.position.x = teleport.x;
         self.position.y = teleport.y;
@@ -264,7 +330,7 @@ impl Server {
         });
     }
 
-    pub fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
+    fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
         self.world.load_chunk(
             chunk_data.chunk_x,
             chunk_data.chunk_z,
@@ -272,5 +338,9 @@ impl Server {
             chunk_data.bitmask.0 as u16,
             chunk_data.data.data
         ).unwrap();
+    }
+
+    fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
+        self.world.unload_chunk(chunk_unload.x, chunk_unload.z);
     }
 }

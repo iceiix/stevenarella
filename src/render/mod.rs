@@ -28,6 +28,7 @@ use image::GenericImage;
 use byteorder::{WriteBytesExt, NativeEndian};
 use serde_json;
 use cgmath::{self, Vector, Point};
+use world;
 
 const ATLAS_SIZE: usize = 1024;
 
@@ -67,9 +68,12 @@ pub struct Renderer {
 
     last_width: u32,
     last_height: u32,
+
+    chunk_gc_timer: f64,
 }
 
 struct ChunkBuffer {
+    key: Arc<world::SectionKey>,
     position: (i32, i32, i32),
 
     solid: Option<ChunkRenderInfo>,
@@ -199,6 +203,8 @@ impl Renderer {
             perspective_matrix: cgmath::Matrix4::zero(),
 
             trans: None,
+
+            chunk_gc_timer: 120.0,
         }
     }
 
@@ -230,6 +236,20 @@ impl Renderer {
             );
 
             self.init_trans(width, height);
+        }
+
+        self.chunk_gc_timer -= delta;
+        if self.chunk_gc_timer <= 0.0 {
+            self.chunk_gc_timer = 120.0;
+            let mut unload_queue = vec![];
+            for (pos, info) in &self.chunks {
+                if Arc::strong_count(&info.key) == 1 {
+                    unload_queue.push(*pos);
+                }
+            }
+            for unload in unload_queue {
+                self.chunks.remove(&unload);
+            }
         }
 
         let trans = self.trans.as_mut().unwrap();
@@ -317,10 +337,6 @@ impl Renderer {
         self.ui.tick(width, height);
     }
 
-    pub fn clear_chunks(&mut self) {
-        self.chunks.clear();
-    }
-
     fn ensure_element_buffer(&mut self, size: usize) {
         if self.element_buffer_size < size {
             let (data, ty) = self::generate_element_buffer(size);
@@ -331,13 +347,15 @@ impl Renderer {
         }
     }
 
-    pub fn update_chunk_solid(&mut self, pos: (i32, i32, i32), data: &[u8], count: usize) {
+    pub fn update_chunk_solid(&mut self, pos: (i32, i32, i32), key: Arc<world::SectionKey>, data: &[u8], count: usize) {
         self.ensure_element_buffer(count);
-        let buffer = self.chunks.entry(pos).or_insert(ChunkBuffer {
+        let buffer = self.chunks.entry(pos).or_insert_with(||ChunkBuffer {
+            key: key.clone(),
             position: pos,
             solid: None,
             trans: None,
         });
+        buffer.key = key;
         if count == 0 {
             if buffer.solid.is_some() {
                 buffer.solid = None;

@@ -15,6 +15,7 @@
 pub mod block;
 use self::block::BlockSet;
 
+use std::sync::Arc;
 use std::collections::HashMap;
 use types::bit;
 use types::nibble;
@@ -29,6 +30,10 @@ impl World {
         World {
             chunks: HashMap::new(),
         }
+    }
+
+    pub fn is_chunk_loaded(&self, x: i32, z: i32) -> bool {
+        self.chunks.contains_key(&CPos(x, z))
     }
 
     pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: &'static block::Block) {
@@ -47,13 +52,13 @@ impl World {
         }
     }
 
-    pub fn get_dirty_chunk_sections(&mut self) -> Vec<(i32, i32, i32)> {
+    pub fn get_dirty_chunk_sections(&mut self) -> Vec<(i32, i32, i32, Arc<SectionKey>)> {
         let mut out = vec![];
         for (_, chunk) in &mut self.chunks {
             for sec in &mut chunk.sections {
                 if let Some(sec) = sec.as_mut() {
                     if !sec.building && sec.dirty {
-                        out.push((chunk.position.0, sec.y as i32, chunk.position.1));
+                        out.push((chunk.position.0, sec.y as i32, chunk.position.1, sec.key.clone()));
                     }
                 }
             }
@@ -158,6 +163,10 @@ impl World {
         snapshot
     }
 
+    pub fn unload_chunk(&mut self, x: i32, z: i32) {
+        self.chunks.remove(&CPos(x, z));
+    }
+
     pub fn load_chunk(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
         use std::io::{Cursor, Read};
         use byteorder::ReadBytesExt;
@@ -182,7 +191,7 @@ impl World {
                     continue;
                 }
                 if chunk.sections[i].is_none() {
-                    chunk.sections[i] = Some(Section::new(i as u8));
+                    chunk.sections[i] = Some(Section::new(x, i as u8, z));
                 }
                 let section = chunk.sections[i as usize].as_mut().unwrap();
                 section.dirty = true;
@@ -332,7 +341,7 @@ impl Chunk {
             if b.in_set(&*block::AIR) {
                 return;
             }
-            self.sections[s_idx as usize] = Some(Section::new(s_idx as u8));
+            self.sections[s_idx as usize] = Some(Section::new(self.position.0, s_idx as u8, self.position.1));
         }
         let section = self.sections[s_idx as usize].as_mut().unwrap();
         section.set_block(x, y & 0xF, z, b);
@@ -350,7 +359,13 @@ impl Chunk {
     }
 }
 
+#[derive(PartialEq, Eq, Hash)]
+pub struct SectionKey {
+    pos: (i32, u8, i32),
+}
+
 struct Section {
+    key: Arc<SectionKey>,
     y: u8,
 
     blocks: bit::Map,
@@ -365,8 +380,11 @@ struct Section {
 }
 
 impl Section {
-    fn new(y: u8) -> Section {
+    fn new(x: i32, y: u8, z: i32) -> Section {
         let mut section = Section {
+            key: Arc::new(SectionKey{
+                pos: (x, y, z),
+            }),
             y: y,
 
             blocks: bit::Map::new(4096, 4),

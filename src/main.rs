@@ -14,6 +14,7 @@
 
 #![recursion_limit="200"]
 #![feature(const_fn)]
+#![feature(arc_counts)]
 
 extern crate glutin;
 extern crate image;
@@ -107,7 +108,6 @@ impl Game {
                 match server {
                     Ok(val) => {
                         self.screen_sys.pop_screen();
-                        self.renderer.clear_chunks();
                         self.chunk_builder.wait_for_builders();
                         self.focused = true;
                         self.server = val;
@@ -292,10 +292,18 @@ fn handle_window_event(window: &glutin::Window,
             game.console.lock().unwrap().toggle();
         }
         Event::KeyboardInput(state, key, virt) => {
-            ui_container.key_press(game, virt, key, state == glutin::ElementState::Pressed);
+            if game.focused {
+                if let Some(virt) = virt {
+                    game.server.key_press(state == glutin::ElementState::Pressed, virt);
+                }
+            } else {
+                ui_container.key_press(game, virt, key, state == glutin::ElementState::Pressed);
+            }
         }
         Event::ReceivedCharacter(c) => {
-            ui_container.key_type(game, c);
+            if !game.focused {
+                ui_container.key_type(game, c);
+            }
         }
         _ => (),
     }
