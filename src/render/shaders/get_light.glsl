@@ -25,4 +25,4 @@ vec3 getLight(vec2 light) {
     col = col * 0.96 + 0.03;
 
     return clamp(col, 0.0, 1.0);
-}    
+}

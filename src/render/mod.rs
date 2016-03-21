@@ -100,7 +100,7 @@ init_shader! {
             offset => "offset",
             texture => "textures",
             light_level => "lightLevel",
-            sky_offset => "sky_offset",
+            sky_offset => "skyOffset",
         },
     }
 }

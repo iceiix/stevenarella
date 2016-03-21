@@ -142,6 +142,13 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                             continue;
                         }
 
+                        let (mut cr, mut cg, mut cb) = (255, 255, 255);
+                        if dir == Direction::West || dir == Direction::East {
+                            cr = ((cr as f64) * 0.8) as u8;
+                            cg = ((cg as f64) * 0.8) as u8;
+                            cb = ((cb as f64) * 0.8) as u8;
+                        }
+
                         let stone = render::Renderer::get_texture(&textures, rng.choose(&[
                             "minecraft:blocks/lava_flow",
                             "minecraft:blocks/stone",
@@ -152,9 +159,9 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                         for vert in dir.get_verts() {
                             let mut vert = vert.clone();
                             // TODO
-                            vert.r = 255;
-                            vert.g = 255;
-                            vert.b = 255;
+                            vert.r = cr;
+                            vert.g = cg;
+                            vert.b = cb;
 
                             vert.x += x as f32;
                             vert.y += y as f32;
@@ -163,9 +170,18 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                             vert.toffsetx *= stone.get_width() as i16 * 16;
                             vert.toffsety *= stone.get_height() as i16 * 16;
 
-                            // TODO
-                            vert.block_light = 15 * 4000;
-                            vert.sky_light = 15 * 4000;
+                            let (bl, sl) = calculate_light(
+                                &snapshot,
+                                x, y, z,
+                                vert.x as f64,
+                                vert.y as f64,
+                                vert.z as f64,
+                                dir,
+                                true,
+                                false
+                            );
+                            vert.block_light = bl;
+                            vert.sky_light = sl;
 
                             // TODO
                             vert.tatlas = stone.atlas as i16;
@@ -187,6 +203,53 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
             solid_count: solid_count,
         })).unwrap();
     }
+}
+
+fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z: i32,
+                    x: f64, y: f64, z: f64, face: Direction, smooth: bool, force: bool) -> (u16, u16) {
+    use std::cmp::max;
+    use world::block;
+    let (ox, oy, oz) = face.get_offset();
+    // TODO: Cull against check
+
+    let s_block_light = snapshot.get_block_light(orig_x + ox, orig_y + oy, orig_z + oz);
+    let s_sky_light = snapshot.get_sky_light(orig_x + ox, orig_y + oy, orig_z + oz);
+    if !smooth {
+        return ((s_block_light as u16) * 4000, (s_sky_light as u16) * 4000);
+    }
+
+    let mut block_light = 0u32;
+    let mut sky_light = 0u32;
+    let mut count = 0;
+
+    let s_block_light = max(((s_block_light as i8) - 8), 0) as u8;
+    let s_sky_light = max(((s_sky_light as i8) - 8), 0) as u8;
+
+    let dx = (ox as f64) * 0.6;
+    let dy = (oy as f64) * 0.6;
+    let dz = (oz as f64) * 0.6;
+
+    for ox in [-0.6, 0.0].into_iter() {
+        for oy in [-0.6, 0.0].into_iter() {
+            for oz in [-0.6, 0.0].into_iter() {
+                let lx = (x + ox + dx).round() as i32;
+                let ly = (y + oy + dy).round() as i32;
+                let lz = (z + oz + dz).round() as i32;
+                let mut bl = snapshot.get_block_light(lx, ly, lz);
+                let mut sl = snapshot.get_sky_light(lx, ly, lz);
+                if (force && !snapshot.get_block(lx, ly, lz).in_set(&*block::AIR))
+                    || (sl == 0 && bl == 0){
+                    bl = s_block_light;
+                    sl = s_sky_light;
+                }
+                block_light += bl as u32;
+                sky_light += sl as u32;
+                count += 1;
+            }
+        }
+    }
+
+    ((((block_light * 4000) / count) as u16), (((sky_light * 4000) / count) as u16))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
