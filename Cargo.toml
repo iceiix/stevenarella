@@ -4,7 +4,7 @@ version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 
 [dependencies]
-glutin = "0.4.9"
+glutin = {git = "https://github.com/Thinkofname/glutin", branch = "hide-cursor-state-x11"}
 byteorder = "0.5.0"
 hyper = "0.8.0"
 serde = "0.7.0"

@@ -244,6 +244,7 @@ fn handle_window_event(window: &glutin::Window,
             game.mouse_pos = (x, y);
             let (width, height) = window.get_inner_size_pixels().unwrap();
             if game.focused {
+                window.set_cursor_state(glutin::CursorState::Hide).unwrap();
                 window.set_cursor_position((width/2) as i32, (height/2) as i32).unwrap();
                 let s = 2000.0 + 0.01;
                 let (rx, ry) = ((x-(width/2) as i32) as f64 / s, (y-(height/2) as i32) as f64 / s);
@@ -265,6 +266,7 @@ fn handle_window_event(window: &glutin::Window,
 
             if game.server.is_connected() && !game.focused {
                 game.focused = true;
+                window.set_cursor_state(glutin::CursorState::Hide).unwrap();
                 window.set_cursor_position((width/2) as i32, (height/2) as i32).unwrap();
                 return;
             }
@@ -272,7 +274,7 @@ fn handle_window_event(window: &glutin::Window,
                 ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
             }
         }
-        Event::MouseWheel(delta) => {
+        Event::MouseWheel(delta, _) => {
             let (x, y) = match delta {
                 glutin::MouseScrollDelta::LineDelta(x, y) => (x, y),
                 glutin::MouseScrollDelta::PixelDelta(x, y) => (x, y),
@@ -282,6 +284,7 @@ fn handle_window_event(window: &glutin::Window,
         }
         Event::KeyboardInput(glutin::ElementState::Released, _, Some(VirtualKeyCode::Escape)) => {
             if game.focused {
+                window.set_cursor_state(glutin::CursorState::Normal).unwrap();
                 game.focused = false;
             }
         }
