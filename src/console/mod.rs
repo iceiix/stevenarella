@@ -24,6 +24,11 @@ use ui;
 use render;
 use format::{Component, TextComponent, Color};
 
+const FILTERED_CRATES: &'static [&'static str] = &[
+    "hyper",
+    "mime",
+];
+
 pub struct CVar<T: Sized + Any + 'static> {
     pub name: &'static str,
     pub ty: PhantomData<T>,
@@ -226,10 +231,17 @@ impl Console {
     }
 
     fn log(&mut self, record: &log::LogRecord) {
+        for filtered in FILTERED_CRATES {
+            if record.location().module_path().starts_with(filtered) {
+                return;
+            }
+        }
+
         let mut file = &record.location().file().replace("\\", "/")[..];
         if let Some(pos) = file.rfind("src/") {
             file = &file[pos + 4..];
         }
+
         println!("[{}:{}][{}] {}",
                  file,
                  record.location().line(),
