@@ -35,7 +35,11 @@ pub struct Server {
     console: Arc<Mutex<console::Console>>,
     version: usize,
 
-    position: cgmath::Vector3<f64>,
+    pub position: cgmath::Vector3<f64>,
+    pub yaw: f64,
+    pub pitch: f64,
+
+    tick_timer: f64,
 }
 
 macro_rules! handle_packet {
@@ -141,7 +145,12 @@ impl Server {
             resources: resources,
             console: console,
             version: version,
+
             position: cgmath::Vector3::zero(),
+            yaw: 0.0,
+            pitch: 0.0,
+
+            tick_timer: 0.0,
         })
     }
 
@@ -165,7 +174,12 @@ impl Server {
             version: version,
             resources: resources,
             console: console,
+
             position: cgmath::Vector3::new(0.5, 13.2, 0.5),
+            yaw: 0.0,
+            pitch: 0.0,
+
+            tick_timer: 0.0,
         }
     }
 
@@ -173,7 +187,7 @@ impl Server {
         self.conn.is_some()
     }
 
-    pub fn tick(&mut self, renderer: &mut render::Renderer, _delta: f64) {
+    pub fn tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
         let version = self.resources.read().unwrap().version();
         if version != self.version {
             self.version = version;
@@ -196,8 +210,30 @@ impl Server {
             self.read_queue = Some(rx);
         }
 
+        self.tick_timer += delta;
+        while self.tick_timer >= 3.0 && self.is_connected() {
+            self.minecraft_tick();
+            self.tick_timer -= 3.0;
+        }
+
         // Copy to camera
         renderer.camera.pos = cgmath::Point::from_vec(self.position + cgmath::Vector3::new(0.0, 1.8, 0.0));
+        renderer.camera.yaw = self.yaw;
+        renderer.camera.pitch = self.pitch;
+    }
+
+    pub fn minecraft_tick(&mut self) {
+
+        // Sync our position to the server
+        let packet = packet::play::serverbound::PlayerPositionLook {
+            x: self.position.x,
+            y: self.position.y,
+            z: self.position.z,
+            yaw: self.yaw as f32,
+            pitch: self.pitch as f32,
+            on_ground: false,
+        };
+        self.write_packet(packet);
     }
 
     pub fn write_packet<T: protocol::PacketType>(&mut self, p: T) {
@@ -215,6 +251,8 @@ impl Server {
         self.position.x = teleport.x;
         self.position.y = teleport.y;
         self.position.z = teleport.z;
+        self.yaw = teleport.yaw as f64;
+        self.pitch = teleport.pitch as f64;
 
         self.write_packet(packet::play::serverbound::PlayerPositionLook {
             x: teleport.x,

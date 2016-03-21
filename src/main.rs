@@ -75,6 +75,7 @@ pub struct Game {
     mouse_pos: (i32, i32),
 
     server: server::Server,
+    focused: bool,
     chunk_builder: chunk_builder::ChunkBuilder,
 
     connect_reply: Option<mpsc::Receiver<Result<server::Server, protocol::Error>>>,
@@ -94,9 +95,9 @@ impl Game {
 
     pub fn tick(&mut self, delta: f64) {
         if !self.server.is_connected() {
-            self.renderer.camera.yaw += 0.005 * delta;
-            if self.renderer.camera.yaw > ::std::f64::consts::PI * 2.0 {
-                self.renderer.camera.yaw = 0.0;
+            self.server.yaw += 0.005 * delta;
+            if self.server.yaw > ::std::f64::consts::PI * 2.0 {
+                self.server.yaw = 0.0;
             }
         }
         let mut clear_reply = false;
@@ -108,6 +109,7 @@ impl Game {
                         self.screen_sys.pop_screen();
                         self.renderer.clear_chunks();
                         self.chunk_builder.wait_for_builders();
+                        self.focused = true;
                         self.server = val;
                     },
                     Err(err) => {
@@ -186,6 +188,7 @@ fn main() {
     let textures = renderer.get_textures();
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone(), con.clone()),
+        focused: false,
         renderer: renderer,
         screen_sys: screen_sys,
         resource_manager: resource_manager,
@@ -233,20 +236,41 @@ fn handle_window_event(window: &glutin::Window,
                        ui_container: &mut ui::Container,
                        event: glutin::Event) {
     use glutin::{Event, VirtualKeyCode};
+    use std::f64::consts::PI;
     match event {
         Event::Closed => game.should_close = true,
 
         Event::MouseMoved((x, y)) => {
             game.mouse_pos = (x, y);
             let (width, height) = window.get_inner_size_pixels().unwrap();
-
-            ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);
+            if game.focused {
+                window.set_cursor_position((width/2) as i32, (height/2) as i32).unwrap();
+                let s = 2000.0 + 0.01;
+                let (rx, ry) = ((x-(width/2) as i32) as f64 / s, (y-(height/2) as i32) as f64 / s);
+                game.server.yaw -= rx;
+                game.server.pitch -= ry;
+                if game.server.pitch < (PI/2.0) + 0.01 {
+                    game.server.pitch = (PI/2.0) + 0.01;
+                }
+                if game.server.pitch > (PI/2.0)*3.0 - 0.01 {
+                    game.server.pitch = (PI/2.0)*3.0 - 0.01;
+                }
+            } else {
+                ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);
+            }
         }
         Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Left) => {
             let (x, y) = game.mouse_pos;
             let (width, height) = window.get_inner_size_pixels().unwrap();
 
-            ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
+            if game.server.is_connected() && !game.focused {
+                game.focused = true;
+                window.set_cursor_position((width/2) as i32, (height/2) as i32).unwrap();
+                return;
+            }
+            if !game.focused {
+                ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
+            }
         }
         Event::MouseWheel(delta) => {
             let (x, y) = match delta {
@@ -255,6 +279,11 @@ fn handle_window_event(window: &glutin::Window,
             };
 
             game.screen_sys.on_scroll(x as f64, y as f64);
+        }
+        Event::KeyboardInput(glutin::ElementState::Released, _, Some(VirtualKeyCode::Escape)) => {
+            if game.focused {
+                game.focused = false;
+            }
         }
         Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(VirtualKeyCode::Grave)) => {
             game.console.lock().unwrap().toggle();
