@@ -11,7 +11,7 @@ const NUM_WORKERS: usize = 8;
 
 pub struct ChunkBuilder {
     threads: Vec<(mpsc::Sender<BuildReq>, thread::JoinHandle<()>)>,
-    free_builders: Vec<usize>,
+    free_builders: Vec<(usize, Vec<u8>)>,
     built_recv: mpsc::Receiver<(usize, BuildReply)>,
 
     sections: Vec<(i32, i32, i32, Arc<world::SectionKey>)>,
@@ -29,7 +29,7 @@ impl ChunkBuilder {
             let textures = textures.clone();
             let id = i;
             threads.push((work_send, thread::spawn(move || build_func(id, textures, work_recv, built_send))));
-            free.push(i);
+            free.push((i, vec![]));
         }
         ChunkBuilder {
             threads: threads,
@@ -40,21 +40,15 @@ impl ChunkBuilder {
         }
     }
 
-    pub fn wait_for_builders(&mut self) {
-        while self.free_builders.len() != NUM_WORKERS {
-            let (id, _) = self.built_recv.recv().unwrap();
-            self.free_builders.push(id);
-        }
-    }
-
     pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer, delta: f64) {
         use std::cmp::Ordering;
-        while let Ok((id, val)) = self.built_recv.try_recv() {
+        while let Ok((id, mut val)) = self.built_recv.try_recv() {
             world.reset_building_flag(val.position);
 
             renderer.update_chunk_solid(val.position, val.key, &val.solid_buffer, val.solid_count);
 
-            self.free_builders.push(id);
+            val.solid_buffer.clear();
+            self.free_builders.push((id, val.solid_buffer));
         }
         if self.free_builders.is_empty() {
             return;
@@ -88,10 +82,11 @@ impl ChunkBuilder {
             let (cx, cy, cz) = (x << 4, y << 4, z << 4);
             let mut snapshot = world.capture_snapshot(cx - 2, cy - 2, cz - 2, 20, 20, 20);
             snapshot.make_relative(-2, -2, -2);
-            self.threads[t_id].0.send(BuildReq {
+            self.threads[t_id.0].0.send(BuildReq {
                 snapshot: snapshot,
                 position: (x, y, z),
                 key: key,
+                buffer: t_id.1,
             }).unwrap();
             if self.free_builders.is_empty() {
                 return;
@@ -104,6 +99,7 @@ struct BuildReq {
     snapshot: world::Snapshot,
     position: (i32, i32, i32),
     key: Arc<world::SectionKey>,
+    buffer: Vec<u8>,
 }
 
 struct BuildReply {
@@ -119,12 +115,13 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
             snapshot,
             position,
             key,
+            buffer,
         } = match work_recv.recv() {
             Ok(val) => val,
             Err(_) => return,
         };
 
-        let mut solid_buffer = vec![];
+        let mut solid_buffer = buffer;
         let mut solid_count = 0;
 
         for y in 0 .. 16 {

@@ -108,7 +108,6 @@ impl Game {
                 match server {
                     Ok(val) => {
                         self.screen_sys.pop_screen();
-                        self.chunk_builder.wait_for_builders();
                         self.focused = true;
                         self.server = val;
                     },
