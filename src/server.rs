@@ -12,24 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use protocol::{self, mojang};
+use protocol::{self, mojang, packet};
 use world;
 use world::block::{self, BlockSet};
 use rand::{self, Rng};
 use std::sync::{Arc, RwLock, Mutex};
+use std::sync::mpsc;
 use std::thread;
 use resources;
 use openssl;
 use console;
+use render;
 use auth;
+use cgmath::{self, Vector};
 
 pub struct Server {
     conn: Option<protocol::Conn>,
+    read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub world: world::World,
 
     resources: Arc<RwLock<resources::Manager>>,
     console: Arc<Mutex<console::Console>>,
     version: usize,
+
+    position: cgmath::Vector3<f64>,
+}
+
+macro_rules! handle_packet {
+    ($s:ident $pck:ident {
+        $($packet:ident => $func:ident,)*
+    }) => (
+        match $pck {
+        $(
+            protocol::packet::Packet::$packet(val) => $s.$func(val),
+        )*
+            _ => {},
+        }
+    )
 }
 
 impl Server {
@@ -100,13 +119,29 @@ impl Server {
            }
         }
 
+        let (tx, rx) = mpsc::channel();
+        thread::spawn(move || {
+            loop {
+                let pck = read.read_packet();
+                let was_error = pck.is_err();
+                if let Err(_) = tx.send(pck) {
+                    return;
+                }
+                if was_error {
+                    return;
+                }
+            }
+        });
+
         let version = resources.read().unwrap().version();
         Ok(Server {
             conn: Some(write),
+            read_queue: Some(rx),
             world: world::World::new(),
             resources: resources,
             console: console,
             version: version,
+            position: cgmath::Vector3::zero(),
         })
     }
 
@@ -124,11 +159,13 @@ impl Server {
         let version = resources.read().unwrap().version();
         Server {
             conn: None,
+            read_queue: None,
             world: world,
 
             version: version,
             resources: resources,
             console: console,
+            position: cgmath::Vector3::new(0.5, 13.2, 0.5),
         }
     }
 
@@ -136,11 +173,66 @@ impl Server {
         self.conn.is_some()
     }
 
-    pub fn tick(&mut self, delta: f64) {
+    pub fn tick(&mut self, renderer: &mut render::Renderer, _delta: f64) {
         let version = self.resources.read().unwrap().version();
         if version != self.version {
             self.version = version;
             self.world.flag_dirty_all();
         }
+
+        if let Some(rx) = self.read_queue.take() {
+            while let Ok(pck) = rx.try_recv() {
+                match pck {
+                    Ok(pck) => handle_packet!{
+                        self pck {
+                            KeepAliveClientbound => on_keep_alive,
+                            ChunkData => on_chunk_data,
+                            TeleportPlayer => on_teleport,
+                        }
+                    },
+                    Err(err) => panic!("Err: {:?}", err),
+                }
+            }
+            self.read_queue = Some(rx);
+        }
+
+        // Copy to camera
+        renderer.camera.pos = cgmath::Point::from_vec(self.position + cgmath::Vector3::new(0.0, 1.8, 0.0));
+    }
+
+    pub fn write_packet<T: protocol::PacketType>(&mut self, p: T) {
+        self.conn.as_mut().unwrap().write_packet(p).unwrap(); // TODO handle errors
+    }
+
+    pub fn on_keep_alive(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound) {
+        self.write_packet(packet::play::serverbound::KeepAliveServerbound {
+            id: keep_alive.id,
+        });
+    }
+
+    pub fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {
+        // TODO: relative teleports
+        self.position.x = teleport.x;
+        self.position.y = teleport.y;
+        self.position.z = teleport.z;
+
+        self.write_packet(packet::play::serverbound::PlayerPositionLook {
+            x: teleport.x,
+            y: teleport.y,
+            z: teleport.z,
+            yaw: teleport.yaw,
+            pitch: teleport.pitch,
+            on_ground: false,
+        });
+    }
+
+    pub fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
+        self.world.load_chunk(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            chunk_data.new,
+            chunk_data.bitmask.0 as u16,
+            chunk_data.data.data
+        ).unwrap();
     }
 }

@@ -111,6 +111,10 @@ impl BlockManager {
     fn get_block_by_steven_id(&self, id: usize) -> &'static Block {
         self.steven_id[id]
     }
+
+    fn get_block_by_vanilla_id(&self, id: usize) -> &'static Block {
+        self.vanilla_id.get(id).and_then(|v| *v).unwrap_or(MISSING.base())
+    }
 }
 
 pub fn force_init() {
@@ -119,6 +123,10 @@ pub fn force_init() {
 
 pub fn get_block_by_steven_id(id: usize) -> &'static Block {
     MANAGER.get_block_by_steven_id(id)
+}
+
+pub fn get_block_by_vanilla_id(id: usize) -> &'static Block {
+    MANAGER.get_block_by_vanilla_id(id)
 }
 
 define_blocks! {

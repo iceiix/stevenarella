@@ -18,6 +18,7 @@ use self::block::BlockSet;
 use std::collections::HashMap;
 use types::bit;
 use types::nibble;
+use protocol;
 
 pub struct World {
     chunks: HashMap<CPos, Chunk>,
@@ -147,6 +148,66 @@ impl World {
         }
 
         snapshot
+    }
+
+    pub fn load_chunk(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
+        use std::io::{Cursor, Read};
+        use byteorder::ReadBytesExt;
+        use protocol::{VarInt, Serializable, LenPrefixed};
+
+        let mut data = Cursor::new(data);
+
+        let cpos = CPos(x, z);
+        let chunk = if new {
+            self.chunks.insert(cpos, Chunk::new(cpos));
+            self.chunks.get_mut(&cpos).unwrap()
+        } else {
+            if !self.chunks.contains_key(&cpos) {
+                return Ok(());
+            }
+            self.chunks.get_mut(&cpos).unwrap()
+        };
+
+        for i in 0 .. 16 {
+            if mask & (1 << i) == 0 {
+                continue;
+            }
+            if chunk.sections[i].is_none() {
+                chunk.sections[i] = Some(Section::new(i as u8));
+            }
+            let section = chunk.sections[i as usize].as_mut().unwrap();
+
+            let bit_size = try!(data.read_u8());
+            let mut block_map = HashMap::new();
+            if bit_size <= 8 {
+                let count = try!(VarInt::read_from(&mut data)).0;
+                for i in 0 .. count {
+                    let id = try!(VarInt::read_from(&mut data)).0;
+                    block_map.insert(i as usize, id);
+                }
+            }
+
+            let bits = try!(LenPrefixed::<VarInt, u64>::read_from(&mut data)).data;
+            let m = bit::Map::from_raw(bits, bit_size as usize);
+
+            for i in 0 .. 4096 {
+                let val = m.get(i);
+                let block_id = block_map.get(&val).map(|v| *v as usize).unwrap_or(val);
+                let block = block::get_block_by_vanilla_id(block_id);
+                let i = i as i32;
+                section.set_block(
+                    i & 0xF,
+                    i >> 8,
+                    (i >> 4) & 0xF,
+                    block
+                );
+            }
+
+            try!(data.read_exact(&mut section.block_light.data));
+            try!(data.read_exact(&mut section.sky_light.data));
+        }
+
+        Ok(())
     }
 }
 

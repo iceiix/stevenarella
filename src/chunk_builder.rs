@@ -35,6 +35,13 @@ impl ChunkBuilder {
         }
     }
 
+    pub fn wait_for_builders(&mut self) {
+        while self.free_builders.len() != NUM_WORKERS {
+            let (id, _) = self.built_recv.recv().unwrap();
+            self.free_builders.push(id);
+        }
+    }
+
     pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
         while let Ok((id, val)) = self.built_recv.try_recv() {
             world.reset_building_flag(val.position);

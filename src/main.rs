@@ -107,6 +107,7 @@ impl Game {
                     Ok(val) => {
                         self.screen_sys.pop_screen();
                         self.renderer.clear_chunks();
+                        self.chunk_builder.wait_for_builders();
                         self.server = val;
                     },
                     Err(err) => {
@@ -194,9 +195,6 @@ fn main() {
         chunk_builder: chunk_builder::ChunkBuilder::new(textures),
         connect_reply: None,
     };
-    game.renderer.camera.pos.x = 0.5;
-    game.renderer.camera.pos.z = 0.5;
-    game.renderer.camera.pos.y = 15.0;
 
     while !game.should_close {
         {
@@ -210,7 +208,7 @@ fn main() {
         let (width, height) = window.get_inner_size_pixels().unwrap();
 
         game.tick(delta);
-        game.server.tick(delta);
+        game.server.tick(&mut game.renderer, delta);
 
         game.chunk_builder.tick(&mut game.server.world, &mut game.renderer);
 
