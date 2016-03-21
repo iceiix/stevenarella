@@ -7,7 +7,7 @@ use byteorder::{WriteBytesExt, NativeEndian};
 use world;
 use render;
 
-const NUM_WORKERS: usize = 4;
+const NUM_WORKERS: usize = 8;
 
 pub struct ChunkBuilder {
     threads: Vec<(mpsc::Sender<BuildReq>, thread::JoinHandle<()>)>,
