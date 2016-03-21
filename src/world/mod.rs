@@ -43,7 +43,7 @@ impl World {
     pub fn get_block(&self, x: i32, y: i32, z: i32) -> &'static block::Block {
         match self.chunks.get(&CPos(x >> 4, z >> 4)) {
             Some(ref chunk) => chunk.get_block(x & 0xF, y, z & 0xF),
-            None => block::AIR.base(),
+            None => block::MISSING.base(),
         }
     }
 
@@ -158,56 +158,81 @@ impl World {
         let mut data = Cursor::new(data);
 
         let cpos = CPos(x, z);
-        let chunk = if new {
-            self.chunks.insert(cpos, Chunk::new(cpos));
-            self.chunks.get_mut(&cpos).unwrap()
-        } else {
-            if !self.chunks.contains_key(&cpos) {
-                return Ok(());
-            }
-            self.chunks.get_mut(&cpos).unwrap()
-        };
+        {
+            let chunk = if new {
+                self.chunks.insert(cpos, Chunk::new(cpos));
+                self.chunks.get_mut(&cpos).unwrap()
+            } else {
+                if !self.chunks.contains_key(&cpos) {
+                    return Ok(());
+                }
+                self.chunks.get_mut(&cpos).unwrap()
+            };
 
+            for i in 0 .. 16 {
+                if mask & (1 << i) == 0 {
+                    continue;
+                }
+                if chunk.sections[i].is_none() {
+                    chunk.sections[i] = Some(Section::new(i as u8));
+                }
+                let section = chunk.sections[i as usize].as_mut().unwrap();
+                section.dirty = true;
+
+                let bit_size = try!(data.read_u8());
+                let mut block_map = HashMap::new();
+                if bit_size <= 8 {
+                    let count = try!(VarInt::read_from(&mut data)).0;
+                    for i in 0 .. count {
+                        let id = try!(VarInt::read_from(&mut data)).0;
+                        block_map.insert(i as usize, id);
+                    }
+                }
+
+                let bits = try!(LenPrefixed::<VarInt, u64>::read_from(&mut data)).data;
+                let m = bit::Map::from_raw(bits, bit_size as usize);
+
+                for i in 0 .. 4096 {
+                    let val = m.get(i);
+                    let block_id = block_map.get(&val).map(|v| *v as usize).unwrap_or(val);
+                    let block = block::get_block_by_vanilla_id(block_id);
+                    let i = i as i32;
+                    section.set_block(
+                        i & 0xF,
+                        i >> 8,
+                        (i >> 4) & 0xF,
+                        block
+                    );
+                }
+
+                try!(data.read_exact(&mut section.block_light.data));
+                try!(data.read_exact(&mut section.sky_light.data));
+            }
+        }
         for i in 0 .. 16 {
             if mask & (1 << i) == 0 {
                 continue;
             }
-            if chunk.sections[i].is_none() {
-                chunk.sections[i] = Some(Section::new(i as u8));
+            for pos in [
+                (-1, 0, 0), (1, 0, 0),
+                (0, -1, 0), (0, 1, 0),
+                (0, 0, -1), (0, 0, 1)].into_iter() {
+                self.flag_section_dirty(x + pos.0, i as i32 + pos.1, z + pos.2);
             }
-            let section = chunk.sections[i as usize].as_mut().unwrap();
-
-            let bit_size = try!(data.read_u8());
-            let mut block_map = HashMap::new();
-            if bit_size <= 8 {
-                let count = try!(VarInt::read_from(&mut data)).0;
-                for i in 0 .. count {
-                    let id = try!(VarInt::read_from(&mut data)).0;
-                    block_map.insert(i as usize, id);
-                }
-            }
-
-            let bits = try!(LenPrefixed::<VarInt, u64>::read_from(&mut data)).data;
-            let m = bit::Map::from_raw(bits, bit_size as usize);
-
-            for i in 0 .. 4096 {
-                let val = m.get(i);
-                let block_id = block_map.get(&val).map(|v| *v as usize).unwrap_or(val);
-                let block = block::get_block_by_vanilla_id(block_id);
-                let i = i as i32;
-                section.set_block(
-                    i & 0xF,
-                    i >> 8,
-                    (i >> 4) & 0xF,
-                    block
-                );
-            }
-
-            try!(data.read_exact(&mut section.block_light.data));
-            try!(data.read_exact(&mut section.sky_light.data));
         }
-
         Ok(())
+    }
+
+    fn flag_section_dirty(&mut self, x: i32, y: i32, z: i32) {
+        if y < 0 || y > 15 {
+            return;
+        }
+        let cpos = CPos(x, z);
+        if let Some(chunk) = self.chunks.get_mut(&cpos) {
+            if let Some(sec) = chunk.sections[y as usize].as_mut() {
+                sec.dirty = true;
+            }
+        }
     }
 }
 
@@ -308,7 +333,7 @@ impl Chunk {
     fn get_block(&self, x: i32, y: i32, z: i32) -> &'static block::Block {
         let s_idx = y >> 4;
         if s_idx < 0 || s_idx > 15 {
-            return block::AIR.base();
+            return block::MISSING.base();
         }
         match self.sections[s_idx as usize].as_ref() {
             Some(sec) => sec.get_block(x, y & 0xF, z),

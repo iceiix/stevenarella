@@ -104,7 +104,14 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                         continue;
                     }
 
-                    for verts in &PRECOMPUTED_VERTS {
+                    for dir in Direction::all() {
+
+                        let offset = dir.get_offset();
+                        let other = snapshot.get_block(x + offset.0, y + offset.1, z + offset.2);
+                        if other.renderable() {
+                            continue;
+                        }
+
                         let stone = render::Renderer::get_texture(&textures, rng.choose(&[
                             "minecraft:blocks/lava_flow",
                             "minecraft:blocks/stone",
@@ -112,7 +119,7 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                             "minecraft:blocks/sand",
                         ]).unwrap());
                         solid_count += 6;
-                        for vert in verts {
+                        for vert in dir.get_verts() {
                             let mut vert = vert.clone();
                             // TODO
                             vert.r = 255;
@@ -152,38 +159,80 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
     }
 }
 
-const PRECOMPUTED_VERTS: [[BlockVertex; 4]; 6] = [
-    [ // Up
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Direction {
+    Up,
+    Down,
+    North,
+    South,
+    West,
+    East,
+}
+
+impl Direction {
+    pub fn all() -> Vec<Direction> {
+        vec![
+            Direction::Up, Direction::Down,
+            Direction::North, Direction::South,
+            Direction::West, Direction::East,
+        ]
+    }
+
+    pub fn get_verts(&self) -> &'static [BlockVertex; 4] {
+        match *self {
+            Direction::Up => PRECOMPUTED_VERTS[0],
+            Direction::Down => PRECOMPUTED_VERTS[1],
+            Direction::North => PRECOMPUTED_VERTS[2],
+            Direction::South => PRECOMPUTED_VERTS[3],
+            Direction::West => PRECOMPUTED_VERTS[4],
+            Direction::East => PRECOMPUTED_VERTS[5],
+        }
+    }
+
+    pub fn get_offset(&self) -> (i32, i32, i32) {
+        match *self {
+            Direction::Up => (0, 1, 0),
+            Direction::Down => (0, -1, 0),
+            Direction::North => (0, 0, -1),
+            Direction::South => (0, 0, 1),
+            Direction::West => (-1, 0, 0),
+            Direction::East => (1, 0, 0),
+        }
+    }
+}
+
+const PRECOMPUTED_VERTS: [&'static [BlockVertex; 4]; 6] = [
+    &[ // Up
         BlockVertex::base(0.0, 1.0, 0.0, 0, 0),
         BlockVertex::base(1.0, 1.0, 0.0, 1, 0),
         BlockVertex::base(0.0, 1.0, 1.0, 0, 1),
         BlockVertex::base(1.0, 1.0, 1.0, 1, 1),
     ],
-    [ // Down
+    &[ // Down
         BlockVertex::base(0.0, 0.0, 0.0, 0, 1),
         BlockVertex::base(0.0, 0.0, 1.0, 0, 0),
         BlockVertex::base(1.0, 0.0, 0.0, 1, 1),
         BlockVertex::base(1.0, 0.0, 1.0, 1, 0),
     ],
-    [ // North
+    &[ // North
         BlockVertex::base(0.0, 0.0, 0.0, 1, 1),
         BlockVertex::base(1.0, 0.0, 0.0, 0, 1),
         BlockVertex::base(0.0, 1.0, 0.0, 1, 0),
         BlockVertex::base(1.0, 1.0, 0.0, 0, 0),
     ],
-    [ // South
+    &[ // South
         BlockVertex::base(0.0, 0.0, 1.0, 0, 1),
         BlockVertex::base(0.0, 1.0, 1.0, 0, 0),
         BlockVertex::base(1.0, 0.0, 1.0, 1, 1),
         BlockVertex::base(1.0, 1.0, 1.0, 1, 0),
     ],
-    [ // West
+    &[ // West
         BlockVertex::base(0.0, 0.0, 0.0, 0, 1),
         BlockVertex::base(0.0, 1.0, 0.0, 0, 0),
         BlockVertex::base(0.0, 0.0, 1.0, 1, 1),
         BlockVertex::base(0.0, 1.0, 1.0, 1, 0),
     ],
-    [ // East
+    &[ // East
         BlockVertex::base(1.0, 0.0, 0.0, 1, 1),
         BlockVertex::base(1.0, 0.0, 1.0, 0, 1),
         BlockVertex::base(1.0, 1.0, 0.0, 1, 0),
