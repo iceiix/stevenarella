@@ -17,6 +17,7 @@ use world;
 use world::block::{self, BlockSet};
 use rand::{self, Rng};
 use std::sync::{Arc, RwLock, Mutex};
+use std::thread;
 use resources;
 use openssl;
 use console;
@@ -131,7 +132,11 @@ impl Server {
         }
     }
 
-    pub fn tick(&mut self) {
+    pub fn is_connected(&self) -> bool {
+        self.conn.is_some()
+    }
+
+    pub fn tick(&mut self, delta: f64) {
         let version = self.resources.read().unwrap().version();
         if version != self.version {
             self.version = version;

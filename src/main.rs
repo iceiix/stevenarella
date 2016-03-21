@@ -92,7 +92,13 @@ impl Game {
         });
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self, delta: f64) {
+        if !self.server.is_connected() {
+            self.renderer.camera.yaw += 0.005 * delta;
+            if self.renderer.camera.yaw > ::std::f64::consts::PI * 2.0 {
+                self.renderer.camera.yaw = 0.0;
+            }
+        }
         let mut clear_reply = false;
         if let Some(ref recv) = self.connect_reply {
             if let Ok(server) = recv.try_recv() {
@@ -188,6 +194,9 @@ fn main() {
         chunk_builder: chunk_builder::ChunkBuilder::new(textures),
         connect_reply: None,
     };
+    game.renderer.camera.pos.x = 0.5;
+    game.renderer.camera.pos.z = 0.5;
+    game.renderer.camera.pos.y = 15.0;
 
     while !game.should_close {
         {
@@ -200,17 +209,8 @@ fn main() {
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
         let (width, height) = window.get_inner_size_pixels().unwrap();
 
-        // TODO: TEMP
-        game.renderer.camera.pos.x = 0.5;
-        game.renderer.camera.pos.z = 0.5;
-        game.renderer.camera.pos.y = 15.0;
-        game.renderer.camera.yaw += 0.005 * delta;
-        if game.renderer.camera.yaw > ::std::f64::consts::PI * 2.0 {
-            game.renderer.camera.yaw = 0.0;
-        }
-
-        game.tick();
-        game.server.tick();
+        game.tick(delta);
+        game.server.tick(delta);
 
         game.chunk_builder.tick(&mut game.server.world, &mut game.renderer);
 
