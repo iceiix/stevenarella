@@ -536,6 +536,9 @@ impl Container {
     }
 
     pub fn cycle_focus(&mut self) {
+        if self.elements_list.is_empty() {
+            return;
+        }
         // Find the last focused element
         let i = self.elements_list.iter()
             .map(|v| self.elements.get(v).unwrap())

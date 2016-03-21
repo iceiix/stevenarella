@@ -362,7 +362,7 @@ pub struct LenPrefixed<L: Lengthable, V> {
 }
 
 impl <L: Lengthable, V: Default>  LenPrefixed<L, V> {
-    fn new(data: Vec<V>) -> LenPrefixed<L, V> {
+    pub fn new(data: Vec<V>) -> LenPrefixed<L, V> {
         LenPrefixed {
             len: Default::default(),
             data: data,
@@ -418,7 +418,7 @@ pub struct LenPrefixedBytes<L: Lengthable> {
 }
 
 impl <L: Lengthable>  LenPrefixedBytes<L> {
-    fn new(data: Vec<u8>) -> LenPrefixedBytes<L> {
+    pub fn new(data: Vec<u8>) -> LenPrefixedBytes<L> {
         LenPrefixedBytes {
             len: Default::default(),
             data: data,

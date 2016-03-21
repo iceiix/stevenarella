@@ -100,8 +100,7 @@ impl Profile {
         Ok(self)
     }
 
-    // TODO
-    pub fn join_server(&self, server_id: &str, shared_key: &Vec<u8>, public_key: &Vec<u8>) {
+    pub fn join_server(&self, server_id: &str, shared_key: &Vec<u8>, public_key: &Vec<u8>) -> Result<(), super::Error> {
         let mut sha1 = openssl::SHA1::new();
         sha1.update(server_id.as_bytes());
         sha1.update(&shared_key[..]);
@@ -130,17 +129,16 @@ impl Profile {
         let join = serde_json::to_string(&join_msg).unwrap();
 
         let client = hyper::Client::new();
-        let res = client.post(JOIN_URL)
+        let res = try!(client.post(JOIN_URL)
                         .body(&join)
                         .header(hyper::header::ContentType("application/json".parse().unwrap()))
-                        .send()
-                        .unwrap();
+                        .send());
 
-        let ret: serde_json::Value = match serde_json::from_reader(res) {
-            Result::Ok(val) => val,
-            Result::Err(_) => return,
-        };
-        panic!("{:?}", ret);
+        if res.status == hyper::status::StatusCode::NoContent {
+            Ok(())
+        } else {
+            Err(super::Error::Err("Failed to auth with server".to_owned()))
+        }
     }
 
     pub fn is_complete(&self) -> bool {

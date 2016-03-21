@@ -86,8 +86,9 @@ impl Game {
         self.connect_reply = Some(rx);
         let address = address.to_owned();
         let resources = self.resource_manager.clone();
+        let console = self.console.clone();
         thread::spawn(move || {
-            tx.send(server::Server::connect(resources, &address)).unwrap();
+            tx.send(server::Server::connect(resources, console, &address)).unwrap();
         });
     }
 
@@ -99,6 +100,7 @@ impl Game {
                 match server {
                     Ok(val) => {
                         self.screen_sys.pop_screen();
+                        self.renderer.clear_chunks();
                         self.server = val;
                     },
                     Err(err) => {
@@ -176,7 +178,7 @@ fn main() {
 
     let textures = renderer.get_textures();
     let mut game = Game {
-        server: server::Server::dummy_server(resource_manager.clone()),
+        server: server::Server::dummy_server(resource_manager.clone(), con.clone()),
         renderer: renderer,
         screen_sys: screen_sys,
         resource_manager: resource_manager,

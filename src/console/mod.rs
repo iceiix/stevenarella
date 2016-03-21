@@ -74,6 +74,8 @@ pub struct Console {
     position: f64,
 }
 
+unsafe impl Send for Console {}
+
 impl Console {
     pub fn new() -> Console {
         Console {
