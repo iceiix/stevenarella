@@ -99,6 +99,7 @@ pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
         panic!("Shader error: {}", v.get_info_log());
     } else {
         let log = v.get_info_log();
+        let log = log.trim().trim_matches('\u{0}');
         if !log.is_empty() {
             println!("{}", log);
         }
@@ -113,6 +114,7 @@ pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
         panic!("Shader error: {}", f.get_info_log());
     } else {
         let log = f.get_info_log();
+        let log = log.trim().trim_matches('\u{0}');
         if !log.is_empty() {
             println!("{}", log);
         }
