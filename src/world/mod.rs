@@ -47,19 +47,27 @@ impl World {
         }
     }
 
-    pub fn next_dirty_chunk_section(&mut self) -> Option<(i32, i32, i32)> {
+    pub fn get_dirty_chunk_sections(&mut self) -> Vec<(i32, i32, i32)> {
+        let mut out = vec![];
         for (_, chunk) in &mut self.chunks {
             for sec in &mut chunk.sections {
                 if let Some(sec) = sec.as_mut() {
                     if !sec.building && sec.dirty {
-                        sec.building = true;
-                        sec.dirty = false;
-                        return Some((chunk.position.0, sec.y as i32, chunk.position.1));
+                        out.push((chunk.position.0, sec.y as i32, chunk.position.1));
                     }
                 }
             }
         }
-        None
+        out
+    }
+
+    pub fn set_building_flag(&mut self, pos: (i32, i32, i32)) {
+        if let Some(chunk) = self.chunks.get_mut(&CPos(pos.0, pos.2)) {
+            if let Some(sec) = chunk.sections[pos.1 as usize].as_mut() {
+                sec.building = true;
+                sec.dirty = false;
+            }
+        }
     }
 
     pub fn reset_building_flag(&mut self, pos: (i32, i32, i32)) {

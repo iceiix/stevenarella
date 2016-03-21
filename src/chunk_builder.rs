@@ -13,6 +13,9 @@ pub struct ChunkBuilder {
     threads: Vec<(mpsc::Sender<BuildReq>, thread::JoinHandle<()>)>,
     free_builders: Vec<usize>,
     built_recv: mpsc::Receiver<(usize, BuildReply)>,
+
+    sections: Vec<(i32, i32, i32)>,
+    next_collection: f64,
 }
 
 impl ChunkBuilder {
@@ -32,6 +35,8 @@ impl ChunkBuilder {
             threads: threads,
             free_builders: free,
             built_recv: built_recv,
+            sections: vec![],
+            next_collection: 0.0,
         }
     }
 
@@ -42,7 +47,8 @@ impl ChunkBuilder {
         }
     }
 
-    pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
+    pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer, delta: f64) {
+        use std::cmp::Ordering;
         while let Ok((id, val)) = self.built_recv.try_recv() {
             world.reset_building_flag(val.position);
 
@@ -53,8 +59,32 @@ impl ChunkBuilder {
         if self.free_builders.is_empty() {
             return;
         }
-        while let Some((x, y, z)) = world.next_dirty_chunk_section() {
+        self.next_collection -= delta;
+        if self.next_collection <= 0.0 {
+            let mut sections = world.get_dirty_chunk_sections();
+            sections.sort_by(|a, b| {
+                let xx = ((a.0<<4)+8) as f64 - renderer.camera.pos.x;
+                let yy = ((a.1<<4)+8) as f64 - renderer.camera.pos.y;
+                let zz = ((a.2<<4)+8) as f64 - renderer.camera.pos.z;
+                let a_dist = xx*xx + yy*yy + zz*zz;
+                let xx = ((b.0<<4)+8) as f64 - renderer.camera.pos.x;
+                let yy = ((b.1<<4)+8) as f64 - renderer.camera.pos.y;
+                let zz = ((b.2<<4)+8) as f64 - renderer.camera.pos.z;
+                let b_dist = xx*xx + yy*yy + zz*zz;
+                if a_dist == b_dist {
+                    Ordering::Equal
+                } else if a_dist > b_dist {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
+            });
+            self.sections = sections;
+            self.next_collection = 60.0;
+        }
+        while let Some((x, y, z)) = self.sections.pop() {
             let t_id = self.free_builders.pop().unwrap();
+            world.set_building_flag((x, y, z));
             let (cx, cy, cz) = (x << 4, y << 4, z << 4);
             let mut snapshot = world.capture_snapshot(cx - 2, cy - 2, cz - 2, 20, 20, 20);
             snapshot.make_relative(-2, -2, -2);

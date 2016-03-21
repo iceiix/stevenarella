@@ -210,7 +210,7 @@ fn main() {
         game.tick(delta);
         game.server.tick(&mut game.renderer, delta);
 
-        game.chunk_builder.tick(&mut game.server.world, &mut game.renderer);
+        game.chunk_builder.tick(&mut game.server.world, &mut game.renderer, delta);
 
         game.screen_sys.tick(delta, &mut game.renderer, &mut ui_container);
         game.console
