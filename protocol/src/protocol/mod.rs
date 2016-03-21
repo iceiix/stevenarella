@@ -309,6 +309,16 @@ impl Serializable for u16 {
     }
 }
 
+impl Serializable for u64 {
+    fn read_from(buf: &mut io::Read) -> Result<u64, io::Error> {
+        Result::Ok(try!(buf.read_u64::<BigEndian>()))
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        try!(buf.write_u64::<BigEndian>(*self));
+        Result::Ok(())
+    }
+}
+
 impl Serializable for f32 {
     fn read_from(buf: &mut io::Read) -> Result<f32, io::Error> {
         Result::Ok(try!(buf.read_f32::<BigEndian>()))
