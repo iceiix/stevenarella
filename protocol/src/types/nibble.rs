@@ -14,7 +14,7 @@
 
 
 pub struct Array {
-    data: Vec<u8>,
+    pub data: Vec<u8>,
 }
 
 impl Array {

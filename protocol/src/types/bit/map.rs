@@ -59,6 +59,13 @@ impl Map {
         }
         map
     }
+    pub fn from_raw(bits: Vec<u64>, size: usize) -> Map {
+        Map {
+            length: (bits.len()*64 + 63) / size,
+            bit_size: size,
+            bits: bits,
+        }
+    }
 
     pub fn resize(&self, size: usize) -> Map {
         let mut n = Map::new(self.length, size);
