@@ -77,7 +77,6 @@ impl Profile {
                         .send());
 
         if res.status != hyper::status::StatusCode::NoContent {
-            println!("Rerefeshing");
             // Refresh needed
             let res = try!(client.post(REFRESH_URL)
                             .body(&req)
@@ -98,7 +97,6 @@ impl Profile {
                 access_token: ret.find("accessToken").and_then(|v| v.as_string()).unwrap().to_owned(),
             });
         }
-        println!("Reuse");
         Ok(self)
     }
 
