@@ -229,7 +229,7 @@ impl Renderer {
             self.perspective_matrix = cgmath::Matrix4::from(
                 cgmath::PerspectiveFov {
                     fovy: cgmath::Rad::from(cgmath::Deg{s: 90f32}),
-                    aspect: (width / height) as f32,
+                    aspect: (width as f32 / height as f32),
                     near: 0.1f32,
                     far: 500.0f32,
                 }
