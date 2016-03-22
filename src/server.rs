@@ -64,6 +64,15 @@ impl Server {
     pub fn connect(resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>, address: &str) -> Result<Server, protocol::Error> {
         let mut conn = try!(protocol::Conn::new(address));
 
+        let profile = {
+            let console = console.lock().unwrap();
+            mojang::Profile {
+                username: console.get(auth::CL_USERNAME).clone(),
+                id: console.get(auth::CL_UUID).clone(),
+                access_token: console.get(auth::AUTH_TOKEN).clone(),
+            }
+        };
+
         let host = conn.host.clone();
         let port = conn.port;
         try!(conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
@@ -74,7 +83,7 @@ impl Server {
          }));
         conn.state = protocol::State::Login;
         try!(conn.write_packet(protocol::packet::login::serverbound::LoginStart {
-            username: "Thinkofdeath".to_owned()
+            username: profile.username.clone(),
         }));
 
         let packet = match try!(conn.read_packet()) {
@@ -89,14 +98,6 @@ impl Server {
         let shared_e = key.encrypt(&shared);
         let token_e = key.encrypt(&packet.verify_token.data);
 
-        let profile = {
-            let console = console.lock().unwrap();
-            mojang::Profile {
-                username: console.get(auth::CL_USERNAME).clone(),
-                id: console.get(auth::CL_UUID).clone(),
-                access_token: console.get(auth::AUTH_TOKEN).clone(),
-            }
-        };
         try!(profile.join_server(&packet.server_id, &shared, &packet.public_key.data));
 
         try!(conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse {
