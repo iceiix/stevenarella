@@ -31,6 +31,7 @@ extern crate cgmath;
 extern crate log;
 #[macro_use]
 extern crate lazy_static;
+extern crate collision;
 
 #[macro_use]
 pub mod macros;

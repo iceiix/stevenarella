@@ -4,6 +4,7 @@ version = "0.0.1"
 dependencies = [
  "byteorder 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cgmath 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "collision 0.5.1 (git+https://github.com/csherratt/collision-rs?rev=f80825e)",
  "flate2 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "glutin 0.4.9 (git+https://github.com/Thinkofname/glutin?branch=hide-cursor-state-x11)",
  "hyper 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -92,6 +93,15 @@ dependencies = [
  "core-graphics 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "objc 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "collision"
+version = "0.5.1"
+source = "git+https://github.com/csherratt/collision-rs?rev=f80825e#f80825eca687ff1053ff492e54fa782944c9cf6b"
+dependencies = [
+ "cgmath 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num 0.1.31 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

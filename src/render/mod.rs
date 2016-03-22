@@ -29,6 +29,7 @@ use byteorder::{WriteBytesExt, NativeEndian};
 use serde_json;
 use cgmath::{self, Vector, Point};
 use world;
+use collision;
 
 const ATLAS_SIZE: usize = 1024;
 
@@ -287,11 +288,17 @@ impl Renderer {
         self.chunk_shader.light_level.set_float(LIGHT_LEVEL);
         self.chunk_shader.sky_offset.set_float(SKY_OFFSET);
 
+        let frustum = collision::Frustum::from_matrix4(self.perspective_matrix * camera_matrix).unwrap();
+
         for (pos, info) in &self.chunks {
             if let Some(solid) = info.solid.as_ref() {
-                self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
-                solid.array.bind();
-                gl::draw_elements(gl::TRIANGLES, solid.count, self.element_buffer_type, 0);
+                let min = cgmath::Point3::new(pos.0 as f32 * 16.0, -pos.1 as f32 * 16.0, pos.2 as f32 * 16.0);
+                let bounds = collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
+                if frustum.contains(bounds) != collision::Relation::Out {
+                    self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
+                    solid.array.bind();
+                    gl::draw_elements(gl::TRIANGLES, solid.count, self.element_buffer_type, 0);
+                }
             }
         }
 
