@@ -115,7 +115,7 @@ impl Manager {
         let (send, recv) = mpsc::channel();
         self.vanilla_chan = Some(recv);
 
-        println!("Vanilla assets missing, obtaining");
+        info!("Vanilla assets missing, obtaining");
         thread::spawn(move || {
             let client = hyper::Client::new();
             let url = format!("https://s3.amazonaws.com/Minecraft.Download/versions/{0}/{0}.jar",
@@ -152,7 +152,7 @@ impl Manager {
             }
 
             fs::File::create(location.join("steven.assets")).unwrap(); // Marker file
-            println!("Done");
+            info!("Done");
             send.send(true).unwrap();
 
             fs::remove_file(format!("{}.tmp", RESOURCES_VERSION)).unwrap();
@@ -194,7 +194,7 @@ impl <T: io::Read> io::Read for ProgressRead<T> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let size = try!(self.read.read(buf));
         self.progress += size as u64;
-        println!("Progress: {:.2}",
+        trace!("Progress: {:.2}",
                  (self.progress as f64) / (self.total as f64));
         Ok(size)
     }

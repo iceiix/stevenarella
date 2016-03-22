@@ -990,7 +990,7 @@ pub struct Texture {
     y: usize,
     width: usize,
     height: usize,
-    is_rel: bool, // Save some cycles for none relative textures
+    is_rel: bool, // Save some cycles for non-relative textures
     rel_x: f32,
     rel_y: f32,
     rel_width: f32,
