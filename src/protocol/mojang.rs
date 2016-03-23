@@ -109,11 +109,11 @@ impl Profile {
 
         // Mojang uses a hex method which allows for
         // negatives so we have to account for that.
-        let negative = hash[0] & 0x80 == 0x80;
+        let negative = (hash[0] & 0x80) == 0x80;
         if negative {
             twos_compliment(&mut hash);
         }
-        let hash_str = hash.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join("");
+        let hash_str = hash.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join("");
         let hash_val = hash_str.trim_matches('0');
         let hash_str = if negative {
             "-".to_owned() + &hash_val[..]
@@ -152,7 +152,7 @@ fn twos_compliment(data: &mut Vec<u8>) {
         data[i] = !data[i];
         if carry {
             carry = data[i] == 0xFF;
-            data[i].wrapping_add(1);
+            data[i] = data[i].wrapping_add(1);
         }
     }
 }
