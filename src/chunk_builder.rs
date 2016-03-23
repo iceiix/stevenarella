@@ -147,7 +147,7 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                             cb = ((cb as f64) * 0.8) as u8;
                         }
 
-                        let stone = render::Renderer::get_texture(&textures, "minecraft:blocks/stone");
+                        let stone = render::Renderer::get_texture(&textures, &format!("minecraft:blocks/{}", "dirt"));
                         solid_count += 6;
                         for vert in dir.get_verts() {
                             let mut vert = vert.clone();

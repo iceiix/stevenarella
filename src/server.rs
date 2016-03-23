@@ -105,7 +105,7 @@ impl Server {
             verify_token: protocol::LenPrefixedBytes::new(token_e),
         }));
 
-        let mut read = conn.clone(); // TODO
+        let mut read = conn.clone();
         let mut write = conn.clone();
 
         read.enable_encyption(&shared, true);
