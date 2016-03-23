@@ -14,7 +14,7 @@
 
 use protocol::{self, mojang, packet};
 use world;
-use world::block::{self, BlockSet};
+use world::block;
 use rand::{self, Rng};
 use std::sync::{Arc, RwLock, Mutex};
 use std::sync::mpsc;
@@ -168,7 +168,7 @@ impl Server {
             for z in -7*16 .. 7*16 {
                 let h = rng.gen_range(3, 10);
                 for y in 0 .. h {
-                    world.set_block(x, y, z, block::MISSING.base());
+                    world.set_block(x, y, z, block::Dirt{});
                 }
             }
         }

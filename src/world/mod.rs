@@ -13,7 +13,6 @@
 // limitations under the License.
 
 pub mod block;
-use self::block::BlockSet;
 
 use std::sync::Arc;
 use std::collections::HashMap;
@@ -37,7 +36,7 @@ impl World {
         self.chunks.contains_key(&CPos(x, z))
     }
 
-    pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: &'static block::Block) {
+    pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
         let cpos = CPos(x >> 4, z >> 4);
         if !self.chunks.contains_key(&cpos) {
             self.chunks.insert(cpos, Chunk::new(cpos));
@@ -46,10 +45,10 @@ impl World {
         chunk.set_block(x & 0xF, y, z & 0xF, b);
     }
 
-    pub fn get_block(&self, x: i32, y: i32, z: i32) -> &'static block::Block {
+    pub fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
         match self.chunks.get(&CPos(x >> 4, z >> 4)) {
             Some(ref chunk) => chunk.get_block(x & 0xF, y, z & 0xF),
-            None => block::MISSING.base(),
+            None => block::Missing{},
         }
     }
 
@@ -107,7 +106,7 @@ impl World {
         };
         for i in 0 .. (w * h * d) as usize {
             snapshot.sky_light.set(i, 0xF);
-            snapshot.blocks[i] = block::MISSING.base().steven_id() as u16;
+            snapshot.blocks[i] = block::Missing{}.get_steven_id() as u16;
         }
 
         let cx1 = x >> 4;
@@ -150,7 +149,7 @@ impl World {
                                         snapshot.set_sky_light(ox, oy, oz, sec.get_sky_light(xx, yy, zz));
                                     },
                                     None => {
-                                        snapshot.set_block(ox, oy, oz, block::AIR.base());
+                                        snapshot.set_block(ox, oy, oz, block::Air{});
                                     },
                                 }
                             }
@@ -213,7 +212,7 @@ impl World {
                 for i in 0 .. 4096 {
                     let val = m.get(i);
                     let block_id = block_map.get(&val).map(|v| *v as usize).unwrap_or(val);
-                    let block = block::get_block_by_vanilla_id(block_id);
+                    let block = block::Block::by_vanilla_id(block_id);
                     let i = i as i32;
                     section.set_block(
                         i & 0xF,
@@ -276,13 +275,13 @@ impl Snapshot {
         self.z = z;
     }
 
-    pub fn get_block(&self, x: i32, y: i32, z: i32) -> &'static block::Block {
-        block::get_block_by_steven_id(self.blocks[self.index(x, y, z)] as usize)
+    pub fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
+        block::Block::by_steven_id(self.blocks[self.index(x, y, z)] as usize)
     }
 
-    pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: &'static block::Block) {
+    pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
         let idx = self.index(x, y, z);
-        self.blocks[idx] = b.steven_id() as u16;
+        self.blocks[idx] = b.get_steven_id() as u16;
     }
 
     pub fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {
@@ -333,13 +332,13 @@ impl Chunk {
         }
     }
 
-    fn set_block(&mut self, x: i32, y: i32, z: i32, b: &'static block::Block) {
+    fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
         let s_idx = y >> 4;
         if s_idx < 0 || s_idx > 15 {
             return;
         }
         if self.sections[s_idx as usize].is_none() {
-            if b.in_set(&*block::AIR) {
+            if let block::Air {} = b {
                 return;
             }
             self.sections[s_idx as usize] = Some(Section::new(self.position.0, s_idx as u8, self.position.1));
@@ -348,14 +347,14 @@ impl Chunk {
         section.set_block(x, y & 0xF, z, b);
     }
 
-    fn get_block(&self, x: i32, y: i32, z: i32) -> &'static block::Block {
+    fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
         let s_idx = y >> 4;
         if s_idx < 0 || s_idx > 15 {
-            return block::MISSING.base();
+            return block::Missing{};
         }
         match self.sections[s_idx as usize].as_ref() {
             Some(sec) => sec.get_block(x, y & 0xF, z),
-            None => block::AIR.base(),
+            None => block::Air{},
         }
     }
 }
@@ -391,8 +390,8 @@ struct Section {
     y: u8,
 
     blocks: bit::Map,
-    block_map: Vec<(&'static block::Block, u32)>,
-    rev_block_map: HashMap<usize, usize, BuildHasherDefault<FNVHash>>,
+    block_map: Vec<(block::Block, u32)>,
+    rev_block_map: HashMap<block::Block, usize, BuildHasherDefault<FNVHash>>,
 
     block_light: nibble::Array,
     sky_light: nibble::Array,
@@ -411,7 +410,7 @@ impl Section {
 
             blocks: bit::Map::new(4096, 4),
             block_map: vec![
-                (block::AIR.base(), 0xFFFFFFFF)
+                (block::Air{}, 0xFFFFFFFF)
             ],
             rev_block_map: HashMap::with_hasher(BuildHasherDefault::default()),
 
@@ -424,36 +423,36 @@ impl Section {
         for i in 0 .. 16*16*16 {
             section.sky_light.set(i, 0xF);
         }
-        section.rev_block_map.insert(block::AIR.base().steven_id(), 0);
+        section.rev_block_map.insert(block::Air{}, 0);
         section
     }
 
-    fn get_block(&self, x: i32, y: i32, z: i32) -> &'static block::Block {
+    fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
         let idx = self.blocks.get(((y << 8) | (z << 4) | x) as usize);
         self.block_map[idx].0
     }
 
-    fn set_block(&mut self, x: i32, y: i32, z: i32, b: &'static block::Block) {
+    fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
         let old = self.get_block(x, y, z);
-        if old.equals(b) {
+        if old == b {
             return;
         }
         // Clean up old block
         {
-            let idx = self.rev_block_map[&old.steven_id()];
+            let idx = self.rev_block_map[&old];
             let info = &mut self.block_map[idx];
             info.1 -= 1;
             if info.1 == 0 { // None left of this type
-                self.rev_block_map.remove(&old.steven_id());
+                self.rev_block_map.remove(&old);
             }
         }
 
-        if !self.rev_block_map.contains_key(&b.steven_id()) {
+        if !self.rev_block_map.contains_key(&b) {
             let mut found = false;
             for (i, ref mut info) in self.block_map.iter_mut().enumerate() {
                 if info.1 == 0 {
                     info.0 = b;
-                    self.rev_block_map.insert(b.steven_id(), i);
+                    self.rev_block_map.insert(b, i);
                     found = true;
                     break;
                 }
@@ -464,12 +463,12 @@ impl Section {
                     let new_blocks = self.blocks.resize(new_size);
                     self.blocks = new_blocks;
                 }
-                self.rev_block_map.insert(b.steven_id(), self.block_map.len());
+                self.rev_block_map.insert(b, self.block_map.len());
                 self.block_map.push((b, 0));
             }
         }
 
-        let idx = self.rev_block_map[&b.steven_id()];
+        let idx = self.rev_block_map[&b];
         let info = &mut self.block_map[idx];
         info.1 += 1;
         self.blocks.set(((y << 8) | (z << 4) | x) as usize, idx);

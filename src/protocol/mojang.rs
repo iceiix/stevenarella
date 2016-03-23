@@ -152,7 +152,7 @@ fn twos_compliment(data: &mut Vec<u8>) {
         data[i] = !data[i];
         if carry {
             carry = data[i] == 0xFF;
-            data[i] += 1;
+            data[i].wrapping_add(1);
         }
     }
 }

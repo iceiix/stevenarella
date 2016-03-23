@@ -35,6 +35,7 @@ extern crate collision;
 
 #[macro_use]
 pub mod macros;
+
 pub mod ecs;
 pub mod protocol;
 pub mod format;
@@ -135,7 +136,6 @@ impl Game {
 }
 
 fn main() {
-    world::block::force_init();
     let con = Arc::new(Mutex::new(console::Console::new()));
     {
         let mut con = con.lock().unwrap();

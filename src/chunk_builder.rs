@@ -127,16 +127,16 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
         for y in 0 .. 16 {
             for x in 0 .. 16 {
                 for z in 0 .. 16 {
-                    let block = snapshot.get_block(x, y, z);
-                    if !block.renderable() {
+                    let block = snapshot.get_block(x, y, z).get_material();
+                    if !block.renderable {
                         continue;
                     }
 
                     for dir in Direction::all() {
 
                         let offset = dir.get_offset();
-                        let other = snapshot.get_block(x + offset.0, y + offset.1, z + offset.2);
-                        if other.renderable() {
+                        let other = snapshot.get_block(x + offset.0, y + offset.1, z + offset.2).get_material();
+                        if other.renderable {
                             continue;
                         }
 
@@ -147,7 +147,7 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
                             cb = ((cb as f64) * 0.8) as u8;
                         }
 
-                        let stone = render::Renderer::get_texture(&textures, &format!("minecraft:blocks/{}", "dirt"));
+                        let stone = render::Renderer::get_texture(&textures, &format!("minecraft:blocks/{}", block.texture));
                         solid_count += 6;
                         for vert in dir.get_verts() {
                             let mut vert = vert.clone();
@@ -203,7 +203,7 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
                     x: f64, y: f64, z: f64, face: Direction, smooth: bool, force: bool) -> (u16, u16) {
     use std::cmp::max;
     use world::block;
-    let (ox, oy, oz) = if !snapshot.get_block(orig_x, orig_y, orig_z).renderable() { // TODO: cull check
+    let (ox, oy, oz) = if !snapshot.get_block(orig_x, orig_y, orig_z).get_material().renderable { // TODO: cull check
         (0, 0, 0)
     } else {
         face.get_offset()
@@ -234,7 +234,7 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
                 let lz = (z + oz + dz).round() as i32;
                 let mut bl = snapshot.get_block_light(lx, ly, lz);
                 let mut sl = snapshot.get_sky_light(lx, ly, lz);
-                if (force && !snapshot.get_block(lx, ly, lz).in_set(&*block::AIR))
+                if (force && match snapshot.get_block(lx, ly, lz) { block::Air{} => false, _ => true })
                     || (sl == 0 && bl == 0){
                     bl = s_block_light;
                     sl = s_sky_light;

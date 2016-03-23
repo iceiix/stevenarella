@@ -1,373 +1,264 @@
 
-use std::collections::HashMap;
-use std::cell::UnsafeCell;
+use std::fmt::{Display, Formatter, Error};
 
-pub trait BlockSet {
-    fn plugin(&self) -> &'static str {
-        "minecraft"
-    }
+pub use self::Block::*;
 
-    fn name(&self) -> &'static str;
-    fn blocks(&'static self) -> Vec<&'static Block>;
+macro_rules! consume_token { ($i:tt) => (0) }
 
-    fn base(&'static self) -> &'static Block {
-        self.blocks()[0]
-    }
-}
-
-pub trait Block: Sync + ::std::fmt::Debug {
-    fn steven_id(&'static self) -> usize;
-    fn vanilla_id(&'static self) -> Option<usize>;
-    fn set_steven_id(&'static self, id: usize);
-    fn set_vanilla_id(&'static self, id: usize);
-    fn plugin(&self) -> &'static str;
-    fn name(&self) -> &'static str;
-
-    fn equals(&'static self, other: &'static Block) -> bool {
-        self.steven_id() == other.steven_id()
-    }
-
-    fn in_set(&'static self, set: &'static BlockSet) -> bool {
-        // TODO: Make faster
-        for block in set.blocks() {
-            if self.equals(block) {
-                return true
-            }
-        }
-        false
-    }
-
-    fn renderable(&'static self) -> bool {
-        true
-    }
-
-    fn data(&'static self) -> Option<u8> {
-        Some(0)
-    }
-}
-
-pub struct BlockManager {
-    vanilla_id: Vec<Option<&'static Block>>,
-    steven_id: Vec<&'static Block>,
-    next_id: usize,
+macro_rules! offsets {
+    ($first:ident, $($other:ident),*) => (
+        #[allow(non_upper_case_globals)]
+        pub const $first: usize = 0;
+        offsets!(prev($first), $($other),*);
+    );
+    (prev($prev:ident), $first:ident, $($other:ident),*) => (
+        #[allow(non_upper_case_globals)]
+        pub const $first: usize = $prev + internal_sizes::$prev;
+        offsets!(prev($first), $($other),*);
+    );
+    (prev($prev:ident), $first:ident) => (
+        #[allow(non_upper_case_globals)]
+        pub const $first: usize = $prev + internal_sizes::$prev;
+    )
 }
 
 macro_rules! define_blocks {
     (
         $(
-            $internal_name:ident $ty:ty = $bl:expr;
-        )*
+            $name:ident {
+                props {
+                    $(
+                        $fname:ident : $ftype:ty = [$($val:expr),+],
+                    )*
+                },
+                data $datafunc:expr,
+                material $mat:expr,
+            }
+        )+
     ) => (
-        lazy_static! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        pub enum Block {
             $(
-                pub static ref $internal_name: $ty = $bl;
-            )*
-            static ref MANAGER: BlockManager = {
-                let mut manager = BlockManager {
-                    vanilla_id: vec![None; 0xFFFF],
-                    steven_id: vec![],
-                    next_id: 0,
-                };
-                $(
-                    manager.register_set(&*$internal_name);
-                )*
-                manager
+                $name {
+                    $(
+                        $fname : $ftype,
+                    )*
+                },
+            )+
+        }
+        mod internal_ids {
+            create_ids!(usize, $($name),+);
+        }
+        mod internal_sizes {
+            $(
+                #[allow(non_upper_case_globals)]
+                pub const $name : usize = $(($(1 + consume_token!($val) + )+ 0) *  )* 1;
+            )+
+        }
+        mod internal_offsets {
+            use super::internal_sizes;
+            offsets!($($name),+);
+        }
+        mod internal_offset_max {
+            use super::internal_sizes;
+            use super::internal_offsets;
+            $(
+                #[allow(non_upper_case_globals)]
+                pub const $name: usize = internal_offsets::$name + internal_sizes::$name - 1;
+            )+
+        }
+
+        impl Block {
+            #[allow(unused_variables, unused_mut, unused_assignments)]
+            pub fn get_steven_id(&self) -> usize {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            let mut offset = internal_offsets::$name;
+                            let mut mul = 1;
+                            $(
+                                offset += [$($val),+].into_iter().position(|v| *v == $fname).unwrap() * mul;
+                                mul *= $(1 + consume_token!($val) + )+ 0;
+                            )*
+                            offset
+                        },
+                    )+
+                }
+            }
+
+            #[allow(unused_variables, unused_assignments)]
+            pub fn by_steven_id(id: usize) -> Block {
+                match id {
+                    $(
+                        mut data @ internal_offsets::$name ... internal_offset_max::$name=> {
+                            data -= internal_offsets::$name;
+                            $(
+                                let vals = [$($val),+];
+                                let $fname = vals[data % vals.len()];
+                                data /= vals.len();
+                            )*
+                            Block::$name {
+                                $(
+                                    $fname: $fname,
+                                )*
+                            }
+                        },
+                    )*
+                    _ => Block::Missing {}
+                }
+            }
+
+            pub fn get_vanilla_id(&self) -> Option<usize> {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            ($datafunc).map(|v| v + (internal_ids::$name << 4))
+                        }
+                    )+
+                }
+            }
+
+            pub fn by_vanilla_id(id: usize) -> Block {
+                VANILLA_ID_MAP.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
+            }
+
+            pub fn get_material(&self) -> Material {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            $mat
+                        }
+                    )+
+                }
+            }
+        }
+
+        lazy_static! {
+            static ref VANILLA_ID_MAP: Vec<Option<Block>> = {
+                let mut blocks = vec![];
+                for i in 0 .. internal_offsets::Missing {
+                    let block = Block::by_steven_id(i);
+                    if let Some(id) = block.get_vanilla_id() {
+                        if blocks.len() <= id {
+                            blocks.resize(id + 1, None);
+                        }
+                        blocks[id] = Some(block);
+                    }
+                }
+                blocks
             };
         }
-    )
-}
-
-// TODO: Replace this with trait fields when supported by rust
-macro_rules! block_impl {
-    () => (
-        fn steven_id(&'static self) -> usize {
-            unsafe { *self.steven_id_storage.get() }
-        }
-        fn vanilla_id(&'static self) -> Option<usize> {
-            unsafe { *self.vanilla_id_storage.get() }
-        }
-        fn set_steven_id(&'static self, id: usize) {
-            unsafe { *self.steven_id_storage.get() = id; }
-        }
-        fn set_vanilla_id(&'static self, id: usize) {
-            unsafe { *self.vanilla_id_storage.get() = Some(id); }
-        }
-
-        fn plugin(&self) -> &'static str {
-            self.plugin
-        }
-
-        fn name(&self) -> &'static str {
-            self.name
-        }
-    )
-}
-
-macro_rules! block_combos {
-    (
-        $set:ty, params($($pname:ident : $pty:ty),*),
-        $bty:ident {
-            $(
-                $fname:ident : $fval:expr,
-            )*
-        }
-    ) => (
-        struct $bty {
-            steven_id_storage: UnsafeCell<usize>,
-            vanilla_id_storage: UnsafeCell<Option<usize>>,
-            plugin: &'static str,
-            name: &'static str,
-            $(
-                $fname: $fty,
-            )*
-        }
-        unsafe impl Sync for $bty {}
-
-        impl ::std::fmt::Debug for $bty {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
-                write!(f, "{}:{}", self.plugin(), self.name())
-            }
-        }
-
-        impl $set {
-            fn gen_combos(&mut self, $($pname: $pty),*) {
-                let val = $bty {
-                    steven_id_storage: UnsafeCell::new(0),
-                    vanilla_id_storage: UnsafeCell::new(None),
-                    name: self.name(),
-                    plugin: self.plugin(),
-                    $(
-                        $fname: $fval,
-                    )*
-                };
-                self.sub_blocks.push(val);
-            }
-        }
     );
-    (
-        $set:ty, params($($pname:ident : $pty:ty),*),
-        types (
-            $(
-                $tname:ident : $tty:ty = [$($val:expr),+]
-            ),+
-        ),
-        $bty:ident {
-            $(
-                $fname:ident : $fty:ty = $fval:expr,
-            )*
-        }
-    ) => (
-        struct $bty {
-            steven_id_storage: UnsafeCell<usize>,
-            vanilla_id_storage: UnsafeCell<Option<usize>>,
-            plugin: &'static str,
-            name: &'static str,
-            $(
-                $fname: $fty,
-            )*
-        }
-        unsafe impl Sync for $bty {}
-
-        impl ::std::fmt::Debug for $bty {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
-                try!(write!(f, "{}:{}[", self.plugin(), self.name()));
-                let mut s = String::new();
-                $(
-                    s.push_str(&format!("{}={},", stringify!($tname), self.$tname));
-                )+
-                s.pop();
-                write!(f, "{}]", s)
-            }
-        }
-
-        impl $set {
-            fn gen_combos(&mut self, $($pname: $pty),*) {
-                use std::iter::Iterator;
-                #[allow(dead_code)]
-                #[allow(non_camel_case_types)]
-                struct CombinationIter<$($tname),+> {
-                    $(
-                        $tname: $tname,
-                    )+
-                    orig: CombinationIterOrig<$($tname),+> ,
-                    last: Option<Wrapper>,
-                    done: bool,
-                }
-                #[allow(non_camel_case_types)]
-                struct CombinationIterOrig<$($tname),+> {
-                    $(
-                        $tname: $tname,
-                    )+
-                }
-
-                #[derive(Clone)]
-                struct Wrapper {
-                    $(
-                        $tname: $tty,
-                    )+
-                }
-
-                #[allow(non_camel_case_types)]
-                impl <$($tname: Iterator<Item=$tty> + Clone),+> CombinationIter<$($tname),+> {
-                    fn new($($tname: $tname),+) -> CombinationIter<$($tname),+> {
-                        let orig = CombinationIterOrig {
-                            $(
-                                $tname: $tname
-                            ),+
-                        };
-                        CombinationIter {
-                            $(
-                                $tname: orig.$tname.clone(),
-                            )+
-                            orig: orig,
-                            last: None,
-                            done: false,
-                        }
-                    }
-                }
-
-                #[allow(non_camel_case_types)]
-                impl <$($tname: Iterator<Item=$tty> + Clone),+> Iterator for CombinationIter<$($tname),+> {
-                    type Item = Wrapper;
-
-                    fn next(&mut self) -> Option<Self::Item> {
-                        if self.done {
-                            return None
-                        }
-                        if self.last.is_none() {
-                            let wrapper = Wrapper {
-                                $(
-                                    $tname: self.$tname.next().unwrap() // Shouldn't ever fail the first iter
-                                ),+
-                            };
-                            self.last = Some(wrapper.clone());
-                            return Some(wrapper);
-                        }
-                        let mut ret = self.last.take().unwrap();
-                        $(
-                            if let Some(val) = self.$tname.next() {
-                                ret.$tname = val;
-                                self.last = Some(ret.clone());
-                                return Some(ret)
-                            }
-                            self.$tname = self.orig.$tname.clone();
-                        )+
-                        self.done = true;
-                        None
-                    }
-                }
-
-                let iter = CombinationIter::new($(vec![$($val),+].into_iter()),+);
-                for val in iter {
-                    $(
-                    let $tname = val.$tname;
-                    )+
-                    let val = $bty {
-                        steven_id_storage: UnsafeCell::new(0),
-                        vanilla_id_storage: UnsafeCell::new(None),
-                        name: self.name(),
-                        plugin: self.plugin(),
-                        $(
-                            $fname: $fval,
-                        )*
-                    };
-                    self.sub_blocks.push(val);
-                }
-            }
-        }
-    )
 }
 
-#[test]
-fn temp_test() {
-    force_init();
-
-    println!("{:?}", STONE.blocks());
-    unimplemented!()
+pub struct Material {
+    pub renderable: bool,
+    // TEMP
+    pub texture: &'static str,
 }
-
-impl BlockManager {
-    fn force_init(&self) {}
-    fn register_set(&mut self, set: &'static BlockSet) {
-        for block in set.blocks() {
-            if let Some(data) = block.data() {
-                let id = (self.next_id<<4) | (data as usize);
-                self.vanilla_id[id] = Some(block);
-                block.set_vanilla_id(id);
-            }
-            block.set_steven_id(self.steven_id.len());
-            self.steven_id.push(block);
-        }
-        self.next_id += 1;
-    }
-
-    fn get_block_by_steven_id(&self, id: usize) -> &'static Block {
-        self.steven_id[id]
-    }
-
-    fn get_block_by_vanilla_id(&self, id: usize) -> &'static Block {
-        self.vanilla_id.get(id).and_then(|v| *v).unwrap_or(MISSING.base())
-    }
-}
-
-pub fn force_init() {
-    MANAGER.force_init();
-}
-
-pub fn get_block_by_steven_id(id: usize) -> &'static Block {
-    MANAGER.get_block_by_steven_id(id)
-}
-
-pub fn get_block_by_vanilla_id(id: usize) -> &'static Block {
-    MANAGER.get_block_by_vanilla_id(id)
-}
-
-pub mod simple;
-pub mod stone;
 
 define_blocks! {
-    AIR InvisibleBlockSet = InvisibleBlockSet::new("air");
-    STONE stone::StoneBlockSet = stone::StoneBlockSet::new("stone");
-    GRASS simple::SimpleBlockSet = simple::SimpleBlockSet::new("grass");
-    DIRT simple::SimpleBlockSet = simple::SimpleBlockSet::new("dirt");
-    MISSING simple::SimpleBlockSet = simple::SimpleBlockSet::new("missing");
+    Air {
+        props {},
+        data { Some(0) },
+        material Material {
+            renderable: false,
+            texture: "none",
+        },
+    }
+    Stone {
+        props {
+            variant: StoneVariant = [
+                StoneVariant::Normal,
+                StoneVariant::Granite, StoneVariant::SmoothGranite,
+                StoneVariant::Diorite, StoneVariant::SmoothDiorite,
+                StoneVariant::Andesite, StoneVariant::SmoothAndesite
+            ],
+        },
+        data { Some(variant.data()) },
+        material Material {
+            renderable: true,
+            texture: match variant {
+                StoneVariant::Normal => "stone",
+                StoneVariant::Granite => "stone_granite",
+                StoneVariant::SmoothGranite => "stone_granite_smooth",
+                StoneVariant::Diorite => "stone_diorite",
+                StoneVariant::SmoothDiorite => "stone_diorite_smooth",
+                StoneVariant::Andesite => "stone_andesite",
+                StoneVariant::SmoothAndesite => "stone_andesite_smooth",
+            },
+        },
+    }
+    Grass {
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            texture: "grass_path_top",
+        },
+    }
+    Dirt {
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            texture: "dirt",
+        },
+    }
+    Missing {
+        props {},
+        data { None::<usize> },
+        material Material {
+            renderable: true,
+            texture: "missing_texture",
+        },
+    }
 }
 
-/// A block set that contains blocks which cannot be rendered.
-pub struct InvisibleBlockSet {
-    name: &'static str,
-    sub_blocks: Vec<InvisibleBlock>,
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum StoneVariant {
+    Normal,
+    Granite,
+    SmoothGranite,
+    Diorite,
+    SmoothDiorite,
+    Andesite,
+    SmoothAndesite,
 }
 
-block_combos!(InvisibleBlockSet, params(),
-    InvisibleBlock {
-    }
-);
-
-impl InvisibleBlockSet {
-    fn new(name: &'static str) -> InvisibleBlockSet {
-        let mut set = InvisibleBlockSet {
-            name: name,
-            sub_blocks: vec![],
-        };
-        set.gen_combos();
-        set
-    }
-}
-
-impl BlockSet for InvisibleBlockSet {
-    fn name(&self) -> &'static str {
-        self.name
-    }
-
-    fn blocks(&'static self) -> Vec<&'static Block> {
-        self.sub_blocks.iter().map(|v| v as &Block).collect()
+impl Display for StoneVariant {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{}", match *self {
+            StoneVariant::Normal => "stone",
+            StoneVariant::Granite => "granite",
+            StoneVariant::SmoothGranite => "smooth_granite",
+            StoneVariant::Diorite => "diorite",
+            StoneVariant::SmoothDiorite => "smooth_diorite",
+            StoneVariant::Andesite => "andesite",
+            StoneVariant::SmoothAndesite => "smooth_andesite",
+        })
     }
 }
 
-impl Block for InvisibleBlock {
-    block_impl!();
-    fn renderable(&'static self) -> bool {
-        false
+impl StoneVariant {
+    fn data(&self) -> usize {
+        match *self {
+            StoneVariant::Normal => 0,
+            StoneVariant::Granite => 1,
+            StoneVariant::SmoothGranite => 2,
+            StoneVariant::Diorite => 3,
+            StoneVariant::SmoothDiorite => 4,
+            StoneVariant::Andesite => 5,
+            StoneVariant::SmoothAndesite => 6,
+        }
     }
 }
