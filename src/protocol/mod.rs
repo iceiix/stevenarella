@@ -760,8 +760,8 @@ impl Conn {
 
     pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
         let len = try!(VarInt::read_from(self)).0 as usize;
-        let mut ibuf = Vec::with_capacity(len);
-        try!(self.take(len as u64).read_to_end(&mut ibuf));
+        let mut ibuf = vec![0; len];
+        try!(self.read_exact(&mut ibuf));
 
         let mut buf = io::Cursor::new(ibuf);
 
