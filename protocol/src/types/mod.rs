@@ -20,3 +20,4 @@ pub use self::metadata::*;
 
 pub mod bit;
 pub mod nibble;
+pub mod hash;

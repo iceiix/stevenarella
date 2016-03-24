@@ -17,7 +17,7 @@ extern crate byteorder;
 use std::fmt;
 use protocol::Serializable;
 use std::io;
-use std::io::{Read, Write};
+use std::io::Write;
 use self::byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
 #[derive(Clone, Copy)]
