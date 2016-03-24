@@ -70,6 +70,8 @@ pub struct Renderer {
     pub frustum: collision::Frustum<f32>,
     pub view_vector: cgmath::Vector3<f32>,
 
+    pub frame_id: u32,
+
     trans: Option<TransInfo>,
 
     last_width: u32,
@@ -214,6 +216,8 @@ impl Renderer {
             frustum: collision::Frustum::from_matrix4(cgmath::Matrix4::identity()).unwrap(),
             view_vector: cgmath::Vector3::zero(),
 
+            frame_id: 1,
+
             trans: None,
         }
     }
@@ -287,9 +291,11 @@ impl Renderer {
 
         for (pos, info) in world.get_render_list() {
             if let Some(solid) = info.solid.as_ref() {
-                self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
-                solid.array.bind();
-                gl::draw_elements(gl::TRIANGLES, solid.count, self.element_buffer_type, 0);
+                if solid.count > 0 {
+                    self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
+                    solid.array.bind();
+                    gl::draw_elements(gl::TRIANGLES, solid.count, self.element_buffer_type, 0);
+                }
             }
         }
 
@@ -337,6 +343,8 @@ impl Renderer {
         gl::disable(gl::MULTISAMPLE);
 
         self.ui.tick(width, height);
+
+        self.frame_id = self.frame_id.wrapping_add(1);
     }
 
     fn ensure_element_buffer(&mut self, size: usize) {

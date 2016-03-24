@@ -8,6 +8,7 @@ use world;
 use render;
 use resources;
 use model;
+use types::bit::Set;
 
 const NUM_WORKERS: usize = 8;
 
@@ -15,9 +16,6 @@ pub struct ChunkBuilder {
     threads: Vec<(mpsc::Sender<BuildReq>, thread::JoinHandle<()>)>,
     free_builders: Vec<(usize, Vec<u8>)>,
     built_recv: mpsc::Receiver<(usize, BuildReply)>,
-
-    sections: Vec<(i32, i32, i32)>,
-    next_collection: f64,
 
     models: Arc<RwLock<model::Factory>>,
     resources: Arc<RwLock<resources::Manager>>,
@@ -43,17 +41,13 @@ impl ChunkBuilder {
             threads: threads,
             free_builders: free,
             built_recv: built_recv,
-            sections: vec![],
-            next_collection: 0.0,
             models: models,
             resources: resources.clone(),
             resource_version: 0xFFFF,
         }
     }
 
-    pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer, delta: f64) {
-        use std::cmp::Ordering;
-
+    pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer, _delta: f64) {
         {
             let rm = self.resources.read().unwrap();
             if rm.version() != self.resource_version {
@@ -65,8 +59,9 @@ impl ChunkBuilder {
         while let Ok((id, mut val)) = self.built_recv.try_recv() {
             world.reset_building_flag(val.position);
 
-            if let Some(render_buffer) = world.get_section_buffer(val.position.0, val.position.1, val.position.2) {
-                renderer.update_chunk_solid(render_buffer, &val.solid_buffer, val.solid_count);
+            if let Some(sec) = world.get_section_mut(val.position.0, val.position.1, val.position.2) {
+                sec.cull_info = val.cull_info;
+                renderer.update_chunk_solid(&mut sec.render_buffer, &val.solid_buffer, val.solid_count);
             }
 
             val.solid_buffer.clear();
@@ -75,30 +70,11 @@ impl ChunkBuilder {
         if self.free_builders.is_empty() {
             return;
         }
-        self.next_collection -= delta;
-        if self.next_collection <= 0.0 {
-            let mut sections = world.get_dirty_chunk_sections();
-            sections.sort_by(|a, b| {
-                let xx = ((a.0<<4)+8) as f64 - renderer.camera.pos.x;
-                let yy = ((a.1<<4)+8) as f64 - renderer.camera.pos.y;
-                let zz = ((a.2<<4)+8) as f64 - renderer.camera.pos.z;
-                let a_dist = xx*xx + yy*yy + zz*zz;
-                let xx = ((b.0<<4)+8) as f64 - renderer.camera.pos.x;
-                let yy = ((b.1<<4)+8) as f64 - renderer.camera.pos.y;
-                let zz = ((b.2<<4)+8) as f64 - renderer.camera.pos.z;
-                let b_dist = xx*xx + yy*yy + zz*zz;
-                if a_dist == b_dist {
-                    Ordering::Equal
-                } else if a_dist > b_dist {
-                    Ordering::Less
-                } else {
-                    Ordering::Greater
-                }
-            });
-            self.sections = sections;
-            self.next_collection = 60.0;
-        }
-        while let Some((x, y, z)) = self.sections.pop() {
+        let dirty_sections = world.get_render_list().iter()
+                .map(|v| v.0)
+                .filter(|v| world.is_section_dirty(*v))
+                .collect::<Vec<_>>();
+        for (x,y, z) in dirty_sections {
             let t_id = self.free_builders.pop().unwrap();
             world.set_building_flag((x, y, z));
             let (cx, cy, cz) = (x << 4, y << 4, z << 4);
@@ -126,6 +102,7 @@ struct BuildReply {
     position: (i32, i32, i32),
     solid_buffer: Vec<u8>,
     solid_count: usize,
+    cull_info: CullInfo,
 }
 
 fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
@@ -173,11 +150,103 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
             }
         }
 
+        let cull_info = build_cull_info(&snapshot);
+
         built_send.send((id, BuildReply {
             position: position,
             solid_buffer: solid_buffer,
             solid_count: solid_count,
+            cull_info: cull_info,
         })).unwrap();
+    }
+}
+
+fn build_cull_info(snapshot: &world::Snapshot) -> CullInfo {
+    let mut visited = Set::new(16 * 16 * 16);
+    let mut info = CullInfo::new();
+
+    for y in 0 .. 16 {
+        for z in 0 .. 16 {
+            for x in 0 .. 16 {
+                if visited.get(x | (z << 4) | (y << 8)) {
+                    continue;
+                }
+
+                let touched = flood_fill(snapshot, &mut visited, x as i32, y as i32, z as i32);
+                if touched == 0 {
+                    continue;
+                }
+
+                for d1 in Direction::all() {
+                    if (touched & (1 << d1.index())) != 0 {
+                        for d2 in Direction::all() {
+                            if (touched & (1 << d2.index())) != 0 {
+                                info.set_visible(d1, d2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    info
+}
+
+fn flood_fill(snapshot: &world::Snapshot, visited: &mut Set, x: i32, y: i32, z: i32) -> u8 {
+    let idx = (x | (z << 4) | (y << 8)) as usize;
+    if x < 0 || x > 15 || y < 0 || y > 15 || z < 0 || z > 15 || visited.get(idx) {
+        return 0;
+    }
+    visited.set(idx, true);
+
+    if snapshot.get_block(x, y, z).get_material().should_cull_against {
+        return 0;
+    }
+
+    let mut touched = 0;
+
+    if x == 0 {
+        touched |= 1 << Direction::West.index();
+    } else if x == 15 {
+        touched |= 1 << Direction::East.index();
+    }
+    if y == 0 {
+        touched |= 1 << Direction::Down.index();
+    } else if y == 15 {
+        touched |= 1 << Direction::Up.index();
+    }
+    if z == 0 {
+        touched |= 1 << Direction::North.index();
+    } else if z == 15 {
+        touched |= 1 << Direction::South.index();
+    }
+
+    for d in Direction::all() {
+        let (ox, oy, oz) = d.get_offset();
+        touched |= flood_fill(snapshot, visited, x+ox, y+oy, z+oz);
+    }
+    touched
+}
+
+#[derive(Clone, Copy)]
+pub struct CullInfo(u64);
+
+impl CullInfo {
+    pub fn new() -> CullInfo {
+        CullInfo(0)
+    }
+
+    pub fn all_vis() -> CullInfo {
+        CullInfo(0xFFFFFFFFFFFFFFFF)
+    }
+
+    pub fn is_visible(&self, from: Direction, to: Direction) -> bool {
+        (self.0 & (1 << (from.index() * 6 + to.index()))) != 0
+    }
+
+    pub fn set_visible(&mut self, from: Direction, to: Direction) {
+        self.0 |= 1 << (from.index() * 6 + to.index());
     }
 }
 
@@ -210,6 +279,18 @@ impl Direction {
             "west" => Direction::West,
             "east" => Direction::East,
             _ => Direction::Invalid,
+        }
+    }
+
+    pub fn opposite(&self) -> Direction {
+        match *self {
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
+            Direction::North => Direction::South,
+            Direction::South => Direction::North,
+            Direction::West => Direction::East,
+            Direction::East => Direction::West,
+            _ => unreachable!(),
         }
     }
 

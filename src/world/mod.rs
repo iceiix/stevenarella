@@ -23,6 +23,7 @@ use protocol;
 use render;
 use collision;
 use cgmath;
+use chunk_builder;
 
 pub mod biome;
 
@@ -61,15 +62,57 @@ impl World {
     }
 
     pub fn compute_render_list(&mut self, renderer: &mut render::Renderer) {
+        use chunk_builder::{self, Direction};
+        use cgmath::Vector;
+        use std::collections::VecDeque;
         self.render_list.clear();
-        for (pos, chunk) in &self.chunks {
-            for (y, sec) in chunk.sections.iter().enumerate() {
-                if let Some(sec) = sec.as_ref() {
-                    let pos = (pos.0, y as i32, pos.1);
-                    let min = cgmath::Point3::new(pos.0 as f32 * 16.0, -pos.1 as f32 * 16.0, pos.2 as f32 * 16.0);
-                    let bounds = collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
-                    if renderer.frustum.contains(bounds) != collision::Relation::Out {
-                        self.render_list.push(pos);
+
+        let mut valid_dirs = [false; 6];
+        for dir in Direction::all() {
+            let (ox, oy, oz) = dir.get_offset();
+            let dir_vec = cgmath::Vector3::new(ox as f32, oy as f32, oz as f32);
+            valid_dirs[dir.index()] = renderer.view_vector.dot(dir_vec) > -0.8;
+        }
+
+        let start = (
+            ((renderer.camera.pos.x as i32) >> 4),
+            ((renderer.camera.pos.y as i32) >> 4),
+            ((renderer.camera.pos.z as i32) >> 4)
+        );
+
+        let mut process_queue = VecDeque::with_capacity(self.chunks.len() * 16);
+        process_queue.push_front((Direction::Invalid, start));
+
+        while let Some((from, pos)) = process_queue.pop_front() {
+            let (exists, cull) = if let Some((sec, rendered_on)) = self.get_render_section_mut(pos.0, pos.1, pos.2) {
+                if *rendered_on == renderer.frame_id {
+                    continue;
+                }
+                *rendered_on = renderer.frame_id;
+
+                let min = cgmath::Point3::new(pos.0 as f32 * 16.0, -pos.1 as f32 * 16.0, pos.2 as f32 * 16.0);
+                let bounds = collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
+                if renderer.frustum.contains(bounds) == collision::Relation::Out {
+                    continue;
+                }
+                (sec.is_some(), sec.map(|v| v.cull_info).unwrap_or(chunk_builder::CullInfo::all_vis()))
+            } else {
+                continue;
+            };
+
+            if exists {
+                self.render_list.push(pos);
+            }
+
+            for dir in Direction::all() {
+                let (ox, oy, oz) = dir.get_offset();
+                let opos = (pos.0 + ox, pos.1 + oy, pos.2 + oz);
+                if let Some((_, rendered_on)) = self.get_render_section_mut(opos.0, opos.1, opos.2) {
+                    if *rendered_on == renderer.frame_id {
+                        continue;
+                    }
+                    if from == Direction::Invalid || (valid_dirs[dir.index()] && cull.is_visible(from, dir)) {
+                        process_queue.push_back((dir.opposite(), opos));
                     }
                 }
             }
@@ -84,11 +127,25 @@ impl World {
         }).collect()
     }
 
-    pub fn get_section_buffer(&mut self, x: i32, y: i32, z: i32) -> Option<&mut render::ChunkBuffer> {
+    pub fn get_section_mut(&mut self, x: i32, y: i32, z: i32) -> Option<&mut Section> {
         if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
             if let Some(sec) = chunk.sections[y as usize].as_mut() {
-                return Some(&mut sec.render_buffer);
+                return Some(sec);
             }
+        }
+        None
+    }
+
+    fn get_render_section_mut(&mut self, x: i32, y: i32, z: i32) -> Option<(Option<&mut Section>, &mut u32)> {
+        if y < 0 || y > 15 {
+            return None;
+        }
+        if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
+            let rendered = &mut chunk.sections_rendered_on[y as usize];
+            if let Some(sec) = chunk.sections[y as usize].as_mut() {
+                return Some((Some(sec), rendered));
+            }
+            return Some((None, rendered));
         }
         None
     }
@@ -105,6 +162,15 @@ impl World {
             }
         }
         out
+    }
+
+    pub fn is_section_dirty(&self, pos: (i32, i32, i32)) -> bool {
+        if let Some(chunk) = self.chunks.get(&CPos(pos.0, pos.2)) {
+            if let Some(sec) = chunk.sections[pos.1 as usize].as_ref() {
+                return sec.dirty && !sec.building;
+            }
+        }
+        false
     }
 
     pub fn set_building_flag(&mut self, pos: (i32, i32, i32)) {
@@ -375,6 +441,7 @@ pub struct Chunk {
     position: CPos,
 
     sections: [Option<Section>; 16],
+    sections_rendered_on: [u32; 16],
     biomes: [u8; 16 * 16],
 }
 
@@ -388,6 +455,7 @@ impl Chunk {
                 None,None,None,None,
                 None,None,None,None,
             ],
+            sections_rendered_on: [0; 16],
             biomes: [0; 16 * 16],
         }
     }
@@ -428,8 +496,10 @@ pub struct SectionKey {
     pos: (i32, u8, i32),
 }
 
-struct Section {
+pub struct Section {
+    pub cull_info: chunk_builder::CullInfo,
     pub render_buffer: render::ChunkBuffer,
+
     y: u8,
 
     blocks: bit::Map,
@@ -446,6 +516,7 @@ struct Section {
 impl Section {
     fn new(x: i32, y: u8, z: i32) -> Section {
         let mut section = Section {
+            cull_info: chunk_builder::CullInfo::all_vis(),
             render_buffer: render::ChunkBuffer::new(),
             y: y,
 
