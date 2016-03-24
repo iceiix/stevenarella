@@ -418,12 +418,12 @@ impl Factory {
                         }
                     }
 
-                    let mut min_x = ::std::f64::INFINITY;
-                    let mut min_y = ::std::f64::INFINITY;
-                    let mut min_z = ::std::f64::INFINITY;
-                    let mut max_x = ::std::f64::NEG_INFINITY;
-                    let mut max_y = ::std::f64::NEG_INFINITY;
-                    let mut max_z = ::std::f64::NEG_INFINITY;
+                    let mut min_x = ::std::f32::INFINITY;
+                    let mut min_y = ::std::f32::INFINITY;
+                    let mut min_z = ::std::f32::INFINITY;
+                    let mut max_x = ::std::f32::NEG_INFINITY;
+                    let mut max_y = ::std::f32::NEG_INFINITY;
+                    let mut max_z = ::std::f32::NEG_INFINITY;
 
                     for v in &mut verts {
                         processed_face.vertices_texture.push(texture.clone());
@@ -452,11 +452,46 @@ impl Factory {
                         }
 
                         if let Some(r) = el.rotation.as_ref() {
-                            warn!("NYI rotation");
+                            match &*r.axis {
+                                "y" => {
+                                    let rot_y = (-r.angle * (::std::f64::consts::PI / 180.0)) as f32;
+                                    let c = rot_y.cos();
+                                    let s = rot_y.sin();
+                                    let x = v.x - ((r.origin[0] as f32)/16.0);
+                                    let z = v.z - ((r.origin[2] as f32)/16.0);
+                                    v.x = ((r.origin[0] as f32)/16.0) + (x*c - z*s);
+                                    v.z = ((r.origin[2] as f32)/16.0) + (z*c + x*s);
+                                },
+                                "x" => {
+                                    let rot_x = (-r.angle * (::std::f64::consts::PI / 180.0)) as f32;
+                                    let c = rot_x.cos();
+                                    let s = rot_x.sin();
+                                    let z = v.z - ((r.origin[2] as f32)/16.0);
+                                    let y = v.y - ((r.origin[1] as f32)/16.0);
+                                    v.z = ((r.origin[2] as f32)/16.0) + (z*c - y*s);
+                                    v.y = ((r.origin[1] as f32)/16.0) + (y*c + z*s);
+                                },
+                                "z" => {
+                                    let rot_z = (r.angle * (::std::f64::consts::PI / 180.0)) as f32;
+                                    let c = rot_z.cos();
+                                    let s = rot_z.sin();
+                                    let x = v.x - ((r.origin[0] as f32)/16.0);
+                                    let y = v.y - ((r.origin[1] as f32)/16.0);
+                                    v.x = ((r.origin[0] as f32)/16.0) + (x*c - y*s);
+                                    v.y = ((r.origin[1] as f32)/16.0) + (y*c + x*s);
+                                },
+                                _ => {}
+                            }
                         }
 
                         if raw.x > 0.0 {
-                            warn!("NYI rotation x");
+                            let rot_x = (raw.x * (::std::f64::consts::PI / 180.0)) as f32;
+                            let c = rot_x.cos();
+                            let s = rot_x.sin();
+                            let z = v.z - 0.5;
+                            let y = v.y - 0.5;
+                            v.z = 0.5 + (z*c - y*s);
+                            v.y = 0.5 + (y*c + z*s);
                         }
 
                         if raw.y > 0.0 {
@@ -482,10 +517,60 @@ impl Factory {
                         }
 
                         if face.rotation > 0 {
-                            warn!("NYI face rotation");
+                            let rot_y = (face.rotation as f64 * (::std::f64::consts::PI / 180.0)) as f32;
+                            let c = rot_y.cos() as i16;
+                            let s = rot_y.sin() as i16;
+                            let x = v.toffsetx - 8*tw;
+                            let y = v.toffsety - 8*th;
+                            v.toffsetx = 8*tw + (x*c - y*s);
+                            v.toffsety = 8*th + (y*c + x*s);
                         }
 
-                        // TODO: More rotation stuff
+                        if raw.uvlock && raw.y > 0.0
+                            && (processed_face.facing == Direction::Up || processed_face.facing == Direction::Down) {
+                            let rot_y = (raw.y * (::std::f64::consts::PI / 180.0)) as f32;
+                            let c = rot_y.cos() as i16;
+                            let s = rot_y.sin() as i16;
+                            let x = v.toffsetx - 8*16;
+                            let y = v.toffsety - 8*16;
+                            v.toffsetx = 8*16 + (x*c - y*s);
+                            v.toffsety = 8*16 + (y*c + x*s);
+                        }
+
+                        if raw.uvlock && raw.x > 0.0
+                            && (processed_face.facing != Direction::Up && processed_face.facing != Direction::Down) {
+                            let rot_x = (raw.x * (::std::f64::consts::PI / 180.0)) as f32;
+                            let c = rot_x.cos() as i16;
+                            let s = rot_x.sin() as i16;
+                            let x = v.toffsetx - 8*16;
+                            let y = v.toffsety - 8*16;
+                            v.toffsetx = 8*16 + (x*c - y*s);
+                            v.toffsety = 8*16 + (y*c + x*s);
+                        }
+
+                        if let Some(r) = el.rotation.as_ref() {
+                            if r.rescale {
+                                min_x = min_x.min(v.x);
+                                min_y = min_y.min(v.y);
+                                min_z = min_z.min(v.z);
+                                max_x = max_x.max(v.x);
+                                max_y = max_y.max(v.y);
+                                max_z = max_z.max(v.z);
+                            }
+                        }
+                    }
+
+                    if let Some(r) = el.rotation.as_ref() {
+                        if r.rescale {
+                            let dx = max_x - min_x;
+                            let dy = max_y - min_y;
+                            let dz = max_z - min_z;
+                            for v in &mut verts {
+                                v.x = (v.x - min_x) / dx;
+                                v.y = (v.y - min_y) / dy;
+                                v.z = (v.z - min_z) / dz;
+                            }
+                        }
                     }
 
                     processed_face.vertices = verts;
