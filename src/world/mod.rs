@@ -14,13 +14,15 @@
 
 pub mod block;
 
-use std::sync::Arc;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use types::bit;
 use types::nibble;
 use types::hash::FNVHash;
 use protocol;
+use render;
+use collision;
+use cgmath;
 
 pub mod biome;
 
@@ -55,13 +57,39 @@ impl World {
         }
     }
 
-    pub fn get_dirty_chunk_sections(&mut self) -> Vec<(i32, i32, i32, Arc<SectionKey>)> {
+    pub fn get_render_list(&self, frustum: &collision::Frustum<f32>) -> Vec<((i32, i32, i32), &render::ChunkBuffer)> {
+        let mut ret = vec![];
+        for (pos, chunk) in &self.chunks {
+            for (y, sec) in chunk.sections.iter().enumerate() {
+                if let Some(sec) = sec.as_ref() {
+                    let pos = (pos.0, y as i32, pos.1);
+                    let min = cgmath::Point3::new(pos.0 as f32 * 16.0, -pos.1 as f32 * 16.0, pos.2 as f32 * 16.0);
+                    let bounds = collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
+                    if frustum.contains(bounds) != collision::Relation::Out {
+                        ret.push((pos, &sec.render_buffer));
+                    }
+                }
+            }
+        }
+        ret
+    }
+
+    pub fn get_section_buffer(&mut self, x: i32, y: i32, z: i32) -> Option<&mut render::ChunkBuffer> {
+        if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
+            if let Some(sec) = chunk.sections[y as usize].as_mut() {
+                return Some(&mut sec.render_buffer);
+            }
+        }
+        None
+    }
+
+    pub fn get_dirty_chunk_sections(&mut self) -> Vec<(i32, i32, i32)> {
         let mut out = vec![];
         for (_, chunk) in &mut self.chunks {
             for sec in &mut chunk.sections {
                 if let Some(sec) = sec.as_mut() {
                     if !sec.building && sec.dirty {
-                        out.push((chunk.position.0, sec.y as i32, chunk.position.1, sec.key.clone()));
+                        out.push((chunk.position.0, sec.y as i32, chunk.position.1));
                     }
                 }
             }
@@ -391,7 +419,7 @@ pub struct SectionKey {
 }
 
 struct Section {
-    key: Arc<SectionKey>,
+    pub render_buffer: render::ChunkBuffer,
     y: u8,
 
     blocks: bit::Map,
@@ -408,9 +436,7 @@ struct Section {
 impl Section {
     fn new(x: i32, y: u8, z: i32) -> Section {
         let mut section = Section {
-            key: Arc::new(SectionKey{
-                pos: (x, y, z),
-            }),
+            render_buffer: render::ChunkBuffer::new(),
             y: y,
 
             blocks: bit::Map::new(4096, 4),

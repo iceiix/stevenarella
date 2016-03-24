@@ -14,7 +14,6 @@
 
 #![recursion_limit="200"]
 #![feature(const_fn)]
-#![feature(arc_counts)]
 
 extern crate glutin;
 extern crate image;
@@ -222,7 +221,7 @@ fn main() {
             .unwrap()
             .tick(&mut ui_container, &mut game.renderer, delta, width as f64);
         ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
-        game.renderer.tick(delta, width, height);
+        game.renderer.tick(&mut game.server.world, delta, width, height);
 
         let _ = window.swap_buffers();
 

@@ -60,7 +60,6 @@ pub struct Renderer {
     chunk_shader_alpha: ChunkShaderAlpha,
     trans_shader: TransShader,
 
-    chunks: HashMap<(i32, i32, i32), ChunkBuffer, BuildHasherDefault<FNVHash>>,
     element_buffer: gl::Buffer,
     element_buffer_size: usize,
     element_buffer_type: gl::Type,
@@ -72,16 +71,20 @@ pub struct Renderer {
 
     last_width: u32,
     last_height: u32,
-
-    chunk_gc_timer: f64,
 }
 
-struct ChunkBuffer {
-    key: Arc<world::SectionKey>,
-    position: (i32, i32, i32),
-
+pub struct ChunkBuffer {
     solid: Option<ChunkRenderInfo>,
     trans: Option<ChunkRenderInfo>,
+}
+
+impl ChunkBuffer {
+    pub fn new() -> ChunkBuffer {
+        ChunkBuffer {
+            solid: None,
+            trans: None,
+        }
+    }
 }
 
 struct ChunkRenderInfo {
@@ -191,7 +194,6 @@ impl Renderer {
             chunk_shader_alpha: chunk_shader_alpha,
             trans_shader: trans_shader,
 
-            chunks: HashMap::with_hasher(BuildHasherDefault::default()),
             element_buffer: gl::Buffer::new(),
             element_buffer_size: 0,
             element_buffer_type: gl::UNSIGNED_BYTE,
@@ -207,12 +209,10 @@ impl Renderer {
             perspective_matrix: cgmath::Matrix4::zero(),
 
             trans: None,
-
-            chunk_gc_timer: 120.0,
         }
     }
 
-    pub fn tick(&mut self, delta: f64, width: u32, height: u32) {
+    pub fn tick(&mut self, world: &mut world::World, delta: f64, width: u32, height: u32) {
         use std::f64::consts::PI as PI64;
         {
             let rm = self.resources.read().unwrap();
@@ -242,20 +242,6 @@ impl Renderer {
             self.init_trans(width, height);
         }
 
-        self.chunk_gc_timer -= delta;
-        if self.chunk_gc_timer <= 0.0 {
-            self.chunk_gc_timer = 120.0;
-            let mut unload_queue = vec![];
-            for (pos, info) in &self.chunks {
-                if Arc::strong_count(&info.key) == 1 {
-                    unload_queue.push(*pos);
-                }
-            }
-            for unload in unload_queue {
-                self.chunks.remove(&unload);
-            }
-        }
-
         let trans = self.trans.as_mut().unwrap();
         trans.main.bind();
 
@@ -283,8 +269,6 @@ impl Renderer {
         );
         let camera_matrix = camera_matrix * cgmath::Matrix4::from_nonuniform_scale(-1.0, 1.0, 1.0);
 
-        // TODO Frustum
-
         self.chunk_shader.perspective_matrix.set_matrix4(&self.perspective_matrix);
         self.chunk_shader.camera_matrix.set_matrix4(&camera_matrix);
         self.chunk_shader.texture.set_int(0);
@@ -293,15 +277,11 @@ impl Renderer {
 
         let frustum = collision::Frustum::from_matrix4(self.perspective_matrix * camera_matrix).unwrap();
 
-        for (pos, info) in &self.chunks {
+        for (pos, info) in world.get_render_list(&frustum) {
             if let Some(solid) = info.solid.as_ref() {
-                let min = cgmath::Point3::new(pos.0 as f32 * 16.0, -pos.1 as f32 * 16.0, pos.2 as f32 * 16.0);
-                let bounds = collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
-                if frustum.contains(bounds) != collision::Relation::Out {
-                    self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
-                    solid.array.bind();
-                    gl::draw_elements(gl::TRIANGLES, solid.count, self.element_buffer_type, 0);
-                }
+                self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
+                solid.array.bind();
+                gl::draw_elements(gl::TRIANGLES, solid.count, self.element_buffer_type, 0);
             }
         }
 
@@ -310,8 +290,12 @@ impl Renderer {
         // Cloud rendering
 
         // Trans chunk rendering
-
-        // TODO: trans chunk shader stuff
+        self.chunk_shader_alpha.program.use_program();
+        self.chunk_shader_alpha.perspective_matrix.set_matrix4(&self.perspective_matrix);
+        self.chunk_shader_alpha.camera_matrix.set_matrix4(&camera_matrix);
+        self.chunk_shader_alpha.texture.set_int(0);
+        self.chunk_shader_alpha.light_level.set_float(LIGHT_LEVEL);
+        self.chunk_shader_alpha.sky_offset.set_float(SKY_OFFSET);
 
         // Copy the depth buffer
         trans.main.bind_read();
@@ -357,15 +341,8 @@ impl Renderer {
         }
     }
 
-    pub fn update_chunk_solid(&mut self, pos: (i32, i32, i32), key: Arc<world::SectionKey>, data: &[u8], count: usize) {
+    pub fn update_chunk_solid(&mut self, buffer: &mut ChunkBuffer, data: &[u8], count: usize) {
         self.ensure_element_buffer(count);
-        let buffer = self.chunks.entry(pos).or_insert_with(||ChunkBuffer {
-            key: key.clone(),
-            position: pos,
-            solid: None,
-            trans: None,
-        });
-        buffer.key = key;
         if count == 0 {
             if buffer.solid.is_some() {
                 buffer.solid = None;

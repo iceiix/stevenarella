@@ -16,7 +16,7 @@ pub struct ChunkBuilder {
     free_builders: Vec<(usize, Vec<u8>)>,
     built_recv: mpsc::Receiver<(usize, BuildReply)>,
 
-    sections: Vec<(i32, i32, i32, Arc<world::SectionKey>)>,
+    sections: Vec<(i32, i32, i32)>,
     next_collection: f64,
 
     models: Arc<RwLock<model::Factory>>,
@@ -65,7 +65,9 @@ impl ChunkBuilder {
         while let Ok((id, mut val)) = self.built_recv.try_recv() {
             world.reset_building_flag(val.position);
 
-            renderer.update_chunk_solid(val.position, val.key, &val.solid_buffer, val.solid_count);
+            if let Some(render_buffer) = world.get_section_buffer(val.position.0, val.position.1, val.position.2) {
+                renderer.update_chunk_solid(render_buffer, &val.solid_buffer, val.solid_count);
+            }
 
             val.solid_buffer.clear();
             self.free_builders.push((id, val.solid_buffer));
@@ -96,7 +98,7 @@ impl ChunkBuilder {
             self.sections = sections;
             self.next_collection = 60.0;
         }
-        while let Some((x, y, z, key)) = self.sections.pop() {
+        while let Some((x, y, z)) = self.sections.pop() {
             let t_id = self.free_builders.pop().unwrap();
             world.set_building_flag((x, y, z));
             let (cx, cy, cz) = (x << 4, y << 4, z << 4);
@@ -105,7 +107,6 @@ impl ChunkBuilder {
             self.threads[t_id.0].0.send(BuildReq {
                 snapshot: snapshot,
                 position: (x, y, z),
-                key: key,
                 buffer: t_id.1,
             }).unwrap();
             if self.free_builders.is_empty() {
@@ -118,7 +119,6 @@ impl ChunkBuilder {
 struct BuildReq {
     snapshot: world::Snapshot,
     position: (i32, i32, i32),
-    key: Arc<world::SectionKey>,
     buffer: Vec<u8>,
 }
 
@@ -126,7 +126,6 @@ struct BuildReply {
     position: (i32, i32, i32),
     solid_buffer: Vec<u8>,
     solid_count: usize,
-    key: Arc<world::SectionKey>,
 }
 
 fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
@@ -135,7 +134,6 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
         let BuildReq {
             snapshot,
             position,
-            key,
             buffer,
         } = match work_recv.recv() {
             Ok(val) => val,
@@ -179,7 +177,6 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
             position: position,
             solid_buffer: solid_buffer,
             solid_count: solid_count,
-            key: key,
         })).unwrap();
     }
 }
