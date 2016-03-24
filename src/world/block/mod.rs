@@ -31,10 +31,11 @@ macro_rules! define_blocks {
                         $fname:ident : $ftype:ty = [$($val:expr),+],
                     )*
                 },
-                data $datafunc:expr,
+                $(data $datafunc:expr,)*
                 material $mat:expr,
                 model $model:expr,
-                variant $variant:expr,
+                $(variant $variant:expr,)*
+                $(tint $tint:expr,)*
             }
         )+
     ) => (
@@ -112,14 +113,18 @@ macro_rules! define_blocks {
                 }
             }
 
-            #[allow(unused_variables)]
+            #[allow(unused_variables, unreachable_code)]
             pub fn get_vanilla_id(&self) -> Option<usize> {
                 match *self {
                     $(
                         Block::$name {
                             $($fname,)*
                         } => {
-                            ($datafunc).map(|v| v + (internal_ids::$name << 4))
+                            $(
+                                let data: Option<usize> = ($datafunc).map(|v| v + (internal_ids::$name << 4));
+                                return data;
+                            )*
+                            return Some(0);
                         }
                     )+
                 }
@@ -156,14 +161,29 @@ macro_rules! define_blocks {
                 }
             }
 
-            #[allow(unused_variables)]
+            #[allow(unused_variables, unreachable_code)]
             pub fn get_model_variant(&self) -> String {
                 match *self {
                     $(
                         Block::$name {
                             $($fname,)*
                         } => {
-                            String::from($variant)
+                            $(return String::from($variant);)*
+                            return "normal";
+                        }
+                    )+
+                }
+            }
+
+            #[allow(unused_variables, unreachable_code)]
+            pub fn get_tint(&self) -> TintType {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            $(return $tint;)*
+                            return TintType::Default;
                         }
                     )+
                 }
@@ -194,17 +214,22 @@ pub struct Material {
     pub force_shade: bool,
 }
 
+pub enum TintType {
+    Default,
+    Color{r: u8, g: u8, b: u8},
+    Grass,
+    Foliage,
+}
+
 define_blocks! {
     Air {
         props {},
-        data { Some(0) },
         material Material {
             renderable: false,
             should_cull_against: false,
             force_shade: false,
         },
         model { ("minecraft", "air" ) },
-        variant "normal",
     }
     Stone {
         props {
@@ -222,7 +247,6 @@ define_blocks! {
             force_shade: false,
         },
         model { ("minecraft", variant.as_string() ) },
-        variant "normal",
     }
     Grass {
         props {
@@ -240,170 +264,142 @@ define_blocks! {
     Dirt {
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "dirt" ) },
-        variant "normal",
     }
     Cobblestone {
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "cobblestone" ) },
-        variant "normal",
     }
     Planks { // TODO
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "planks" ) },
-        variant "normal",
     }
     Sapling { // TODO
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: false,
             force_shade: false,
         },
         model { ("minecraft", "sapling" ) },
-        variant "normal",
     }
     Bedrock {
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "bedrock" ) },
-        variant "normal",
     }
     FlowingWater { // TODO
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "water" ) },
-        variant "normal",
     }
     Water { // TODO
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "water" ) },
-        variant "normal",
     }
     FlowingLava { // TODO
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "lava" ) },
-        variant "normal",
     }
     Lava {
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "lava" ) },
-        variant "normal",
     }
     Sand { // TODO
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "sand" ) },
-        variant "normal",
     }
     Gravel {
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "gravel" ) },
-        variant "normal",
     }
     GoldOre {
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "gold_ore" ) },
-        variant "normal",
     }
     IronOre {
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "iron_ore" ) },
-        variant "normal",
     }
     CoalOre {
         props {
         },
-        data { Some(0) },
         material Material {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
         },
         model { ("minecraft", "coal_ore" ) },
-        variant "normal",
     }
     Log {
         props {
@@ -441,7 +437,6 @@ define_blocks! {
             force_shade: true,
         },
         model { ("minecraft", format!("{}_leaves", variant.as_string()) ) },
-        variant "normal",
     }
     Missing {
         props {},
@@ -452,7 +447,6 @@ define_blocks! {
             force_shade: false,
         },
         model { ("steven", "missing_block" ) },
-        variant "normal",
     }
 }
 
