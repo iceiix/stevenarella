@@ -28,12 +28,15 @@ pub mod biome;
 
 pub struct World {
     chunks: HashMap<CPos, Chunk, BuildHasherDefault<FNVHash>>,
+
+    render_list: Vec<(i32, i32, i32)>,
 }
 
 impl World {
     pub fn new() -> World {
         World {
             chunks: HashMap::with_hasher(BuildHasherDefault::default()),
+            render_list: vec![],
         }
     }
 
@@ -57,21 +60,28 @@ impl World {
         }
     }
 
-    pub fn get_render_list(&self, frustum: &collision::Frustum<f32>) -> Vec<((i32, i32, i32), &render::ChunkBuffer)> {
-        let mut ret = vec![];
+    pub fn compute_render_list(&mut self, renderer: &mut render::Renderer) {
+        self.render_list.clear();
         for (pos, chunk) in &self.chunks {
             for (y, sec) in chunk.sections.iter().enumerate() {
                 if let Some(sec) = sec.as_ref() {
                     let pos = (pos.0, y as i32, pos.1);
                     let min = cgmath::Point3::new(pos.0 as f32 * 16.0, -pos.1 as f32 * 16.0, pos.2 as f32 * 16.0);
                     let bounds = collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
-                    if frustum.contains(bounds) != collision::Relation::Out {
-                        ret.push((pos, &sec.render_buffer));
+                    if renderer.frustum.contains(bounds) != collision::Relation::Out {
+                        self.render_list.push(pos);
                     }
                 }
             }
         }
-        ret
+    }
+
+    pub fn get_render_list(&self) -> Vec<((i32, i32, i32), &render::ChunkBuffer)> {
+        self.render_list.iter().map(|v| {
+            let chunk = self.chunks.get(&CPos(v.0, v.2)).unwrap();
+            let sec = chunk.sections[v.1 as usize].as_ref().unwrap();
+            (*v, &sec.render_buffer)
+        }).collect()
     }
 
     pub fn get_section_buffer(&mut self, x: i32, y: i32, z: i32) -> Option<&mut render::ChunkBuffer> {

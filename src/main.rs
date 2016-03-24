@@ -213,6 +213,8 @@ fn main() {
         game.tick(delta);
         game.server.tick(&mut game.renderer, delta);
 
+        game.renderer.update_camera(width, height);
+        game.server.world.compute_render_list(&mut game.renderer);
         game.chunk_builder.tick(&mut game.server.world, &mut game.renderer, delta);
 
         game.screen_sys.tick(delta, &mut game.renderer, &mut ui_container);

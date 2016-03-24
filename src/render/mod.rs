@@ -27,7 +27,7 @@ use image;
 use image::GenericImage;
 use byteorder::{WriteBytesExt, NativeEndian};
 use serde_json;
-use cgmath::{self, Vector, Point};
+use cgmath::{self, Vector, Point, SquareMatrix};
 use world;
 use collision;
 
@@ -66,6 +66,9 @@ pub struct Renderer {
 
     pub camera: Camera,
     perspective_matrix: cgmath::Matrix4<f32>,
+    camera_matrix: cgmath::Matrix4<f32>,
+    pub frustum: collision::Frustum<f32>,
+    pub view_vector: cgmath::Vector3<f32>,
 
     trans: Option<TransInfo>,
 
@@ -206,24 +209,17 @@ impl Renderer {
                 yaw: 0.0,
                 pitch: ::std::f64::consts::PI,
             },
-            perspective_matrix: cgmath::Matrix4::zero(),
+            perspective_matrix: cgmath::Matrix4::identity(),
+            camera_matrix: cgmath::Matrix4::identity(),
+            frustum: collision::Frustum::from_matrix4(cgmath::Matrix4::identity()).unwrap(),
+            view_vector: cgmath::Vector3::zero(),
 
             trans: None,
         }
     }
 
-    pub fn tick(&mut self, world: &mut world::World, delta: f64, width: u32, height: u32) {
+    pub fn update_camera(&mut self, width: u32, height: u32) {
         use std::f64::consts::PI as PI64;
-        {
-            let rm = self.resources.read().unwrap();
-            if rm.version() != self.resource_version {
-                self.resource_version = rm.version();
-                trace!("Updating textures to {}", self.resource_version);
-                self.textures.write().unwrap().update_textures(self.resource_version);
-            }
-        }
-
-        self.update_textures(delta);
 
         if self.last_height != height || self.last_width != width {
             self.last_width = width;
@@ -242,6 +238,33 @@ impl Renderer {
             self.init_trans(width, height);
         }
 
+        self.view_vector = cgmath::Vector3::new(
+            ((self.camera.yaw - PI64/2.0).cos() * -self.camera.pitch.cos()) as f32,
+            (-self.camera.pitch.sin()) as f32,
+            (-(self.camera.yaw - PI64/2.0).sin() * -self.camera.pitch.cos()) as f32
+        );
+        let camera = cgmath::Point3::new(-self.camera.pos.x as f32, -self.camera.pos.y as f32, self.camera.pos.z as f32);
+        let camera_matrix = cgmath::Matrix4::look_at(
+            camera,
+            camera + cgmath::Point3::new(-self.view_vector.x, -self.view_vector.y, self.view_vector.z).to_vec(),
+            cgmath::Vector3::new(0.0, -1.0, 0.0)
+        );
+        self.camera_matrix = camera_matrix * cgmath::Matrix4::from_nonuniform_scale(-1.0, 1.0, 1.0);
+        self.frustum = collision::Frustum::from_matrix4(self.perspective_matrix * self.camera_matrix).unwrap();
+    }
+
+    pub fn tick(&mut self, world: &mut world::World, delta: f64, width: u32, height: u32) {
+        {
+            let rm = self.resources.read().unwrap();
+            if rm.version() != self.resource_version {
+                self.resource_version = rm.version();
+                trace!("Updating textures to {}", self.resource_version);
+                self.textures.write().unwrap().update_textures(self.resource_version);
+            }
+        }
+
+        self.update_textures(delta);
+
         let trans = self.trans.as_mut().unwrap();
         trans.main.bind();
 
@@ -256,28 +279,13 @@ impl Renderer {
         // Chunk rendering
         self.chunk_shader.program.use_program();
 
-        let view_vector = cgmath::Vector3::new(
-            ((self.camera.yaw - PI64/2.0).cos() * -self.camera.pitch.cos()) as f32,
-            (-self.camera.pitch.sin()) as f32,
-            (-(self.camera.yaw - PI64/2.0).sin() * -self.camera.pitch.cos()) as f32
-        );
-        let camera = cgmath::Point3::new(-self.camera.pos.x as f32, -self.camera.pos.y as f32, self.camera.pos.z as f32);
-        let camera_matrix = cgmath::Matrix4::look_at(
-            camera,
-            camera + cgmath::Point3::new(-view_vector.x, -view_vector.y, view_vector.z).to_vec(),
-            cgmath::Vector3::new(0.0, -1.0, 0.0)
-        );
-        let camera_matrix = camera_matrix * cgmath::Matrix4::from_nonuniform_scale(-1.0, 1.0, 1.0);
-
         self.chunk_shader.perspective_matrix.set_matrix4(&self.perspective_matrix);
-        self.chunk_shader.camera_matrix.set_matrix4(&camera_matrix);
+        self.chunk_shader.camera_matrix.set_matrix4(&self.camera_matrix);
         self.chunk_shader.texture.set_int(0);
         self.chunk_shader.light_level.set_float(LIGHT_LEVEL);
         self.chunk_shader.sky_offset.set_float(SKY_OFFSET);
 
-        let frustum = collision::Frustum::from_matrix4(self.perspective_matrix * camera_matrix).unwrap();
-
-        for (pos, info) in world.get_render_list(&frustum) {
+        for (pos, info) in world.get_render_list() {
             if let Some(solid) = info.solid.as_ref() {
                 self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
                 solid.array.bind();
@@ -292,7 +300,7 @@ impl Renderer {
         // Trans chunk rendering
         self.chunk_shader_alpha.program.use_program();
         self.chunk_shader_alpha.perspective_matrix.set_matrix4(&self.perspective_matrix);
-        self.chunk_shader_alpha.camera_matrix.set_matrix4(&camera_matrix);
+        self.chunk_shader_alpha.camera_matrix.set_matrix4(&self.camera_matrix);
         self.chunk_shader_alpha.texture.set_int(0);
         self.chunk_shader_alpha.light_level.set_float(LIGHT_LEVEL);
         self.chunk_shader_alpha.sky_offset.set_float(SKY_OFFSET);
