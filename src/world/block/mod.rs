@@ -112,6 +112,7 @@ macro_rules! define_blocks {
                 }
             }
 
+            #[allow(unused_variables)]
             pub fn get_vanilla_id(&self) -> Option<usize> {
                 match *self {
                     $(
@@ -128,6 +129,7 @@ macro_rules! define_blocks {
                 VANILLA_ID_MAP.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
             }
 
+            #[allow(unused_variables)]
             pub fn get_material(&self) -> Material {
                 match *self {
                     $(
@@ -140,6 +142,7 @@ macro_rules! define_blocks {
                 }
             }
 
+            #[allow(unused_variables)]
             pub fn get_model(&self) -> (String, String) {
                 match *self {
                     $(
@@ -153,6 +156,7 @@ macro_rules! define_blocks {
                 }
             }
 
+            #[allow(unused_variables)]
             pub fn get_model_variant(&self) -> String {
                 match *self {
                     $(
@@ -186,6 +190,8 @@ macro_rules! define_blocks {
 
 pub struct Material {
     pub renderable: bool,
+    pub should_cull_against: bool,
+    pub force_shade: bool,
 }
 
 define_blocks! {
@@ -194,6 +200,8 @@ define_blocks! {
         data { Some(0) },
         material Material {
             renderable: false,
+            should_cull_against: false,
+            force_shade: false,
         },
         model { ("minecraft", "air" ) },
         variant "normal",
@@ -210,19 +218,24 @@ define_blocks! {
         data { Some(variant.data()) },
         material Material {
             renderable: true,
+            should_cull_against: true,
+            force_shade: false,
         },
         model { ("minecraft", variant.as_string() ) },
         variant "normal",
     }
     Grass {
         props {
+            snowy: bool = [false, true],
         },
-        data { Some(0) },
+        data { if snowy { None } else { Some(0) } },
         material Material {
             renderable: true,
+            should_cull_against: true,
+            force_shade: false,
         },
         model { ("minecraft", "grass" ) },
-        variant "normal",
+        variant format!("snowy={}", snowy),
     }
     Dirt {
         props {
@@ -230,8 +243,204 @@ define_blocks! {
         data { Some(0) },
         material Material {
             renderable: true,
+            should_cull_against: true,
+            force_shade: false,
         },
         model { ("minecraft", "dirt" ) },
+        variant "normal",
+    }
+    Cobblestone {
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "cobblestone" ) },
+        variant "normal",
+    }
+    Planks { // TODO
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "planks" ) },
+        variant "normal",
+    }
+    Sapling { // TODO
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: false,
+            force_shade: false,
+        },
+        model { ("minecraft", "sapling" ) },
+        variant "normal",
+    }
+    Bedrock {
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "bedrock" ) },
+        variant "normal",
+    }
+    FlowingWater { // TODO
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "water" ) },
+        variant "normal",
+    }
+    Water { // TODO
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "water" ) },
+        variant "normal",
+    }
+    FlowingLava { // TODO
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "lava" ) },
+        variant "normal",
+    }
+    Lava {
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "lava" ) },
+        variant "normal",
+    }
+    Sand { // TODO
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "sand" ) },
+        variant "normal",
+    }
+    Gravel {
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "gravel" ) },
+        variant "normal",
+    }
+    GoldOre {
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "gold_ore" ) },
+        variant "normal",
+    }
+    IronOre {
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "iron_ore" ) },
+        variant "normal",
+    }
+    CoalOre {
+        props {
+        },
+        data { Some(0) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", "coal_ore" ) },
+        variant "normal",
+    }
+    Log {
+        props {
+            variant: TreeVariant = [
+                TreeVariant::Oak, TreeVariant::Spruce,
+                TreeVariant::Birch, TreeVariant::Jungle
+            ],
+            axis: Axis = [Axis::Y, Axis::Z, Axis::X, Axis::None],
+        },
+        data { Some(variant.data() | (axis.data() << 2)) },
+        material Material {
+            renderable: true,
+            should_cull_against: true,
+            force_shade: false,
+        },
+        model { ("minecraft", format!("{}_log", variant.as_string()) ) },
+        variant format!("axis={}", axis.as_string()),
+    }
+    Leaves {
+        props {
+            variant: TreeVariant = [
+                TreeVariant::Oak, TreeVariant::Spruce,
+                TreeVariant::Birch, TreeVariant::Jungle
+            ],
+            decayable: bool = [false, true],
+            check_decay: bool = [false, true],
+        },
+        data { Some(variant.data()
+                    | (if decayable { 0x4 } else { 0x0 })
+                    | (if check_decay { 0x8 } else { 0x0 })
+        ) },
+        material Material {
+            renderable: true,
+            should_cull_against: false,
+            force_shade: true,
+        },
+        model { ("minecraft", format!("{}_leaves", variant.as_string()) ) },
         variant "normal",
     }
     Missing {
@@ -239,12 +448,73 @@ define_blocks! {
         data { None::<usize> },
         material Material {
             renderable: true,
+            should_cull_against: true,
+            force_shade: false,
         },
         model { ("steven", "missing_block" ) },
         variant "normal",
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Axis {
+    Y,
+    Z,
+    X,
+    None
+}
+
+impl Axis {
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            Axis::X => "x",
+            Axis::Y => "y",
+            Axis::Z => "z",
+            Axis::None => "none",
+        }
+    }
+    fn data(&self) -> usize {
+        match *self {
+            Axis::Y => 0,
+            Axis::Z => 1,
+            Axis::X => 2,
+            Axis::None => 3,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum TreeVariant {
+    Oak,
+    Spruce,
+    Birch,
+    Jungle,
+    Acacia,
+    DarkOak
+}
+
+impl TreeVariant {
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            TreeVariant::Oak => "oak",
+            TreeVariant::Spruce => "spruce",
+            TreeVariant::Birch => "birch",
+            TreeVariant::Jungle => "jungle",
+            TreeVariant::Acacia => "acacia",
+            TreeVariant::DarkOak => "dark_oak",
+        }
+    }
+    pub fn data(&self) -> usize {
+        match *self {
+            TreeVariant::Oak => 0,
+            TreeVariant::Spruce => 1,
+            TreeVariant::Birch => 2,
+            TreeVariant::Jungle => 3,
+            TreeVariant::Acacia => 0,
+            TreeVariant::DarkOak => 1,
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum StoneVariant {

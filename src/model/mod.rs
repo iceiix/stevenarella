@@ -636,12 +636,13 @@ struct Face {
 impl Model {
     fn render<W: Write>(&self, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
         let this = snapshot.get_block(x, y, z);
+        let this_mat = this.get_material();
         let mut indices = 0;
         for face in &self.faces {
             if face.cull_face != Direction::Invalid {
                 let (ox, oy, oz) = face.cull_face.get_offset();
                 let other = snapshot.get_block(x + ox, y + oy, z + oz);
-                if other.get_material().renderable || other == this { // TODO: cull check
+                if other.get_material().should_cull_against || other == this {
                     continue;
                 }
             }
@@ -672,8 +673,8 @@ impl Model {
                     vert.y as f64,
                     vert.z as f64,
                     face.facing,
-                    true,
-                    false
+                    self.ambient_occlusion,
+                    this_mat.force_shade
                 );
                 vert.block_light = bl;
                 vert.sky_light = sl;
@@ -690,7 +691,7 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
                     x: f64, y: f64, z: f64, face: Direction, smooth: bool, force: bool) -> (u16, u16) {
     use std::cmp::max;
     use world::block;
-    let (ox, oy, oz) = if !snapshot.get_block(orig_x, orig_y, orig_z).get_material().renderable { // TODO: cull check
+    let (ox, oy, oz) = if !snapshot.get_block(orig_x, orig_y, orig_z).get_material().should_cull_against {
         (0, 0, 0)
     } else {
         face.get_offset()
