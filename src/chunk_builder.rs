@@ -6,6 +6,8 @@ use std::io::Write;
 use byteorder::{WriteBytesExt, NativeEndian};
 use world;
 use render;
+use resources;
+use model;
 
 const NUM_WORKERS: usize = 8;
 
@@ -16,19 +18,25 @@ pub struct ChunkBuilder {
 
     sections: Vec<(i32, i32, i32, Arc<world::SectionKey>)>,
     next_collection: f64,
+
+    models: Arc<RwLock<model::Factory>>,
+    resources: Arc<RwLock<resources::Manager>>,
+    resource_version: usize,
 }
 
 impl ChunkBuilder {
-    pub fn new(textures: Arc<RwLock<render::TextureManager>>) -> ChunkBuilder {
+    pub fn new(resources: Arc<RwLock<resources::Manager>>, textures: Arc<RwLock<render::TextureManager>>) -> ChunkBuilder {
+        let models = Arc::new(RwLock::new(model::Factory::new(resources.clone(), textures)));
+
         let mut threads = vec![];
         let mut free = vec![];
         let (built_send, built_recv) = mpsc::channel();
         for i in 0 .. NUM_WORKERS {
             let built_send = built_send.clone();
             let (work_send, work_recv) = mpsc::channel();
-            let textures = textures.clone();
+            let models = models.clone();
             let id = i;
-            threads.push((work_send, thread::spawn(move || build_func(id, textures, work_recv, built_send))));
+            threads.push((work_send, thread::spawn(move || build_func(id, models, work_recv, built_send))));
             free.push((i, vec![]));
         }
         ChunkBuilder {
@@ -37,11 +45,23 @@ impl ChunkBuilder {
             built_recv: built_recv,
             sections: vec![],
             next_collection: 0.0,
+            models: models,
+            resources: resources.clone(),
+            resource_version: 0xFFFF,
         }
     }
 
     pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer, delta: f64) {
         use std::cmp::Ordering;
+
+        {
+            let rm = self.resources.read().unwrap();
+            if rm.version() != self.resource_version {
+                self.resource_version = rm.version();
+                self.models.write().unwrap().clear_cache();
+            }
+        }
+
         while let Ok((id, mut val)) = self.built_recv.try_recv() {
             world.reset_building_flag(val.position);
 
@@ -109,7 +129,8 @@ struct BuildReply {
     key: Arc<world::SectionKey>,
 }
 
-fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
+fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
+    use rand::{self, Rng, SeedableRng};
     loop {
         let BuildReq {
             snapshot,
@@ -121,71 +142,35 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
             Err(_) => return,
         };
 
+        let mut rng = rand::XorShiftRng::from_seed([
+            position.0 as u32,
+            position.1 as u32,
+            position.2 as u32,
+            (position.0 as u32 ^ position.2 as u32) | 1,
+        ]);
+
         let mut solid_buffer = buffer;
         let mut solid_count = 0;
 
         for y in 0 .. 16 {
             for x in 0 .. 16 {
                 for z in 0 .. 16 {
-                    let block = snapshot.get_block(x, y, z).get_material();
-                    if !block.renderable {
+                    let block = snapshot.get_block(x, y, z);
+                    if !block.get_material().renderable {
+						// Use one step of the rng so that
+						// if a block is placed in an empty
+						// location is variant doesn't change
+                        rng.next_u32();
                         continue;
                     }
 
-                    for dir in Direction::all() {
-
-                        let offset = dir.get_offset();
-                        let other = snapshot.get_block(x + offset.0, y + offset.1, z + offset.2).get_material();
-                        if other.renderable {
-                            continue;
-                        }
-
-                        let (mut cr, mut cg, mut cb) = (255, 255, 255);
-                        if dir == Direction::West || dir == Direction::East {
-                            cr = ((cr as f64) * 0.8) as u8;
-                            cg = ((cg as f64) * 0.8) as u8;
-                            cb = ((cb as f64) * 0.8) as u8;
-                        }
-
-                        let stone = render::Renderer::get_texture(&textures, &format!("minecraft:blocks/{}", block.texture));
-                        solid_count += 6;
-                        for vert in dir.get_verts() {
-                            let mut vert = vert.clone();
-                            // TODO
-                            vert.r = cr;
-                            vert.g = cg;
-                            vert.b = cb;
-
-                            vert.x += x as f32;
-                            vert.y += y as f32;
-                            vert.z += z as f32;
-
-                            vert.toffsetx *= stone.get_width() as i16 * 16;
-                            vert.toffsety *= stone.get_height() as i16 * 16;
-
-                            let (bl, sl) = calculate_light(
-                                &snapshot,
-                                x, y, z,
-                                vert.x as f64,
-                                vert.y as f64,
-                                vert.z as f64,
-                                dir,
-                                true,
-                                false
-                            );
-                            vert.block_light = bl;
-                            vert.sky_light = sl;
-
-                            // TODO
-                            vert.tatlas = stone.atlas as i16;
-                            vert.tx = stone.get_x() as u16;
-                            vert.ty = stone.get_y() as u16;
-                            vert.tw = stone.get_width() as u16;
-                            vert.th = stone.get_height() as u16;
-
-                            vert.write(&mut solid_buffer);
-                        }
-                    }
+                    // TODO Liquids need a special case
+                    let model_name = block.get_model();
+                    let variant = block.get_model_variant();
+                    solid_count += model::Factory::get_state_model(
+                        &models, &model_name.0, &model_name.1, &variant, &mut rng,
+                        &snapshot, x, y, z, &mut solid_buffer
+                    );                    
                 }
             }
         }
@@ -199,58 +184,9 @@ fn build_func(id: usize, textures: Arc<RwLock<render::TextureManager>>, work_rec
     }
 }
 
-fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z: i32,
-                    x: f64, y: f64, z: f64, face: Direction, smooth: bool, force: bool) -> (u16, u16) {
-    use std::cmp::max;
-    use world::block;
-    let (ox, oy, oz) = if !snapshot.get_block(orig_x, orig_y, orig_z).get_material().renderable { // TODO: cull check
-        (0, 0, 0)
-    } else {
-        face.get_offset()
-    };
-
-    let s_block_light = snapshot.get_block_light(orig_x + ox, orig_y + oy, orig_z + oz);
-    let s_sky_light = snapshot.get_sky_light(orig_x + ox, orig_y + oy, orig_z + oz);
-    if !smooth {
-        return ((s_block_light as u16) * 4000, (s_sky_light as u16) * 4000);
-    }
-
-    let mut block_light = 0u32;
-    let mut sky_light = 0u32;
-    let mut count = 0;
-
-    let s_block_light = max(((s_block_light as i8) - 8), 0) as u8;
-    let s_sky_light = max(((s_sky_light as i8) - 8), 0) as u8;
-
-    let dx = (ox as f64) * 0.6;
-    let dy = (oy as f64) * 0.6;
-    let dz = (oz as f64) * 0.6;
-
-    for ox in [-0.6, 0.0].into_iter() {
-        for oy in [-0.6, 0.0].into_iter() {
-            for oz in [-0.6, 0.0].into_iter() {
-                let lx = (x + ox + dx).round() as i32;
-                let ly = (y + oy + dy).round() as i32;
-                let lz = (z + oz + dz).round() as i32;
-                let mut bl = snapshot.get_block_light(lx, ly, lz);
-                let mut sl = snapshot.get_sky_light(lx, ly, lz);
-                if (force && match snapshot.get_block(lx, ly, lz) { block::Air{} => false, _ => true })
-                    || (sl == 0 && bl == 0){
-                    bl = s_block_light;
-                    sl = s_sky_light;
-                }
-                block_light += bl as u32;
-                sky_light += sl as u32;
-                count += 1;
-            }
-        }
-    }
-
-    ((((block_light * 4000) / count) as u16), (((sky_light * 4000) / count) as u16))
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
+    Invalid,
     Up,
     Down,
     North,
@@ -268,6 +204,18 @@ impl Direction {
         ]
     }
 
+    pub fn from_string(val: &str) -> Direction {
+        match val {
+            "up" => Direction::Up,
+            "down" => Direction::Down,
+            "north" => Direction::North,
+            "south" => Direction::South,
+            "west" => Direction::West,
+            "east" => Direction::East,
+            _ => Direction::Invalid,
+        }
+    }
+
     pub fn get_verts(&self) -> &'static [BlockVertex; 4] {
         match *self {
             Direction::Up => PRECOMPUTED_VERTS[0],
@@ -276,6 +224,7 @@ impl Direction {
             Direction::South => PRECOMPUTED_VERTS[3],
             Direction::West => PRECOMPUTED_VERTS[4],
             Direction::East => PRECOMPUTED_VERTS[5],
+            _ => unreachable!(),
         }
     }
 
@@ -287,6 +236,31 @@ impl Direction {
             Direction::South => (0, 0, 1),
             Direction::West => (-1, 0, 0),
             Direction::East => (1, 0, 0),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            Direction::Up => "up",
+            Direction::Down => "down",
+            Direction::North => "north",
+            Direction::South => "south",
+            Direction::West => "west",
+            Direction::East => "east",
+            Direction::Invalid => "invalid",
+        }
+    }
+
+    pub fn index(&self) -> usize {
+        match *self {
+            Direction::Up => 0,
+            Direction::Down => 1,
+            Direction::North => 2,
+            Direction::South => 3,
+            Direction::West => 4,
+            Direction::East => 5,
+            _ => unreachable!(),
         }
     }
 }
@@ -332,11 +306,21 @@ const PRECOMPUTED_VERTS: [&'static [BlockVertex; 4]; 6] = [
 
 #[derive(Clone)]
 pub struct BlockVertex {
-    x: f32, y: f32, z: f32,
-    tx: u16, ty: u16, tw: u16, th: u16,
-    toffsetx: i16, toffsety: i16, tatlas: i16,
-    r: u8, g: u8, b: u8,
-    block_light: u16, sky_light: u16,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+    pub tx: u16,
+    pub ty: u16,
+    pub tw: u16,
+    pub th: u16,
+    pub toffsetx: i16,
+    pub toffsety: i16,
+    pub tatlas: i16,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub block_light: u16,
+    pub sky_light: u16,
 }
 
 impl BlockVertex {
@@ -349,7 +333,7 @@ impl BlockVertex {
             block_light: 0, sky_light: 0,
         }
     }
-    fn write<W: Write>(&self, w: &mut W) {
+    pub fn write<W: Write>(&self, w: &mut W) {
         let _ = w.write_f32::<NativeEndian>(self.x);
         let _ = w.write_f32::<NativeEndian>(self.y);
         let _ = w.write_f32::<NativeEndian>(self.z);

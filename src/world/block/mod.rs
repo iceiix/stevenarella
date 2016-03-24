@@ -33,6 +33,8 @@ macro_rules! define_blocks {
                 },
                 data $datafunc:expr,
                 material $mat:expr,
+                model $model:expr,
+                variant $variant:expr,
             }
         )+
     ) => (
@@ -137,6 +139,31 @@ macro_rules! define_blocks {
                     )+
                 }
             }
+
+            pub fn get_model(&self) -> (String, String) {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            let parts = $model;
+                            (String::from(parts.0), String::from(parts.1))
+                        }
+                    )+
+                }
+            }
+
+            pub fn get_model_variant(&self) -> String {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            String::from($variant)
+                        }
+                    )+
+                }
+            }
         }
 
         lazy_static! {
@@ -159,8 +186,6 @@ macro_rules! define_blocks {
 
 pub struct Material {
     pub renderable: bool,
-    // TEMP
-    pub texture: &'static str,
 }
 
 define_blocks! {
@@ -169,8 +194,9 @@ define_blocks! {
         data { Some(0) },
         material Material {
             renderable: false,
-            texture: "none",
         },
+        model { ("minecraft", "air" ) },
+        variant "normal",
     }
     Stone {
         props {
@@ -184,16 +210,9 @@ define_blocks! {
         data { Some(variant.data()) },
         material Material {
             renderable: true,
-            texture: match variant {
-                StoneVariant::Normal => "stone",
-                StoneVariant::Granite => "stone_granite",
-                StoneVariant::SmoothGranite => "stone_granite_smooth",
-                StoneVariant::Diorite => "stone_diorite",
-                StoneVariant::SmoothDiorite => "stone_diorite_smooth",
-                StoneVariant::Andesite => "stone_andesite",
-                StoneVariant::SmoothAndesite => "stone_andesite_smooth",
-            },
         },
+        model { ("minecraft", variant.as_string() ) },
+        variant "normal",
     }
     Grass {
         props {
@@ -201,8 +220,9 @@ define_blocks! {
         data { Some(0) },
         material Material {
             renderable: true,
-            texture: "grass_path_top",
         },
+        model { ("minecraft", "grass" ) },
+        variant "normal",
     }
     Dirt {
         props {
@@ -210,16 +230,18 @@ define_blocks! {
         data { Some(0) },
         material Material {
             renderable: true,
-            texture: "dirt",
         },
+        model { ("minecraft", "dirt" ) },
+        variant "normal",
     }
     Missing {
         props {},
         data { None::<usize> },
         material Material {
             renderable: true,
-            texture: "missing_texture",
         },
+        model { ("steven", "missing_block" ) },
+        variant "normal",
     }
 }
 
@@ -237,7 +259,13 @@ pub enum StoneVariant {
 
 impl Display for StoneVariant {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{}", match *self {
+        write!(f, "{}", self.as_string())
+    }
+}
+
+impl StoneVariant {
+    fn as_string(&self) -> &'static str {
+        match *self {
             StoneVariant::Normal => "stone",
             StoneVariant::Granite => "granite",
             StoneVariant::SmoothGranite => "smooth_granite",
@@ -245,11 +273,8 @@ impl Display for StoneVariant {
             StoneVariant::SmoothDiorite => "smooth_diorite",
             StoneVariant::Andesite => "andesite",
             StoneVariant::SmoothAndesite => "smooth_andesite",
-        })
+        }
     }
-}
-
-impl StoneVariant {
     fn data(&self) -> usize {
         match *self {
             StoneVariant::Normal => 0,

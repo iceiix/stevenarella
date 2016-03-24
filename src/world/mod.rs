@@ -16,19 +16,20 @@ pub mod block;
 
 use std::sync::Arc;
 use std::collections::HashMap;
-use std::hash::{BuildHasherDefault, Hasher};
+use std::hash::BuildHasherDefault;
 use types::bit;
 use types::nibble;
+use types::hash::FNVHash;
 use protocol;
 
 pub struct World {
-    chunks: HashMap<CPos, Chunk>,
+    chunks: HashMap<CPos, Chunk, BuildHasherDefault<FNVHash>>,
 }
 
 impl World {
     pub fn new() -> World {
         World {
-            chunks: HashMap::new(),
+            chunks: HashMap::with_hasher(BuildHasherDefault::default()),
         }
     }
 
@@ -356,27 +357,6 @@ impl Chunk {
             Some(sec) => sec.get_block(x, y & 0xF, z),
             None => block::Air{},
         }
-    }
-}
-
-struct FNVHash(u64);
-
-impl Hasher for FNVHash {
-    fn write(&mut self, bytes: &[u8]) {
-        for b in bytes {
-            self.0 = self.0.wrapping_mul(0x100000001b3);
-            self.0 ^= *b as u64
-        }
-    }
-
-    fn finish(&self) -> u64 {
-        self.0
-    }
-}
-
-impl Default for FNVHash {
-    fn default() -> Self {
-        FNVHash(0xcbf29ce484222325)
     }
 }
 

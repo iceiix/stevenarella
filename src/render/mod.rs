@@ -31,6 +31,9 @@ use cgmath::{self, Vector, Point};
 use world;
 use collision;
 
+use std::hash::BuildHasherDefault;
+use types::hash::FNVHash;
+
 const ATLAS_SIZE: usize = 1024;
 
 // TEMP
@@ -57,7 +60,7 @@ pub struct Renderer {
     chunk_shader_alpha: ChunkShaderAlpha,
     trans_shader: TransShader,
 
-    chunks: HashMap<(i32, i32, i32), ChunkBuffer>,
+    chunks: HashMap<(i32, i32, i32), ChunkBuffer, BuildHasherDefault<FNVHash>>,
     element_buffer: gl::Buffer,
     element_buffer_size: usize,
     element_buffer_type: gl::Type,
@@ -188,7 +191,7 @@ impl Renderer {
             chunk_shader_alpha: chunk_shader_alpha,
             trans_shader: trans_shader,
 
-            chunks: HashMap::new(),
+            chunks: HashMap::with_hasher(BuildHasherDefault::default()),
             element_buffer: gl::Buffer::new(),
             element_buffer_size: 0,
             element_buffer_type: gl::UNSIGNED_BYTE,
@@ -215,7 +218,7 @@ impl Renderer {
             let rm = self.resources.read().unwrap();
             if rm.version() != self.resource_version {
                 self.resource_version = rm.version();
-                println!("Updating textures to {}", self.resource_version);
+                trace!("Updating textures to {}", self.resource_version);
                 self.textures.write().unwrap().update_textures(self.resource_version);
             }
         }
@@ -656,7 +659,7 @@ impl TransInfo {
 }
 
 pub struct TextureManager {
-    textures: HashMap<String, Texture>,
+    textures: HashMap<String, Texture, BuildHasherDefault<FNVHash>>,
     version: usize,
     resources: Arc<RwLock<resources::Manager>>,
     atlases: Vec<atlas::Atlas>,
@@ -664,21 +667,21 @@ pub struct TextureManager {
     animated_textures: Vec<AnimatedTexture>,
     pending_uploads: Vec<(i32, atlas::Rect, Vec<u8>)>,
 
-    dynamic_textures: HashMap<String, (i32, atlas::Rect)>,
+    dynamic_textures: HashMap<String, (i32, atlas::Rect), BuildHasherDefault<FNVHash>>,
     free_dynamics: Vec<(i32, atlas::Rect)>,
 }
 
 impl TextureManager {
     fn new(res: Arc<RwLock<resources::Manager>>) -> TextureManager {
         let mut tm = TextureManager {
-            textures: HashMap::new(),
+            textures: HashMap::with_hasher(BuildHasherDefault::default()),
             version: 0xFFFF,
             resources: res,
             atlases: Vec::new(),
             animated_textures: Vec::new(),
             pending_uploads: Vec::new(),
 
-            dynamic_textures: HashMap::new(),
+            dynamic_textures: HashMap::with_hasher(BuildHasherDefault::default()),
             free_dynamics: Vec::new(),
         };
         tm.add_defaults();

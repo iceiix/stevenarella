@@ -53,6 +53,7 @@ pub mod server;
 pub mod world;
 pub mod chunk_builder;
 pub mod auth;
+pub mod model;
 
 use std::sync::{Arc, RwLock, Mutex};
 use std::marker::PhantomData;
@@ -191,11 +192,11 @@ fn main() {
         focused: false,
         renderer: renderer,
         screen_sys: screen_sys,
-        resource_manager: resource_manager,
+        resource_manager: resource_manager.clone(),
         console: con,
         should_close: false,
         mouse_pos: (0, 0),
-        chunk_builder: chunk_builder::ChunkBuilder::new(textures),
+        chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
     };
 
