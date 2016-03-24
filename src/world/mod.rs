@@ -22,6 +22,8 @@ use types::nibble;
 use types::hash::FNVHash;
 use protocol;
 
+pub mod biome;
+
 pub struct World {
     chunks: HashMap<CPos, Chunk, BuildHasherDefault<FNVHash>>,
 }
@@ -157,7 +159,13 @@ impl World {
                         }
                     }
                 }
-                // TODO: Biomes
+                for zz in z1 .. z2 {
+                    for xx in x1 .. x2 {
+                        let ox = xx + (cx << 4);
+                        let oz = zz + (cz << 4);
+                        snapshot.set_biome(ox, oz, chunk.get_biome(xx, zz));
+                    }
+                }
             }
         }
 
@@ -226,7 +234,12 @@ impl World {
                 try!(data.read_exact(&mut section.block_light.data));
                 try!(data.read_exact(&mut section.sky_light.data));
             }
+
+            if new {
+                try!(data.read_exact(&mut chunk.biomes));
+            }
         }
+
         for i in 0 .. 16 {
             if mask & (1 << i) == 0 {
                 continue;
@@ -303,6 +316,14 @@ impl Snapshot {
         self.sky_light.set(idx, l);
     }
 
+    pub fn get_biome(&self, x: i32, z: i32) -> biome::Biome {
+        biome::Biome::by_id(self.biomes[((x - self.x) | ((z - self.z) << 4)) as usize] as usize)
+    }
+
+    pub fn set_biome(&mut self, x: i32, z: i32, b: biome::Biome) {
+        self.biomes[((x - self.x) | ((z - self.z) << 4)) as usize] = b.id as u8;
+    }
+
     #[inline]
     fn index(&self, x: i32, y: i32, z: i32) -> usize {
         ((x - self.x) + ((z - self.z) * self.w) + ((y - self.y) * self.w * self.d)) as usize
@@ -357,6 +378,10 @@ impl Chunk {
             Some(sec) => sec.get_block(x, y & 0xF, z),
             None => block::Air{},
         }
+    }
+
+    fn get_biome(&self, x: i32, z: i32) -> biome::Biome {
+        biome::Biome::by_id(self.biomes[((z<<4)|x) as usize] as usize)
     }
 }
 

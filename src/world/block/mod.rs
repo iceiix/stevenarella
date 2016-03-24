@@ -124,7 +124,7 @@ macro_rules! define_blocks {
                                 let data: Option<usize> = ($datafunc).map(|v| v + (internal_ids::$name << 4));
                                 return data;
                             )*
-                            return Some(0);
+                            return Some(internal_ids::$name << 4);
                         }
                     )+
                 }
@@ -169,7 +169,7 @@ macro_rules! define_blocks {
                             $($fname,)*
                         } => {
                             $(return String::from($variant);)*
-                            return "normal";
+                            return "normal".to_owned();
                         }
                     )+
                 }
@@ -214,6 +214,7 @@ pub struct Material {
     pub force_shade: bool,
 }
 
+#[derive(Clone, Copy)]
 pub enum TintType {
     Default,
     Color{r: u8, g: u8, b: u8},
@@ -260,6 +261,7 @@ define_blocks! {
         },
         model { ("minecraft", "grass" ) },
         variant format!("snowy={}", snowy),
+        tint TintType::Grass,
     }
     Dirt {
         props {

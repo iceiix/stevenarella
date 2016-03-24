@@ -5,6 +5,7 @@ use std::io::Write;
 use resources;
 use render;
 use world;
+use world::block::TintType;
 use chunk_builder::{self, Direction};
 use serde_json;
 
@@ -723,6 +724,9 @@ impl Model {
         let this = snapshot.get_block(x, y, z);
         let this_mat = this.get_material();
         let mut indices = 0;
+
+        let tint = this.get_tint();
+
         for face in &self.faces {
             if face.cull_face != Direction::Invalid {
                 let (ox, oy, oz) = face.cull_face.get_offset();
@@ -734,6 +738,21 @@ impl Model {
 
 
             let (mut cr, mut cg, mut cb) = (255, 255, 255);
+            match face.tint_index {
+                0 => {
+                    match tint {
+                        TintType::Default => {},
+                        TintType::Color{r, g, b} => {
+                            cr = r;
+                            cg = g;
+                            cb = b;
+                        },
+                        TintType::Grass => {}, // TODO
+                        TintType::Foliage => {}, // TODO
+                    }
+                },
+                _ => {},
+            }
             if face.facing == Direction::West || face.facing == Direction::East {
                 cr = ((cr as f64) * 0.8) as u8;
                 cg = ((cg as f64) * 0.8) as u8;
