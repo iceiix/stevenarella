@@ -58,7 +58,7 @@ impl ChunkBuilder {
             let rm = self.resources.read().unwrap();
             if rm.version() != self.resource_version {
                 self.resource_version = rm.version();
-                self.models.write().unwrap().clear_cache();
+                self.models.write().unwrap().version_change();
             }
         }
 
@@ -170,7 +170,7 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
                     solid_count += model::Factory::get_state_model(
                         &models, &model_name.0, &model_name.1, &variant, &mut rng,
                         &snapshot, x, y, z, &mut solid_buffer
-                    );                    
+                    );
                 }
             }
         }

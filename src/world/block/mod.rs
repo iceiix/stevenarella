@@ -439,6 +439,7 @@ define_blocks! {
             force_shade: true,
         },
         model { ("minecraft", format!("{}_leaves", variant.as_string()) ) },
+        tint TintType::Foliage,
     }
     Missing {
         props {},

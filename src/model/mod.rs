@@ -13,12 +13,16 @@ use std::hash::BuildHasherDefault;
 use types::hash::FNVHash;
 
 use rand::Rng;
+use image::{self, GenericImage};
 
 pub struct Factory {
     resources: Arc<RwLock<resources::Manager>>,
     textures: Arc<RwLock<render::TextureManager>>,
 
     models: HashMap<Key, StateModel, BuildHasherDefault<FNVHash>>,
+
+    grass_colors: image::DynamicImage,
+    foliage_colors: image::DynamicImage,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -48,6 +52,8 @@ macro_rules! try_log {
 impl Factory {
     pub fn new(resources: Arc<RwLock<resources::Manager>>, textures: Arc<RwLock<render::TextureManager>>) -> Factory {
         Factory {
+            grass_colors: Factory::load_biome_colors(resources.clone(), "grass"),
+            foliage_colors: Factory::load_biome_colors(resources.clone(), "foliage"),
             resources: resources,
             textures: textures,
 
@@ -55,8 +61,17 @@ impl Factory {
         }
     }
 
-    pub fn clear_cache(&mut self) {
+    fn load_biome_colors(res: Arc<RwLock<resources::Manager>>, name: &str) -> image::DynamicImage {
+        let mut val = res.read().unwrap().open("minecraft", &format!("textures/colormap/{}.png", name)).unwrap();
+        let mut data = Vec::new();
+        val.read_to_end(&mut data).unwrap();
+        image::load_from_memory(&data).unwrap()
+    }
+
+    pub fn version_change(&mut self) {
         self.models.clear();
+        self.grass_colors = Factory::load_biome_colors(self.resources.clone(), "grass");
+        self.foliage_colors = Factory::load_biome_colors(self.resources.clone(), "foliage");
     }
 
     pub fn get_state_model<R: Rng, W: Write>(models: &Arc<RwLock<Factory>>, plugin: &str, name: &str, variant: &str, rng: &mut R,
@@ -68,7 +83,7 @@ impl Factory {
             if let Some(model) = m.models.get(&key) {
                 if let Some(var) = model.get_variants(variant) {
                     let model = var.choose_model(rng);
-                    return model.render(snapshot, x, y, z, buf);
+                    return model.render(&*m, snapshot, x, y, z, buf);
                 }
                 missing = true;
             }
@@ -83,7 +98,7 @@ impl Factory {
             if let Some(model) = m.models.get(&key) {
                 if let Some(var) = model.get_variants(variant) {
                     let model = var.choose_model(rng);
-                    return model.render(snapshot, x, y, z, buf);
+                    return model.render(&*m, snapshot, x, y, z, buf);
                 }
             }
         }
@@ -720,7 +735,7 @@ struct Face {
 }
 
 impl Model {
-    fn render<W: Write>(&self, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
+    fn render<W: Write>(&self, factory: &Factory, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
         let this = snapshot.get_block(x, y, z);
         let this_mat = this.get_material();
         let mut indices = 0;
@@ -747,8 +762,18 @@ impl Model {
                             cg = g;
                             cb = b;
                         },
-                        TintType::Grass => {}, // TODO
-                        TintType::Foliage => {}, // TODO
+                        TintType::Grass => {
+                            let (r, g, b) = calculate_biome(snapshot, x, z, &factory.grass_colors);
+                            cr = r;
+                            cg = g;
+                            cb = b;
+                        },
+                        TintType::Foliage => {
+                            let (r, g, b) = calculate_biome(snapshot, x, z, &factory.foliage_colors);
+                            cr = r;
+                            cg = g;
+                            cb = b;
+                        },
                     }
                 },
                 _ => {},
@@ -789,7 +814,26 @@ impl Model {
     }
 }
 
+fn calculate_biome(snapshot: &world::Snapshot, x: i32, z: i32, img: &image::DynamicImage) -> (u8, u8, u8) {
+    let mut count = 0;
+    let mut r = 0;
+    let mut g = 0;
+    let mut b = 0;
+    for xx in -2 .. 3 {
+        for zz in -2 .. 3 {
+            let bi = snapshot.get_biome(x+xx, z+zz);
+            let ix = bi.color_index & 0xFF;
+            let iy = bi.color_index >> 8;
 
+            let col = img.get_pixel(ix as u32, iy as u32);
+            r += col.data[0] as u32;
+            g += col.data[1] as u32;
+            b += col.data[2] as u32;
+            count += 1;
+        }
+    }
+    ((r/count) as u8, (g/count) as u8, (b/count) as u8)
+}
 
 fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z: i32,
                     x: f64, y: f64, z: f64, face: Direction, smooth: bool, force: bool) -> (u16, u16) {
