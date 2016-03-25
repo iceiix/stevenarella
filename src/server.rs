@@ -31,7 +31,12 @@ use sdl2::keyboard::Keycode;
 pub struct Server {
     conn: Option<protocol::Conn>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
+
     pub world: world::World,
+    world_age: i64,
+    world_time: f64,
+    world_time_target: f64,
+    tick_time: bool,
 
     resources: Arc<RwLock<resources::Manager>>,
     console: Arc<Mutex<console::Console>>,
@@ -146,7 +151,13 @@ impl Server {
         Ok(Server {
             conn: Some(write),
             read_queue: Some(rx),
+
             world: world::World::new(),
+            world_age: 0,
+            world_time: 0.0,
+            world_time_target: 0.0,
+            tick_time: true,
+
             resources: resources,
             console: console,
             version: version,
@@ -176,7 +187,12 @@ impl Server {
         Server {
             conn: None,
             read_queue: None,
+
             world: world,
+            world_age: 0,
+            world_time: 0.0,
+            world_time_target: 0.0,
+            tick_time: true,
 
             version: version,
             resources: resources,
@@ -212,6 +228,7 @@ impl Server {
                             ChunkData => on_chunk_data,
                             ChunkUnload => on_chunk_unload,
                             TeleportPlayer => on_teleport,
+                            TimeUpdate => on_time_update,
                         }
                     },
                     Err(err) => panic!("Err: {:?}", err),
@@ -246,10 +263,53 @@ impl Server {
             self.tick_timer -= 3.0;
         }
 
+        self.update_time(renderer, delta);
+
         // Copy to camera
         renderer.camera.pos = cgmath::Point::from_vec(self.position + cgmath::Vector3::new(0.0, 1.8, 0.0));
         renderer.camera.yaw = self.yaw;
         renderer.camera.pitch = self.pitch;
+    }
+
+    fn update_time(&mut self, renderer: &mut render::Renderer, delta: f64) {
+        if self.tick_time {
+            self.world_time_target += delta / 3.0;
+            self.world_time_target = (24000.0 + self.world_time_target) % 24000.0;
+        	let mut diff = self.world_time_target - self.world_time;
+        	if diff < -12000.0 {
+        		diff = 24000.0 + diff
+        	} else if diff > 12000.0 {
+        		diff = diff - 24000.0
+        	}
+            self.world_time += diff * (1.5 / 60.0) * delta;
+            self.world_time = (24000.0 + self.world_time) % 24000.0;
+        } else {
+            self.world_time = self.world_time_target;
+        }
+        renderer.sky_offset = self.calculate_sky_offset();
+    }
+
+    fn calculate_sky_offset(&self) -> f32 {
+        use std::f32::consts::PI;
+        let mut offset = ((1.0 + self.world_time as f32) / 24000.0) - 0.25;
+        if offset < 0.0 {
+            offset += 1.0;
+        } else if offset > 1.0 {
+            offset -= 1.0;
+        }
+
+        let prev_offset = offset;
+        offset = 1.0 - (((offset * PI).cos() + 1.0) / 2.0);
+        offset = prev_offset + (offset - prev_offset) / 3.0;
+
+        offset = 1.0 - ((offset * PI * 2.0).cos() * 2.0 + 0.2);
+        if offset > 1.0 {
+            offset = 1.0;
+        } else if offset < 0.0 {
+            offset = 0.0;
+        }
+        offset = 1.0 - offset;
+        offset * 0.8 + 0.2
     }
 
     fn calculate_movement(&self) -> (f64, f64) {
@@ -311,6 +371,17 @@ impl Server {
         self.write_packet(packet::play::serverbound::KeepAliveServerbound {
             id: keep_alive.id,
         });
+    }
+
+    fn on_time_update(&mut self, time_update: packet::play::clientbound::TimeUpdate) {
+        self.world_age = time_update.time_of_day;
+        self.world_time_target = (time_update.time_of_day % 24000) as f64;
+        if self.world_time_target < 0.0 {
+            self.world_time_target = -self.world_time_target;
+            self.tick_time = false;
+        } else {
+            self.tick_time = true;
+        }
     }
 
     fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {

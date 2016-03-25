@@ -38,8 +38,6 @@ const ATLAS_SIZE: usize = 1024;
 
 // TEMP
 const NUM_SAMPLES: i32 = 1;
-const LIGHT_LEVEL: f32 = 0.8;
-const SKY_OFFSET: f32 = 1.0;
 
 pub struct Camera {
     pub pos: cgmath::Point3<f64>,
@@ -76,6 +74,10 @@ pub struct Renderer {
 
     last_width: u32,
     last_height: u32,
+
+    // Light renderering
+    pub light_level: f32,
+    pub sky_offset: f32,
 }
 
 pub struct ChunkBuffer {
@@ -219,6 +221,9 @@ impl Renderer {
             frame_id: 1,
 
             trans: None,
+
+            light_level: 0.8,
+            sky_offset: 1.0,
         }
     }
 
@@ -277,7 +282,13 @@ impl Renderer {
 
         gl::enable(gl::MULTISAMPLE);
 
-        gl::clear_color(14.0 / 255.0, 48.0 / 255.0, 92.0 / 255.0, 1.0);
+        let time_offset = self.sky_offset * 0.9;
+        gl::clear_color(
+             (122.0 / 255.0) * time_offset,
+             (165.0 / 255.0) * time_offset,
+             (247.0 / 255.0) * time_offset,
+             1.0
+        );
         gl::clear(gl::ClearFlags::Color | gl::ClearFlags::Depth);
 
         // Chunk rendering
@@ -286,8 +297,8 @@ impl Renderer {
         self.chunk_shader.perspective_matrix.set_matrix4(&self.perspective_matrix);
         self.chunk_shader.camera_matrix.set_matrix4(&self.camera_matrix);
         self.chunk_shader.texture.set_int(0);
-        self.chunk_shader.light_level.set_float(LIGHT_LEVEL);
-        self.chunk_shader.sky_offset.set_float(SKY_OFFSET);
+        self.chunk_shader.light_level.set_float(self.light_level);
+        self.chunk_shader.sky_offset.set_float(self.sky_offset);
 
         for (pos, info) in world.get_render_list() {
             if let Some(solid) = info.solid.as_ref() {
@@ -308,8 +319,8 @@ impl Renderer {
         self.chunk_shader_alpha.perspective_matrix.set_matrix4(&self.perspective_matrix);
         self.chunk_shader_alpha.camera_matrix.set_matrix4(&self.camera_matrix);
         self.chunk_shader_alpha.texture.set_int(0);
-        self.chunk_shader_alpha.light_level.set_float(LIGHT_LEVEL);
-        self.chunk_shader_alpha.sky_offset.set_float(SKY_OFFSET);
+        self.chunk_shader_alpha.light_level.set_float(self.light_level);
+        self.chunk_shader_alpha.sky_offset.set_float(self.sky_offset);
 
         // Copy the depth buffer
         trans.main.bind_read();
