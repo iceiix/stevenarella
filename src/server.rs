@@ -392,13 +392,8 @@ impl Server {
         self.yaw = teleport.yaw as f64;
         self.pitch = teleport.pitch as f64;
 
-        self.write_packet(packet::play::serverbound::PlayerPositionLook {
-            x: teleport.x,
-            y: teleport.y,
-            z: teleport.z,
-            yaw: teleport.yaw,
-            pitch: teleport.pitch,
-            on_ground: false,
+        self.write_packet(packet::play::serverbound::TeleportConfirm {
+            teleport_id: teleport.teleport_id,
         });
     }
 

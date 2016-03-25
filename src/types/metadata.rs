@@ -29,8 +29,7 @@ pub struct MetadataKey<T: MetaValue> {
 
 impl <T: MetaValue> MetadataKey<T> {
     #[allow(dead_code)]
-    // TODO: Make const later when possible
-    /*const*/    fn new(index: i32) -> MetadataKey<T> {
+    const fn new(index: i32) -> MetadataKey<T> {
         MetadataKey {
             index: index,
             ty: PhantomData,

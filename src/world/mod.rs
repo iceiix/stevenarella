@@ -309,14 +309,16 @@ impl World {
                 let section = chunk.sections[i as usize].as_mut().unwrap();
                 section.dirty = true;
 
-                let bit_size = try!(data.read_u8());
+                let mut bit_size = try!(data.read_u8());
                 let mut block_map = HashMap::with_hasher(BuildHasherDefault::<FNVHash>::default());
-                if bit_size <= 8 {
+                if bit_size != 0 {
                     let count = try!(VarInt::read_from(&mut data)).0;
                     for i in 0 .. count {
                         let id = try!(VarInt::read_from(&mut data)).0;
                         block_map.insert(i as usize, id);
                     }
+                } else {
+                    bit_size = 13;
                 }
 
                 let bits = try!(LenPrefixed::<VarInt, u64>::read_from(&mut data)).data;

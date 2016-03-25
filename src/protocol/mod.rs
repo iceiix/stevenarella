@@ -33,7 +33,7 @@ use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2;
 use time;
 
-pub const SUPPORTED_PROTOCOL: i32 = 74;
+pub const SUPPORTED_PROTOCOL: i32 = 107;
 
 
 /// Helper macro for defining packets
