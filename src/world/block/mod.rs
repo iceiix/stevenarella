@@ -211,6 +211,7 @@ macro_rules! define_blocks {
 pub struct Material {
     pub renderable: bool,
     pub should_cull_against: bool,
+    pub never_cull: bool, // Because leaves suck
     pub force_shade: bool,
     pub transparent: bool,
 }
@@ -228,6 +229,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: false,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -246,6 +248,7 @@ define_blocks! {
         data { Some(variant.data()) },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -259,6 +262,7 @@ define_blocks! {
         data { if snowy { None } else { Some(0) } },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -272,6 +276,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -283,6 +288,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -294,6 +300,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -305,6 +312,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -316,6 +324,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -329,6 +338,7 @@ define_blocks! {
         data Some(level as usize),
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: true,
@@ -342,6 +352,7 @@ define_blocks! {
         data Some(level as usize),
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: true,
@@ -355,6 +366,7 @@ define_blocks! {
         data Some(level as usize),
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -368,6 +380,7 @@ define_blocks! {
         data Some(level as usize),
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -379,6 +392,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -390,6 +404,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -401,6 +416,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -412,6 +428,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -423,6 +440,7 @@ define_blocks! {
         },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -440,6 +458,7 @@ define_blocks! {
         data { Some(variant.data() | (axis.data() << 2)) },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -462,6 +481,7 @@ define_blocks! {
         ) },
         material Material {
             renderable: true,
+            never_cull: true,
             should_cull_against: false,
             force_shade: true,
             transparent: false,
@@ -473,6 +493,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -483,6 +504,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -493,6 +515,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -503,6 +526,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -513,6 +537,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -523,6 +548,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -533,6 +559,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -543,6 +570,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -553,6 +581,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -563,6 +592,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -573,6 +603,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -583,6 +614,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -593,6 +625,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -603,6 +636,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -613,6 +647,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -623,6 +658,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -633,6 +669,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -643,6 +680,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: false,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -653,6 +691,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -663,6 +702,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -673,6 +713,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -683,6 +724,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -693,6 +735,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -703,6 +746,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -713,6 +757,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -723,6 +768,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -733,6 +779,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -743,6 +790,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -753,6 +801,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -763,6 +812,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -773,6 +823,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -783,6 +834,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -793,6 +845,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -803,6 +856,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -813,6 +867,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -823,6 +878,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -833,6 +889,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -843,6 +900,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -853,6 +911,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -863,6 +922,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -873,6 +933,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -883,6 +944,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -893,6 +955,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -903,6 +966,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -913,6 +977,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -923,6 +988,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -933,6 +999,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -943,6 +1010,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -953,6 +1021,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -963,6 +1032,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -973,6 +1043,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -983,6 +1054,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -993,6 +1065,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1003,6 +1076,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1013,6 +1087,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1023,6 +1098,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1033,6 +1109,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1043,6 +1120,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1053,6 +1131,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1063,6 +1142,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1073,6 +1153,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: true,
@@ -1083,6 +1164,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1093,6 +1175,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1103,6 +1186,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1113,6 +1197,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1123,6 +1208,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1133,6 +1219,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1143,6 +1230,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1153,6 +1241,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1163,6 +1252,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1173,6 +1263,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1183,6 +1274,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: true,
@@ -1193,6 +1285,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1203,6 +1296,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1213,6 +1307,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1223,6 +1318,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1233,6 +1329,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: true,
@@ -1243,6 +1340,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1253,6 +1351,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1263,6 +1362,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1273,6 +1373,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1283,6 +1384,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1293,6 +1395,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1303,6 +1406,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1313,6 +1417,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1323,6 +1428,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1333,6 +1439,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1343,6 +1450,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1353,6 +1461,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1363,6 +1472,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1373,6 +1483,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1383,6 +1494,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1393,6 +1505,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1403,6 +1516,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1413,6 +1527,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1423,6 +1538,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1433,6 +1549,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1443,6 +1560,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1453,6 +1571,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1463,6 +1582,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1473,6 +1593,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1483,6 +1604,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1493,6 +1615,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1503,6 +1626,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1513,6 +1637,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1523,6 +1648,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1533,6 +1659,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1543,6 +1670,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1553,6 +1681,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1563,6 +1692,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1573,6 +1703,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1583,6 +1714,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1593,6 +1725,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1603,6 +1736,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1613,6 +1747,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1623,6 +1758,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1633,6 +1769,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1643,6 +1780,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1653,6 +1791,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1663,6 +1802,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1673,6 +1813,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1683,6 +1824,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1693,6 +1835,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1703,6 +1846,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1713,6 +1857,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1723,6 +1868,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1733,6 +1879,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1743,6 +1890,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1753,6 +1901,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1763,6 +1912,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1773,6 +1923,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1783,6 +1934,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1793,6 +1945,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1803,6 +1956,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1813,6 +1967,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1823,6 +1978,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1833,6 +1989,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1843,6 +2000,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1853,6 +2011,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1863,6 +2022,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1873,6 +2033,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1883,6 +2044,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: true,
@@ -1893,6 +2055,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: true,
             transparent: false,
@@ -1903,6 +2066,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1913,6 +2077,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1923,6 +2088,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1933,6 +2099,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: true,
@@ -1943,6 +2110,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: false,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -1953,6 +2121,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1963,6 +2132,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1973,6 +2143,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1983,6 +2154,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -1993,6 +2165,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2003,6 +2176,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2013,6 +2187,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2023,6 +2198,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2033,6 +2209,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2043,6 +2220,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2053,6 +2231,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2063,6 +2242,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2073,6 +2253,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2083,6 +2264,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2093,6 +2275,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2103,6 +2286,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2113,6 +2297,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2123,6 +2308,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2133,6 +2319,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2143,6 +2330,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2153,6 +2341,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2163,6 +2352,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2173,6 +2363,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2183,6 +2374,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2193,6 +2385,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2203,6 +2396,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2213,6 +2407,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2223,6 +2418,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2233,6 +2429,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2243,6 +2440,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2253,6 +2451,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2263,6 +2462,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2273,6 +2473,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2283,6 +2484,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2293,6 +2495,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2303,6 +2506,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2313,6 +2517,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2323,6 +2528,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2333,6 +2539,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2343,6 +2550,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2353,6 +2561,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2363,6 +2572,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2373,6 +2583,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: false,
             force_shade: false,
             transparent: false,
@@ -2383,6 +2594,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2393,6 +2605,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2403,6 +2616,7 @@ define_blocks! {
         props {},
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,
@@ -2414,6 +2628,7 @@ define_blocks! {
         data { None::<usize> },
         material Material {
             renderable: true,
+            never_cull: false,
             should_cull_against: true,
             force_shade: false,
             transparent: false,

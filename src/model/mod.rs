@@ -748,14 +748,13 @@ impl Model {
         let tint = this.get_tint();
 
         for face in &self.faces {
-            if face.cull_face != Direction::Invalid {
+            if face.cull_face != Direction::Invalid && !this_mat.never_cull {
                 let (ox, oy, oz) = face.cull_face.get_offset();
                 let other = snapshot.get_block(x + ox, y + oy, z + oz);
                 if other.get_material().should_cull_against || other == this {
                     continue;
                 }
             }
-
 
             let (mut cr, mut cg, mut cb) = (255, 255, 255);
             match face.tint_index {
