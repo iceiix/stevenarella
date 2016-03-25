@@ -62,7 +62,10 @@ impl Factory {
     }
 
     fn load_biome_colors(res: Arc<RwLock<resources::Manager>>, name: &str) -> image::DynamicImage {
-        let mut val = res.read().unwrap().open("minecraft", &format!("textures/colormap/{}.png", name)).unwrap();
+        let mut val = match res.read().unwrap().open("minecraft", &format!("textures/colormap/{}.png", name)) {
+            Some(val) => val,
+            None => return image::DynamicImage::new_rgb8(256, 256),
+        };
         let mut data = Vec::new();
         val.read_to_end(&mut data).unwrap();
         image::load_from_memory(&data).unwrap()
