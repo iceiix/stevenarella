@@ -820,6 +820,7 @@ impl Model {
 }
 
 fn calculate_biome(snapshot: &world::Snapshot, x: i32, z: i32, img: &image::DynamicImage) -> (u8, u8, u8) {
+    use std::cmp::{min, max};
     let mut count = 0;
     let mut r = 0;
     let mut g = 0;
@@ -829,6 +830,9 @@ fn calculate_biome(snapshot: &world::Snapshot, x: i32, z: i32, img: &image::Dyna
             let bi = snapshot.get_biome(x+xx, z+zz);
             let ix = bi.color_index & 0xFF;
             let iy = bi.color_index >> 8;
+
+            let ix = min(max(ix, 0), 255);
+            let iy = min(max(iy, 0), 255);
 
             let col = img.get_pixel(ix as u32, iy as u32);
             r += col.data[0] as u32;
