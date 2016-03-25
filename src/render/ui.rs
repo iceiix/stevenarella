@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use std::sync::{Arc, RwLock};
-use std::io::Write;
 use std::collections::HashMap;
 use resources;
 use gl;

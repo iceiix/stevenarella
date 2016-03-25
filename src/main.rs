@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![recursion_limit="200"]
+#![recursion_limit="300"]
 #![feature(const_fn)]
 
 extern crate sdl2;
