@@ -224,6 +224,15 @@ impl Renderer {
 
     pub fn update_camera(&mut self, width: u32, height: u32) {
         use std::f64::consts::PI as PI64;
+        // Not a sane place to put this but it works
+        {
+            let rm = self.resources.read().unwrap();
+            if rm.version() != self.resource_version {
+                self.resource_version = rm.version();
+                trace!("Updating textures to {}", self.resource_version);
+                self.textures.write().unwrap().update_textures(self.resource_version);
+            }
+        }
 
         if self.last_height != height || self.last_width != width {
             self.last_width = width;
@@ -258,15 +267,6 @@ impl Renderer {
     }
 
     pub fn tick(&mut self, world: &mut world::World, delta: f64, width: u32, height: u32) {
-        {
-            let rm = self.resources.read().unwrap();
-            if rm.version() != self.resource_version {
-                self.resource_version = rm.version();
-                trace!("Updating textures to {}", self.resource_version);
-                self.textures.write().unwrap().update_textures(self.resource_version);
-            }
-        }
-
         self.update_textures(delta);
 
         let trans = self.trans.as_mut().unwrap();
