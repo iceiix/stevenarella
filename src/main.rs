@@ -15,7 +15,7 @@
 #![recursion_limit="200"]
 #![feature(const_fn)]
 
-extern crate glutin;
+extern crate sdl2;
 extern crate image;
 extern crate time;
 extern crate byteorder;
@@ -75,7 +75,6 @@ pub struct Game {
     resource_manager: Arc<RwLock<resources::Manager>>,
     console: Arc<Mutex<console::Console>>,
     should_close: bool,
-    mouse_pos: (i32, i32),
 
     server: server::Server,
     focused: bool,
@@ -159,22 +158,27 @@ fn main() {
         resource_manager.write().unwrap().tick();
     }
 
-    let mut window = glutin::WindowBuilder::new()
-                         .with_title("Steven".to_string())
-                         .with_dimensions(854, 480)
-                         .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (3, 2)))
-                         .with_gl_profile(glutin::GlProfile::Core)
-                         .with_depth_buffer(24)
-                         .with_stencil_buffer(0)
-                         .with_vsync()
-                         .build()
-                         .expect("Could not create Glutin window.");
+    let sdl = sdl2::init().unwrap();
+    let sdl_video = sdl.video().unwrap();
 
-    unsafe {
-        window.make_current().expect("Could not set current context.");
-    }
+    sdl_video.gl_set_swap_interval(1);
 
-    gl::init(&mut window);
+    let window = sdl2::video::WindowBuilder::new(&sdl_video, "Steven", 854, 480)
+                            .opengl()
+                            .resizable()
+                            .build()
+                            .expect("Could not create sdl window.");
+    let gl_attr = sdl_video.gl_attr();
+    gl_attr.set_stencil_size(0);
+    gl_attr.set_depth_size(24);
+    gl_attr.set_context_major_version(3);
+    gl_attr.set_context_minor_version(2);
+    gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
+
+    let gl_context = window.gl_create_context().unwrap();
+    window.gl_make_current(&gl_context).expect("Could not set current context.");
+
+    gl::init(&sdl_video);
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
@@ -194,11 +198,11 @@ fn main() {
         resource_manager: resource_manager.clone(),
         console: con,
         should_close: false,
-        mouse_pos: (0, 0),
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
     };
 
+    let mut events = sdl.event_pump().unwrap();
     while !game.should_close {
         {
             game.resource_manager.write().unwrap().tick();
@@ -208,7 +212,7 @@ fn main() {
         let diff = now - last_frame;
         last_frame = now;
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
-        let (width, height) = window.get_inner_size_pixels().unwrap();
+        let (width, height) = window.size();
 
         game.tick(delta);
         game.server.tick(&mut game.renderer, delta);
@@ -225,31 +229,36 @@ fn main() {
         ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
         game.renderer.tick(&mut game.server.world, delta, width, height);
 
-        let _ = window.swap_buffers();
+        window.gl_swap_window();
 
-        for event in window.poll_events() {
+        for event in events.poll_iter() {
             handle_window_event(&window, &mut game, &mut ui_container, event)
         }
     }
 }
 
-fn handle_window_event(window: &glutin::Window,
+fn handle_window_event(window: &sdl2::video::Window,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
-                       event: glutin::Event) {
-    use glutin::{Event, VirtualKeyCode};
+                       event: sdl2::event::Event) {
+    use sdl2::event::Event;
+    use sdl2::keyboard::Keycode;
+    use sdl2::mouse::Mouse;
     use std::f64::consts::PI;
-    match event {
-        Event::Closed => game.should_close = true,
 
-        Event::MouseMoved((x, y)) => {
-            game.mouse_pos = (x, y);
-            let (width, height) = window.get_inner_size_pixels().unwrap();
+    let mouse = window.subsystem().sdl().mouse();
+
+    match event {
+        Event::Quit{..} => game.should_close = true,
+
+        Event::MouseMotion{x, y, xrel, yrel, ..} => {
+            let (width, height) = window.size();
             if game.focused {
-                window.set_cursor_state(glutin::CursorState::Hide).unwrap();
-                window.set_cursor_position((width/2) as i32, (height/2) as i32).unwrap();
+                if !mouse.relative_mouse_mode() {
+                    mouse.set_relative_mouse_mode(true);
+                }
                 let s = 2000.0 + 0.01;
-                let (rx, ry) = ((x-(width/2) as i32) as f64 / s, (y-(height/2) as i32) as f64 / s);
+                let (rx, ry) = (xrel as f64 / s, yrel as f64 / s);
                 game.server.yaw -= rx;
                 game.server.pitch -= ry;
                 if game.server.pitch < (PI/2.0) + 0.01 {
@@ -262,49 +271,50 @@ fn handle_window_event(window: &glutin::Window,
                 ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);
             }
         }
-        Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Left) => {
-            let (x, y) = game.mouse_pos;
-            let (width, height) = window.get_inner_size_pixels().unwrap();
+        Event::MouseButtonUp{mouse_btn: Mouse::Left, x, y, ..} => {
+            let (width, height) = window.size();
 
             if game.server.is_connected() && !game.focused {
                 game.focused = true;
-                window.set_cursor_state(glutin::CursorState::Hide).unwrap();
-                window.set_cursor_position((width/2) as i32, (height/2) as i32).unwrap();
+                mouse.set_relative_mouse_mode(true);
+                mouse.warp_mouse_in_window(&window, (width/2) as i32, (height/2) as i32);
                 return;
             }
             if !game.focused {
                 ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
             }
         }
-        Event::MouseWheel(delta, _) => {
-            let (x, y) = match delta {
-                glutin::MouseScrollDelta::LineDelta(x, y) => (x, y),
-                glutin::MouseScrollDelta::PixelDelta(x, y) => (x, y),
-            };
-
+        Event::MouseWheel{x, y, ..} => {
             game.screen_sys.on_scroll(x as f64, y as f64);
         }
-        Event::KeyboardInput(glutin::ElementState::Released, _, Some(VirtualKeyCode::Escape)) => {
+        Event::KeyUp{keycode: Some(Keycode::Escape), ..} => {
             if game.focused {
-                window.set_cursor_state(glutin::CursorState::Normal).unwrap();
+                mouse.set_relative_mouse_mode(false);
                 game.focused = false;
             }
         }
-        Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(VirtualKeyCode::Grave)) => {
+        Event::KeyDown{keycode: Some(Keycode::Backquote), ..} => {
             game.console.lock().unwrap().toggle();
         }
-        Event::KeyboardInput(state, key, virt) => {
+        Event::KeyDown{keycode: Some(key), ..} => {
             if game.focused {
-                if let Some(virt) = virt {
-                    game.server.key_press(state == glutin::ElementState::Pressed, virt);
-                }
+                game.server.key_press(true, key);
             } else {
-                ui_container.key_press(game, virt, key, state == glutin::ElementState::Pressed);
+                ui_container.key_press(game, key, true);
             }
         }
-        Event::ReceivedCharacter(c) => {
+        Event::KeyUp{keycode: Some(key), ..} => {
+            if game.focused {
+                game.server.key_press(false, key);
+            } else {
+                ui_container.key_press(game, key, false);
+            }
+        }
+        Event::TextInput{text, ..} => {
             if !game.focused {
-                ui_container.key_type(game, c);
+                for c in text.chars() {
+                    ui_container.key_type(game, c);
+                }
             }
         }
         _ => (),

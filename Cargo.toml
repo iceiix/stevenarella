@@ -4,7 +4,7 @@ version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 
 [dependencies]
-glutin = {git = "https://github.com/tomaka/glutin", rev = "8ae2df68e"}
+sdl2 = "0.16.1"
 byteorder = "0.5.0"
 hyper = "0.8.0"
 serde = "0.7.0"

@@ -26,7 +26,7 @@ use console;
 use render;
 use auth;
 use cgmath::{self, Vector};
-use glutin::VirtualKeyCode;
+use sdl2::keyboard::Keycode;
 
 pub struct Server {
     conn: Option<protocol::Conn>,
@@ -41,7 +41,7 @@ pub struct Server {
     pub yaw: f64,
     pub pitch: f64,
 
-    pressed_keys: HashMap<VirtualKeyCode, bool>,
+    pressed_keys: HashMap<Keycode, bool>,
 
     tick_timer: f64,
 }
@@ -224,16 +224,16 @@ impl Server {
 
         if self.world.is_chunk_loaded((self.position.x as i32) >> 4, (self.position.z as i32) >> 4) {
                 let mut speed = 4.317 / 60.0;
-                if self.is_key_pressed(VirtualKeyCode::LShift) {
+                if self.is_key_pressed(Keycode::LShift) {
                     speed = 5.612 / 60.0;
                 }
                 // TODO: only do this for flying
                 speed *= 2.5;
 
-                if self.is_key_pressed(VirtualKeyCode::Space) {
+                if self.is_key_pressed(Keycode::Space) {
                     self.position.y += speed * delta;
                 }
-                if self.is_key_pressed(VirtualKeyCode::LControl) {
+                if self.is_key_pressed(Keycode::LCtrl) {
                     self.position.y -= speed * delta;
                 }
                 self.position.x += forward * yaw.cos() * delta * speed;
@@ -256,23 +256,23 @@ impl Server {
         use std::f64::consts::PI;
         let mut forward = 0.0f64;
         let mut yaw = self.yaw - (PI/2.0);
-        if self.is_key_pressed(VirtualKeyCode::W) || self.is_key_pressed(VirtualKeyCode::S) {
+        if self.is_key_pressed(Keycode::W) || self.is_key_pressed(Keycode::S) {
             forward = 1.0;
-            if self.is_key_pressed(VirtualKeyCode::S) {
+            if self.is_key_pressed(Keycode::S) {
                 yaw += PI;
             }
         }
         let mut change = 0.0;
-        if self.is_key_pressed(VirtualKeyCode::A) {
+        if self.is_key_pressed(Keycode::A) {
             change = (PI / 2.0) / (forward.abs() + 1.0);
         }
-        if self.is_key_pressed(VirtualKeyCode::D) {
+        if self.is_key_pressed(Keycode::D) {
             change = -(PI / 2.0) / (forward.abs() + 1.0);
         }
-        if self.is_key_pressed(VirtualKeyCode::A) || self.is_key_pressed(VirtualKeyCode::D) {
+        if self.is_key_pressed(Keycode::A) || self.is_key_pressed(Keycode::D) {
             forward = 1.0;
         }
-        if self.is_key_pressed(VirtualKeyCode::S) {
+        if self.is_key_pressed(Keycode::S) {
             yaw -= change;
         } else {
             yaw += change;
@@ -295,11 +295,11 @@ impl Server {
         self.write_packet(packet);
     }
 
-    pub fn key_press(&mut self, down: bool, key: VirtualKeyCode) {
+    pub fn key_press(&mut self, down: bool, key: Keycode) {
         self.pressed_keys.insert(key, down);
     }
 
-    fn is_key_pressed(&self, key: VirtualKeyCode) -> bool {
+    fn is_key_pressed(&self, key: Keycode) -> bool {
         self.pressed_keys.get(&key).map(|v| *v).unwrap_or(false)
     }
 

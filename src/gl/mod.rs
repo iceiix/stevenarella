@@ -13,7 +13,7 @@
 // limitations under the License.
 
 extern crate steven_gl as gl;
-use glutin;
+use sdl2;
 
 use std::ops::BitOr;
 use std::ffi;
@@ -22,8 +22,8 @@ use std::ptr;
 use std::ops::{Deref, DerefMut};
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(window: &mut glutin::Window) {
-    gl::load_with(|s| window.get_proc_address(s) as *const _);
+pub fn init(vid: & sdl2::VideoSubsystem) {
+    gl::load_with(|s| vid.gl_get_proc_address(s) as *const _);
 }
 
 /// Dsed to specify how the vertices will be handled

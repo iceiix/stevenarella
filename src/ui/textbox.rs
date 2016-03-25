@@ -149,13 +149,11 @@ impl TextBox {
 
 impl UIElement for TextBox {
 
-    fn key_press(&mut self, _game: &mut ::Game, key: Option<VirtualKeyCode>, _raw: u8, down: bool) -> Vec<Rc<ClickFunc>> {
-        if let Some(key) = key {
-            match (key, down) {
-                (VirtualKeyCode::Back, false) => {self.input.pop();},
-                (VirtualKeyCode::Return, false) => return self.submit_funcs.clone(),
-                _ => {},
-            }
+    fn key_press(&mut self, _game: &mut ::Game, key: Keycode, down: bool) -> Vec<Rc<ClickFunc>> {
+        match (key, down) {
+            (Keycode::Backspace, false) => {self.input.pop();},
+            (Keycode::Return, false) => return self.submit_funcs.clone(),
+            _ => {},
         }
         vec![]
     }

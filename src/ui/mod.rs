@@ -20,7 +20,7 @@ use std::rc::Rc;
 use rand;
 use render;
 use format;
-use glutin::VirtualKeyCode;
+use sdl2::keyboard::Keycode;
 
 const SCALED_WIDTH: f64 = 854.0;
 const SCALED_HEIGHT: f64 = 480.0;
@@ -68,10 +68,10 @@ impl Element {
         }
     }
 
-    fn key_press(&mut self, game: &mut ::Game, key: Option<VirtualKeyCode>, raw: u8, down: bool) -> Vec<Rc<ClickFunc>> {
+    fn key_press(&mut self, game: &mut ::Game, key: Keycode, down: bool) -> Vec<Rc<ClickFunc>> {
         match *self {
             $(
-            Element::$name(ref mut val) => val.key_press(game, key, raw, down),
+            Element::$name(ref mut val) => val.key_press(game, key, down),
             )+
             _ => unimplemented!(),
         }
@@ -489,8 +489,8 @@ impl Container {
         }
     }
 
-    pub fn key_press(&mut self, game: &mut ::Game, key: Option<VirtualKeyCode>, raw: u8, down: bool) {
-        if key == Some(VirtualKeyCode::Tab) {
+    pub fn key_press(&mut self, game: &mut ::Game, key: Keycode, down: bool) {
+        if key == Keycode::Tab {
             if !down {
                 self.cycle_focus();
             }
@@ -499,7 +499,7 @@ impl Container {
         let mut callbacks = None;
         for (_, e) in &mut self.elements {
             if e.is_focused() {
-                callbacks = Some(e.key_press(game, key, raw, down));
+                callbacks = Some(e.key_press(game, key, down));
                 break;
             }
         }
@@ -607,7 +607,7 @@ pub trait UIElement {
     fn unwrap_ref(&Element) -> &Self;
     fn unwrap_ref_mut(&mut Element) -> &mut Self;
 
-    fn key_press(&mut self, _game: &mut ::Game, _key: Option<VirtualKeyCode>, _raw: u8, _down: bool) -> Vec<Rc<ClickFunc>> {
+    fn key_press(&mut self, _game: &mut ::Game, _key: Keycode, _down: bool) -> Vec<Rc<ClickFunc>> {
         vec![]
     }
 
