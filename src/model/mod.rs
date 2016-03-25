@@ -1,4 +1,6 @@
 
+pub mod liquid;
+
 use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
 use std::io::Write;
@@ -17,7 +19,7 @@ use image::{self, GenericImage};
 
 pub struct Factory {
     resources: Arc<RwLock<resources::Manager>>,
-    textures: Arc<RwLock<render::TextureManager>>,
+    pub textures: Arc<RwLock<render::TextureManager>>,
 
     models: HashMap<Key, StateModel, BuildHasherDefault<FNVHash>>,
 

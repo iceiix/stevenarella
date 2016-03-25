@@ -5,6 +5,7 @@ use std::sync::{Arc, RwLock};
 use std::io::Write;
 use byteorder::{WriteBytesExt, NativeEndian};
 use world;
+use world::block;
 use render;
 use resources;
 use model;
@@ -147,7 +148,20 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
                         continue;
                     }
 
-                    // TODO Liquids need a special case
+                    match block {
+                        block::Block::Water{..} | block::Block::FlowingWater{..} => {
+                            let tex = models.read().unwrap().textures.clone();
+                            trans_count += model::liquid::render_liquid(tex, false, &snapshot, x, y, z, &mut trans_buffer);
+                            continue;
+                        },
+                        block::Block::Lava{..} | block::Block::FlowingLava{..} => {
+                            let tex = models.read().unwrap().textures.clone();
+                            solid_count += model::liquid::render_liquid(tex, true, &snapshot, x, y, z, &mut solid_buffer);
+                            continue;
+                        },
+                        _ => {},
+                    }
+
                     let model_name = block.get_model();
                     let variant = block.get_model_variant();
                     if !mat.transparent {

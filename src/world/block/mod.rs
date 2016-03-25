@@ -322,34 +322,40 @@ define_blocks! {
         },
         model { ("minecraft", "bedrock" ) },
     }
-    FlowingWater { // TODO
+    FlowingWater {
         props {
+            level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
+        data Some(level as usize),
         material Material {
             renderable: true,
-            should_cull_against: true,
+            should_cull_against: false,
             force_shade: false,
-            transparent: false,
+            transparent: true,
         },
         model { ("minecraft", "water" ) },
     }
-    Water { // TODO
+    Water {
         props {
+            level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
+        data Some(level as usize),
         material Material {
             renderable: true,
-            should_cull_against: true,
+            should_cull_against: false,
             force_shade: false,
-            transparent: false,
+            transparent: true,
         },
         model { ("minecraft", "water" ) },
     }
-    FlowingLava { // TODO
+    FlowingLava {
         props {
+            level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
+        data Some(level as usize),
         material Material {
             renderable: true,
-            should_cull_against: true,
+            should_cull_against: false,
             force_shade: false,
             transparent: false,
         },
@@ -357,10 +363,12 @@ define_blocks! {
     }
     Lava {
         props {
+            level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
+        data Some(level as usize),
         material Material {
             renderable: true,
-            should_cull_against: true,
+            should_cull_against: false,
             force_shade: false,
             transparent: false,
         },
