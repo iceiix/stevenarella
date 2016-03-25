@@ -48,10 +48,16 @@ state_packets!(
     }
     play Play {
         serverbound Serverbound {
+            // TeleportConfirm is sent by the client as a reply to a telport from
+            // the server.
+            TeleportConfirm {
+                teleport_id: VarInt =,
+            }
             // TabComplete is sent by the client when the client presses tab in
             // the chat box.
             TabComplete {
                 text: String =,
+                assume_command: bool =,
                 has_target: bool =,
                 target: Option<types::Position> = when(|p: &TabComplete| p.has_target == true),
             }
@@ -68,7 +74,7 @@ state_packets!(
             ClientSettings {
                 locale: String =,
                 view_distance: u8 =,
-                chat_mode: u8 =,
+                chat_mode: VarInt =,
                 chat_colors: bool =,
                 displayed_skin_parts: u8 =,
                 main_hand: VarInt =,
@@ -90,7 +96,7 @@ state_packets!(
                 slot: i16 =,
                 button: u8 =,
                 action_number: u16 =,
-                mode: u8 =,
+                mode: VarInt =,
                 clicked_item: Option<item::Stack> =,
             }
             // CloseWindow is sent when the client closes a window.
@@ -147,6 +153,19 @@ state_packets!(
             Player {
                 on_ground: bool =,
             }
+            // Sent by the client when in a vehicle instead of the normal move packet.
+            VehicleMove {
+                x: f64 =,
+                y: f64 =,
+                z: f64 =,
+                yaw: f32 =,
+                pitch: f32 =,
+            }
+            // TODO: Document
+            SteerBoat {
+                unknown: bool =,
+                unknown2: bool =,
+            }
             // ClientAbilities is used to modify the players current abilities.
             // Currently flying is the only one
             ClientAbilities {
@@ -157,7 +176,7 @@ state_packets!(
             // PlayerDigging is sent when the client starts/stops digging a block.
             // It also can be sent for droppping items and eating/shooting.
             PlayerDigging {
-                status: u8 =,
+                status: VarInt =,
                 location: types::Position =,
                 face: u8 =,
             }
@@ -229,9 +248,9 @@ state_packets!(
                 entity_id: VarInt =,
                 uuid: UUID =,
                 ty: u8 =,
-                x: i32 =,
-                y: i32 =,
-                z: i32 =,
+                x: f64 =,
+                y: f64 =,
+                z: f64 =,
                 pitch: i8 =,
                 yaw: i8 =,
                 data: i32 =,
@@ -244,9 +263,9 @@ state_packets!(
             // gained when collected.
             SpawnExperienceOrb {
                 entity_id: VarInt =,
-                x: i32 =,
-                y: i32 =,
-                z: i32 =,
+                x: f64 =,
+                y: f64 =,
+                z: f64 =,
                 count: i16 =,
             }
             // SpawnGlobalEntity spawns an entity which is visible from anywhere in the
@@ -254,9 +273,9 @@ state_packets!(
             SpawnGlobalEntity {
                 entity_id: VarInt =,
                 ty: u8 =,
-                x: i32 =,
-                y: i32 =,
-                z: i32 =,
+                x: f64 =,
+                y: f64 =,
+                z: f64 =,
             }
             // SpawnMob is used to spawn a living entity into the world when it is in
             // range of the client.
@@ -264,9 +283,9 @@ state_packets!(
                 entity_id: VarInt =,
                 uuid: UUID =,
                 ty: u8 =,
-                x: i32 =,
-                y: i32 =,
-                z: i32 =,
+                x: f64 =,
+                y: f64 =,
+                z: f64 =,
                 yaw: i8 =,
                 pitch: i8 =,
                 head_pitch: i8 =,
@@ -279,6 +298,7 @@ state_packets!(
             // the client. The title effects the size and the texture of the painting.
             SpawnPainting {
                 entity_id: VarInt =,
+                uuid: UUID =,
                 title: String =,
                 location: types::Position =,
                 direction: u8 =,
@@ -289,9 +309,9 @@ state_packets!(
             SpawnPlayer {
                 entity_id: VarInt =,
                 uuid: UUID =,
-                x: i32 =,
-                y: i32 =,
-                z: i32 =,
+                x: f64 =,
+                y: f64 =,
+                z: f64 =,
                 yaw: i8 =,
                 pitch: i8 =,
                 metadata: types::Metadata =,
@@ -420,6 +440,16 @@ state_packets!(
                 channel: String =,
                 data: Vec<u8> =,
             }
+            // Plays a sound by name on the client
+            NamedSoundEffect {
+                name: String =,
+                category: VarInt =,
+                x: i32 =,
+                y: i32 =,
+                z: i32 =,
+                volume: f32 =,
+                pitch: u8 =,
+            }
             // Disconnect causes the client to disconnect displaying the passed reason.
             Disconnect {
                 reason: format::Component =,
@@ -447,10 +477,6 @@ state_packets!(
             ChunkUnload {
                 x: i32 =,
                 z: i32 =,
-            }
-            // SetCompression updates the compression threshold.
-            SetCompression {
-                threshold: VarInt =,
             }
             // ChangeGameState is used to modify the game's state like gamemode or
             // weather.
@@ -499,15 +525,6 @@ state_packets!(
                 data1: VarInt = when(|p: &Particle| p.particle_id == 36 || p.particle_id == 37 || p.particle_id == 38),
                 data2: VarInt = when(|p: &Particle| p.particle_id == 36),
             }
-            // SoundEffect plays the named sound at the target location.
-            SoundEffect {
-                name: String =,
-                x: i32 =,
-                y: i32 =,
-                z: i32 =,
-                volume: f32 =,
-                pitch: u8 =,
-            }
             // JoinGame is sent after completing the login process. This
             // sets the initial state for the client.
             JoinGame {
@@ -542,17 +559,17 @@ state_packets!(
             // EntityMove moves the entity with the id by the offsets provided.
             EntityMove {
                 entity_id: VarInt =,
-                delta_x: i8 =,
-                delta_y: i8 =,
-                delta_z: i8 =,
+                delta_x: i16 =,
+                delta_y: i16 =,
+                delta_z: i16 =,
                 on_ground: bool =,
             }
             // EntityLookAndMove is a combination of EntityMove and EntityLook.
             EntityLookAndMove {
                 entity_id: VarInt =,
-                delta_x: i8 =,
-                delta_y: i8 =,
-                delta_z: i8 =,
+                delta_x: i16 =,
+                delta_y: i16 =,
+                delta_z: i16 =,
                 yaw: i8 =,
                 pitch: i8 =,
                 on_ground: bool =,
@@ -567,6 +584,14 @@ state_packets!(
             // Entity does nothing. It is a result of subclassing used in Minecraft.
             Entity {
                 entity_id: VarInt =,
+            }
+            // Teleports the player's vehicle
+            VehicleTeleport {
+                x: f64 =,
+                y: f64 =,
+                z: f64 =,
+                yaw: f32 =,
+                pitch: f32 =,
             }
             // SignEditorOpen causes the client to open the editor for a sign so that
             // it can write to it. Only sent in vanilla when the player places a sign.
@@ -604,6 +629,7 @@ state_packets!(
                 yaw: f32 =,
                 pitch: f32 =,
                 flags: u8 =,
+                teleport_id: VarInt =,
             }
             // EntityUsedBed is sent by the server when a player goes to bed.
             EntityUsedBed {
@@ -674,7 +700,6 @@ state_packets!(
             EntityAttach {
                 entity_id: i32 =,
                 vehicle: i32 =,
-                leash: bool =,
             }
             // EntityVelocity sets the velocity of an entity in 1/8000 of a block
             // per a tick.
@@ -711,6 +736,11 @@ state_packets!(
                 value: String = when(|p: &ScoreboardObjective| p.mode == 0 || p.mode == 2),
                 ty: String = when(|p: &ScoreboardObjective| p.mode == 0 || p.mode == 2),
             }
+            // SetPassengers mounts entities to an entity
+            SetPassengers {
+                entity_id: VarInt =,
+                passengers: LenPrefixed<VarInt, VarInt> =,
+            }
             // Teams creates and updates teams
             Teams {
                 name: String =,
@@ -740,7 +770,7 @@ state_packets!(
             // TimeUpdate is sent to sync the world's time to the client, the client
             // will manually tick the time itself so this doesn't need to sent repeatedly
             // but if the server or client has issues keeping up this can fall out of sync
-            // so it is a good idea to sent this now and again
+            // so it is a good idea to send this now and again
             TimeUpdate {
                 world_age: i64 =,
                 time_of_day: i64 =,
@@ -750,9 +780,9 @@ state_packets!(
                 action: VarInt =,
                 title: Option<format::Component> = when(|p: &Title| p.action.0 == 0),
                 sub_title: Option<format::Component> = when(|p: &Title| p.action.0 == 1),
-                fade_in: Option<format::Component> = when(|p: &Title| p.action.0 == 2),
-                fade_stay: Option<format::Component> = when(|p: &Title| p.action.0 == 2),
-                fade_out: Option<format::Component> = when(|p: &Title| p.action.0 == 2),
+                fade_in: Option<i32> = when(|p: &Title| p.action.0 == 2),
+                fade_stay: Option<i32> = when(|p: &Title| p.action.0 == 2),
+                fade_out: Option<i32> = when(|p: &Title| p.action.0 == 2),
             }
             // UpdateSign sets or changes the text on a sign.
             UpdateSign {
@@ -761,6 +791,16 @@ state_packets!(
                 line2: format::Component =,
                 line3: format::Component =,
                 line4: format::Component =,
+            }
+            // SoundEffect plays the named sound at the target location.
+            SoundEffect {
+                name: VarInt =,
+                category: VarInt =,
+                x: i32 =,
+                y: i32 =,
+                z: i32 =,
+                volume: f32 =,
+                pitch: u8 =,
             }
             // PlayerListHeaderFooter updates the header/footer of the player list.
             PlayerListHeaderFooter {
@@ -777,9 +817,9 @@ state_packets!(
             // sent if the entity moves further than EntityMove allows.
             EntityTeleport {
                 entity_id: VarInt =,
-                x: i32 =,
-                y: i32 =,
-                z: i32 =,
+                x: f64 =,
+                y: f64 =,
+                z: f64 =,
                 yaw: i8 =,
                 pitch: i8 =,
                 on_ground: bool =,
