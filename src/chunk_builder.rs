@@ -225,37 +225,43 @@ fn build_cull_info(snapshot: &world::Snapshot) -> CullInfo {
 }
 
 fn flood_fill(snapshot: &world::Snapshot, visited: &mut Set, x: i32, y: i32, z: i32) -> u8 {
-    let idx = (x | (z << 4) | (y << 8)) as usize;
-    if x < 0 || x > 15 || y < 0 || y > 15 || z < 0 || z > 15 || visited.get(idx) {
-        return 0;
-    }
-    visited.set(idx, true);
+    use std::collections::VecDeque;
 
-    if snapshot.get_block(x, y, z).get_material().should_cull_against {
-        return 0;
-    }
+    let mut next_position = VecDeque::with_capacity(16 * 16);
+    next_position.push_back((x, y, z));
 
     let mut touched = 0;
+    while let Some((x, y, z)) = next_position.pop_front() {
+        let idx = (x | (z << 4) | (y << 8)) as usize;
+        if x < 0 || x > 15 || y < 0 || y > 15 || z < 0 || z > 15 || visited.get(idx) {
+            continue;
+        }
+        visited.set(idx, true);
 
-    if x == 0 {
-        touched |= 1 << Direction::West.index();
-    } else if x == 15 {
-        touched |= 1 << Direction::East.index();
-    }
-    if y == 0 {
-        touched |= 1 << Direction::Down.index();
-    } else if y == 15 {
-        touched |= 1 << Direction::Up.index();
-    }
-    if z == 0 {
-        touched |= 1 << Direction::North.index();
-    } else if z == 15 {
-        touched |= 1 << Direction::South.index();
-    }
+        if snapshot.get_block(x, y, z).get_material().should_cull_against {
+            continue;
+        }
 
-    for d in Direction::all() {
-        let (ox, oy, oz) = d.get_offset();
-        touched |= flood_fill(snapshot, visited, x+ox, y+oy, z+oz);
+        if x == 0 {
+            touched |= 1 << Direction::West.index();
+        } else if x == 15 {
+            touched |= 1 << Direction::East.index();
+        }
+        if y == 0 {
+            touched |= 1 << Direction::Down.index();
+        } else if y == 15 {
+            touched |= 1 << Direction::Up.index();
+        }
+        if z == 0 {
+            touched |= 1 << Direction::North.index();
+        } else if z == 15 {
+            touched |= 1 << Direction::South.index();
+        }
+
+        for d in Direction::all() {
+            let (ox, oy, oz) = d.get_offset();
+            next_position.push_back((x+ox, y+oy, z+oz));
+        }
     }
     touched
 }
