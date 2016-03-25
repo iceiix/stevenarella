@@ -502,8 +502,8 @@ impl Axis {
     fn data(&self) -> usize {
         match *self {
             Axis::Y => 0,
-            Axis::Z => 1,
-            Axis::X => 2,
+            Axis::Z => 2,
+            Axis::X => 1,
             Axis::None => 3,
         }
     }
