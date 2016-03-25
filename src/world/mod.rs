@@ -514,7 +514,7 @@ pub struct Section {
 }
 
 impl Section {
-    fn new(x: i32, y: u8, z: i32) -> Section {
+    fn new(_x: i32, y: u8, _z: i32) -> Section {
         let mut section = Section {
             cull_info: chunk_builder::CullInfo::all_vis(),
             render_buffer: render::ChunkBuffer::new(),

@@ -212,6 +212,7 @@ pub struct Material {
     pub renderable: bool,
     pub should_cull_against: bool,
     pub force_shade: bool,
+    pub transparent: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -229,6 +230,7 @@ define_blocks! {
             renderable: false,
             should_cull_against: false,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "air" ) },
     }
@@ -246,6 +248,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", variant.as_string() ) },
     }
@@ -258,6 +261,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "grass" ) },
         variant format!("snowy={}", snowy),
@@ -270,6 +274,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "dirt" ) },
     }
@@ -280,6 +285,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "cobblestone" ) },
     }
@@ -290,6 +296,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "planks" ) },
     }
@@ -300,6 +307,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: false,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "sapling" ) },
     }
@@ -310,6 +318,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "bedrock" ) },
     }
@@ -320,6 +329,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "water" ) },
     }
@@ -330,6 +340,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "water" ) },
     }
@@ -340,6 +351,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "lava" ) },
     }
@@ -350,6 +362,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "lava" ) },
     }
@@ -360,6 +373,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "sand" ) },
     }
@@ -370,6 +384,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "gravel" ) },
     }
@@ -380,6 +395,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "gold_ore" ) },
     }
@@ -390,6 +406,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "iron_ore" ) },
     }
@@ -400,6 +417,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", "coal_ore" ) },
     }
@@ -416,6 +434,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("minecraft", format!("{}_log", variant.as_string()) ) },
         variant format!("axis={}", axis.as_string()),
@@ -437,6 +456,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: false,
             force_shade: true,
+            transparent: false,
         },
         model { ("minecraft", format!("{}_leaves", variant.as_string()) ) },
         tint TintType::Foliage,
@@ -448,6 +468,7 @@ define_blocks! {
             renderable: true,
             should_cull_against: true,
             force_shade: false,
+            transparent: false,
         },
         model { ("steven", "missing_block" ) },
     }

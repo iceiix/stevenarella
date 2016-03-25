@@ -320,16 +320,24 @@ impl Renderer {
             gl::ClearFlags::Depth, gl::NEAREST
         );
 
-        trans.trans.bind();
         gl::enable(gl::BLEND);
         gl::depth_mask(false);
+        trans.trans.bind();
         gl::clear_color(0.0, 0.0, 0.0, 1.0);
         gl::clear(gl::ClearFlags::Color);
         gl::clear_buffer(gl::COLOR, 0, &[0.0, 0.0, 0.0, 1.0]);
         gl::clear_buffer(gl::COLOR, 1, &[0.0, 0.0, 0.0, 0.0]);
         gl::blend_func_separate(gl::ONE_FACTOR, gl::ONE_FACTOR, gl::ZERO_FACTOR, gl::ONE_MINUS_SRC_ALPHA);
 
-        // TODO: Draw chunks
+        for (pos, info) in world.get_render_list().into_iter().rev() {
+            if let Some(trans) = info.trans.as_ref() {
+                if trans.count > 0 {
+                    self.chunk_shader_alpha.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
+                    trans.array.bind();
+                    gl::draw_elements(gl::TRIANGLES, trans.count, self.element_buffer_type, 0);
+                }
+            }
+        }
 
         gl::unbind_framebuffer();
         gl::disable(gl::DEPTH_TEST);
@@ -398,6 +406,51 @@ impl Renderer {
         self.chunk_shader.texture_offset.vertex_pointer(3, gl::SHORT, false, 40, 20);
         self.chunk_shader.color.vertex_pointer(3, gl::UNSIGNED_BYTE, true, 40, 28);
         self.chunk_shader.lighting.vertex_pointer(2, gl::UNSIGNED_SHORT, false, 40, 32);
+
+        info.count = count;
+    }
+
+    pub fn update_chunk_trans(&mut self, buffer: &mut ChunkBuffer, data: &[u8], count: usize) {
+        self.ensure_element_buffer(count);
+        if count == 0 {
+            if buffer.trans.is_some() {
+                buffer.trans = None;
+            }
+            return;
+        }
+        let new = buffer.trans.is_none();
+        if buffer.trans.is_none() {
+            buffer.trans = Some(ChunkRenderInfo {
+                array: gl::VertexArray::new(),
+                buffer: gl::Buffer::new(),
+                buffer_size: 0,
+                count: 0,
+            });
+        }
+        let info = buffer.trans.as_mut().unwrap();
+
+        info.array.bind();
+        self.chunk_shader_alpha.position.enable();
+        self.chunk_shader_alpha.texture_info.enable();
+        self.chunk_shader_alpha.texture_offset.enable();
+        self.chunk_shader_alpha.color.enable();
+        self.chunk_shader_alpha.lighting.enable();
+
+        self.element_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
+
+        info.buffer.bind(gl::ARRAY_BUFFER);
+        if new || info.buffer_size < data.len() {
+            info.buffer_size = data.len();
+            info.buffer.set_data(gl::ARRAY_BUFFER, data, gl::DYNAMIC_DRAW);
+        } else {
+            info.buffer.re_set_data(gl::ARRAY_BUFFER, data);
+        }
+
+        self.chunk_shader_alpha.position.vertex_pointer(3, gl::FLOAT, false, 40, 0);
+        self.chunk_shader_alpha.texture_info.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 40, 12);
+        self.chunk_shader_alpha.texture_offset.vertex_pointer(3, gl::SHORT, false, 40, 20);
+        self.chunk_shader_alpha.color.vertex_pointer(3, gl::UNSIGNED_BYTE, true, 40, 28);
+        self.chunk_shader_alpha.lighting.vertex_pointer(2, gl::UNSIGNED_SHORT, false, 40, 32);
 
         info.count = count;
     }
@@ -483,7 +536,7 @@ impl Renderer {
 
     fn init_trans(&mut self, width: u32, height: u32) {
         self.trans = None;
-        self.trans = Some(TransInfo::new(width, height, &self.trans_shader));
+        self.trans = Some(TransInfo::new(width, height, &self.chunk_shader_alpha, &self.trans_shader));
     }
 
     pub fn get_textures(&self) -> Arc<RwLock<TextureManager>> {
@@ -559,7 +612,7 @@ init_shader! {
 }
 
 impl TransInfo {
-    pub fn new(width: u32, height: u32, shader: &TransShader) -> TransInfo {
+    pub fn new(width: u32, height: u32, chunk_shader: &ChunkShaderAlpha, shader: &TransShader) -> TransInfo {
         let trans = gl::Framebuffer::new();
         trans.bind();
 
@@ -584,9 +637,9 @@ impl TransInfo {
         trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
         trans.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &trans_depth, 0);
 
-        shader.program.use_program();
-        gl::bind_frag_data_location(&shader.program, 0, "accum");
-        gl::bind_frag_data_location(&shader.program, 1, "revealage");
+        chunk_shader.program.use_program();
+        gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
+        gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
         gl::draw_buffers(&[gl::COLOR_ATTACHMENT_0, gl::COLOR_ATTACHMENT_1]);
 
 
@@ -605,6 +658,7 @@ impl TransInfo {
 
         gl::unbind_framebuffer();
 
+        shader.program.use_program();
         let array = gl::VertexArray::new();
         array.bind();
         let buffer = gl::Buffer::new();

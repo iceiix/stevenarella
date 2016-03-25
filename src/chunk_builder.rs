@@ -14,7 +14,7 @@ const NUM_WORKERS: usize = 8;
 
 pub struct ChunkBuilder {
     threads: Vec<(mpsc::Sender<BuildReq>, thread::JoinHandle<()>)>,
-    free_builders: Vec<(usize, Vec<u8>)>,
+    free_builders: Vec<(usize, Vec<u8>, Vec<u8>)>,
     built_recv: mpsc::Receiver<(usize, BuildReply)>,
 
     models: Arc<RwLock<model::Factory>>,
@@ -35,7 +35,7 @@ impl ChunkBuilder {
             let models = models.clone();
             let id = i;
             threads.push((work_send, thread::spawn(move || build_func(id, models, work_recv, built_send))));
-            free.push((i, vec![]));
+            free.push((i, vec![], vec![]));
         }
         ChunkBuilder {
             threads: threads,
@@ -62,10 +62,12 @@ impl ChunkBuilder {
             if let Some(sec) = world.get_section_mut(val.position.0, val.position.1, val.position.2) {
                 sec.cull_info = val.cull_info;
                 renderer.update_chunk_solid(&mut sec.render_buffer, &val.solid_buffer, val.solid_count);
+                renderer.update_chunk_trans(&mut sec.render_buffer, &val.trans_buffer, val.trans_count);
             }
 
             val.solid_buffer.clear();
-            self.free_builders.push((id, val.solid_buffer));
+            val.trans_buffer.clear();
+            self.free_builders.push((id, val.solid_buffer, val.trans_buffer));
         }
         if self.free_builders.is_empty() {
             return;
@@ -83,7 +85,8 @@ impl ChunkBuilder {
             self.threads[t_id.0].0.send(BuildReq {
                 snapshot: snapshot,
                 position: (x, y, z),
-                buffer: t_id.1,
+                solid_buffer: t_id.1,
+                trans_buffer: t_id.2,
             }).unwrap();
             if self.free_builders.is_empty() {
                 return;
@@ -95,13 +98,16 @@ impl ChunkBuilder {
 struct BuildReq {
     snapshot: world::Snapshot,
     position: (i32, i32, i32),
-    buffer: Vec<u8>,
+    solid_buffer: Vec<u8>,
+    trans_buffer: Vec<u8>,
 }
 
 struct BuildReply {
     position: (i32, i32, i32),
     solid_buffer: Vec<u8>,
     solid_count: usize,
+    trans_buffer: Vec<u8>,
+    trans_count: usize,
     cull_info: CullInfo,
 }
 
@@ -111,7 +117,8 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
         let BuildReq {
             snapshot,
             position,
-            buffer,
+            mut solid_buffer,
+            mut trans_buffer,
         } = match work_recv.recv() {
             Ok(val) => val,
             Err(_) => return,
@@ -124,14 +131,15 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
             (position.0 as u32 ^ position.2 as u32) | 1,
         ]);
 
-        let mut solid_buffer = buffer;
         let mut solid_count = 0;
+        let mut trans_count = 0;
 
         for y in 0 .. 16 {
             for x in 0 .. 16 {
                 for z in 0 .. 16 {
                     let block = snapshot.get_block(x, y, z);
-                    if !block.get_material().renderable {
+                    let mat = block.get_material();
+                    if !mat.renderable {
 						// Use one step of the rng so that
 						// if a block is placed in an empty
 						// location is variant doesn't change
@@ -142,10 +150,17 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
                     // TODO Liquids need a special case
                     let model_name = block.get_model();
                     let variant = block.get_model_variant();
-                    solid_count += model::Factory::get_state_model(
-                        &models, &model_name.0, &model_name.1, &variant, &mut rng,
-                        &snapshot, x, y, z, &mut solid_buffer
-                    );
+                    if !mat.transparent {
+                        solid_count += model::Factory::get_state_model(
+                            &models, &model_name.0, &model_name.1, &variant, &mut rng,
+                            &snapshot, x, y, z, &mut solid_buffer
+                        );
+                    } else {
+                        trans_count += model::Factory::get_state_model(
+                            &models, &model_name.0, &model_name.1, &variant, &mut rng,
+                            &snapshot, x, y, z, &mut trans_buffer
+                        );
+                    }
                 }
             }
         }
@@ -156,6 +171,8 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
             position: position,
             solid_buffer: solid_buffer,
             solid_count: solid_count,
+            trans_buffer: trans_buffer,
+            trans_count: trans_count,
             cull_info: cull_info,
         })).unwrap();
     }
