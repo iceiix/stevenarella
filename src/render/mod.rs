@@ -596,14 +596,14 @@ impl Renderer {
 struct TransInfo {
     main: gl::Framebuffer,
     fb_color: gl::Texture,
-    fb_depth: gl::Texture,
+    _fb_depth: gl::Texture,
     trans: gl::Framebuffer,
     accum: gl::Texture,
     revealage: gl::Texture,
-    depth: gl::Texture,
+    _depth: gl::Texture,
 
     array: gl::VertexArray,
-    buffer: gl::Buffer,
+    _buffer: gl::Buffer,
 }
 
 init_shader! {
@@ -687,14 +687,14 @@ impl TransInfo {
         TransInfo {
             main: main,
             fb_color: fb_color,
-            fb_depth: fb_depth,
+            _fb_depth: fb_depth,
             trans: trans,
             accum: accum,
             revealage: revealage,
-            depth: trans_depth,
+            _depth: trans_depth,
 
             array: array,
-            buffer: buffer,
+            _buffer: buffer,
         }
     }
 

@@ -938,7 +938,7 @@ define_blocks! {
         },
         model { ("minecraft", "oak_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::OakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::OakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     Chest {
         props {},
@@ -1103,7 +1103,7 @@ define_blocks! {
         },
         model { ("minecraft", "stone_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::StoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::StoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     WallSign {
         props {},
@@ -1565,7 +1565,7 @@ define_blocks! {
         },
         model { ("minecraft", "brick_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::BrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::BrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     StoneBrickStairs {
         props {
@@ -1587,7 +1587,7 @@ define_blocks! {
         },
         model { ("minecraft", "StoneBrickStairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::StoneBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::StoneBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     Mycelium {
         props {},
@@ -1653,7 +1653,7 @@ define_blocks! {
         },
         model { ("minecraft", "nether_brick_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::NetherBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::NetherBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     NetherWart {
         props {},
@@ -1818,7 +1818,7 @@ define_blocks! {
         },
         model { ("minecraft", "sandstone_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::SandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::SandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     EmeraldOre {
         props {},
@@ -1895,7 +1895,7 @@ define_blocks! {
         },
         model { ("minecraft", "spruce_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::SpruceStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::SpruceStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     BirchStairs {
         props {
@@ -1917,7 +1917,7 @@ define_blocks! {
         },
         model { ("minecraft", "birch_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::BirchStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::BirchStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     JungleStairs {
         props {
@@ -1939,7 +1939,7 @@ define_blocks! {
         },
         model { ("minecraft", "jungle_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::JungleStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::JungleStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     CommandBlock {
         props {},
@@ -2170,7 +2170,7 @@ define_blocks! {
         },
         model { ("minecraft", "quartz_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::QuartzStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::QuartzStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     ActivatorRail {
         props {},
@@ -2258,7 +2258,7 @@ define_blocks! {
         },
         model { ("minecraft", "acacia_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::AcaciaStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::AcaciaStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     DarkOakStairs {
         props {
@@ -2280,7 +2280,7 @@ define_blocks! {
         },
         model { ("minecraft", "dark_oak_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::DarkOakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::DarkOakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     Slime {
         props {},
@@ -2467,7 +2467,7 @@ define_blocks! {
         },
         model { ("minecraft", "red_sandstone_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::RedSandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::RedSandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     DoubleStoneSlab2 {
         props {},
@@ -2731,7 +2731,7 @@ define_blocks! {
         },
         model { ("minecraft", "purpur_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::PurpurStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
+        update_state (world, x, y, z) => Block::PurpurStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     PurpurDoubleSlab {
         props {},
@@ -2930,7 +2930,7 @@ fn get_stair_info(world: &super::World, x: i32, y: i32, z: i32) -> Option<(Direc
     }
 }
 
-fn update_stair_shape(world: &super::World, x: i32, y: i32, z: i32, facing: Direction, half: StairHalf, shape: StairShape) -> StairShape {
+fn update_stair_shape(world: &super::World, x: i32, y: i32, z: i32, facing: Direction) -> StairShape {
     let (ox, oy, oz) = facing.get_offset();
     if let Some((other_facing, _)) = get_stair_info(world, x+ox, y+oy, z+oz) {
         if other_facing != facing && other_facing != facing.opposite() {

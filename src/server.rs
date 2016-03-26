@@ -25,7 +25,7 @@ use openssl;
 use console;
 use render;
 use auth;
-use cgmath::{self, Vector, Point, Point3};
+use cgmath::{self, Vector, Point3};
 use collision::{Aabb, Aabb3};
 use sdl2::keyboard::Keycode;
 
