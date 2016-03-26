@@ -2,7 +2,7 @@
 use std::io::Write;
 use std::sync::{Arc, RwLock};
 use world::{self, block};
-use chunk_builder::Direction;
+use types::Direction;
 use render;
 
 pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lava: bool, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {

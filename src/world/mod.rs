@@ -96,7 +96,8 @@ impl World {
     }
 
     pub fn compute_render_list(&mut self, renderer: &mut render::Renderer) {
-        use chunk_builder::{self, Direction};
+        use chunk_builder;
+        use types::Direction;
         use cgmath::Vector;
         use std::collections::VecDeque;
         self.render_list.clear();

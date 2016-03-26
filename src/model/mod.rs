@@ -4,11 +4,12 @@ pub mod liquid;
 use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
 use std::io::Write;
+use byteorder::{WriteBytesExt, NativeEndian};
 use resources;
 use render;
 use world;
 use world::block::TintType;
-use chunk_builder::{self, Direction};
+use types::Direction;
 use serde_json;
 
 use std::hash::BuildHasherDefault;
@@ -732,7 +733,7 @@ struct Model {
 struct Face {
     cull_face: Direction,
     facing: Direction,
-    vertices: Vec<chunk_builder::BlockVertex>,
+    vertices: Vec<BlockVertex>,
     vertices_texture: Vec<render::Texture>,
     indices: usize,
     shade: bool,
@@ -891,4 +892,97 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
     }
 
     ((((block_light * 4000) / count) as u16), (((sky_light * 4000) / count) as u16))
+}
+
+
+
+pub const PRECOMPUTED_VERTS: [&'static [BlockVertex; 4]; 6] = [
+    &[ // Up
+        BlockVertex::base(0.0, 1.0, 0.0, 0, 0),
+        BlockVertex::base(1.0, 1.0, 0.0, 1, 0),
+        BlockVertex::base(0.0, 1.0, 1.0, 0, 1),
+        BlockVertex::base(1.0, 1.0, 1.0, 1, 1),
+    ],
+    &[ // Down
+        BlockVertex::base(0.0, 0.0, 0.0, 0, 1),
+        BlockVertex::base(0.0, 0.0, 1.0, 0, 0),
+        BlockVertex::base(1.0, 0.0, 0.0, 1, 1),
+        BlockVertex::base(1.0, 0.0, 1.0, 1, 0),
+    ],
+    &[ // North
+        BlockVertex::base(0.0, 0.0, 0.0, 1, 1),
+        BlockVertex::base(1.0, 0.0, 0.0, 0, 1),
+        BlockVertex::base(0.0, 1.0, 0.0, 1, 0),
+        BlockVertex::base(1.0, 1.0, 0.0, 0, 0),
+    ],
+    &[ // South
+        BlockVertex::base(0.0, 0.0, 1.0, 0, 1),
+        BlockVertex::base(0.0, 1.0, 1.0, 0, 0),
+        BlockVertex::base(1.0, 0.0, 1.0, 1, 1),
+        BlockVertex::base(1.0, 1.0, 1.0, 1, 0),
+    ],
+    &[ // West
+        BlockVertex::base(0.0, 0.0, 0.0, 0, 1),
+        BlockVertex::base(0.0, 1.0, 0.0, 0, 0),
+        BlockVertex::base(0.0, 0.0, 1.0, 1, 1),
+        BlockVertex::base(0.0, 1.0, 1.0, 1, 0),
+    ],
+    &[ // East
+        BlockVertex::base(1.0, 0.0, 0.0, 1, 1),
+        BlockVertex::base(1.0, 0.0, 1.0, 0, 1),
+        BlockVertex::base(1.0, 1.0, 0.0, 1, 0),
+        BlockVertex::base(1.0, 1.0, 1.0, 0, 0),
+    ],
+];
+
+#[derive(Clone)]
+pub struct BlockVertex {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+    pub tx: u16,
+    pub ty: u16,
+    pub tw: u16,
+    pub th: u16,
+    pub toffsetx: i16,
+    pub toffsety: i16,
+    pub tatlas: i16,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub block_light: u16,
+    pub sky_light: u16,
+}
+
+impl BlockVertex {
+    const fn base(x: f32, y: f32, z: f32, tx: i16, ty: i16) -> BlockVertex {
+        BlockVertex {
+            x: x, y: y, z: z,
+            tx: 0, ty: 0, tw: 0, th: 0,
+            toffsetx: tx, toffsety: ty, tatlas: 0,
+            r: 0, g: 0, b: 0,
+            block_light: 0, sky_light: 0,
+        }
+    }
+    pub fn write<W: Write>(&self, w: &mut W) {
+        let _ = w.write_f32::<NativeEndian>(self.x);
+        let _ = w.write_f32::<NativeEndian>(self.y);
+        let _ = w.write_f32::<NativeEndian>(self.z);
+        let _ = w.write_u16::<NativeEndian>(self.tx);
+        let _ = w.write_u16::<NativeEndian>(self.ty);
+        let _ = w.write_u16::<NativeEndian>(self.tw);
+        let _ = w.write_u16::<NativeEndian>(self.th);
+        let _ = w.write_i16::<NativeEndian>(self.toffsetx);
+        let _ = w.write_i16::<NativeEndian>(self.toffsety);
+        let _ = w.write_i16::<NativeEndian>(self.tatlas);
+        let _ = w.write_i16::<NativeEndian>(0);
+        let _ = w.write_u8(self.r);
+        let _ = w.write_u8(self.g);
+        let _ = w.write_u8(self.b);
+        let _ = w.write_u8(255);
+        let _ = w.write_u16::<NativeEndian>(self.block_light);
+        let _ = w.write_u16::<NativeEndian>(self.sky_light);
+        let _ = w.write_u16::<NativeEndian>(0);
+        let _ = w.write_u16::<NativeEndian>(0);
+    }
 }
