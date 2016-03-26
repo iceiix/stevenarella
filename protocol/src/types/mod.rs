@@ -24,7 +24,7 @@ pub mod hash;
 
 use model::{PRECOMPUTED_VERTS, BlockVertex};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Direction {
     Invalid,
     Up,
@@ -64,6 +64,30 @@ impl Direction {
             Direction::South => Direction::North,
             Direction::West => Direction::East,
             Direction::East => Direction::West,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn clockwise(&self) -> Direction {
+        match *self {
+            Direction::Up => Direction::Up,
+            Direction::Down => Direction::Down,
+            Direction::East => Direction::South,
+            Direction::West => Direction::North,
+            Direction::South => Direction::West,
+            Direction::North => Direction::East,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn counter_clockwise(&self) -> Direction {
+        match *self {
+            Direction::Up => Direction::Up,
+            Direction::Down => Direction::Down,
+            Direction::East => Direction::North,
+            Direction::West => Direction::South,
+            Direction::South => Direction::East,
+            Direction::North => Direction::West,
             _ => unreachable!(),
         }
     }
