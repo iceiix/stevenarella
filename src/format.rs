@@ -171,8 +171,8 @@ impl fmt::Display for Color {
 }
 
 impl Color {
-    fn from_string(val: &String) -> Self {
-        match val.as_ref() {
+    fn from_string(val: &str) -> Self {
+        match val {
             "black" => Color::Black,
             "dark_blue" => Color::DarkBlue,
             "dark_green" => Color::DarkGreen,
@@ -188,7 +188,6 @@ impl Color {
             "red" => Color::Red,
             "light_purple" => Color::LightPurple,
             "yellow" => Color::Yellow,
-            "white" => Color::White,
             val if val.len() == 7 && val.as_bytes()[0] == b'#' => {
                 let r = match u8::from_str_radix(&val[1..3], 16) {
                     Ok(r) => r,
@@ -204,7 +203,7 @@ impl Color {
                 };
                 Color::RGB(r, g, b)
             }
-            _ => Color::White,
+            "white" | _ => Color::White,
         }
     }
 

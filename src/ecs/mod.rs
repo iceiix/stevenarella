@@ -252,7 +252,7 @@ impl Manager {
             Some(ref val) => if val.1 == entity.generation { &val.0 } else { return None },
             None => return None,
         };
-        if !set.as_ref().map(|v| v.get(key.id)).unwrap_or(false) {
+        if !set.as_ref().map_or(false, |v| v.get(key.id)) {
             return None;
         }
 
@@ -276,7 +276,7 @@ impl Manager {
             Some(ref val) => if val.1 == entity.generation { &val.0 } else { return None },
             None => return None,
         };
-        if !set.as_ref().map(|v| v.get(key.id)).unwrap_or(false) {
+        if !set.as_ref().map_or(false, |v| v.get(key.id)) {
             return None;
         }
 

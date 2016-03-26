@@ -785,9 +785,9 @@ impl TextureManager {
 
     fn get_texture(&self, name: &str) -> Option<Texture> {
         if let Some(_) = name.find(':') {
-            self.textures.get(name).map(|v| v.clone())
+            self.textures.get(name).cloned()
         } else {
-            self.textures.get(&format!("minecraft:{}", name)).map(|v| v.clone())
+            self.textures.get(&format!("minecraft:{}", name)).cloned()
         }
     }
 

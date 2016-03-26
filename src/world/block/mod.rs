@@ -129,7 +129,7 @@ macro_rules! define_blocks {
                                 let data: Option<usize> = ($datafunc).map(|v| v + (internal_ids::$name << 4));
                                 return data;
                             )*
-                            return Some(internal_ids::$name << 4);
+                            Some(internal_ids::$name << 4)
                         }
                     )+
                 }
@@ -174,7 +174,7 @@ macro_rules! define_blocks {
                             $($fname,)*
                         } => {
                             $(return String::from($variant);)*
-                            return "normal".to_owned();
+                            "normal".to_owned()
                         }
                     )+
                 }
@@ -188,7 +188,7 @@ macro_rules! define_blocks {
                             $($fname,)*
                         } => {
                             $(return $tint;)*
-                            return TintType::Default;
+                            TintType::Default
                         }
                     )+
                 }
@@ -202,10 +202,10 @@ macro_rules! define_blocks {
                             $($fname,)*
                         } => {
                             $(return $collision;)*
-                            return vec![Aabb3::new(
+                            vec![Aabb3::new(
                                 Point3::new(0.0, 0.0, 0.0),
                                 Point3::new(1.0, 1.0, 1.0)
-                            )];
+                            )]
                         }
                     )+
                 }
@@ -225,9 +225,9 @@ macro_rules! define_blocks {
                                 let $z = z;
                                 return $update_state;
                             )*
-                            return Block::$name {
+                            Block::$name {
                                 $($fname: $fname,)*
-                            };
+                            }
                         }
                     )+
                 }
@@ -2912,19 +2912,19 @@ impl StairShape {
 fn get_stair_info(world: &super::World, x: i32, y: i32, z: i32) -> Option<(Direction, StairHalf)> {
     use self::Block::*;
     match world.get_block(x, y, z) {
-        OakStairs{facing, half, ..} => Some((facing, half)),
-        StoneStairs{facing, half, ..} => Some((facing, half)),
-        BrickStairs{facing, half, ..} => Some((facing, half)),
-        StoneBrickStairs{facing, half, ..} => Some((facing, half)),
-        NetherBrickStairs{facing, half, ..} => Some((facing, half)),
-        SandstoneStairs{facing, half, ..} => Some((facing, half)),
-        SpruceStairs{facing, half, ..} => Some((facing, half)),
-        BirchStairs{facing, half, ..} => Some((facing, half)),
-        JungleStairs{facing, half, ..} => Some((facing, half)),
-        QuartzStairs{facing, half, ..} => Some((facing, half)),
-        AcaciaStairs{facing, half, ..} => Some((facing, half)),
-        DarkOakStairs{facing, half, ..} => Some((facing, half)),
-        RedSandstoneStairs{facing, half, ..} => Some((facing, half)),
+        OakStairs{facing, half, ..} |
+        StoneStairs{facing, half, ..} |
+        BrickStairs{facing, half, ..} |
+        StoneBrickStairs{facing, half, ..} |
+        NetherBrickStairs{facing, half, ..} |
+        SandstoneStairs{facing, half, ..} |
+        SpruceStairs{facing, half, ..} |
+        BirchStairs{facing, half, ..} |
+        JungleStairs{facing, half, ..} |
+        QuartzStairs{facing, half, ..} |
+        AcaciaStairs{facing, half, ..} |
+        DarkOakStairs{facing, half, ..} |
+        RedSandstoneStairs{facing, half, ..} |
         PurpurStairs{facing, half, ..} => Some((facing, half)),
         _ => None,
     }

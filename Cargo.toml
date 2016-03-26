@@ -19,6 +19,7 @@ log = "0.3.5"
 cgmath = "0.7.0"
 lazy_static = "0.1.15"
 collision = {git = "https://github.com/csherratt/collision-rs", rev = "f80825e"}
+# clippy = "*"
 
 [dependencies.steven_gl]
 path = "./gl"

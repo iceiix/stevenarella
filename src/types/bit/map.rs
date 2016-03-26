@@ -95,11 +95,11 @@ impl Map {
         let mask = (1 << self.bit_size) - 1;
         let ii = i % 64;
         let pos2 = (i + self.bit_size - 1) / 64;
-        if pos2 != pos {
+        if pos2 == pos {
+            ((self.bits[pos] >> ii) & mask) as usize
+        } else {
             let used = 64 - ii;
             (((self.bits[pos] >> ii) | (self.bits[pos2] << used)) & mask) as usize
-        } else {
-            ((self.bits[pos] >> ii) & mask) as usize
         }
     }
 }

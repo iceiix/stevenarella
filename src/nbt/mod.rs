@@ -273,7 +273,7 @@ impl Serializable for Tag {
     }
 }
 
-pub fn write_string(buf: &mut io::Write, s: &String) -> io::Result<()> {
+pub fn write_string(buf: &mut io::Write, s: &str) -> io::Result<()> {
     let data = s.as_bytes();
     try!((data.len() as i16).write_to(buf));
     buf.write_all(data)

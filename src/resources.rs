@@ -59,9 +59,8 @@ impl Manager {
     pub fn open(&self, plugin: &str, name: &str) -> Option<Box<io::Read>> {
         for pack in self.packs.iter().rev() {
             let path = format!("assets/{}/{}", plugin, name);
-            match pack.open(&path) {
-                Some(val) => return Some(val),
-                None => {}
+            if let Some(val) = pack.open(&path) {
+                return Some(val);
             }
         }
         None
@@ -71,9 +70,8 @@ impl Manager {
         let mut ret = Vec::new();
         for pack in self.packs.iter().rev() {
             let path = format!("assets/{}/{}", plugin, name);
-            match pack.open(&path) {
-                Some(val) => ret.push(val),
-                None => {}
+            if let Some(val) = pack.open(&path) {
+                ret.push(val);
             }
         }
         ret

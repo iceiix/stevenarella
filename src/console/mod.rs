@@ -43,7 +43,7 @@ impl Var for CVar<String> {
         format!("\"{}\"", val.downcast_ref::<String>().unwrap())
     }
 
-    fn deserialize(&self, input: &String) -> Box<Any> {
+    fn deserialize(&self, input: &str) -> Box<Any> {
         Box::new((&input[1..input.len() - 1]).to_owned())
     }
 
@@ -57,7 +57,7 @@ impl Var for CVar<String> {
 
 pub trait Var {
     fn serialize(&self, val: &Box<Any>) -> String;
-    fn deserialize(&self, input: &String) -> Box<Any>;
+    fn deserialize(&self, input: &str) -> Box<Any>;
     fn description(&self) -> &'static str;
     fn can_serialize(&self) -> bool;
 }
@@ -142,12 +142,10 @@ impl Console {
             } else {
                 self.position = 0.0;
             }
+        } else if self.position > -220.0 {
+            self.position -= delta * 4.0;
         } else {
-            if self.position > -220.0 {
-                self.position -= delta * 4.0;
-            } else {
-                self.position = -220.0;
-            }
+            self.position = -220.0;
         }
         let w = match ui_container.mode {
             ui::Mode::Scaled => width,

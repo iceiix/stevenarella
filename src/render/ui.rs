@@ -178,8 +178,8 @@ impl UIState {
         self.count = 0;
     }
 
-    pub fn add_bytes(&mut self, data: &Vec<u8>) {
-        self.data.extend(data);
+    pub fn add_bytes(&mut self, data: &[u8]) {
+        self.data.extend_from_slice(data);
         self.count += (data.len() / (28 * 4)) * 6;
     }
 

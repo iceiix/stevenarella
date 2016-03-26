@@ -14,6 +14,17 @@
 
 #![recursion_limit="300"]
 #![feature(const_fn)]
+#![feature(plugin)]
+
+// #![plugin(clippy)]
+// #![allow(similar_names)]
+// #![allow(new_without_default)]
+// #![allow(many_single_char_names)]
+// #![allow(if_not_else)]
+// #![allow(float_cmp)]
+// #![allow(single_char_pattern)]
+// #![allow(too_many_arguments)]
+// #![allow(cyclomatic_complexity)]
 
 extern crate sdl2;
 extern crate image;

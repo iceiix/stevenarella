@@ -61,7 +61,7 @@ pub struct EVPCipher {
 }
 
 impl EVPCipher {
-    pub fn new(key: &Vec<u8>, iv: &Vec<u8>, decrypt: bool) -> EVPCipher {
+    pub fn new(key: &[u8], iv: &[u8], decrypt: bool) -> EVPCipher {
         unsafe {
             let mut e = EVPCipher {
                 internal: ptr::Unique::new(EVP_CIPHER_CTX_new()),
@@ -131,7 +131,7 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn new(data: &Vec<u8>) -> PublicKey {
+    pub fn new(data: &[u8]) -> PublicKey {
         unsafe {
             let cert = d2i_RSA_PUBKEY(ptr::null_mut(), &data.as_ptr(), data.len() as libc::c_int);
             if cert.is_null() {

@@ -52,10 +52,7 @@ impl World {
 
     fn set_block_raw(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
         let cpos = CPos(x >> 4, z >> 4);
-        if !self.chunks.contains_key(&cpos) {
-            self.chunks.insert(cpos, Chunk::new(cpos));
-        }
-        let chunk = self.chunks.get_mut(&cpos).unwrap();
+        let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
         chunk.set_block(x & 0xF, y, z & 0xF, b);
     }
 
@@ -130,7 +127,7 @@ impl World {
                 if renderer.frustum.contains(bounds) == collision::Relation::Out {
                     continue;
                 }
-                (sec.is_some(), sec.map(|v| v.cull_info).unwrap_or(chunk_builder::CullInfo::all_vis()))
+                (sec.is_some(), sec.map_or(chunk_builder::CullInfo::all_vis(), |v| v.cull_info))
             } else {
                 continue;
             };
@@ -361,7 +358,7 @@ impl World {
 
                 for i in 0 .. 4096 {
                     let val = m.get(i);
-                    let block_id = block_map.get(&val).map(|v| *v as usize).unwrap_or(val);
+                    let block_id = block_map.get(&val).map_or(val, |v| *v as usize);
                     let block = block::Block::by_vanilla_id(block_id);
                     let i = i as i32;
                     section.set_block(
@@ -586,6 +583,7 @@ impl Section {
     }
 
     fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
+        use std::collections::hash_map::Entry;
         let old = self.get_block(x, y, z);
         if old == b {
             return;
@@ -600,12 +598,13 @@ impl Section {
             }
         }
 
-        if !self.rev_block_map.contains_key(&b) {
+        if let Entry::Vacant(entry) = self.rev_block_map.entry(b) {
             let mut found = false;
+            let id = entry.insert(self.block_map.len());
             for (i, ref mut info) in self.block_map.iter_mut().enumerate() {
                 if info.1 == 0 {
                     info.0 = b;
-                    self.rev_block_map.insert(b, i);
+                    *id = i;
                     found = true;
                     break;
                 }
@@ -616,7 +615,6 @@ impl Section {
                     let new_blocks = self.blocks.resize(new_size);
                     self.blocks = new_blocks;
                 }
-                self.rev_block_map.insert(b, self.block_map.len());
                 self.block_map.push((b, 0));
             }
         }

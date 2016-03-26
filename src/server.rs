@@ -302,18 +302,16 @@ impl Server {
                 if self.is_key_pressed(Keycode::LCtrl) {
                     self.position.y -= speed * delta;
                 }
-            } else {
-                if self.on_ground {
-                    if self.is_key_pressed(Keycode::Space) {
-                        self.v_speed = 0.15;
-                    } else {
-                        self.v_speed = 0.0;
-                    }
+            } else if self.on_ground {
+                if self.is_key_pressed(Keycode::Space) {
+                    self.v_speed = 0.15;
                 } else {
-                    self.v_speed -= 0.01 * delta;
-                    if self.v_speed < -0.3 {
-                        self.v_speed = -0.3;
-                    }
+                    self.v_speed = 0.0;
+                }
+            } else {
+                self.v_speed -= 0.01 * delta;
+                if self.v_speed < -0.3 {
+                    self.v_speed = -0.3;
                 }
             }
             self.position.x += forward * yaw.cos() * delta * speed;
@@ -527,7 +525,7 @@ impl Server {
     }
 
     fn is_key_pressed(&self, key: Keycode) -> bool {
-        self.pressed_keys.get(&key).map(|v| *v).unwrap_or(false)
+        self.pressed_keys.get(&key).map_or(false, |v| *v)
     }
 
     pub fn write_packet<T: protocol::PacketType>(&mut self, p: T) {

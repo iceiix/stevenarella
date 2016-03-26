@@ -543,7 +543,7 @@ impl Container {
         let i = self.elements_list.iter()
             .map(|v| self.elements.get(v).unwrap())
             .position(|v| v.is_focused());
-        let mut current = i.map(|v| v + 1).unwrap_or(0) % self.elements_list.len();
+        let mut current = i.map_or(0, |v| v + 1) % self.elements_list.len();
 
         // Clear the old focus
         if let Some(pos) = i {

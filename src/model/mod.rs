@@ -96,10 +96,8 @@ impl Factory {
         }
         if !missing {
             let mut m = models.write().unwrap();
-            if !m.models.contains_key(&key) {
-                if !m.load_model(plugin, name) {
-                    error!("Error loading model {}:{}", plugin, name);
-                }
+            if !m.models.contains_key(&key) && !m.load_model(plugin, name) {
+                error!("Error loading model {}:{}", plugin, name);
             }
             if let Some(model) = m.models.get(&key) {
                 if let Some(var) = model.get_variants(variant) {
@@ -207,14 +205,13 @@ impl Factory {
                 },
             };
             let block_model: serde_json::Value = try_log!(opt serde_json::from_reader(file));
-            let model = match self.parse_model(plugin, &block_model) {
+            match self.parse_model(plugin, &block_model) {
                 Some(val) => val,
                 None => {
                     error!("Failed to parse model {}", format!("models/{}.json", parent));
                     return None
                 },
-            };
-            model
+            }
         } else {
             RawModel {
                 texture_vars: HashMap::with_hasher(BuildHasherDefault::default()),
@@ -282,36 +279,39 @@ impl Factory {
             for dir in Direction::all() {
                 if let Some(face) = faces.get(dir.as_string()) {
                     element.faces[dir.index()] = Some(BlockFace {
-                        uv: face.find("uv").and_then(|v| v.as_array()).map(|v| [
-                            v[0].as_f64().unwrap(),
-                            v[1].as_f64().unwrap(),
-                            v[2].as_f64().unwrap(),
-                            v[3].as_f64().unwrap()
-                        ]).unwrap_or_else(|| {
-                            let mut uv = [0.0, 0.0, 16.0, 16.0];
-                            match dir {
-                                Direction::North | Direction::South => {
-                                        uv[0] = element.from[0];
-                                        uv[2] = element.to[0];
-                                        uv[1] = 16.0 - element.to[1];
-                                        uv[3] = 16.0 - element.from[1];
-                                },
-                                Direction::West | Direction::East => {
-                                        uv[0] = element.from[2];
-                                        uv[2] = element.to[2];
-                                        uv[1] = 16.0 - element.to[1];
-                                        uv[3] = 16.0 - element.from[1];
-                                },
-                                Direction::Down | Direction::Up => {
-                                        uv[0] = element.from[0];
-                                        uv[2] = element.to[0];
-                                        uv[1] = 16.0 - element.to[2];
-                                        uv[3] = 16.0 - element.from[2];
-                                },
-                                _ => unreachable!(),
-                            }
-                            uv
-                        }),
+                        uv: face.find("uv").and_then(|v| v.as_array()).map_or_else(
+                            || {
+                                let mut uv = [0.0, 0.0, 16.0, 16.0];
+                                match dir {
+                                    Direction::North | Direction::South => {
+                                            uv[0] = element.from[0];
+                                            uv[2] = element.to[0];
+                                            uv[1] = 16.0 - element.to[1];
+                                            uv[3] = 16.0 - element.from[1];
+                                    },
+                                    Direction::West | Direction::East => {
+                                            uv[0] = element.from[2];
+                                            uv[2] = element.to[2];
+                                            uv[1] = 16.0 - element.to[1];
+                                            uv[3] = 16.0 - element.from[1];
+                                    },
+                                    Direction::Down | Direction::Up => {
+                                            uv[0] = element.from[0];
+                                            uv[2] = element.to[0];
+                                            uv[1] = 16.0 - element.to[2];
+                                            uv[3] = 16.0 - element.from[2];
+                                    },
+                                    _ => unreachable!(),
+                                }
+                                uv
+                            },
+                            |v| [
+                                v[0].as_f64().unwrap(),
+                                v[1].as_f64().unwrap(),
+                                v[2].as_f64().unwrap(),
+                                v[3].as_f64().unwrap()
+                            ]
+                        ),
                         texture: face.find("texture")
                             .and_then(|v| v.as_string())
                             .map(|v| if v.starts_with('#') {
@@ -326,12 +326,10 @@ impl Factory {
                             ),
                         rotation: face.find("rotation")
                             .and_then(|v| v.as_i64())
-                            .map(|v| v as i32)
-                            .unwrap_or(0),
+                            .map_or(0, |v| v as i32),
                         tint_index: face.find("tintindex")
                             .and_then(|v| v.as_i64())
-                            .map(|v| v as i32)
-                            .unwrap_or(-1),
+                            .map_or(-1, |v| v as i32),
                     });
                 }
             }
@@ -339,11 +337,11 @@ impl Factory {
 
         if let Some(rotation) = v.find("rotation") {
             element.rotation = Some(BlockRotation {
-                origin: rotation.find("origin").and_then(|v| v.as_array()).map(|v| [
+                origin: rotation.find("origin").and_then(|v| v.as_array()).map_or([8.0, 8.0, 8.0], |v| [
                     v[0].as_f64().unwrap(),
                     v[1].as_f64().unwrap(),
                     v[2].as_f64().unwrap()
-                ]).unwrap_or([8.0, 8.0, 8.0]),
+                ]),
                 axis: rotation.find("axis").and_then(|v| v.as_string()).unwrap_or("").to_owned(),
                 angle: rotation.find("angle").and_then(|v| v.as_f64()).unwrap_or(0.0),
                 rescale: rotation.find("rescale").and_then(|v| v.as_boolean()).unwrap_or(false),
@@ -682,7 +680,7 @@ struct RawModel {
 impl RawModel {
     fn lookup_texture(&self, name: &str) -> String {
         if !name.is_empty() && name.starts_with('#') {
-            let tex = self.texture_vars.get(&name[1..]).map(|v| v.clone()).unwrap_or("".to_owned());
+            let tex = self.texture_vars.get(&name[1..]).cloned().unwrap_or("".to_owned());
             return self.lookup_texture(&tex);
         }
         name.to_owned()
