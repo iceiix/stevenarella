@@ -399,12 +399,12 @@ impl Server {
         if self.tick_time {
             self.world_time_target += delta / 3.0;
             self.world_time_target = (24000.0 + self.world_time_target) % 24000.0;
-        	let mut diff = self.world_time_target - self.world_time;
-        	if diff < -12000.0 {
-        		diff = 24000.0 + diff
-        	} else if diff > 12000.0 {
-        		diff = diff - 24000.0
-        	}
+            let mut diff = self.world_time_target - self.world_time;
+            if diff < -12000.0 {
+                diff = 24000.0 + diff
+            } else if diff > 12000.0 {
+                diff = diff - 24000.0
+            }
             self.world_time += diff * (1.5 / 60.0) * delta;
             self.world_time = (24000.0 + self.world_time) % 24000.0;
         } else {
@@ -497,9 +497,9 @@ impl Server {
     }
 
     pub fn minecraft_tick(&mut self) {
-    	// Force the server to know when touched the ground
-    	// otherwise if it happens between ticks the server
-    	// will think we are flying.
+        // Force the server to know when touched the ground
+        // otherwise if it happens between ticks the server
+        // will think we are flying.
         let on_ground = if self.did_touch_ground {
             self.did_touch_ground = false;
             true
