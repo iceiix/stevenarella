@@ -970,7 +970,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "fermland" ) },
+        model { ("minecraft", "farmland" ) },
     }
     Furnace {
         props {},
