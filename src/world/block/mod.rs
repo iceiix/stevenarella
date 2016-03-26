@@ -1,7 +1,8 @@
 
 use std::fmt::{Display, Formatter, Error};
 use collision::{Aabb, Aabb3};
-use cgmath::{Point3, Point};
+use cgmath::Point3;
+use types::Direction;
 
 pub use self::Block::*;
 
@@ -39,7 +40,7 @@ macro_rules! define_blocks {
                 $(variant $variant:expr,)*
                 $(tint $tint:expr,)*
                 $(collision $collision:expr,)*
-                $(update_state $update_state:expr,)*
+                $(update_state ($world:ident, $x:ident, $y:ident, $z:ident) => $update_state:expr,)*
             }
         )+
     ) => (
@@ -217,7 +218,13 @@ macro_rules! define_blocks {
                         Block::$name {
                             $($fname,)*
                         } => {
-                            $(return $update_state;)*
+                            $(
+                                let $world = world;
+                                let $x = x;
+                                let $y = y;
+                                let $z = z;
+                                return $update_state;
+                            )*
                             return Block::$name {
                                 $($fname: $fname,)*
                             };
@@ -236,7 +243,17 @@ macro_rules! define_blocks {
                         if blocks.len() <= id {
                             blocks.resize(id + 1, None);
                         }
-                        blocks[id] = Some(block);
+                        if blocks[id].is_none() {
+                            blocks[id] = Some(block);
+                        } else {
+                            panic!(
+                                "Tried to register {:#?} to {}:{} but {:#?} was already registered",
+                                block,
+                                id >> 4,
+                                id & 0xF,
+                                blocks[id]
+                            );
+                        }
                     }
                 }
                 blocks
@@ -902,7 +919,16 @@ define_blocks! {
         model { ("minecraft", "mob_spawner" ) },
     }
     OakStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -911,6 +937,8 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "oak_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::OakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     Chest {
         props {},
@@ -1056,7 +1084,16 @@ define_blocks! {
         model { ("minecraft", "rail" ) },
     }
     StoneStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -1065,6 +1102,8 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "stone_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::StoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     WallSign {
         props {},
@@ -1507,7 +1546,16 @@ define_blocks! {
         model { ("minecraft", "fence_gate" ) },
     }
     BrickStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -1516,9 +1564,20 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "brick_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::BrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     StoneBrickStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -1526,7 +1585,9 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "stone_brick_stairs" ) },
+        model { ("minecraft", "StoneBrickStairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::StoneBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     Mycelium {
         props {},
@@ -1573,7 +1634,16 @@ define_blocks! {
         model { ("minecraft", "nether_brick_fence" ) },
     }
     NetherBrickStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -1582,6 +1652,8 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "nether_brick_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::NetherBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     NetherWart {
         props {},
@@ -1727,7 +1799,16 @@ define_blocks! {
         model { ("minecraft", "cocoa" ) },
     }
     SandstoneStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -1736,6 +1817,8 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "sandstone_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::SandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     EmeraldOre {
         props {},
@@ -1793,7 +1876,16 @@ define_blocks! {
         model { ("minecraft", "emerald_block" ) },
     }
     SpruceStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -1802,9 +1894,20 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "spruce_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::SpruceStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     BirchStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -1813,9 +1916,20 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "birch_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::BirchStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     JungleStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -1824,6 +1938,8 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "jungle_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::JungleStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     CommandBlock {
         props {},
@@ -2035,15 +2151,26 @@ define_blocks! {
         model { ("minecraft", "quartz_block" ) },
     }
     QuartzStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
-            should_cull_against: true,
+            should_cull_against: false,
             force_shade: false,
             transparent: false,
         },
         model { ("minecraft", "quartz_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::QuartzStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     ActivatorRail {
         props {},
@@ -2112,7 +2239,16 @@ define_blocks! {
         model { ("minecraft", "log2" ) },
     }
     AcaciaStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -2120,10 +2256,21 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "acacia-stairs" ) },
+        model { ("minecraft", "acacia_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::AcaciaStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     DarkOakStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -2132,6 +2279,8 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "dark_oak_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::DarkOakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     Slime {
         props {},
@@ -2299,7 +2448,16 @@ define_blocks! {
         model { ("minecraft", "red_sandstone" ) },
     }
     RedSandstoneStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -2308,6 +2466,8 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "red_sandstone_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::RedSandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     DoubleStoneSlab2 {
         props {},
@@ -2552,7 +2712,16 @@ define_blocks! {
         model { ("minecraft", "purpur_pillar" ) },
     }
     PurpurStairs {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            shape: StairShape = [
+                StairShape::Straight,
+                StairShape::InnerLeft, StairShape::InnerRight,
+                StairShape::OuterLeft, StairShape::OuterRight
+            ],
+        },
+        data stair_data(facing, half, shape),
         material Material {
             renderable: true,
             never_cull: false,
@@ -2561,6 +2730,8 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "purpur_stairs" ) },
+        variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        update_state (world, x, y, z) => Block::PurpurStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing, half, shape)},
     }
     PurpurDoubleSlab {
         props {},
@@ -2701,6 +2872,103 @@ impl Axis {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum StairHalf {
+    Top,
+    Bottom,
+}
+
+impl StairHalf {
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            StairHalf::Top => "top",
+            StairHalf::Bottom => "bottom",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum StairShape {
+    Straight,
+    InnerLeft,
+    InnerRight,
+    OuterLeft,
+    OuterRight,
+}
+
+impl StairShape {
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            StairShape::Straight => "straight",
+            StairShape::InnerLeft => "inner_left",
+            StairShape::InnerRight => "inner_right",
+            StairShape::OuterLeft => "outer_left",
+            StairShape::OuterRight => "outer_right",
+        }
+    }
+}
+
+fn get_stair_info(world: &super::World, x: i32, y: i32, z: i32) -> Option<(Direction, StairHalf)> {
+    use self::Block::*;
+    match world.get_block(x, y, z) {
+        OakStairs{facing, half, ..} => Some((facing, half)),
+        StoneStairs{facing, half, ..} => Some((facing, half)),
+        BrickStairs{facing, half, ..} => Some((facing, half)),
+        StoneBrickStairs{facing, half, ..} => Some((facing, half)),
+        NetherBrickStairs{facing, half, ..} => Some((facing, half)),
+        SandstoneStairs{facing, half, ..} => Some((facing, half)),
+        SpruceStairs{facing, half, ..} => Some((facing, half)),
+        BirchStairs{facing, half, ..} => Some((facing, half)),
+        JungleStairs{facing, half, ..} => Some((facing, half)),
+        QuartzStairs{facing, half, ..} => Some((facing, half)),
+        AcaciaStairs{facing, half, ..} => Some((facing, half)),
+        DarkOakStairs{facing, half, ..} => Some((facing, half)),
+        RedSandstoneStairs{facing, half, ..} => Some((facing, half)),
+        PurpurStairs{facing, half, ..} => Some((facing, half)),
+        _ => None,
+    }
+}
+
+fn update_stair_shape(world: &super::World, x: i32, y: i32, z: i32, facing: Direction, half: StairHalf, shape: StairShape) -> StairShape {
+    let (ox, oy, oz) = facing.get_offset();
+    if let Some((other_facing, _)) = get_stair_info(world, x+ox, y+oy, z+oz) {
+        if other_facing != facing && other_facing != facing.opposite() {
+            if other_facing == facing.clockwise() {
+                return StairShape::OuterRight;
+            }
+            return StairShape::OuterLeft;
+        }
+    }
+    let (ox, oy, oz) = facing.opposite().get_offset();
+    if let Some((other_facing, _)) = get_stair_info(world, x+ox, y+oy, z+oz) {
+        if other_facing != facing && other_facing != facing.opposite() {
+            if other_facing == facing.clockwise() {
+                return StairShape::InnerRight;
+            }
+            return StairShape::InnerLeft;
+        }
+    }
+    StairShape::Straight
+}
+
+fn stair_data(facing: Direction, half: StairHalf, shape: StairShape) -> Option<usize> {
+    if shape != StairShape::Straight {
+        return None;
+    }
+    let mut data = match facing {
+        Direction::East => 0,
+        Direction::West => 1,
+        Direction::South => 2,
+        Direction::North => 3,
+        _ => unreachable!(),
+    };
+    if half == StairHalf::Top {
+        data |= 0x4;
+    }
+    Some(data)
+}
+
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TreeVariant {
