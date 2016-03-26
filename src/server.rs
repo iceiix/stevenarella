@@ -25,7 +25,8 @@ use openssl;
 use console;
 use render;
 use auth;
-use cgmath::{self, Vector};
+use cgmath::{self, Vector, Point, Point3};
+use collision::{Aabb, Aabb3};
 use sdl2::keyboard::Keycode;
 
 pub struct Server {
@@ -43,12 +44,59 @@ pub struct Server {
     version: usize,
 
     pub position: cgmath::Vector3<f64>,
+    last_position: cgmath::Vector3<f64>,
     pub yaw: f64,
     pub pitch: f64,
+    bounds: Aabb3<f64>,
+    gamemode: Gamemode,
+    flying: bool,
+    on_ground: bool,
+    did_touch_ground: bool,
+    v_speed: f64,
 
     pressed_keys: HashMap<Keycode, bool>,
 
     tick_timer: f64,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Gamemode {
+    Survival = 0,
+    Creative = 1,
+    Adventure = 2,
+    Spectator = 3,
+}
+
+impl Gamemode {
+    pub fn from_int(val: i32) -> Gamemode {
+        match val {
+            3 => Gamemode::Spectator,
+            2 => Gamemode::Adventure,
+            1 => Gamemode::Creative,
+            0 | _ => Gamemode::Survival,
+        }
+    }
+
+    pub fn can_fly(&self) -> bool {
+        match *self {
+            Gamemode::Creative | Gamemode::Spectator => true,
+            _ => false,
+        }
+    }
+
+    pub fn always_fly(&self) -> bool {
+        match *self {
+            Gamemode::Spectator => true,
+            _ => false,
+        }
+    }
+
+    pub fn noclip(&self) -> bool {
+        match *self {
+            Gamemode::Spectator => true,
+            _ => false,
+        }
+    }
 }
 
 macro_rules! handle_packet {
@@ -147,48 +195,35 @@ impl Server {
             }
         });
 
-        let version = resources.read().unwrap().version();
-        Ok(Server {
-            conn: Some(write),
-            read_queue: Some(rx),
-
-            world: world::World::new(),
-            world_age: 0,
-            world_time: 0.0,
-            world_time_target: 0.0,
-            tick_time: true,
-
-            resources: resources,
-            console: console,
-            version: version,
-
-            pressed_keys: HashMap::new(),
-
-            position: cgmath::Vector3::zero(),
-            yaw: 0.0,
-            pitch: 0.0,
-
-            tick_timer: 0.0,
-        })
+        Ok(Server::new(resources, console, Some(write), Some(rx)))
     }
 
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>) -> Server {
-        let mut world = world::World::new();
+        let mut server = Server::new(resources, console, None, None);
         let mut rng = rand::thread_rng();
         for x in -7*16 .. 7*16 {
             for z in -7*16 .. 7*16 {
                 let h = rng.gen_range(3, 10);
                 for y in 0 .. h {
-                    world.set_block(x, y, z, block::Dirt{});
+                    server.world.set_block(x, y, z, block::Dirt{});
                 }
             }
         }
+        server.gamemode = Gamemode::Spectator;
+        server.flying = false;
+        server
+    }
+
+    fn new(
+        resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>,
+        conn: Option<protocol::Conn>, read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>
+    ) -> Server {
         let version = resources.read().unwrap().version();
         Server {
-            conn: None,
-            read_queue: None,
+            conn: conn,
+            read_queue: read_queue,
 
-            world: world,
+            world: world::World::new(),
             world_age: 0,
             world_time: 0.0,
             world_time_target: 0.0,
@@ -201,8 +236,18 @@ impl Server {
             pressed_keys: HashMap::new(),
 
             position: cgmath::Vector3::new(0.5, 13.2, 0.5),
+            last_position: cgmath::Vector3::zero(),
             yaw: 0.0,
             pitch: 0.0,
+            bounds: Aabb3::new(
+                Point3::new(-0.3, 0.0, -0.3),
+                Point3::new(0.3, 1.8, 0.3)
+            ),
+            gamemode: Gamemode::Survival,
+            flying: false,
+            on_ground: false,
+            did_touch_ground: false,
+            v_speed: 0.0,
 
             tick_timer: 0.0,
         }
@@ -224,11 +269,14 @@ impl Server {
                 match pck {
                     Ok(pck) => handle_packet!{
                         self pck {
+                            JoinGame => on_game_join,
+                            Respawn => on_respawn,
                             KeepAliveClientbound => on_keep_alive,
                             ChunkData => on_chunk_data,
                             ChunkUnload => on_chunk_unload,
                             TeleportPlayer => on_teleport,
                             TimeUpdate => on_time_update,
+                            ChangeGameState => on_game_state_change,
                         }
                     },
                     Err(err) => panic!("Err: {:?}", err),
@@ -237,14 +285,15 @@ impl Server {
             self.read_queue = Some(rx);
         }
 
-        let (forward, yaw) = self.calculate_movement();
-
+        self.flying |= self.gamemode.always_fly();
+        self.last_position = self.position;
         if self.world.is_chunk_loaded((self.position.x as i32) >> 4, (self.position.z as i32) >> 4) {
-                let mut speed = 4.317 / 60.0;
-                if self.is_key_pressed(Keycode::LShift) {
-                    speed = 5.612 / 60.0;
-                }
-                // TODO: only do this for flying
+            let (forward, yaw) = self.calculate_movement();
+            let mut speed = 4.317 / 60.0;
+            if self.is_key_pressed(Keycode::LShift) {
+                speed = 5.612 / 60.0;
+            }
+            if self.flying {
                 speed *= 2.5;
 
                 if self.is_key_pressed(Keycode::Space) {
@@ -253,8 +302,85 @@ impl Server {
                 if self.is_key_pressed(Keycode::LCtrl) {
                     self.position.y -= speed * delta;
                 }
-                self.position.x += forward * yaw.cos() * delta * speed;
-                self.position.z -= forward * yaw.sin() * delta * speed;
+            } else {
+                if self.on_ground {
+                    if self.is_key_pressed(Keycode::Space) {
+                        self.v_speed = 0.15;
+                    } else {
+                        self.v_speed = 0.0;
+                    }
+                } else {
+                    self.v_speed -= 0.01 * delta;
+                    if self.v_speed < -0.3 {
+                        self.v_speed = -0.3;
+                    }
+                }
+            }
+            self.position.x += forward * yaw.cos() * delta * speed;
+            self.position.z -= forward * yaw.sin() * delta * speed;
+            self.position.y += self.v_speed * delta;
+        }
+
+        if !self.gamemode.noclip() {
+            let mut target = self.position;
+            self.position.y = self.last_position.y;
+            self.position.z = self.last_position.z;
+
+    		// We handle each axis separately to allow for a sliding
+    		// effect when pushing up against walls.
+
+            let (bounds, xhit) = self.check_collisions(self.bounds);
+            self.position.x = bounds.min.x + 0.3;
+            self.last_position.x = self.position.x;
+
+            self.position.z = target.z;
+            let (bounds, zhit) = self.check_collisions(self.bounds);
+            self.position.z = bounds.min.z + 0.3;
+            self.last_position.z = self.position.z;
+
+    		// Half block jumps
+    		// Minecraft lets you 'jump' up 0.5 blocks
+    		// for slabs and stairs (or smaller blocks).
+    		// Currently we implement this as a teleport to the
+    		// top of the block if we could move there
+    		// but this isn't smooth.
+            if (xhit || zhit) && self.on_ground {
+                let mut ox = self.position.x;
+                let mut oz = self.position.z;
+                self.position.x = target.x;
+                self.position.z = target.z;
+                for offset in 1 .. 9 {
+                    let mini = self.bounds.add_v(cgmath::Vector3::new(0.0, offset as f64 / 16.0, 0.0));
+                    let (_, hit) = self.check_collisions(mini);
+                    if !hit {
+                        target.y += offset as f64 / 16.0;
+                        ox = target.x;
+                        oz = target.z;
+                        break;
+                    }
+                }
+                self.position.x = ox;
+                self.position.z = oz;
+            }
+
+            self.position.y = target.y;
+            let (bounds, yhit) = self.check_collisions(self.bounds);
+            self.position.y = bounds.min.y;
+            self.last_position.y = self.position.y;
+            if yhit {
+                self.v_speed = 0.0;
+            }
+
+            let ground = Aabb3::new(
+                Point3::new(-0.3, -0.05, -0.3),
+                Point3::new(0.3, 0.0, 0.3)
+            );
+            let prev = self.on_ground;
+            let (_, hit) = self.check_collisions(ground);
+            self.on_ground = hit;
+            if !prev && self.on_ground {
+                self.did_touch_ground = true;
+            }
         }
 
         self.tick_timer += delta;
@@ -266,7 +392,7 @@ impl Server {
         self.update_time(renderer, delta);
 
         // Copy to camera
-        renderer.camera.pos = cgmath::Point::from_vec(self.position + cgmath::Vector3::new(0.0, 1.8, 0.0));
+        renderer.camera.pos = cgmath::Point::from_vec(self.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
         renderer.camera.yaw = self.yaw;
         renderer.camera.pitch = self.pitch;
     }
@@ -312,6 +438,37 @@ impl Server {
         offset * 0.8 + 0.2
     }
 
+    fn check_collisions(&self, bounds: Aabb3<f64>) -> (Aabb3<f64>, bool) {
+        let mut bounds = bounds.add_v(self.position);
+
+        let dir = self.position - self.last_position;
+
+        let min_x = (bounds.min.x - 1.0) as i32;
+        let min_y = (bounds.min.y - 1.0) as i32;
+        let min_z = (bounds.min.z - 1.0) as i32;
+        let max_x = (bounds.max.x + 1.0) as i32;
+        let max_y = (bounds.max.y + 1.0) as i32;
+        let max_z = (bounds.max.z + 1.0) as i32;
+
+        let mut hit = false;
+        for y in min_y .. max_y {
+            for z in min_z .. max_z {
+                for x in min_x .. max_x {
+                    let block = self.world.get_block(x, y, z);
+                    for bb in block.get_collision_boxes() {
+                        let bb = bb.add_v(cgmath::Vector3::new(x as f64, y as f64, z as f64));
+                        if bb.collides(&bounds) {
+                            bounds = bounds.move_out_of(bb, dir);
+                            hit = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        (bounds, hit)
+    }
+
     fn calculate_movement(&self) -> (f64, f64) {
         use std::f64::consts::PI;
         let mut forward = 0.0f64;
@@ -342,15 +499,25 @@ impl Server {
     }
 
     pub fn minecraft_tick(&mut self) {
+    	// Force the server to know when touched the ground
+    	// otherwise if it happens between ticks the server
+    	// will think we are flying.
+        let on_ground = if self.did_touch_ground {
+            self.did_touch_ground = false;
+            true
+        } else {
+            self.on_ground
+        };
 
         // Sync our position to the server
+        // Use the smaller packets when possible
         let packet = packet::play::serverbound::PlayerPositionLook {
             x: self.position.x,
             y: self.position.y,
             z: self.position.z,
             yaw: self.yaw as f32,
             pitch: self.pitch as f32,
-            on_ground: false,
+            on_ground: on_ground,
         };
         self.write_packet(packet);
     }
@@ -373,6 +540,19 @@ impl Server {
         });
     }
 
+    fn on_game_join(&mut self, join: packet::play::clientbound::JoinGame) {
+        self.gamemode = Gamemode::from_int((join.gamemode & 0x7) as i32);
+        // TODO: Temp
+        self.flying = self.gamemode.can_fly();
+    }
+
+    fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
+        self.world = world::World::new();
+        self.gamemode = Gamemode::from_int((respawn.gamemode & 0x7) as i32);
+        // TODO: Temp
+        self.flying = self.gamemode.can_fly();
+    }
+
     fn on_time_update(&mut self, time_update: packet::play::clientbound::TimeUpdate) {
         self.world_age = time_update.time_of_day;
         self.world_time_target = (time_update.time_of_day % 24000) as f64;
@@ -381,6 +561,17 @@ impl Server {
             self.tick_time = false;
         } else {
             self.tick_time = true;
+        }
+    }
+
+    fn on_game_state_change(&mut self, game_state: packet::play::clientbound::ChangeGameState) {
+        match game_state.reason {
+            3 => {
+                self.gamemode = Gamemode::from_int(game_state.value as i32);
+                // TODO: Temp
+                self.flying = self.gamemode.can_fly();
+            },
+            _ => {},
         }
     }
 
@@ -409,5 +600,60 @@ impl Server {
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
         self.world.unload_chunk(chunk_unload.x, chunk_unload.z);
+    }
+}
+
+trait Collidable<T> {
+    fn collides(&self, t: &T) -> bool;
+    fn move_out_of(self, other: Self, dir: cgmath::Vector3<f64>) -> Self;
+}
+
+impl Collidable<Aabb3<f64>> for Aabb3<f64> {
+    fn collides(&self, t: &Aabb3<f64>) -> bool {
+        !(
+            t.min.x >= self.max.x ||
+            t.max.x <= self.min.x ||
+            t.min.y >= self.max.y ||
+            t.max.y <= self.min.y ||
+            t.min.z >= self.max.z ||
+            t.max.z <= self.min.z
+        )
+    }
+
+    fn move_out_of(mut self, other: Self, dir: cgmath::Vector3<f64>) -> Self {
+        if dir.x != 0.0 {
+            if dir.x > 0.0 {
+                let ox = self.max.x;
+                self.max.x = other.min.x - 0.0001;
+                self.min.x += self.max.x - ox;
+            } else {
+                let ox = self.min.x;
+                self.min.x = other.max.x + 0.0001;
+                self.max.x += self.min.x - ox;
+            }
+        }
+        if dir.y != 0.0 {
+            if dir.y > 0.0 {
+                let oy = self.max.y;
+                self.max.y = other.min.y - 0.0001;
+                self.min.y += self.max.y - oy;
+            } else {
+                let oy = self.min.y;
+                self.min.y = other.max.y + 0.0001;
+                self.max.y += self.min.y - oy;
+            }
+        }
+        if dir.z != 0.0 {
+            if dir.z > 0.0 {
+                let oz = self.max.z;
+                self.max.z = other.min.z - 0.0001;
+                self.min.z += self.max.z - oz;
+            } else {
+                let oz = self.min.z;
+                self.min.z = other.max.z + 0.0001;
+                self.max.z += self.min.z - oz;
+            }
+        }
+        self
     }
 }

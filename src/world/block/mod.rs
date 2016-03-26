@@ -1,5 +1,7 @@
 
 use std::fmt::{Display, Formatter, Error};
+use collision::{Aabb, Aabb3};
+use cgmath::{Point3, Point};
 
 pub use self::Block::*;
 
@@ -36,6 +38,7 @@ macro_rules! define_blocks {
                 model $model:expr,
                 $(variant $variant:expr,)*
                 $(tint $tint:expr,)*
+                $(collision $collision:expr,)*
             }
         )+
     ) => (
@@ -188,6 +191,23 @@ macro_rules! define_blocks {
                     )+
                 }
             }
+
+            #[allow(unused_variables, unreachable_code)]
+            pub fn get_collision_boxes(&self) -> Vec<Aabb3<f64>> {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            $(return $collision;)*
+                            return vec![Aabb3::new(
+                                Point3::new(0.0, 0.0, 0.0),
+                                Point3::new(1.0, 1.0, 1.0)
+                            )];
+                        }
+                    )+
+                }
+            }
         }
 
         lazy_static! {
@@ -235,6 +255,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "air" ) },
+        collision vec![],
     }
     Stone {
         props {

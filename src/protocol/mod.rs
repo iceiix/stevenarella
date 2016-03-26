@@ -753,7 +753,7 @@ impl Conn {
         if self.compression_threshold >= 0 && extra == 1 {
             try!(VarInt(0).write_to(self));
         }
-        try!(self.write_all(&buf.into_boxed_slice()));
+        try!(self.write_all(&buf));
 
         Result::Ok(())
     }

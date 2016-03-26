@@ -209,7 +209,7 @@ impl World {
             biomes: vec![0; (w * d) as usize],
 
             x: x, y: y, z: z,
-            w: w, h: h, d: d,
+            w: w, _h: h, d: d,
         };
         for i in 0 .. (w * h * d) as usize {
             snapshot.sky_light.set(i, 0xF);
@@ -383,7 +383,7 @@ pub struct Snapshot {
     y: i32,
     z: i32,
     w: i32,
-    h: i32,
+    _h: i32,
     d: i32,
 }
 
