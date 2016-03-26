@@ -5,4 +5,4 @@ vec4 atlasTexture() {
     tPos += vTextureInfo.xy;
     tPos *= invAtlasSize;
     return texture(textures, vec3(tPos, vAtlas));
-}    
+}

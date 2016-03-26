@@ -46,12 +46,46 @@ impl World {
     }
 
     pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
+        self.set_block_raw(x, y, z, b);
+        self.update_block(x, y, z);
+    }
+
+    fn set_block_raw(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
         let cpos = CPos(x >> 4, z >> 4);
         if !self.chunks.contains_key(&cpos) {
             self.chunks.insert(cpos, Chunk::new(cpos));
         }
         let chunk = self.chunks.get_mut(&cpos).unwrap();
         chunk.set_block(x & 0xF, y, z & 0xF, b);
+    }
+
+    pub fn update_block(&mut self, x: i32, y: i32, z: i32) {
+        for yy in -1 .. 2 {
+            for zz in -1 .. 2 {
+                for xx in -1 .. 2 {
+                    let (bx, by, bz) = (x+xx, y+yy, z+zz);
+                    let current = self.get_block(bx, by, bz);
+                    let new = current.update_state(self, bx, by, bz);
+                    if current != new {
+                        self.set_block_raw(bx, by, bz, new);
+                    }
+                }
+            }
+        }
+    }
+
+    fn update_range(&mut self, x1: i32, y1: i32, z1: i32, x2: i32, y2: i32, z2: i32) {
+        for by in y1 .. y2 {
+            for bz in z1 .. z2 {
+                for bx in x1 .. x2 {
+                    let current = self.get_block(bx, by, bz);
+                    let new = current.update_state(self, bx, by, bz);
+                    if current != new {
+                        self.set_block_raw(bx, by, bz, new);
+                    }
+                }
+            }
+        }
     }
 
     pub fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
@@ -356,6 +390,10 @@ impl World {
                 (0, 0, -1), (0, 0, 1)].into_iter() {
                 self.flag_section_dirty(x + pos.0, i as i32 + pos.1, z + pos.2);
             }
+            self.update_range(
+                (x<<4) - 1, (i<<4) - 1, (z<<4) - 1,
+                (x<<4) + 17, (i<<4) + 17, (z<<4) + 17
+            );
         }
         Ok(())
     }

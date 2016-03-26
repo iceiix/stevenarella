@@ -39,6 +39,7 @@ macro_rules! define_blocks {
                 $(variant $variant:expr,)*
                 $(tint $tint:expr,)*
                 $(collision $collision:expr,)*
+                $(update_state $update_state:expr,)*
             }
         )+
     ) => (
@@ -204,6 +205,22 @@ macro_rules! define_blocks {
                                 Point3::new(0.0, 0.0, 0.0),
                                 Point3::new(1.0, 1.0, 1.0)
                             )];
+                        }
+                    )+
+                }
+            }
+
+            #[allow(unused_variables, unreachable_code)]
+            pub fn update_state(&self, world: &super::World, x: i32, y: i32, z: i32) -> Block {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            $(return $update_state;)*
+                            return Block::$name {
+                                $($fname: $fname,)*
+                            };
                         }
                     )+
                 }
