@@ -64,6 +64,7 @@ pub mod world;
 pub mod chunk_builder;
 pub mod auth;
 pub mod model;
+pub mod entity;
 
 use std::sync::{Arc, RwLock, Mutex};
 use std::marker::PhantomData;
@@ -108,9 +109,10 @@ impl Game {
 
     pub fn tick(&mut self, delta: f64) {
         if !self.server.is_connected() {
-            self.server.yaw += 0.005 * delta;
-            if self.server.yaw > ::std::f64::consts::PI * 2.0 {
-                self.server.yaw = 0.0;
+            let rotation = self.server.entities.get_component_mut(self.server.player, self.server.rotation).unwrap();
+            rotation.yaw += 0.005 * delta;
+            if rotation.yaw > ::std::f64::consts::PI * 2.0 {
+                rotation.yaw = 0.0;
             }
         }
         let mut clear_reply = false;
@@ -270,13 +272,14 @@ fn handle_window_event(window: &sdl2::video::Window,
                 }
                 let s = 2000.0 + 0.01;
                 let (rx, ry) = (xrel as f64 / s, yrel as f64 / s);
-                game.server.yaw -= rx;
-                game.server.pitch -= ry;
-                if game.server.pitch < (PI/2.0) + 0.01 {
-                    game.server.pitch = (PI/2.0) + 0.01;
+                let rotation = game.server.entities.get_component_mut(game.server.player, game.server.rotation).unwrap();
+                rotation.yaw -= rx;
+                rotation.pitch -= ry;
+                if rotation.pitch < (PI/2.0) + 0.01 {
+                    rotation.pitch = (PI/2.0) + 0.01;
                 }
-                if game.server.pitch > (PI/2.0)*3.0 - 0.01 {
-                    game.server.pitch = (PI/2.0)*3.0 - 0.01;
+                if rotation.pitch > (PI/2.0)*3.0 - 0.01 {
+                    rotation.pitch = (PI/2.0)*3.0 - 0.01;
                 }
             } else {
                 ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);

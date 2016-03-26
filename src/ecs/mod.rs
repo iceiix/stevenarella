@@ -29,11 +29,19 @@ pub struct Entity {
 
 /// Used to access compoents on an entity in an efficient
 /// way.
-#[derive(Clone, Copy)]
 pub struct Key<T> {
     id: usize,
     _t: PhantomData<T>,
 }
+impl <T> Clone for Key<T> {
+    fn clone(&self) -> Self {
+        Key {
+            id: self.id,
+            _t: PhantomData,
+        }
+    }
+}
+impl <T> Copy for Key<T> {}
 
 /// Used to search for entities with the requested components.
 pub struct Filter {
@@ -73,8 +81,8 @@ pub struct Manager {
 
     component_ids: RefCell<HashMap<TypeId, usize>>,
 
-    systems: Vec<Box<System>>,
-    render_systems: Vec<Box<System>>,
+    systems: Vec<Box<System + Send>>,
+    render_systems: Vec<Box<System + Send>>,
 }
 
 impl Manager {
@@ -101,12 +109,12 @@ impl Manager {
     }
 
     /// Adds a system which will be called every tick
-    pub fn add_system<S: System + 'static>(&mut self, s: S) {
+    pub fn add_system<S: System + Send + 'static>(&mut self, s: S) {
         self.systems.push(Box::new(s));
     }
 
     /// Adds a system which will be called every frame
-    pub fn add_render_system<S: System + 'static>(&mut self, s: S) {
+    pub fn add_render_system<S: System + Send + 'static>(&mut self, s: S) {
         self.render_systems.push(Box::new(s));
     }
 
@@ -242,8 +250,44 @@ impl Manager {
         self.add_component(entity, key, val);
     }
 
+    /// Removes the component to the target entity. Returns whether anything
+    /// was removed.
+    /// # Panics
+    /// Panics when the target entity doesn't exist
+    pub fn remove_component<T>(&mut self, entity: Entity, key: Key<T>) -> bool {
+        if self.components.len() <= key.id {
+            return false;
+        }
+        if self.components[key.id].is_none() {
+            return false;
+        }
+        let components = self.components.get_mut(key.id).and_then(|v| v.as_mut()).unwrap();
+        let mut e = self.entities.get_mut(entity.id);
+        let set = match e {
+            Some(ref mut val) => if val.1 == entity.generation { &mut val.0 } else { panic!("Missing entity") },
+            None => panic!("Missing entity"),
+        };
+        let set = match set.as_mut() {
+            Some(val) => val,
+            None => panic!("Missing entity"),
+        };
+        if !set.get(key.id) {
+            return false
+        }
+        set.set(key.id, false);
+        components.remove(entity.id);
+        true
+    }
+
+    /// Same as `remove_component` but doesn't require a key. Using a key
+    /// is better for frequent lookups.
+    pub fn remove_component_direct<T: Any>(&mut self, entity: Entity) -> bool {
+        let key = self.get_key();
+        self.remove_component::<T>(entity, key)
+    }
+
     /// Returns the given component that the key points to if it exists.
-    pub fn get_component<T>(&self, entity: Entity, key: Key<T>) -> Option<&T> {
+    pub fn get_component<'a, 'b, T>(&'a self, entity: Entity, key: Key<T>) -> Option<&'b T> {
         let components = match self.components.get(key.id).and_then(|v| v.as_ref()) {
             Some(val) => val,
             None => return None,
@@ -256,18 +300,18 @@ impl Manager {
             return None;
         }
 
-        Some(components.get(entity.id))
+        Some(unsafe { mem::transmute::<&T, &T>(components.get(entity.id)) })
     }
 
     /// Same as `get_component` but doesn't require a key. Using a key
     /// is better for frequent lookups.
-    pub fn get_component_direct<T: Any>(&self, entity: Entity) -> Option<&T> {
+    pub fn get_component_direct<'a, 'b, T: Any>(&'a self, entity: Entity) -> Option<&'b T> {
         let key = self.get_key();
         self.get_component(entity, key)
     }
 
     /// Returns the given component that the key points to if it exists.
-    pub fn get_component_mut<T>(&mut self, entity: Entity, key: Key<T>) -> Option<&mut T> {
+    pub fn get_component_mut<'a, 'b, T>(&'a mut self, entity: Entity, key: Key<T>) -> Option<&'b mut T> {
         let components = match self.components.get_mut(key.id).and_then(|v| v.as_mut()) {
             Some(val) => val,
             None => return None,
@@ -280,12 +324,12 @@ impl Manager {
             return None;
         }
 
-        Some(components.get_mut(entity.id))
+        Some(unsafe { mem::transmute::<&mut T, &mut T>(components.get_mut(entity.id)) })
     }
 
     /// Same as `get_component_mut` but doesn't require a key. Using a key
     /// is better for frequent lookups.
-    pub fn get_component_mut_direct<T: Any>(&mut self, entity: Entity) -> Option<&mut T> {
+    pub fn get_component_mut_direct<'a, 'b, T: Any>(&'a mut self, entity: Entity) -> Option<&'b mut T> {
         let key = self.get_key();
         self.get_component_mut(entity, key)
     }
@@ -296,7 +340,7 @@ const COMPONENTS_PER_BLOCK: usize = 64;
 struct ComponentMem {
     data: Vec<Option<(Vec<u8>, BSet, usize)>>,
     component_size: usize,
-    drop_func: Box<Fn(*mut u8)>,
+    drop_func: Box<Fn(*mut u8) + Send>,
 }
 
 impl ComponentMem {

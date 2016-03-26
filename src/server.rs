@@ -25,15 +25,19 @@ use openssl;
 use console;
 use render;
 use auth;
-use cgmath::{self, Vector, Point3};
-use collision::{Aabb, Aabb3};
+use ecs;
+use entity;
+use cgmath;
+use collision::Aabb;
 use sdl2::keyboard::Keycode;
+use types::Gamemode;
 
 pub struct Server {
     conn: Option<protocol::Conn>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
 
     pub world: world::World,
+    pub entities: ecs::Manager,
     world_age: i64,
     world_time: f64,
     world_time_target: f64,
@@ -43,60 +47,20 @@ pub struct Server {
     console: Arc<Mutex<console::Console>>,
     version: usize,
 
-    pub position: cgmath::Vector3<f64>,
-    last_position: cgmath::Vector3<f64>,
-    pub yaw: f64,
-    pub pitch: f64,
-    bounds: Aabb3<f64>,
-    gamemode: Gamemode,
-    flying: bool,
-    on_ground: bool,
-    did_touch_ground: bool,
-    v_speed: f64,
+    // Entity accessors
+    world_proxy: ecs::Key<entity::Proxy<world::World>>,
+    game_info: ecs::Key<entity::GameInfo>,
+    player_movement: ecs::Key<entity::player::PlayerMovement>,
+    gravity: ecs::Key<entity::Gravity>,
+    position: ecs::Key<entity::Position>,
+    gamemode: ecs::Key<Gamemode>,
+    pub rotation: ecs::Key<entity::Rotation>,
+    //
+
+    pub player: ecs::Entity,
 
     pressed_keys: HashMap<Keycode, bool>,
-
     tick_timer: f64,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum Gamemode {
-    Survival = 0,
-    Creative = 1,
-    Adventure = 2,
-    Spectator = 3,
-}
-
-impl Gamemode {
-    pub fn from_int(val: i32) -> Gamemode {
-        match val {
-            3 => Gamemode::Spectator,
-            2 => Gamemode::Adventure,
-            1 => Gamemode::Creative,
-            0 | _ => Gamemode::Survival,
-        }
-    }
-
-    pub fn can_fly(&self) -> bool {
-        match *self {
-            Gamemode::Creative | Gamemode::Spectator => true,
-            _ => false,
-        }
-    }
-
-    pub fn always_fly(&self) -> bool {
-        match *self {
-            Gamemode::Spectator => true,
-            _ => false,
-        }
-    }
-
-    pub fn noclip(&self) -> bool {
-        match *self {
-            Gamemode::Spectator => true,
-            _ => false,
-        }
-    }
 }
 
 macro_rules! handle_packet {
@@ -209,8 +173,7 @@ impl Server {
                 }
             }
         }
-        server.gamemode = Gamemode::Spectator;
-        server.flying = false;
+        *server.entities.get_component_mut(server.player, server.gamemode).unwrap() = Gamemode::Spectator;
         server
     }
 
@@ -218,6 +181,16 @@ impl Server {
         resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>,
         conn: Option<protocol::Conn>, read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>
     ) -> Server {
+        let mut entities = ecs::Manager::new();
+        entity::add_systems(&mut entities);
+
+        let player = entity::player::create_local(&mut entities);
+        let world_entity = entities.get_world();
+        let world_proxy = entities.get_key();
+        entities.add_component(world_entity, world_proxy, entity::Proxy::new());
+        let game_info = entities.get_key();
+        entities.add_component(world_entity, game_info, entity::GameInfo::new());
+
         let version = resources.read().unwrap().version();
         Server {
             conn: conn,
@@ -235,19 +208,18 @@ impl Server {
 
             pressed_keys: HashMap::new(),
 
-            position: cgmath::Vector3::new(0.5, 13.2, 0.5),
-            last_position: cgmath::Vector3::zero(),
-            yaw: 0.0,
-            pitch: 0.0,
-            bounds: Aabb3::new(
-                Point3::new(-0.3, 0.0, -0.3),
-                Point3::new(0.3, 1.8, 0.3)
-            ),
-            gamemode: Gamemode::Survival,
-            flying: false,
-            on_ground: false,
-            did_touch_ground: false,
-            v_speed: 0.0,
+            // Entity accessors
+            world_proxy: world_proxy,
+            game_info: game_info,
+            player_movement: entities.get_key(),
+            gravity: entities.get_key(),
+            position: entities.get_key(),
+            gamemode: entities.get_key(),
+            rotation: entities.get_key(),
+            //
+            entities: entities,
+
+            player: player,
 
             tick_timer: 0.0,
         }
@@ -285,114 +257,37 @@ impl Server {
             self.read_queue = Some(rx);
         }
 
-        self.flying |= self.gamemode.always_fly();
-        self.last_position = self.position;
-        if self.world.is_chunk_loaded((self.position.x as i32) >> 4, (self.position.z as i32) >> 4) {
-            let (forward, yaw) = self.calculate_movement();
-            let mut speed = 4.317 / 60.0;
-            if self.is_key_pressed(Keycode::LShift) {
-                speed = 5.612 / 60.0;
-            }
-            if self.flying {
-                speed *= 2.5;
-
-                if self.is_key_pressed(Keycode::Space) {
-                    self.position.y += speed * delta;
-                }
-                if self.is_key_pressed(Keycode::LCtrl) {
-                    self.position.y -= speed * delta;
-                }
-            } else if self.on_ground {
-                if self.is_key_pressed(Keycode::Space) {
-                    self.v_speed = 0.15;
-                } else {
-                    self.v_speed = 0.0;
-                }
-            } else {
-                self.v_speed -= 0.01 * delta;
-                if self.v_speed < -0.3 {
-                    self.v_speed = -0.3;
-                }
-            }
-            self.position.x += forward * yaw.cos() * delta * speed;
-            self.position.z -= forward * yaw.sin() * delta * speed;
-            self.position.y += self.v_speed * delta;
-        }
-
-        if !self.gamemode.noclip() {
-            let mut target = self.position;
-            self.position.y = self.last_position.y;
-            self.position.z = self.last_position.z;
-
-            // We handle each axis separately to allow for a sliding
-            // effect when pushing up against walls.
-
-            let (bounds, xhit) = self.check_collisions(self.bounds);
-            self.position.x = bounds.min.x + 0.3;
-            self.last_position.x = self.position.x;
-
-            self.position.z = target.z;
-            let (bounds, zhit) = self.check_collisions(self.bounds);
-            self.position.z = bounds.min.z + 0.3;
-            self.last_position.z = self.position.z;
-
-            // Half block jumps
-            // Minecraft lets you 'jump' up 0.5 blocks
-            // for slabs and stairs (or smaller blocks).
-            // Currently we implement this as a teleport to the
-            // top of the block if we could move there
-            // but this isn't smooth.
-            if (xhit || zhit) && self.on_ground {
-                let mut ox = self.position.x;
-                let mut oz = self.position.z;
-                self.position.x = target.x;
-                self.position.z = target.z;
-                for offset in 1 .. 9 {
-                    let mini = self.bounds.add_v(cgmath::Vector3::new(0.0, offset as f64 / 16.0, 0.0));
-                    let (_, hit) = self.check_collisions(mini);
-                    if !hit {
-                        target.y += offset as f64 / 16.0;
-                        ox = target.x;
-                        oz = target.z;
-                        break;
-                    }
-                }
-                self.position.x = ox;
-                self.position.z = oz;
-            }
-
-            self.position.y = target.y;
-            let (bounds, yhit) = self.check_collisions(self.bounds);
-            self.position.y = bounds.min.y;
-            self.last_position.y = self.position.y;
-            if yhit {
-                self.v_speed = 0.0;
-            }
-
-            let ground = Aabb3::new(
-                Point3::new(-0.3, -0.05, -0.3),
-                Point3::new(0.3, 0.0, 0.3)
-            );
-            let prev = self.on_ground;
-            let (_, hit) = self.check_collisions(ground);
-            self.on_ground = hit;
-            if !prev && self.on_ground {
-                self.did_touch_ground = true;
-            }
-        }
-
         self.tick_timer += delta;
         while self.tick_timer >= 3.0 && self.is_connected() {
             self.minecraft_tick();
             self.tick_timer -= 3.0;
         }
 
+        self.render_tick(delta);
+
         self.update_time(renderer, delta);
 
         // Copy to camera
-        renderer.camera.pos = cgmath::Point::from_vec(self.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
-        renderer.camera.yaw = self.yaw;
-        renderer.camera.pitch = self.pitch;
+        let position = self.entities.get_component(self.player, self.position).unwrap();
+        let rotation = self.entities.get_component(self.player, self.rotation).unwrap();
+        renderer.camera.pos = cgmath::Point::from_vec(position.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
+        renderer.camera.yaw = rotation.yaw;
+        renderer.camera.pitch = rotation.pitch;
+    }
+
+    fn render_tick(&mut self, delta: f64) {
+        let world_entity = self.entities.get_world();
+        self.entities.get_component_mut(world_entity, self.world_proxy)
+            .unwrap()
+            .give(&mut self.world);
+        self.entities.get_component_mut(world_entity, self.game_info)
+            .unwrap().delta = delta;
+
+        self.entities.render_tick();
+
+        self.entities.get_component_mut(world_entity, self.world_proxy)
+            .unwrap()
+            .take(&mut self.world);
     }
 
     fn update_time(&mut self, renderer: &mut render::Renderer, delta: f64) {
@@ -436,85 +331,39 @@ impl Server {
         offset * 0.8 + 0.2
     }
 
-    fn check_collisions(&self, bounds: Aabb3<f64>) -> (Aabb3<f64>, bool) {
-        let mut bounds = bounds.add_v(self.position);
-
-        let dir = self.position - self.last_position;
-
-        let min_x = (bounds.min.x - 1.0) as i32;
-        let min_y = (bounds.min.y - 1.0) as i32;
-        let min_z = (bounds.min.z - 1.0) as i32;
-        let max_x = (bounds.max.x + 1.0) as i32;
-        let max_y = (bounds.max.y + 1.0) as i32;
-        let max_z = (bounds.max.z + 1.0) as i32;
-
-        let mut hit = false;
-        for y in min_y .. max_y {
-            for z in min_z .. max_z {
-                for x in min_x .. max_x {
-                    let block = self.world.get_block(x, y, z);
-                    for bb in block.get_collision_boxes() {
-                        let bb = bb.add_v(cgmath::Vector3::new(x as f64, y as f64, z as f64));
-                        if bb.collides(&bounds) {
-                            bounds = bounds.move_out_of(bb, dir);
-                            hit = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        (bounds, hit)
-    }
-
-    fn calculate_movement(&self) -> (f64, f64) {
-        use std::f64::consts::PI;
-        let mut forward = 0.0f64;
-        let mut yaw = self.yaw - (PI/2.0);
-        if self.is_key_pressed(Keycode::W) || self.is_key_pressed(Keycode::S) {
-            forward = 1.0;
-            if self.is_key_pressed(Keycode::S) {
-                yaw += PI;
-            }
-        }
-        let mut change = 0.0;
-        if self.is_key_pressed(Keycode::A) {
-            change = (PI / 2.0) / (forward.abs() + 1.0);
-        }
-        if self.is_key_pressed(Keycode::D) {
-            change = -(PI / 2.0) / (forward.abs() + 1.0);
-        }
-        if self.is_key_pressed(Keycode::A) || self.is_key_pressed(Keycode::D) {
-            forward = 1.0;
-        }
-        if self.is_key_pressed(Keycode::S) {
-            yaw -= change;
-        } else {
-            yaw += change;
-        }
-
-        (forward, yaw)
-    }
-
     pub fn minecraft_tick(&mut self) {
+        let world_entity = self.entities.get_world();
+        self.entities.get_component_mut(world_entity, self.world_proxy)
+            .unwrap()
+            .give(&mut self.world);
+        self.entities.tick();
+        self.entities.get_component_mut(world_entity, self.world_proxy)
+            .unwrap()
+            .take(&mut self.world);
+
+        let movement = self.entities.get_component_mut(self.player, self.player_movement).unwrap();
+        let on_ground = self.entities.get_component(self.player, self.gravity).map_or(false, |v| v.on_ground);
+        let position = self.entities.get_component(self.player, self.position).unwrap();
+        let rotation = self.entities.get_component(self.player, self.rotation).unwrap();
+
         // Force the server to know when touched the ground
         // otherwise if it happens between ticks the server
         // will think we are flying.
-        let on_ground = if self.did_touch_ground {
-            self.did_touch_ground = false;
+        let on_ground = if movement.did_touch_ground {
+            movement.did_touch_ground = false;
             true
         } else {
-            self.on_ground
+            on_ground
         };
 
         // Sync our position to the server
         // Use the smaller packets when possible
         let packet = packet::play::serverbound::PlayerPositionLook {
-            x: self.position.x,
-            y: self.position.y,
-            z: self.position.z,
-            yaw: self.yaw as f32,
-            pitch: self.pitch as f32,
+            x: position.position.x,
+            y: position.position.y,
+            z: position.position.z,
+            yaw: rotation.yaw as f32,
+            pitch: rotation.pitch as f32,
             on_ground: on_ground,
         };
         self.write_packet(packet);
@@ -522,6 +371,9 @@ impl Server {
 
     pub fn key_press(&mut self, down: bool, key: Keycode) {
         self.pressed_keys.insert(key, down);
+        if let Some(movement) = self.entities.get_component_mut(self.player, self.player_movement) {
+            movement.pressed_keys.insert(key, down);
+        }
     }
 
     fn is_key_pressed(&self, key: Keycode) -> bool {
@@ -539,16 +391,18 @@ impl Server {
     }
 
     fn on_game_join(&mut self, join: packet::play::clientbound::JoinGame) {
-        self.gamemode = Gamemode::from_int((join.gamemode & 0x7) as i32);
+        let gamemode = Gamemode::from_int((join.gamemode & 0x7) as i32);
+        *self.entities.get_component_mut(self.player, self.gamemode).unwrap() = gamemode;
         // TODO: Temp
-        self.flying = self.gamemode.can_fly();
+        self.entities.get_component_mut(self.player, self.player_movement).unwrap().flying = gamemode.can_fly();
     }
 
     fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
         self.world = world::World::new();
-        self.gamemode = Gamemode::from_int((respawn.gamemode & 0x7) as i32);
+        let gamemode = Gamemode::from_int((respawn.gamemode & 0x7) as i32);
+        *self.entities.get_component_mut(self.player, self.gamemode).unwrap() = gamemode;
         // TODO: Temp
-        self.flying = self.gamemode.can_fly();
+        self.entities.get_component_mut(self.player, self.player_movement).unwrap().flying = gamemode.can_fly();
     }
 
     fn on_time_update(&mut self, time_update: packet::play::clientbound::TimeUpdate) {
@@ -565,21 +419,24 @@ impl Server {
     fn on_game_state_change(&mut self, game_state: packet::play::clientbound::ChangeGameState) {
         match game_state.reason {
             3 => {
-                self.gamemode = Gamemode::from_int(game_state.value as i32);
+                let gamemode = Gamemode::from_int(game_state.value as i32);
+                *self.entities.get_component_mut(self.player, self.gamemode).unwrap() = gamemode;
                 // TODO: Temp
-                self.flying = self.gamemode.can_fly();
+                self.entities.get_component_mut(self.player, self.player_movement).unwrap().flying = gamemode.can_fly();
             },
             _ => {},
         }
     }
 
     fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {
+        let position = self.entities.get_component_mut(self.player, self.position).unwrap();
+        let rotation = self.entities.get_component_mut(self.player, self.rotation).unwrap();
         // TODO: relative teleports
-        self.position.x = teleport.x;
-        self.position.y = teleport.y;
-        self.position.z = teleport.z;
-        self.yaw = teleport.yaw as f64;
-        self.pitch = teleport.pitch as f64;
+        position.position.x = teleport.x;
+        position.position.y = teleport.y;
+        position.position.z = teleport.z;
+        rotation.yaw = teleport.yaw as f64;
+        rotation.pitch = teleport.pitch as f64;
 
         self.write_packet(packet::play::serverbound::TeleportConfirm {
             teleport_id: teleport.teleport_id,
@@ -598,60 +455,5 @@ impl Server {
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
         self.world.unload_chunk(chunk_unload.x, chunk_unload.z);
-    }
-}
-
-trait Collidable<T> {
-    fn collides(&self, t: &T) -> bool;
-    fn move_out_of(self, other: Self, dir: cgmath::Vector3<f64>) -> Self;
-}
-
-impl Collidable<Aabb3<f64>> for Aabb3<f64> {
-    fn collides(&self, t: &Aabb3<f64>) -> bool {
-        !(
-            t.min.x >= self.max.x ||
-            t.max.x <= self.min.x ||
-            t.min.y >= self.max.y ||
-            t.max.y <= self.min.y ||
-            t.min.z >= self.max.z ||
-            t.max.z <= self.min.z
-        )
-    }
-
-    fn move_out_of(mut self, other: Self, dir: cgmath::Vector3<f64>) -> Self {
-        if dir.x != 0.0 {
-            if dir.x > 0.0 {
-                let ox = self.max.x;
-                self.max.x = other.min.x - 0.0001;
-                self.min.x += self.max.x - ox;
-            } else {
-                let ox = self.min.x;
-                self.min.x = other.max.x + 0.0001;
-                self.max.x += self.min.x - ox;
-            }
-        }
-        if dir.y != 0.0 {
-            if dir.y > 0.0 {
-                let oy = self.max.y;
-                self.max.y = other.min.y - 0.0001;
-                self.min.y += self.max.y - oy;
-            } else {
-                let oy = self.min.y;
-                self.min.y = other.max.y + 0.0001;
-                self.max.y += self.min.y - oy;
-            }
-        }
-        if dir.z != 0.0 {
-            if dir.z > 0.0 {
-                let oz = self.max.z;
-                self.max.z = other.min.z - 0.0001;
-                self.min.z += self.max.z - oz;
-            } else {
-                let oz = self.min.z;
-                self.min.z = other.max.z + 0.0001;
-                self.max.z += self.min.z - oz;
-            }
-        }
-        self
     }
 }
