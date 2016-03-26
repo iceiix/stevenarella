@@ -416,7 +416,7 @@ impl Factory {
                         let w = ux2 - ux1;
                         let h = uy2 - uy1;
                         match face.rotation {
-                            90 => {
+                            270 => {
             					uy2 = x + w;
             					ux1 = tw*16 - (y + h);
             					ux2 = tw*16 - y;
@@ -428,7 +428,7 @@ impl Factory {
             					ux1 = x + w;
             					ux2 = x;
                             },
-                            270 => {
+                            90 => {
             					uy2 = x;
             					uy1 = x + w;
             					ux2 = y + h;

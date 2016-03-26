@@ -350,9 +350,18 @@ define_blocks! {
         },
         model { ("minecraft", "cobblestone" ) },
     }
-    Planks { // TODO
+    Planks {
         props {
+            variant: TreeVariant = [
+                TreeVariant::Oak,
+                TreeVariant::Spruce,
+                TreeVariant::Birch,
+                TreeVariant::Jungle,
+                TreeVariant::Acacia,
+                TreeVariant::DarkOak
+            ],
         },
+        data { Some(variant.plank_data()) },
         material Material {
             renderable: true,
             never_cull: false,
@@ -360,11 +369,21 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "planks" ) },
+        model { ("minecraft", format!("{}_planks", variant.as_string()) ) },
     }
-    Sapling { // TODO
+    Sapling {
         props {
+            variant: TreeVariant = [
+                TreeVariant::Oak,
+                TreeVariant::Spruce,
+                TreeVariant::Birch,
+                TreeVariant::Jungle,
+                TreeVariant::Acacia,
+                TreeVariant::DarkOak
+            ],
+            stage: i32 = [0, 1],
         },
+        data { Some(variant.plank_data() | ((stage as usize) << 3)) },
         material Material {
             renderable: true,
             never_cull: false,
@@ -372,7 +391,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "sapling" ) },
+        model { ("minecraft", format!("{}_sapling", variant.as_string()) ) },
     }
     Bedrock {
         props {
@@ -442,9 +461,11 @@ define_blocks! {
         },
         model { ("minecraft", "lava" ) },
     }
-    Sand { // TODO
+    Sand {
         props {
+            red: bool = [false, true],
         },
+        data Some(if red { 1 } else { 0 }),
         material Material {
             renderable: true,
             never_cull: false,
@@ -452,7 +473,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "sand" ) },
+        model { ("minecraft", if red { "red_sand" } else { "sand" } ) },
     }
     Gravel {
         props {
@@ -545,7 +566,10 @@ define_blocks! {
         tint TintType::Foliage,
     }
     Sponge {
-        props {},
+        props {
+            wet: bool = [false, true],
+        },
+        data { Some(if wet { 1 } else { 0 }) },
         material Material {
             renderable: true,
             never_cull: false,
@@ -554,6 +578,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "sponge" ) },
+        variant format!("wet={}", wet),
     }
     Glass {
         props {},
@@ -589,7 +614,32 @@ define_blocks! {
         model { ("minecraft", "lapis_block" ) },
     }
     Dispenser {
-        props {},
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::East,
+                Direction::West,
+                Direction::Up,
+                Direction::Down
+            ],
+            triggered: bool = [false, true],
+        },
+        data {
+            let mut data = match facing {
+                Direction::Down => 0,
+                Direction::Up => 1,
+                Direction::North => 2,
+                Direction::South => 3,
+                Direction::West => 4,
+                Direction::East => 5,
+                _ => unreachable!(),
+            };
+            if triggered {
+                data |= 0x8;
+            }
+            Some(data)
+        },
         material Material {
             renderable: true,
             never_cull: false,
@@ -598,9 +648,17 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "dispenser" ) },
+        variant format!("facing={}", facing.as_string()),
     }
     Sandstone {
-        props {},
+        props {
+            variant: SandstoneVariant = [
+                SandstoneVariant::Normal,
+                SandstoneVariant::Chiseled,
+                SandstoneVariant::Smooth
+            ],
+        },
+        data Some(variant.data()),
         material Material {
             renderable: true,
             never_cull: false,
@@ -608,7 +666,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "sandstone" ) },
+        model { ("minecraft", variant.as_string() ) },
     }
     NoteBlock {
         props {},
@@ -622,48 +680,122 @@ define_blocks! {
         model { ("minecraft", "noteblock" ) },
     }
     Bed {
-        props {},
+        props {
+            facing: Direction = [Direction::North, Direction::South, Direction::East, Direction::West],
+            occupied: bool = [false, true],
+            part: BedPart = [BedPart::Head, BedPart::Foot],
+        },
+        data {
+            let mut data = match facing {
+                Direction::South => 0,
+                Direction::West => 1,
+                Direction::North => 2,
+                Direction::East => 3,
+                _ => unreachable!(),
+            };
+            if occupied {
+                data |= 0x4;
+            }
+            if part == BedPart::Head {
+                data |= 0x8;
+            }
+            Some(data)
+        },
         material Material {
             renderable: true,
             never_cull: false,
-            should_cull_against: true,
+            should_cull_against: false,
             force_shade: false,
             transparent: false,
         },
         model { ("minecraft", "bed" ) },
+        variant format!("facing={},part={}", facing.as_string(), part.as_string()),
     }
     GoldenRail {
-        props {},
+        props {
+            powered: bool = [false, true],
+            shape: RailShape = [
+                RailShape::NorthSouth, RailShape::EastWest,
+                RailShape::AscendingNorth, RailShape::AscendingSouth,
+                RailShape::AscendingEast, RailShape::AscendingWest
+            ],
+        },
+        data {
+            let mut data = shape.data();
+            if powered {
+                data |= 0x8;
+            }
+            Some(data)
+        },
         material Material {
             renderable: true,
             never_cull: false,
-            should_cull_against: true,
+            should_cull_against: false,
             force_shade: false,
             transparent: false,
         },
         model { ("minecraft", "golden_rail" ) },
+        variant format!("powered={},shape={}", powered, shape.as_string()),
     }
     DetectorRail {
-        props {},
+        props {
+            powered: bool = [false, true],
+            shape: RailShape = [
+                RailShape::NorthSouth, RailShape::EastWest,
+                RailShape::AscendingNorth, RailShape::AscendingSouth,
+                RailShape::AscendingEast, RailShape::AscendingWest
+            ],
+        },
+        data {
+            let mut data = shape.data();
+            if powered {
+                data |= 0x8;
+            }
+            Some(data)
+        },
         material Material {
             renderable: true,
             never_cull: false,
-            should_cull_against: true,
+            should_cull_against: false,
             force_shade: false,
             transparent: false,
         },
         model { ("minecraft", "detector_rail" ) },
+        variant format!("powered={},shape={}", powered, shape.as_string()),
     }
     StickyPiston {
-        props {},
+        props {
+            extended: bool = [false, true],
+            facing: Direction = [
+                Direction::North, Direction::South,
+                Direction::East, Direction::West,
+                Direction::Up, Direction::Down
+            ],
+        },
+        data {
+            let mut data = match facing {
+                Direction::Down => 0,
+                Direction::Up => 1,
+                Direction::North => 2,
+                Direction::South => 3,
+                Direction::East => 5,
+                Direction::West => 4,
+                _ => unreachable!(),
+            };
+            if extended {
+                data |= 0x8;
+            }
+            Some(data)
+        },
         material Material {
             renderable: true,
             never_cull: false,
-            should_cull_against: true,
+            should_cull_against: !extended,
             force_shade: false,
             transparent: false,
         },
         model { ("minecraft", "stick_piston" ) },
+        variant format!("extended={},facing={}", extended, facing.as_string()),
     }
     Web {
         props {},
@@ -677,7 +809,14 @@ define_blocks! {
         model { ("minecraft", "web" ) },
     }
     TallGrass {
-        props {},
+        props {
+            variant: TallGrassVariant = [TallGrassVariant::DeadBush, TallGrassVariant::TallGrass, TallGrassVariant::Fern],
+        },
+        data Some(match variant {
+            TallGrassVariant::DeadBush => 0,
+            TallGrassVariant::TallGrass => 1,
+            TallGrassVariant::Fern => 2,
+        }),
         material Material {
             renderable: true,
             never_cull: false,
@@ -685,7 +824,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "tallgrass" ) },
+        model { ("minecraft", variant.as_string() ) },
     }
     DeadBush {
         props {},
@@ -696,18 +835,41 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "deadbush" ) },
+        model { ("minecraft", "dead_bush" ) },
     }
     Piston {
-        props {},
+        props {
+            extended: bool = [false, true],
+            facing: Direction = [
+                Direction::North, Direction::South,
+                Direction::East, Direction::West,
+                Direction::Up, Direction::Down
+            ],
+        },
+        data {
+            let mut data = match facing {
+                Direction::Down => 0,
+                Direction::Up => 1,
+                Direction::North => 2,
+                Direction::South => 3,
+                Direction::East => 5,
+                Direction::West => 4,
+                _ => unreachable!(),
+            };
+            if extended {
+                data |= 0x8;
+            }
+            Some(data)
+        },
         material Material {
             renderable: true,
             never_cull: false,
-            should_cull_against: true,
+            should_cull_against: !extended,
             force_shade: false,
             transparent: false,
         },
         model { ("minecraft", "piston" ) },
+        variant format!("extended={},facing={}", extended, facing.as_string()),
     }
     PistonHead {
         props {},
@@ -1585,7 +1747,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "StoneBrickStairs" ) },
+        model { ("minecraft", "stone_brick_stairs" ) },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::StoneBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -2845,6 +3007,108 @@ define_blocks! {
         model { ("steven", "missing_block" ) },
     }
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum TallGrassVariant {
+    DeadBush,
+    TallGrass,
+    Fern,
+}
+
+impl TallGrassVariant {
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            TallGrassVariant::DeadBush => "dead_bush",
+            TallGrassVariant::TallGrass => "tall_grass",
+            TallGrassVariant::Fern => "fern",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum RailShape {
+    NorthSouth,
+    EastWest,
+    AscendingNorth,
+    AscendingSouth,
+    AscendingEast,
+    AscendingWest,
+    NorthEast,
+    NorthWest,
+    SouthEast,
+    SouthWest,
+}
+
+impl RailShape {
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            RailShape::NorthSouth => "north_south",
+            RailShape::EastWest => "east_west",
+            RailShape::AscendingNorth => "ascending_north",
+            RailShape::AscendingSouth => "ascending_south",
+            RailShape::AscendingEast => "ascending_east",
+            RailShape::AscendingWest => "ascending_west",
+            RailShape::NorthEast => "north_east",
+            RailShape::NorthWest => "north_west",
+            RailShape::SouthEast => "south_east",
+            RailShape::SouthWest => "south_west",
+        }
+    }
+
+    pub fn data(&self) -> usize {
+        match *self {
+            RailShape::NorthSouth => 0,
+            RailShape::EastWest => 1,
+            RailShape::AscendingEast => 2,
+            RailShape::AscendingWest => 3,
+            RailShape::AscendingNorth => 4,
+            RailShape::AscendingSouth => 5,
+            RailShape::SouthEast => 6,
+            RailShape::SouthWest => 7,
+            RailShape::NorthWest => 8,
+            RailShape::NorthEast => 9,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum BedPart {
+    Head,
+    Foot
+}
+
+impl BedPart {
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            BedPart::Head => "head",
+            BedPart::Foot => "foot",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SandstoneVariant {
+    Normal,
+    Chiseled,
+    Smooth,
+}
+
+impl SandstoneVariant {
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            SandstoneVariant::Normal => "sandstone",
+            SandstoneVariant::Chiseled => "chiseled_sandstone",
+            SandstoneVariant::Smooth => "smooth_sandstone",
+        }
+    }
+
+    fn data(&self) -> usize {
+        match *self {
+            SandstoneVariant::Normal => 0,
+            SandstoneVariant::Chiseled => 1,
+            SandstoneVariant::Smooth => 2,
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Axis {
@@ -2863,6 +3127,7 @@ impl Axis {
             Axis::None => "none",
         }
     }
+
     fn data(&self) -> usize {
         match *self {
             Axis::Y => 0,
@@ -2991,6 +3256,7 @@ impl TreeVariant {
             TreeVariant::DarkOak => "dark_oak",
         }
     }
+
     pub fn data(&self) -> usize {
         match *self {
             TreeVariant::Oak => 0,
@@ -2999,6 +3265,17 @@ impl TreeVariant {
             TreeVariant::Jungle => 3,
             TreeVariant::Acacia => 0,
             TreeVariant::DarkOak => 1,
+        }
+    }
+
+    pub fn plank_data(&self) -> usize {
+        match *self {
+            TreeVariant::Oak => 0,
+            TreeVariant::Spruce => 1,
+            TreeVariant::Birch => 2,
+            TreeVariant::Jungle => 3,
+            TreeVariant::Acacia => 4,
+            TreeVariant::DarkOak => 5,
         }
     }
 }
