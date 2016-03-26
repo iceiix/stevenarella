@@ -59,7 +59,7 @@ state_packets!(
                 text: String =,
                 assume_command: bool =,
                 has_target: bool =,
-                target: Option<types::Position> = when(|p: &TabComplete| p.has_target == true),
+                target: Option<types::Position> = when(|p: &TabComplete| p.has_target),
             }
             // ChatMessage is sent by the client when it sends a chat message or
             // executes a command (prefixed by '/').

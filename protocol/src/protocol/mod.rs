@@ -802,17 +802,16 @@ impl Conn {
         }
     }
 
-    pub fn enable_encyption(&mut self, key: &Vec<u8>, decrypt: bool) {
+    pub fn enable_encyption(&mut self, key: &[u8], decrypt: bool) {
         self.cipher = Option::Some(openssl::EVPCipher::new(key, key, decrypt));
     }
 
     pub fn set_compresssion(&mut self, threshold: i32, read: bool) {
         self.compression_threshold = threshold;
-        if !read {
-            self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()),
-                                                           flate2::Compression::Default));
-        } else {
+        if read {
             self.compression_read = Some(ZlibDecoder::new(io::Cursor::new(Vec::new())));
+        } else {
+            self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), flate2::Compression::Default));
         }
     }
 

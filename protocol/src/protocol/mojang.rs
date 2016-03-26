@@ -100,11 +100,11 @@ impl Profile {
         Ok(self)
     }
 
-    pub fn join_server(&self, server_id: &str, shared_key: &Vec<u8>, public_key: &Vec<u8>) -> Result<(), super::Error> {
+    pub fn join_server(&self, server_id: &str, shared_key: &[u8], public_key: &[u8]) -> Result<(), super::Error> {
         let mut sha1 = openssl::SHA1::new();
         sha1.update(server_id.as_bytes());
-        sha1.update(&shared_key[..]);
-        sha1.update(&public_key[..]);
+        sha1.update(shared_key);
+        sha1.update(public_key);
         let mut hash = sha1.bytes();
 
         // Mojang uses a hex method which allows for
