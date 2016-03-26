@@ -324,8 +324,8 @@ impl Server {
             self.position.y = self.last_position.y;
             self.position.z = self.last_position.z;
 
-    		// We handle each axis separately to allow for a sliding
-    		// effect when pushing up against walls.
+            // We handle each axis separately to allow for a sliding
+            // effect when pushing up against walls.
 
             let (bounds, xhit) = self.check_collisions(self.bounds);
             self.position.x = bounds.min.x + 0.3;
@@ -336,12 +336,12 @@ impl Server {
             self.position.z = bounds.min.z + 0.3;
             self.last_position.z = self.position.z;
 
-    		// Half block jumps
-    		// Minecraft lets you 'jump' up 0.5 blocks
-    		// for slabs and stairs (or smaller blocks).
-    		// Currently we implement this as a teleport to the
-    		// top of the block if we could move there
-    		// but this isn't smooth.
+            // Half block jumps
+            // Minecraft lets you 'jump' up 0.5 blocks
+            // for slabs and stairs (or smaller blocks).
+            // Currently we implement this as a teleport to the
+            // top of the block if we could move there
+            // but this isn't smooth.
             if (xhit || zhit) && self.on_ground {
                 let mut ox = self.position.x;
                 let mut oz = self.position.z;
