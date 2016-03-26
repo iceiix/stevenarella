@@ -140,3 +140,45 @@ impl Direction {
         }
     }
 }
+
+
+
+#[derive(Clone, Copy, Debug)]
+pub enum Gamemode {
+    Survival = 0,
+    Creative = 1,
+    Adventure = 2,
+    Spectator = 3,
+}
+
+impl Gamemode {
+    pub fn from_int(val: i32) -> Gamemode {
+        match val {
+            3 => Gamemode::Spectator,
+            2 => Gamemode::Adventure,
+            1 => Gamemode::Creative,
+            0 | _ => Gamemode::Survival,
+        }
+    }
+
+    pub fn can_fly(&self) -> bool {
+        match *self {
+            Gamemode::Creative | Gamemode::Spectator => true,
+            _ => false,
+        }
+    }
+
+    pub fn always_fly(&self) -> bool {
+        match *self {
+            Gamemode::Spectator => true,
+            _ => false,
+        }
+    }
+
+    pub fn noclip(&self) -> bool {
+        match *self {
+            Gamemode::Spectator => true,
+            _ => false,
+        }
+    }
+}
