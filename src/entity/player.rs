@@ -130,6 +130,7 @@ impl MovementHandler {
 }
 
 impl ecs::System for MovementHandler {
+
     fn update(&mut self, m: &mut ecs::Manager) {
         let world_entity = m.get_world();
         let world: &world::World = m.get_component(world_entity, self.world).unwrap();

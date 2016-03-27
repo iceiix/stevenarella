@@ -17,6 +17,7 @@ pub mod glsl;
 #[macro_use]
 pub mod shaders;
 pub mod ui;
+pub mod model;
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};

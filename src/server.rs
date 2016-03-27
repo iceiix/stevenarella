@@ -20,6 +20,8 @@ use std::sync::{Arc, RwLock, Mutex};
 use std::sync::mpsc;
 use std::thread;
 use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
+use types::hash::FNVHash;
 use resources;
 use openssl;
 use console;
@@ -49,6 +51,7 @@ pub struct Server {
 
     // Entity accessors
     world_proxy: ecs::Key<entity::Proxy<world::World>>,
+    renderer_proxy: ecs::Key<entity::Proxy<render::Renderer>>,
     game_info: ecs::Key<entity::GameInfo>,
     player_movement: ecs::Key<entity::player::PlayerMovement>,
     gravity: ecs::Key<entity::Gravity>,
@@ -58,8 +61,9 @@ pub struct Server {
     //
 
     pub player: ecs::Entity,
+    entity_map: HashMap<i32, ecs::Entity, BuildHasherDefault<FNVHash>>,
 
-    pressed_keys: HashMap<Keycode, bool>,
+    pressed_keys: HashMap<Keycode, bool, BuildHasherDefault<FNVHash>>,
     tick_timer: f64,
 }
 
@@ -188,6 +192,8 @@ impl Server {
         let world_entity = entities.get_world();
         let world_proxy = entities.get_key();
         entities.add_component(world_entity, world_proxy, entity::Proxy::new());
+        let renderer_proxy = entities.get_key();
+        entities.add_component(world_entity, renderer_proxy, entity::Proxy::new());
         let game_info = entities.get_key();
         entities.add_component(world_entity, game_info, entity::GameInfo::new());
 
@@ -206,10 +212,11 @@ impl Server {
             resources: resources,
             console: console,
 
-            pressed_keys: HashMap::new(),
+            pressed_keys: HashMap::with_hasher(BuildHasherDefault::default()),
 
             // Entity accessors
             world_proxy: world_proxy,
+            renderer_proxy: renderer_proxy,
             game_info: game_info,
             player_movement: entities.get_key(),
             gravity: entities.get_key(),
@@ -217,9 +224,10 @@ impl Server {
             gamemode: entities.get_key(),
             rotation: entities.get_key(),
             //
-            entities: entities,
 
+            entities: entities,
             player: player,
+            entity_map: HashMap::with_hasher(BuildHasherDefault::default()),
 
             tick_timer: 0.0,
         }
@@ -263,7 +271,7 @@ impl Server {
             self.tick_timer -= 3.0;
         }
 
-        self.render_tick(delta);
+        self.render_tick(renderer, delta);
 
         self.update_time(renderer, delta);
 
@@ -275,11 +283,16 @@ impl Server {
         renderer.camera.pitch = rotation.pitch;
     }
 
-    fn render_tick(&mut self, delta: f64) {
+    fn render_tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
         let world_entity = self.entities.get_world();
+        // Borrow the world and renderer
         self.entities.get_component_mut(world_entity, self.world_proxy)
             .unwrap()
             .give(&mut self.world);
+        self.entities.get_component_mut(world_entity, self.renderer_proxy)
+            .unwrap()
+            .give(renderer);
+        // Update the game's state for entities to read
         self.entities.get_component_mut(world_entity, self.game_info)
             .unwrap().delta = delta;
 
@@ -288,6 +301,9 @@ impl Server {
         self.entities.get_component_mut(world_entity, self.world_proxy)
             .unwrap()
             .take(&mut self.world);
+        self.entities.get_component_mut(world_entity, self.renderer_proxy)
+            .unwrap()
+            .take(renderer);
     }
 
     fn update_time(&mut self, renderer: &mut render::Renderer, delta: f64) {
@@ -395,6 +411,8 @@ impl Server {
         *self.entities.get_component_mut(self.player, self.gamemode).unwrap() = gamemode;
         // TODO: Temp
         self.entities.get_component_mut(self.player, self.player_movement).unwrap().flying = gamemode.can_fly();
+
+        self.entity_map.insert(join.entity_id, self.player);
     }
 
     fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
@@ -431,12 +449,12 @@ impl Server {
     fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {
         let position = self.entities.get_component_mut(self.player, self.position).unwrap();
         let rotation = self.entities.get_component_mut(self.player, self.rotation).unwrap();
-        // TODO: relative teleports
-        position.position.x = teleport.x;
-        position.position.y = teleport.y;
-        position.position.z = teleport.z;
-        rotation.yaw = teleport.yaw as f64;
-        rotation.pitch = teleport.pitch as f64;
+
+        position.position.x = calculate_relative_teleport(TeleportFlag::RelX, teleport.flags, position.position.x, teleport.x);
+        position.position.y = calculate_relative_teleport(TeleportFlag::RelY, teleport.flags, position.position.y, teleport.y);
+        position.position.z = calculate_relative_teleport(TeleportFlag::RelZ, teleport.flags, position.position.z, teleport.z);
+        rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, teleport.flags, rotation.yaw, teleport.yaw as f64);
+        rotation.pitch = calculate_relative_teleport(TeleportFlag::RelPitch, teleport.flags, rotation.pitch, teleport.pitch as f64);
 
         self.write_packet(packet::play::serverbound::TeleportConfirm {
             teleport_id: teleport.teleport_id,
@@ -455,5 +473,22 @@ impl Server {
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
         self.world.unload_chunk(chunk_unload.x, chunk_unload.z);
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum TeleportFlag {
+    RelX = 0b00001,
+    RelY = 0b00010,
+    RelZ = 0b00100,
+    RelYaw = 0b01000,
+    RelPitch = 0b10000,
+}
+
+fn calculate_relative_teleport(flag: TeleportFlag, flags: u8, base: f64, val: f64) -> f64 {
+    if (flags & (flag as u8)) != 0 {
+        base + val
+    } else {
+        val
     }
 }

@@ -120,20 +120,20 @@ impl Manager {
 
     /// Ticks all tick systems
     pub fn tick(&mut self) {
-        let mut systems = mem::replace(&mut self.systems, vec![]);
+        let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
             sys.update(self);
         }
-        mem::replace(&mut self.systems, systems);
+        mem::forget(mem::replace(&mut self.systems, systems));
     }
 
     /// Ticks all render systems
     pub fn render_tick(&mut self) {
-        let mut systems = mem::replace(&mut self.render_systems, vec![]);
+        let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
             sys.update(self);
         }
-        mem::replace(&mut self.render_systems, systems);
+        mem::forget(mem::replace(&mut self.render_systems, systems));
     }
 
     /// Returns all entities matching the filter
