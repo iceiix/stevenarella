@@ -389,7 +389,7 @@ impl Manager {
     }
 
     /// Returns the given component that the key points to if it exists.
-    pub fn get_component<'a, 'b, T>(&'a self, entity: Entity, key: Key<T>) -> Option<&'b T> {
+    pub fn get_component<'a, 'b: 'a, T>(&'a self, entity: Entity, key: Key<T>) -> Option<&'b T> {
         let components = match self.components.get(key.id).and_then(|v| v.as_ref()) {
             Some(val) => val,
             None => return None,
@@ -407,13 +407,13 @@ impl Manager {
 
     /// Same as `get_component` but doesn't require a key. Using a key
     /// is better for frequent lookups.
-    pub fn get_component_direct<'a, 'b, T: Any>(&'a self, entity: Entity) -> Option<&'b T> {
+    pub fn get_component_direct<'a, 'b: 'a, T: Any>(&'a self, entity: Entity) -> Option<&'b T> {
         let key = self.get_key();
         self.get_component(entity, key)
     }
 
     /// Returns the given component that the key points to if it exists.
-    pub fn get_component_mut<'a, 'b, T>(&'a mut self, entity: Entity, key: Key<T>) -> Option<&'b mut T> {
+    pub fn get_component_mut<'a, 'b: 'a, T>(&'a mut self, entity: Entity, key: Key<T>) -> Option<&'b mut T> {
         let components = match self.components.get_mut(key.id).and_then(|v| v.as_mut()) {
             Some(val) => val,
             None => return None,
@@ -431,7 +431,7 @@ impl Manager {
 
     /// Same as `get_component_mut` but doesn't require a key. Using a key
     /// is better for frequent lookups.
-    pub fn get_component_mut_direct<'a, 'b, T: Any>(&'a mut self, entity: Entity) -> Option<&'b mut T> {
+    pub fn get_component_mut_direct<'a, 'b: 'a, T: Any>(&'a mut self, entity: Entity) -> Option<&'b mut T> {
         let key = self.get_key();
         self.get_component_mut(entity, key)
     }
