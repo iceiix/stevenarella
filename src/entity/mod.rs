@@ -114,6 +114,14 @@ impl <T> ::std::ops::Deref for Proxy<T> {
     }
 }
 
+impl <T> ::std::ops::DerefMut for Proxy<T> {
+
+    fn deref_mut(&mut self) -> &mut T {
+        self.inner.as_mut().unwrap()
+    }
+}
+
+
 impl <T> Proxy<T> {
 
     pub fn new() -> Proxy<T> {

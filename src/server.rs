@@ -60,11 +60,12 @@ pub struct Server {
     pub rotation: ecs::Key<entity::Rotation>,
     //
 
-    pub player: ecs::Entity,
+    pub player: Option<ecs::Entity>,
     entity_map: HashMap<i32, ecs::Entity, BuildHasherDefault<FNVHash>>,
 
     pressed_keys: HashMap<Keycode, bool, BuildHasherDefault<FNVHash>>,
     tick_timer: f64,
+    entity_tick_timer: f64,
 }
 
 macro_rules! handle_packet {
@@ -177,7 +178,6 @@ impl Server {
                 }
             }
         }
-        *server.entities.get_component_mut(server.player, server.gamemode).unwrap() = Gamemode::Spectator;
         server
     }
 
@@ -188,7 +188,6 @@ impl Server {
         let mut entities = ecs::Manager::new();
         entity::add_systems(&mut entities);
 
-        let player = entity::player::create_local(&mut entities);
         let world_entity = entities.get_world();
         let world_proxy = entities.get_key();
         entities.add_component(world_entity, world_proxy, entity::Proxy::new());
@@ -226,10 +225,11 @@ impl Server {
             //
 
             entities: entities,
-            player: player,
+            player: None,
             entity_map: HashMap::with_hasher(BuildHasherDefault::default()),
 
             tick_timer: 0.0,
+            entity_tick_timer: 0.0,
         }
     }
 
@@ -244,6 +244,40 @@ impl Server {
             self.world.flag_dirty_all();
         }
 
+        self.entity_tick(renderer, delta);
+
+        self.tick_timer += delta;
+        while self.tick_timer >= 3.0 && self.is_connected() {
+            self.minecraft_tick();
+            self.tick_timer -= 3.0;
+        }
+
+        self.update_time(renderer, delta);
+
+        // Copy to camera
+        if let Some(player) = self.player {
+            let position = self.entities.get_component(player, self.position).unwrap();
+            let rotation = self.entities.get_component(player, self.rotation).unwrap();
+            renderer.camera.pos = cgmath::Point::from_vec(position.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
+            renderer.camera.yaw = rotation.yaw;
+            renderer.camera.pitch = rotation.pitch;
+        }
+    }
+
+    fn entity_tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
+        let world_entity = self.entities.get_world();
+        // Borrow the world and renderer
+        self.entities.get_component_mut(world_entity, self.world_proxy)
+            .unwrap()
+            .give(&mut self.world);
+        self.entities.get_component_mut(world_entity, self.renderer_proxy)
+            .unwrap()
+            .give(renderer);
+        // Update the game's state for entities to read
+        self.entities.get_component_mut(world_entity, self.game_info)
+            .unwrap().delta = delta;
+
+        // Packets modify entities so need to handled here
         if let Some(rx) = self.read_queue.take() {
             while let Ok(pck) = rx.try_recv() {
                 match pck {
@@ -265,25 +299,24 @@ impl Server {
             self.read_queue = Some(rx);
         }
 
-        self.tick_timer += delta;
-        while self.tick_timer >= 3.0 && self.is_connected() {
-            self.minecraft_tick();
-            self.tick_timer -= 3.0;
+        self.entity_tick_timer += delta;
+        while self.entity_tick_timer >= 3.0 && self.is_connected() {
+            self.entities.tick();
+            self.entity_tick_timer -= 3.0;
         }
 
-        self.render_tick(renderer, delta);
+        self.entities.render_tick();
 
-        self.update_time(renderer, delta);
-
-        // Copy to camera
-        let position = self.entities.get_component(self.player, self.position).unwrap();
-        let rotation = self.entities.get_component(self.player, self.rotation).unwrap();
-        renderer.camera.pos = cgmath::Point::from_vec(position.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
-        renderer.camera.yaw = rotation.yaw;
-        renderer.camera.pitch = rotation.pitch;
+        // Return what we borrowed
+        self.entities.get_component_mut(world_entity, self.world_proxy)
+            .unwrap()
+            .take(&mut self.world);
+        self.entities.get_component_mut(world_entity, self.renderer_proxy)
+            .unwrap()
+            .take(renderer);
     }
 
-    fn render_tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
+    pub fn remove(&mut self, renderer: &mut render::Renderer) {
         let world_entity = self.entities.get_world();
         // Borrow the world and renderer
         self.entities.get_component_mut(world_entity, self.world_proxy)
@@ -292,12 +325,10 @@ impl Server {
         self.entities.get_component_mut(world_entity, self.renderer_proxy)
             .unwrap()
             .give(renderer);
-        // Update the game's state for entities to read
-        self.entities.get_component_mut(world_entity, self.game_info)
-            .unwrap().delta = delta;
 
-        self.entities.render_tick();
+        self.entities.remove_all_entities();
 
+        // Return what we borrowed
         self.entities.get_component_mut(world_entity, self.world_proxy)
             .unwrap()
             .take(&mut self.world);
@@ -348,47 +379,42 @@ impl Server {
     }
 
     pub fn minecraft_tick(&mut self) {
-        let world_entity = self.entities.get_world();
-        self.entities.get_component_mut(world_entity, self.world_proxy)
-            .unwrap()
-            .give(&mut self.world);
-        self.entities.tick();
-        self.entities.get_component_mut(world_entity, self.world_proxy)
-            .unwrap()
-            .take(&mut self.world);
+        if let Some(player) = self.player {
+            let movement = self.entities.get_component_mut(player, self.player_movement).unwrap();
+            let on_ground = self.entities.get_component(player, self.gravity).map_or(false, |v| v.on_ground);
+            let position = self.entities.get_component(player, self.position).unwrap();
+            let rotation = self.entities.get_component(player, self.rotation).unwrap();
 
-        let movement = self.entities.get_component_mut(self.player, self.player_movement).unwrap();
-        let on_ground = self.entities.get_component(self.player, self.gravity).map_or(false, |v| v.on_ground);
-        let position = self.entities.get_component(self.player, self.position).unwrap();
-        let rotation = self.entities.get_component(self.player, self.rotation).unwrap();
+            // Force the server to know when touched the ground
+            // otherwise if it happens between ticks the server
+            // will think we are flying.
+            let on_ground = if movement.did_touch_ground {
+                movement.did_touch_ground = false;
+                true
+            } else {
+                on_ground
+            };
 
-        // Force the server to know when touched the ground
-        // otherwise if it happens between ticks the server
-        // will think we are flying.
-        let on_ground = if movement.did_touch_ground {
-            movement.did_touch_ground = false;
-            true
-        } else {
-            on_ground
-        };
-
-        // Sync our position to the server
-        // Use the smaller packets when possible
-        let packet = packet::play::serverbound::PlayerPositionLook {
-            x: position.position.x,
-            y: position.position.y,
-            z: position.position.z,
-            yaw: rotation.yaw as f32,
-            pitch: rotation.pitch as f32,
-            on_ground: on_ground,
-        };
-        self.write_packet(packet);
+            // Sync our position to the server
+            // Use the smaller packets when possible
+            let packet = packet::play::serverbound::PlayerPositionLook {
+                x: position.position.x,
+                y: position.position.y,
+                z: position.position.z,
+                yaw: rotation.yaw as f32,
+                pitch: rotation.pitch as f32,
+                on_ground: on_ground,
+            };
+            self.write_packet(packet);
+        }
     }
 
     pub fn key_press(&mut self, down: bool, key: Keycode) {
         self.pressed_keys.insert(key, down);
-        if let Some(movement) = self.entities.get_component_mut(self.player, self.player_movement) {
-            movement.pressed_keys.insert(key, down);
+        if let Some(player) = self.player {
+            if let Some(movement) = self.entities.get_component_mut(player, self.player_movement) {
+                movement.pressed_keys.insert(key, down);
+            }
         }
     }
 
@@ -408,19 +434,24 @@ impl Server {
 
     fn on_game_join(&mut self, join: packet::play::clientbound::JoinGame) {
         let gamemode = Gamemode::from_int((join.gamemode & 0x7) as i32);
-        *self.entities.get_component_mut(self.player, self.gamemode).unwrap() = gamemode;
+        let player = entity::player::create_local(&mut self.entities);
+        *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
         // TODO: Temp
-        self.entities.get_component_mut(self.player, self.player_movement).unwrap().flying = gamemode.can_fly();
+        self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
 
-        self.entity_map.insert(join.entity_id, self.player);
+        self.entity_map.insert(join.entity_id, player);
+        self.player = Some(player);
     }
 
     fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
         self.world = world::World::new();
         let gamemode = Gamemode::from_int((respawn.gamemode & 0x7) as i32);
-        *self.entities.get_component_mut(self.player, self.gamemode).unwrap() = gamemode;
-        // TODO: Temp
-        self.entities.get_component_mut(self.player, self.player_movement).unwrap().flying = gamemode.can_fly();
+
+        if let Some(player) = self.player {
+            *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
+            // TODO: Temp
+            self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
+        }
     }
 
     fn on_time_update(&mut self, time_update: packet::play::clientbound::TimeUpdate) {
@@ -437,32 +468,38 @@ impl Server {
     fn on_game_state_change(&mut self, game_state: packet::play::clientbound::ChangeGameState) {
         match game_state.reason {
             3 => {
-                let gamemode = Gamemode::from_int(game_state.value as i32);
-                *self.entities.get_component_mut(self.player, self.gamemode).unwrap() = gamemode;
-                // TODO: Temp
-                self.entities.get_component_mut(self.player, self.player_movement).unwrap().flying = gamemode.can_fly();
+                if let Some(player) = self.player {
+                    let gamemode = Gamemode::from_int(game_state.value as i32);
+                    *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
+                    // TODO: Temp
+                    self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
+                }
             },
             _ => {},
         }
     }
 
     fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {
-        let position = self.entities.get_component_mut(self.player, self.position).unwrap();
-        let rotation = self.entities.get_component_mut(self.player, self.rotation).unwrap();
+        if let Some(player) = self.player {
+            let position = self.entities.get_component_mut(player, self.position).unwrap();
+            let rotation = self.entities.get_component_mut(player, self.rotation).unwrap();
 
-        position.position.x = calculate_relative_teleport(TeleportFlag::RelX, teleport.flags, position.position.x, teleport.x);
-        position.position.y = calculate_relative_teleport(TeleportFlag::RelY, teleport.flags, position.position.y, teleport.y);
-        position.position.z = calculate_relative_teleport(TeleportFlag::RelZ, teleport.flags, position.position.z, teleport.z);
-        rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, teleport.flags, rotation.yaw, teleport.yaw as f64);
-        rotation.pitch = calculate_relative_teleport(TeleportFlag::RelPitch, teleport.flags, rotation.pitch, teleport.pitch as f64);
+            position.position.x = calculate_relative_teleport(TeleportFlag::RelX, teleport.flags, position.position.x, teleport.x);
+            position.position.y = calculate_relative_teleport(TeleportFlag::RelY, teleport.flags, position.position.y, teleport.y);
+            position.position.z = calculate_relative_teleport(TeleportFlag::RelZ, teleport.flags, position.position.z, teleport.z);
+            rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, teleport.flags, rotation.yaw, teleport.yaw as f64);
+            rotation.pitch = calculate_relative_teleport(TeleportFlag::RelPitch, teleport.flags, rotation.pitch, teleport.pitch as f64);
 
-        self.write_packet(packet::play::serverbound::TeleportConfirm {
-            teleport_id: teleport.teleport_id,
-        });
+            self.write_packet(packet::play::serverbound::TeleportConfirm {
+                teleport_id: teleport.teleport_id,
+            });
+        }
     }
 
     fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
-        self.world.load_chunk(
+        let world_entity = self.entities.get_world();
+        let world = self.entities.get_component_mut(world_entity, self.world_proxy).unwrap();
+        world.load_chunk(
             chunk_data.chunk_x,
             chunk_data.chunk_z,
             chunk_data.new,
@@ -472,7 +509,9 @@ impl Server {
     }
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
-        self.world.unload_chunk(chunk_unload.x, chunk_unload.z);
+        let world_entity = self.entities.get_world();
+        let world = self.entities.get_component_mut(world_entity, self.world_proxy).unwrap();
+        world.unload_chunk(chunk_unload.x, chunk_unload.z);
     }
 }
 

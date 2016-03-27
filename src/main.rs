@@ -109,10 +109,10 @@ impl Game {
 
     pub fn tick(&mut self, delta: f64) {
         if !self.server.is_connected() {
-            let rotation = self.server.entities.get_component_mut(self.server.player, self.server.rotation).unwrap();
-            rotation.yaw += 0.005 * delta;
-            if rotation.yaw > ::std::f64::consts::PI * 2.0 {
-                rotation.yaw = 0.0;
+            self.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
+            self.renderer.camera.yaw += 0.005 * delta;
+            if self.renderer.camera.yaw > ::std::f64::consts::PI * 2.0 {
+                self.renderer.camera.yaw = 0.0;
             }
         }
         let mut clear_reply = false;
@@ -123,6 +123,7 @@ impl Game {
                     Ok(val) => {
                         self.screen_sys.pop_screen();
                         self.focused = true;
+                        self.server.remove(&mut self.renderer);
                         self.server = val;
                     },
                     Err(err) => {
@@ -270,16 +271,18 @@ fn handle_window_event(window: &sdl2::video::Window,
                 if !mouse.relative_mouse_mode() {
                     mouse.set_relative_mouse_mode(true);
                 }
-                let s = 2000.0 + 0.01;
-                let (rx, ry) = (xrel as f64 / s, yrel as f64 / s);
-                let rotation = game.server.entities.get_component_mut(game.server.player, game.server.rotation).unwrap();
-                rotation.yaw -= rx;
-                rotation.pitch -= ry;
-                if rotation.pitch < (PI/2.0) + 0.01 {
-                    rotation.pitch = (PI/2.0) + 0.01;
-                }
-                if rotation.pitch > (PI/2.0)*3.0 - 0.01 {
-                    rotation.pitch = (PI/2.0)*3.0 - 0.01;
+                if let Some(player) = game.server.player {
+                    let s = 2000.0 + 0.01;
+                    let (rx, ry) = (xrel as f64 / s, yrel as f64 / s);
+                    let rotation = game.server.entities.get_component_mut(player, game.server.rotation).unwrap();
+                    rotation.yaw -= rx;
+                    rotation.pitch -= ry;
+                    if rotation.pitch < (PI/2.0) + 0.01 {
+                        rotation.pitch = (PI/2.0) + 0.01;
+                    }
+                    if rotation.pitch > (PI/2.0)*3.0 - 0.01 {
+                        rotation.pitch = (PI/2.0)*3.0 - 0.01;
+                    }
                 }
             } else {
                 ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);

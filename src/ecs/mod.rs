@@ -84,6 +84,7 @@ pub trait System {
 struct EntityState {
     last_components: BSet,
     components: BSet,
+    removed: bool,
 }
 
 /// Stores and manages a collection of entities.
@@ -99,7 +100,6 @@ pub struct Manager {
     render_systems: Vec<Box<System + Send>>,
 
     changed_entity_components: HashSet<Entity, BuildHasherDefault<FNVHash>>,
-    removed_entities: HashSet<Entity, BuildHasherDefault<FNVHash>>,
 }
 
 impl Manager {
@@ -110,6 +110,7 @@ impl Manager {
             entities: vec![(Some(EntityState {
                 last_components: BSet::new(0),
                 components: BSet::new(0),
+                removed: false,
             }), 0)], // Has the world entity pre-defined
             free_entities: vec![],
             components: vec![],
@@ -119,7 +120,6 @@ impl Manager {
             render_systems: vec![],
 
             changed_entity_components: HashSet::with_hasher(BuildHasherDefault::default()),
-            removed_entities: HashSet::with_hasher(BuildHasherDefault::default()),
         }
     }
 
@@ -179,7 +179,7 @@ impl Manager {
                 }
             }
 
-            if self.removed_entities.remove(&entity) {
+            if state.removed {
                 self.free_entities.push(entity.id);
                 self.entities[entity.id].0 = None;
             } else {
@@ -195,7 +195,7 @@ impl Manager {
         // Skip the world entity.
         for (i, &(ref set, gen)) in self.entities[1..].iter().enumerate() {
             if let Some(set) = set.as_ref() {
-                if set.components.includes_set(&filter.bits) {
+                if !set.removed && set.components.includes_set(&filter.bits) {
                     ret.push(Entity {
                         id: i + 1,
                         generation: gen,
@@ -213,6 +213,7 @@ impl Manager {
             entity.0 = Some(EntityState {
                 last_components: BSet::new(self.num_components),
                 components: BSet::new(self.num_components),
+                removed: false,
             });
             entity.1 += 1;
             return Entity {
@@ -225,6 +226,7 @@ impl Manager {
             Some(EntityState {
                 last_components: BSet::new(self.num_components),
                 components: BSet::new(self.num_components),
+                removed: false,
             }),
             0
         ));
@@ -238,8 +240,19 @@ impl Manager {
     pub fn remove_entity(&mut self, e: Entity) {
         if let Some(set) = self.entities[e.id].0.as_mut() {
             set.components = BSet::new(self.components.len());
-            self.removed_entities.insert(e);
+            set.removed = true;
         }
+    }
+
+    /// Deallocates all entities/components excluding the world entity
+    pub fn remove_all_entities(&mut self) {
+        for e in &mut self.entities[1..] {
+            if let Some(set) = e.0.as_mut() {
+                set.components = BSet::new(self.components.len());
+                set.removed = true;
+            }
+        }
+        self.process_entity_changes();
     }
 
     /// Returns whether an entity reference is valid.
