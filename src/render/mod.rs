@@ -51,6 +51,7 @@ pub struct Renderer {
     pub resources: Arc<RwLock<resources::Manager>>,
     textures: Arc<RwLock<TextureManager>>,
     pub ui: ui::UIState,
+    pub model: model::Manager,
 
     gl_texture: gl::Texture,
     texture_layers: usize,
@@ -185,13 +186,13 @@ impl Renderer {
 
         // UI
         // Line Drawer
-        // Models
         // Clouds
 
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 
         Renderer {
             resource_version: version,
+            model: model::Manager::new(&greg),
             textures: textures,
             ui: ui,
             resources: res,
@@ -237,6 +238,8 @@ impl Renderer {
                 self.resource_version = rm.version();
                 trace!("Updating textures to {}", self.resource_version);
                 self.textures.write().unwrap().update_textures(self.resource_version);
+
+                self.model.rebuild_models(self.resource_version, &self.textures);
             }
         }
 
@@ -306,13 +309,14 @@ impl Renderer {
                 if solid.count > 0 {
                     self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
                     solid.array.bind();
-                    gl::draw_elements(gl::TRIANGLES, solid.count, self.element_buffer_type, 0);
+                    gl::draw_elements(gl::TRIANGLES, solid.count as i32, self.element_buffer_type, 0);
                 }
             }
         }
 
         // Line rendering
         // Model rendering
+        self.model.draw(&self.frustum, &self.perspective_matrix, &self.camera_matrix, self.light_level, self.sky_offset);
         // Cloud rendering
 
         // Trans chunk rendering
@@ -346,7 +350,7 @@ impl Renderer {
                 if trans.count > 0 {
                     self.chunk_shader_alpha.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
                     trans.array.bind();
-                    gl::draw_elements(gl::TRIANGLES, trans.count, self.element_buffer_type, 0);
+                    gl::draw_elements(gl::TRIANGLES, trans.count as i32, self.element_buffer_type, 0);
                 }
             }
         }

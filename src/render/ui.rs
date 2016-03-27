@@ -170,7 +170,7 @@ impl UIState {
             } else {
                 self.buffer.re_set_data(gl::ARRAY_BUFFER, &self.data);
             }
-            gl::draw_elements(gl::TRIANGLES, self.count, self.index_type, 0);
+            gl::draw_elements(gl::TRIANGLES, self.count as i32, self.index_type, 0);
         }
 
         gl::disable(gl::BLEND);

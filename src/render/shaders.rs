@@ -16,8 +16,7 @@ use render::glsl;
 use gl;
 
 pub fn add_shaders(reg: &mut glsl::Registry) {
-    reg.register("lookup_texture",
-                 include_str!("shaders/lookup_texture.glsl"));
+    reg.register("lookup_texture", include_str!("shaders/lookup_texture.glsl"));
     reg.register("get_light", include_str!("shaders/get_light.glsl"));
 
     reg.register("ui_vertex", include_str!("shaders/ui_vertex.glsl"));
@@ -28,6 +27,12 @@ pub fn add_shaders(reg: &mut glsl::Registry) {
 
     reg.register("trans_vertex", include_str!("shaders/trans_vertex.glsl"));
     reg.register("trans_frag", include_str!("shaders/trans_frag.glsl"));
+
+    reg.register("model_vertex", include_str!("shaders/model_vertex.glsl"));
+    reg.register("model_frag", include_str!("shaders/model_frag.glsl"));
+
+    reg.register("sun_vertex", include_str!("shaders/sun_vertex.glsl"));
+    reg.register("sun_frag", include_str!("shaders/sun_frag.glsl"));
 }
 
 macro_rules! get_shader {
@@ -69,9 +74,15 @@ macro_rules! init_shader {
         }
 
         impl $name {
+            #[allow(dead_code)]
             pub fn new(reg: &glsl::Registry) -> $name {
                 let v = get_shader!(reg, $vert $(,stringify!($vdef))*);
                 let f = get_shader!(reg, $frag $(,stringify!($fdef))*);
+                $name::new_manual(&v, &f)
+            }
+
+            #[allow(dead_code)]
+            pub fn new_manual(v: &str, f: &str) -> $name {
                 let shader = shaders::create_program(&v, &f);
                 $name {
                     $(

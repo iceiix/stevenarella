@@ -34,6 +34,8 @@ use collision::Aabb;
 use sdl2::keyboard::Keycode;
 use types::Gamemode;
 
+mod sun;
+
 pub struct Server {
     conn: Option<protocol::Conn>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
@@ -64,6 +66,8 @@ pub struct Server {
     pressed_keys: HashMap<Keycode, bool, BuildHasherDefault<FNVHash>>,
     tick_timer: f64,
     entity_tick_timer: f64,
+
+    sun_model: Option<sun::SunModel>,
 }
 
 macro_rules! handle_packet {
@@ -222,6 +226,7 @@ impl Server {
 
             tick_timer: 0.0,
             entity_tick_timer: 0.0,
+            sun_model: None,
         }
     }
 
@@ -235,6 +240,10 @@ impl Server {
             self.version = version;
             self.world.flag_dirty_all();
         }
+        // TODO: Check if the world type actually needs a sun
+        if self.sun_model.is_none() {
+            self.sun_model = Some(sun::SunModel::new(renderer));
+        }
 
         self.entity_tick(renderer, delta);
 
@@ -245,6 +254,10 @@ impl Server {
         }
 
         self.update_time(renderer, delta);
+
+        if let Some(sun_model) = self.sun_model.as_mut() {
+            sun_model.tick(renderer, self.world_time, self.world_age);
+        }
 
         // Copy to camera
         if let Some(player) = self.player {
@@ -295,6 +308,9 @@ impl Server {
 
     pub fn remove(&mut self, renderer: &mut render::Renderer) {
         self.entities.remove_all_entities(&mut self.world, renderer);
+        if let Some(mut sun_model) = self.sun_model.take() {
+            sun_model.remove(renderer);
+        }
     }
 
     fn update_time(&mut self, renderer: &mut render::Renderer, delta: f64) {

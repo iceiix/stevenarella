@@ -46,9 +46,15 @@ pub fn draw_arrays(ty: DrawType, offset: usize, count: usize) {
     }
 }
 
-pub fn draw_elements(ty: DrawType, count: usize, dty: Type, offset: usize) {
+pub fn draw_elements(ty: DrawType, count: i32, dty: Type, offset: usize) {
     unsafe {
-        gl::DrawElements(ty, count as i32, dty, offset as *const gl::types::GLvoid);
+        gl::DrawElements(ty, count, dty, offset as *const gl::types::GLvoid);
+    }
+}
+
+pub fn multi_draw_elements(ty: DrawType, count: &[i32], dty: Type, offsets: &[usize]) {
+    unsafe {
+        gl::MultiDrawElements(ty, count.as_ptr(), dty, offsets.as_ptr() as *const _, count.len() as i32);
     }
 }
 
@@ -530,10 +536,23 @@ impl Uniform {
         }
     }
 
+    pub fn set_float_mutli_raw(&self, data: *const f32, len: usize) {
+        unsafe {
+            gl::Uniform4fv(self.0, len as i32, data);
+        }
+    }
+
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
         use cgmath::Matrix;
         unsafe {
             gl::UniformMatrix4fv(self.0, 1, false as u8, m.as_ptr());
+        }
+    }
+
+    pub fn set_matrix4_multi(&self, m: &[::cgmath::Matrix4<f32>]) {
+        use cgmath::Matrix;
+        unsafe {
+            gl::UniformMatrix4fv(self.0, m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
         }
     }
 }
