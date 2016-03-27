@@ -144,7 +144,6 @@ impl UIState {
         }
         // Prevent clipping with the world
         gl::clear(gl::ClearFlags::Depth);
-        gl::depth_func(gl::LESS_OR_EQUAL);
         gl::enable(gl::BLEND);
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 

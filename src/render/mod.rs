@@ -189,6 +189,7 @@ impl Renderer {
         // Clouds
 
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        gl::depth_func(gl::LESS_OR_EQUAL);
 
         Renderer {
             resource_version: version,
