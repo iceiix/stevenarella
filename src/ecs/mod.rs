@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use types::bit::Set as BSet;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::hash::BuildHasherDefault;
+use types::hash::FNVHash;
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::marker::PhantomData;
@@ -21,7 +23,7 @@ use std::mem;
 use std::ptr;
 
 /// Used to reference an entity.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Entity {
     id: usize,
     generation: u32,
@@ -68,21 +70,36 @@ impl Filter {
 
 /// A system processes entities
 pub trait System {
+    fn filter(&self) -> &Filter;
     fn update(&mut self, m: &mut Manager);
+
+    fn entity_added(&mut self, _m: &mut Manager, _e: Entity) {
+    }
+
+    fn entity_removed(&mut self, _m: &mut Manager, _e: Entity) {
+    }
 }
 
+#[derive(Clone)]
+struct EntityState {
+    last_components: BSet,
+    components: BSet,
+}
 
 /// Stores and manages a collection of entities.
 pub struct Manager {
     num_components: usize,
-    entities: Vec<(Option<BSet>, u32)>,
+    entities: Vec<(Option<EntityState>, u32)>,
     free_entities: Vec<usize>,
     components: Vec<Option<ComponentMem>>,
 
-    component_ids: RefCell<HashMap<TypeId, usize>>,
+    component_ids: RefCell<HashMap<TypeId, usize, BuildHasherDefault<FNVHash>>>,
 
     systems: Vec<Box<System + Send>>,
     render_systems: Vec<Box<System + Send>>,
+
+    changed_entity_components: HashSet<Entity, BuildHasherDefault<FNVHash>>,
+    removed_entities: HashSet<Entity, BuildHasherDefault<FNVHash>>,
 }
 
 impl Manager {
@@ -90,13 +107,19 @@ impl Manager {
     pub fn new() -> Manager {
         Manager {
             num_components: 0,
-            entities: vec![(Some(BSet::new(0)), 0)], // Has the world entity pre-defined
+            entities: vec![(Some(EntityState {
+                last_components: BSet::new(0),
+                components: BSet::new(0),
+            }), 0)], // Has the world entity pre-defined
             free_entities: vec![],
             components: vec![],
 
-            component_ids: RefCell::new(HashMap::new()),
+            component_ids: RefCell::new(HashMap::with_hasher(BuildHasherDefault::default())),
             systems: vec![],
             render_systems: vec![],
+
+            changed_entity_components: HashSet::with_hasher(BuildHasherDefault::default()),
+            removed_entities: HashSet::with_hasher(BuildHasherDefault::default()),
         }
     }
 
@@ -120,20 +143,50 @@ impl Manager {
 
     /// Ticks all tick systems
     pub fn tick(&mut self) {
+        self.process_entity_changes();
         let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
             sys.update(self);
         }
         mem::forget(mem::replace(&mut self.systems, systems));
+        self.process_entity_changes();
     }
 
     /// Ticks all render systems
     pub fn render_tick(&mut self) {
+        self.process_entity_changes();
         let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
             sys.update(self);
         }
         mem::forget(mem::replace(&mut self.render_systems, systems));
+        self.process_entity_changes();
+    }
+
+    fn process_entity_changes(&mut self) {
+        let changes = self.changed_entity_components.clone();
+        self.changed_entity_components = HashSet::with_hasher(BuildHasherDefault::default());
+        for entity in changes {
+            let state = self.entities[entity.id].0.as_mut().unwrap().clone();
+            self.trigger_add_for_systems(entity, &state.last_components, &state.components);
+            self.trigger_add_for_render_systems(entity, &state.last_components, &state.components);
+            self.trigger_remove_for_systems(entity, &state.last_components, &state.components);
+            self.trigger_remove_for_render_systems(entity, &state.last_components, &state.components);
+            for i in 0 .. self.components.len() {
+                if !state.components.get(i) && state.last_components.get(i) {
+                    let components = self.components.get_mut(i).and_then(|v| v.as_mut()).unwrap();
+                    components.remove(entity.id);
+                }
+            }
+
+            if self.removed_entities.remove(&entity) {
+                self.free_entities.push(entity.id);
+                self.entities[entity.id].0 = None;
+            } else {
+                let state = self.entities[entity.id].0.as_mut().unwrap();
+                state.last_components = state.components.clone();
+            }
+        }
     }
 
     /// Returns all entities matching the filter
@@ -142,7 +195,7 @@ impl Manager {
         // Skip the world entity.
         for (i, &(ref set, gen)) in self.entities[1..].iter().enumerate() {
             if let Some(set) = set.as_ref() {
-                if set.includes_set(&filter.bits) {
+                if set.components.includes_set(&filter.bits) {
                     ret.push(Entity {
                         id: i + 1,
                         generation: gen,
@@ -157,7 +210,10 @@ impl Manager {
     pub fn create_entity(&mut self) -> Entity {
         if let Some(id) = self.free_entities.pop() {
             let entity = &mut self.entities[id];
-            entity.0 = Some(BSet::new(self.num_components));
+            entity.0 = Some(EntityState {
+                last_components: BSet::new(self.num_components),
+                components: BSet::new(self.num_components),
+            });
             entity.1 += 1;
             return Entity {
                 id: id,
@@ -166,7 +222,10 @@ impl Manager {
         }
         let id = self.entities.len();
         self.entities.push((
-            Some(BSet::new(self.num_components)),
+            Some(EntityState {
+                last_components: BSet::new(self.num_components),
+                components: BSet::new(self.num_components),
+            }),
             0
         ));
         Entity {
@@ -177,15 +236,10 @@ impl Manager {
 
     /// Deallocates an entity and frees its components
     pub fn remove_entity(&mut self, e: Entity) {
-        if let Some(set) = self.entities[e.id].0.as_ref() {
-            for i in 0 .. COMPONENTS_PER_BLOCK {
-                if set.get(i) {
-                    self.components[i].as_mut().unwrap().remove(e.id);
-                }
-            }
-            self.free_entities.push(e.id);
+        if let Some(set) = self.entities[e.id].0.as_mut() {
+            set.components = BSet::new(self.components.len());
+            self.removed_entities.insert(e);
         }
-        self.entities[e.id].0 = None;
     }
 
     /// Returns whether an entity reference is valid.
@@ -222,11 +276,11 @@ impl Manager {
             self.num_components += 1;
             for &mut (ref mut set, _) in &mut self.entities {
                 if let Some(set) = set.as_mut() {
-                    set.resize(self.num_components);
+                    set.last_components.resize(self.num_components);
+                    set.components.resize(self.num_components);
                 }
             }
         }
-        let components = self.components.get_mut(key.id).and_then(|v| v.as_mut()).unwrap();
         let mut e = self.entities.get_mut(entity.id);
         let set = match e {
             Some(ref mut val) => if val.1 == entity.generation { &mut val.0 } else { panic!("Missing entity") },
@@ -236,11 +290,36 @@ impl Manager {
             Some(val) => val,
             None => panic!("Missing entity"),
         };
-        if set.get(key.id) {
+        if set.components.get(key.id) != set.last_components.get(key.id) {
+            panic!("Double change within a single tick");
+        }
+        if set.components.get(key.id) {
             panic!("Duplicate add");
         }
-        set.set(key.id, true);
+        set.components.set(key.id, true);
+        self.changed_entity_components.insert(entity);
+        let components = self.components.get_mut(key.id).and_then(|v| v.as_mut()).unwrap();
         components.add(entity.id, val);
+    }
+
+    fn trigger_add_for_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet) {
+        let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
+        for sys in &mut systems {
+            if new_set.includes_set(&sys.filter().bits) && !old_set.includes_set(&sys.filter().bits) {
+                sys.entity_added(self, e);
+            }
+        }
+        mem::forget(mem::replace(&mut self.systems, systems));
+    }
+
+    fn trigger_add_for_render_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet) {
+        let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
+        for sys in &mut systems {
+            if new_set.includes_set(&sys.filter().bits) && !old_set.includes_set(&sys.filter().bits) {
+                sys.entity_added(self, e);
+            }
+        }
+        mem::forget(mem::replace(&mut self.render_systems, systems));
     }
 
     /// Same as `add_component` but doesn't require a key. Using a key
@@ -261,7 +340,6 @@ impl Manager {
         if self.components[key.id].is_none() {
             return false;
         }
-        let components = self.components.get_mut(key.id).and_then(|v| v.as_mut()).unwrap();
         let mut e = self.entities.get_mut(entity.id);
         let set = match e {
             Some(ref mut val) => if val.1 == entity.generation { &mut val.0 } else { panic!("Missing entity") },
@@ -271,12 +349,36 @@ impl Manager {
             Some(val) => val,
             None => panic!("Missing entity"),
         };
-        if !set.get(key.id) {
+        if set.components.get(key.id) != set.last_components.get(key.id) {
+            panic!("Double change within a single tick");
+        }
+        if !set.components.get(key.id) {
             return false
         }
-        set.set(key.id, false);
-        components.remove(entity.id);
+        set.components.set(key.id, false);
+        self.changed_entity_components.insert(entity);
+        // Actual removal is delayed until ticking finishes
         true
+    }
+
+    fn trigger_remove_for_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet) {
+        let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
+        for sys in &mut systems {
+            if !new_set.includes_set(&sys.filter().bits) && old_set.includes_set(&sys.filter().bits) {
+                sys.entity_removed(self, e);
+            }
+        }
+        mem::forget(mem::replace(&mut self.systems, systems));
+    }
+
+    fn trigger_remove_for_render_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet) {
+        let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
+        for sys in &mut systems {
+            if new_set.includes_set(&sys.filter().bits) && !old_set.includes_set(&sys.filter().bits) {
+                sys.entity_removed(self, e);
+            }
+        }
+        mem::forget(mem::replace(&mut self.render_systems, systems));
     }
 
     /// Same as `remove_component` but doesn't require a key. Using a key
@@ -296,7 +398,7 @@ impl Manager {
             Some(ref val) => if val.1 == entity.generation { &val.0 } else { return None },
             None => return None,
         };
-        if !set.as_ref().map_or(false, |v| v.get(key.id)) {
+        if !set.as_ref().map_or(false, |v| v.components.get(key.id)) {
             return None;
         }
 
@@ -320,7 +422,7 @@ impl Manager {
             Some(ref val) => if val.1 == entity.generation { &val.0 } else { return None },
             None => return None,
         };
-        if !set.as_ref().map_or(false, |v| v.get(key.id)) {
+        if !set.as_ref().map_or(false, |v| v.components.get(key.id)) {
             return None;
         }
 

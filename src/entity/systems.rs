@@ -26,6 +26,10 @@ impl ApplyVelocity {
 
 impl ecs::System for ApplyVelocity {
 
+    fn filter(&self) -> &ecs::Filter {
+        &self.filter
+    }
+
     fn update(&mut self, m: &mut ecs::Manager) {
         for e in m.find(&self.filter) {
             if m.get_component(e, self.movement).is_some() {
@@ -61,6 +65,10 @@ impl ApplyGravity {
 
 impl ecs::System for ApplyGravity {
 
+    fn filter(&self) -> &ecs::Filter {
+        &self.filter
+    }
+
     fn update(&mut self, m: &mut ecs::Manager) {
         for e in m.find(&self.filter) {
             if m.get_component(e, self.movement).is_some() {
@@ -94,6 +102,10 @@ impl UpdateLastPosition {
 }
 
 impl ecs::System for UpdateLastPosition {
+
+    fn filter(&self) -> &ecs::Filter {
+        &self.filter
+    }
 
     fn update(&mut self, m: &mut ecs::Manager) {
         for e in m.find(&self.filter) {
