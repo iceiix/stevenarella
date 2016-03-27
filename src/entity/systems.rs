@@ -1,6 +1,8 @@
 
 use super::*;
 use ecs;
+use world;
+use render;
 
 pub struct ApplyVelocity {
     filter: ecs::Filter,
@@ -30,7 +32,7 @@ impl ecs::System for ApplyVelocity {
         &self.filter
     }
 
-    fn update(&mut self, m: &mut ecs::Manager) {
+    fn update(&mut self, m: &mut ecs::Manager, _: &mut world::World, _: &mut render::Renderer) {
         for e in m.find(&self.filter) {
             if m.get_component(e, self.movement).is_some() {
                 // Player's handle their own phyiscs
@@ -69,7 +71,7 @@ impl ecs::System for ApplyGravity {
         &self.filter
     }
 
-    fn update(&mut self, m: &mut ecs::Manager) {
+    fn update(&mut self, m: &mut ecs::Manager, _: &mut world::World, _: &mut render::Renderer) {
         for e in m.find(&self.filter) {
             if m.get_component(e, self.movement).is_some() {
                 // Player's handle their own phyiscs
@@ -107,7 +109,7 @@ impl ecs::System for UpdateLastPosition {
         &self.filter
     }
 
-    fn update(&mut self, m: &mut ecs::Manager) {
+    fn update(&mut self, m: &mut ecs::Manager, _: &mut world::World, _: &mut render::Renderer) {
         for e in m.find(&self.filter) {
             let pos = m.get_component_mut(e, self.position).unwrap();
 

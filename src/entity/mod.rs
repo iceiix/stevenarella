@@ -101,46 +101,6 @@ impl Bounds {
     }
 }
 
-/// Hack to allow temp access to a type
-pub struct Proxy<T> {
-    inner: Option<T>,
-}
-
-impl <T> ::std::ops::Deref for Proxy<T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        self.inner.as_ref().unwrap()
-    }
-}
-
-impl <T> ::std::ops::DerefMut for Proxy<T> {
-
-    fn deref_mut(&mut self) -> &mut T {
-        self.inner.as_mut().unwrap()
-    }
-}
-
-
-impl <T> Proxy<T> {
-
-    pub fn new() -> Proxy<T> {
-        Proxy {
-            inner: None,
-        }
-    }
-
-    pub fn give(&mut self, v: &mut T) {
-        use std::mem;
-        self.inner = Some(mem::replace(v, unsafe { mem::uninitialized() }));
-    }
-
-    pub fn take(&mut self, v: &mut T) {
-        use std::mem;
-        mem::forget(mem::replace(v, self.inner.take().unwrap()));
-    }
-}
-
 pub struct GameInfo {
     pub delta: f64,
 }

@@ -22,6 +22,9 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 
+use world;
+use render;
+
 /// Used to reference an entity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Entity {
@@ -71,12 +74,12 @@ impl Filter {
 /// A system processes entities
 pub trait System {
     fn filter(&self) -> &Filter;
-    fn update(&mut self, m: &mut Manager);
+    fn update(&mut self, m: &mut Manager, world: &mut world::World, renderer: &mut render::Renderer);
 
-    fn entity_added(&mut self, _m: &mut Manager, _e: Entity) {
+    fn entity_added(&mut self, _m: &mut Manager, _e: Entity, _world: &mut world::World, _renderer: &mut render::Renderer) {
     }
 
-    fn entity_removed(&mut self, _m: &mut Manager, _e: Entity) {
+    fn entity_removed(&mut self, _m: &mut Manager, _e: Entity, _world: &mut world::World, _renderer: &mut render::Renderer) {
     }
 }
 
@@ -142,36 +145,36 @@ impl Manager {
     }
 
     /// Ticks all tick systems
-    pub fn tick(&mut self) {
-        self.process_entity_changes();
+    pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
+        self.process_entity_changes(world, renderer);
         let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
-            sys.update(self);
+            sys.update(self, world, renderer);
         }
         mem::forget(mem::replace(&mut self.systems, systems));
-        self.process_entity_changes();
+        self.process_entity_changes(world, renderer);
     }
 
     /// Ticks all render systems
-    pub fn render_tick(&mut self) {
-        self.process_entity_changes();
+    pub fn render_tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
+        self.process_entity_changes(world, renderer);
         let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
-            sys.update(self);
+            sys.update(self, world, renderer);
         }
         mem::forget(mem::replace(&mut self.render_systems, systems));
-        self.process_entity_changes();
+        self.process_entity_changes(world, renderer);
     }
 
-    fn process_entity_changes(&mut self) {
+    fn process_entity_changes(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
         let changes = self.changed_entity_components.clone();
         self.changed_entity_components = HashSet::with_hasher(BuildHasherDefault::default());
         for entity in changes {
             let state = self.entities[entity.id].0.as_mut().unwrap().clone();
-            self.trigger_add_for_systems(entity, &state.last_components, &state.components);
-            self.trigger_add_for_render_systems(entity, &state.last_components, &state.components);
-            self.trigger_remove_for_systems(entity, &state.last_components, &state.components);
-            self.trigger_remove_for_render_systems(entity, &state.last_components, &state.components);
+            self.trigger_add_for_systems(entity, &state.last_components, &state.components, world, renderer);
+            self.trigger_add_for_render_systems(entity, &state.last_components, &state.components, world, renderer);
+            self.trigger_remove_for_systems(entity, &state.last_components, &state.components, world, renderer);
+            self.trigger_remove_for_render_systems(entity, &state.last_components, &state.components, world, renderer);
             for i in 0 .. self.components.len() {
                 if !state.components.get(i) && state.last_components.get(i) {
                     let components = self.components.get_mut(i).and_then(|v| v.as_mut()).unwrap();
@@ -245,14 +248,14 @@ impl Manager {
     }
 
     /// Deallocates all entities/components excluding the world entity
-    pub fn remove_all_entities(&mut self) {
+    pub fn remove_all_entities(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
         for e in &mut self.entities[1..] {
             if let Some(set) = e.0.as_mut() {
                 set.components = BSet::new(self.components.len());
                 set.removed = true;
             }
         }
-        self.process_entity_changes();
+        self.process_entity_changes(world, renderer);
     }
 
     /// Returns whether an entity reference is valid.
@@ -315,21 +318,21 @@ impl Manager {
         components.add(entity.id, val);
     }
 
-    fn trigger_add_for_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet) {
+    fn trigger_add_for_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet, world: &mut world::World, renderer: &mut render::Renderer) {
         let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
             if new_set.includes_set(&sys.filter().bits) && !old_set.includes_set(&sys.filter().bits) {
-                sys.entity_added(self, e);
+                sys.entity_added(self, e, world, renderer);
             }
         }
         mem::forget(mem::replace(&mut self.systems, systems));
     }
 
-    fn trigger_add_for_render_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet) {
+    fn trigger_add_for_render_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet, world: &mut world::World, renderer: &mut render::Renderer) {
         let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
             if new_set.includes_set(&sys.filter().bits) && !old_set.includes_set(&sys.filter().bits) {
-                sys.entity_added(self, e);
+                sys.entity_added(self, e, world, renderer);
             }
         }
         mem::forget(mem::replace(&mut self.render_systems, systems));
@@ -374,21 +377,21 @@ impl Manager {
         true
     }
 
-    fn trigger_remove_for_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet) {
+    fn trigger_remove_for_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet, world: &mut world::World, renderer: &mut render::Renderer) {
         let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
             if !new_set.includes_set(&sys.filter().bits) && old_set.includes_set(&sys.filter().bits) {
-                sys.entity_removed(self, e);
+                sys.entity_removed(self, e, world, renderer);
             }
         }
         mem::forget(mem::replace(&mut self.systems, systems));
     }
 
-    fn trigger_remove_for_render_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet) {
+    fn trigger_remove_for_render_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet, world: &mut world::World, renderer: &mut render::Renderer) {
         let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
             if new_set.includes_set(&sys.filter().bits) && !old_set.includes_set(&sys.filter().bits) {
-                sys.entity_removed(self, e);
+                sys.entity_removed(self, e, world, renderer);
             }
         }
         mem::forget(mem::replace(&mut self.render_systems, systems));

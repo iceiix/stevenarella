@@ -50,8 +50,6 @@ pub struct Server {
     version: usize,
 
     // Entity accessors
-    world_proxy: ecs::Key<entity::Proxy<world::World>>,
-    renderer_proxy: ecs::Key<entity::Proxy<render::Renderer>>,
     game_info: ecs::Key<entity::GameInfo>,
     player_movement: ecs::Key<entity::player::PlayerMovement>,
     gravity: ecs::Key<entity::Gravity>,
@@ -189,10 +187,6 @@ impl Server {
         entity::add_systems(&mut entities);
 
         let world_entity = entities.get_world();
-        let world_proxy = entities.get_key();
-        entities.add_component(world_entity, world_proxy, entity::Proxy::new());
-        let renderer_proxy = entities.get_key();
-        entities.add_component(world_entity, renderer_proxy, entity::Proxy::new());
         let game_info = entities.get_key();
         entities.add_component(world_entity, game_info, entity::GameInfo::new());
 
@@ -214,8 +208,6 @@ impl Server {
             pressed_keys: HashMap::with_hasher(BuildHasherDefault::default()),
 
             // Entity accessors
-            world_proxy: world_proxy,
-            renderer_proxy: renderer_proxy,
             game_info: game_info,
             player_movement: entities.get_key(),
             gravity: entities.get_key(),
@@ -266,13 +258,6 @@ impl Server {
 
     fn entity_tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
         let world_entity = self.entities.get_world();
-        // Borrow the world and renderer
-        self.entities.get_component_mut(world_entity, self.world_proxy)
-            .unwrap()
-            .give(&mut self.world);
-        self.entities.get_component_mut(world_entity, self.renderer_proxy)
-            .unwrap()
-            .give(renderer);
         // Update the game's state for entities to read
         self.entities.get_component_mut(world_entity, self.game_info)
             .unwrap().delta = delta;
@@ -301,40 +286,15 @@ impl Server {
 
         self.entity_tick_timer += delta;
         while self.entity_tick_timer >= 3.0 && self.is_connected() {
-            self.entities.tick();
+            self.entities.tick(&mut self.world, renderer);
             self.entity_tick_timer -= 3.0;
         }
 
-        self.entities.render_tick();
-
-        // Return what we borrowed
-        self.entities.get_component_mut(world_entity, self.world_proxy)
-            .unwrap()
-            .take(&mut self.world);
-        self.entities.get_component_mut(world_entity, self.renderer_proxy)
-            .unwrap()
-            .take(renderer);
+        self.entities.render_tick(&mut self.world, renderer);
     }
 
     pub fn remove(&mut self, renderer: &mut render::Renderer) {
-        let world_entity = self.entities.get_world();
-        // Borrow the world and renderer
-        self.entities.get_component_mut(world_entity, self.world_proxy)
-            .unwrap()
-            .give(&mut self.world);
-        self.entities.get_component_mut(world_entity, self.renderer_proxy)
-            .unwrap()
-            .give(renderer);
-
-        self.entities.remove_all_entities();
-
-        // Return what we borrowed
-        self.entities.get_component_mut(world_entity, self.world_proxy)
-            .unwrap()
-            .take(&mut self.world);
-        self.entities.get_component_mut(world_entity, self.renderer_proxy)
-            .unwrap()
-            .take(renderer);
+        self.entities.remove_all_entities(&mut self.world, renderer);
     }
 
     fn update_time(&mut self, renderer: &mut render::Renderer, delta: f64) {
@@ -497,9 +457,7 @@ impl Server {
     }
 
     fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
-        let world_entity = self.entities.get_world();
-        let world = self.entities.get_component_mut(world_entity, self.world_proxy).unwrap();
-        world.load_chunk(
+        self.world.load_chunk(
             chunk_data.chunk_x,
             chunk_data.chunk_z,
             chunk_data.new,
@@ -509,9 +467,7 @@ impl Server {
     }
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
-        let world_entity = self.entities.get_world();
-        let world = self.entities.get_component_mut(world_entity, self.world_proxy).unwrap();
-        world.unload_chunk(chunk_unload.x, chunk_unload.z);
+        self.world.unload_chunk(chunk_unload.x, chunk_unload.z);
     }
 }
 

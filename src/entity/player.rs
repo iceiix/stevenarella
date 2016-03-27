@@ -6,10 +6,10 @@ use super::{
     Rotation,
     Gravity,
     Bounds,
-    Proxy,
     GameInfo,
 };
 use world;
+use render;
 use types::Gamemode;
 use collision::{Aabb, Aabb3};
 use cgmath::{self, Point3};
@@ -94,7 +94,6 @@ struct MovementHandler {
     movement: ecs::Key<PlayerMovement>,
     gravity: ecs::Key<Gravity>,
     gamemode: ecs::Key<Gamemode>,
-    world: ecs::Key<Proxy<world::World>>,
     position: ecs::Key<Position>,
     velocity: ecs::Key<Velocity>,
     game_info: ecs::Key<GameInfo>,
@@ -119,7 +118,6 @@ impl MovementHandler {
             movement: movement,
             gravity: m.get_key(),
             gamemode: m.get_key(),
-            world: m.get_key(),
             position: position,
             velocity: velocity,
             game_info: m.get_key(),
@@ -135,9 +133,8 @@ impl ecs::System for MovementHandler {
         &self.filter
     }
 
-    fn update(&mut self, m: &mut ecs::Manager) {
+    fn update(&mut self, m: &mut ecs::Manager, world: &mut world::World, _: &mut render::Renderer) {
         let world_entity = m.get_world();
-        let world: &world::World = m.get_component(world_entity, self.world).unwrap();
         let delta = m.get_component(world_entity, self.game_info).unwrap().delta;
         for e in m.find(&self.filter) {
             let movement = m.get_component_mut(e, self.movement).unwrap();
