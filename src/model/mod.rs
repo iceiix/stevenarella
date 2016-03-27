@@ -846,11 +846,7 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
                     x: f64, y: f64, z: f64, face: Direction, smooth: bool, force: bool) -> (u16, u16) {
     use std::cmp::max;
     use world::block;
-    let (ox, oy, oz) = if !snapshot.get_block(orig_x, orig_y, orig_z).get_material().should_cull_against {
-        (0, 0, 0)
-    } else {
-        face.get_offset()
-    };
+    let (ox, oy, oz) = face.get_offset();
 
     let s_block_light = snapshot.get_block_light(orig_x + ox, orig_y + oy, orig_z + oz);
     let s_sky_light = snapshot.get_sky_light(orig_x + ox, orig_y + oy, orig_z + oz);
