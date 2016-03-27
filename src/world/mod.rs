@@ -124,7 +124,7 @@ impl World {
 
                 let min = cgmath::Point3::new(pos.0 as f32 * 16.0, -pos.1 as f32 * 16.0, pos.2 as f32 * 16.0);
                 let bounds = collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
-                if renderer.frustum.contains(bounds) == collision::Relation::Out {
+                if renderer.frustum.contains(bounds) == collision::Relation::Out && from != Direction::Invalid {
                     continue;
                 }
                 (sec.is_some(), sec.map_or(chunk_builder::CullInfo::all_vis(), |v| v.cull_info))
