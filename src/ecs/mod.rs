@@ -390,7 +390,7 @@ impl Manager {
     fn trigger_remove_for_render_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet, world: &mut world::World, renderer: &mut render::Renderer) {
         let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
         for sys in &mut systems {
-            if new_set.includes_set(&sys.filter().bits) && !old_set.includes_set(&sys.filter().bits) {
+            if !new_set.includes_set(&sys.filter().bits) && old_set.includes_set(&sys.filter().bits) {
                 sys.entity_removed(self, e, world, renderer);
             }
         }

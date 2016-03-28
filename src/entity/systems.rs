@@ -113,6 +113,7 @@ impl ecs::System for UpdateLastPosition {
         for e in m.find(&self.filter) {
             let pos = m.get_component_mut(e, self.position).unwrap();
 
+            pos.moved = pos.position != pos.last_position;
             pos.last_position = pos.position;
         }
     }

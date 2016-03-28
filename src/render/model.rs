@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::sync::{Arc, RwLock};
 use types::hash::FNVHash;
+use types::Direction;
 use byteorder::{WriteBytesExt, NativeEndian};
 
 pub struct Manager {
@@ -316,5 +317,54 @@ init_shader! {
             lighting => "lighting",
             color_mul => "colorMul[]",
         },
+    }
+}
+
+// Helper methods
+pub fn append_box(
+    verts: &mut Vec<Vertex>,
+    x: f32, y: f32, z: f32,
+    w: f32, h: f32, d: f32, textures: [Option<super::Texture>; 6]
+) {
+    append_box_texture_scale(verts, x, y, z, w, h, d, textures, [
+        [1.0, 1.0],
+        [1.0, 1.0],
+        [1.0, 1.0],
+        [1.0, 1.0],
+        [1.0, 1.0],
+        [1.0, 1.0]
+    ]);
+}
+pub fn append_box_texture_scale(
+    verts: &mut Vec<Vertex>,
+    x: f32, y: f32, z: f32,
+    w: f32, h: f32, d: f32,
+    textures: [Option<super::Texture>; 6], texture_scale: [[f64; 2]; 6]) {
+    for dir in Direction::all() {
+        let tex = textures[dir.index()].clone();
+        if tex.is_none() {
+            continue;
+        }
+        let tex = tex.unwrap();
+        for vert in dir.get_verts() {
+            let (rr, gg, bb) = if dir == Direction::West || dir == Direction::East {
+                ((255.0 * 0.8) as u8, (255.0 * 0.8) as u8, (255.0 * 0.8) as u8)
+            } else {
+                (255, 255, 255)
+            };
+            verts.push(Vertex {
+                x: vert.x * w + x,
+                y: vert.y * h + y,
+                z: vert.z * d + z,
+                texture: tex.clone(),
+                texture_x: (vert.toffsetx as f64) * texture_scale[dir.index()][0],
+                texture_y: (vert.toffsety as f64) * texture_scale[dir.index()][0],
+                r: rr,
+                g: gg,
+                b: bb,
+                a: 255,
+                id: 0,
+            });
+        }
     }
 }

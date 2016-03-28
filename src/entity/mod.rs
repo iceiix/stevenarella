@@ -24,6 +24,7 @@ pub fn add_systems(m: &mut ecs::Manager) {
 pub struct Position {
     pub position: Vector3<f64>,
     pub last_position: Vector3<f64>,
+    pub moved: bool,
 }
 
 impl Position {
@@ -31,6 +32,7 @@ impl Position {
         Position {
             position: Vector3::new(x, y, z),
             last_position: Vector3::new(x, y, z),
+            moved: false,
         }
     }
 
