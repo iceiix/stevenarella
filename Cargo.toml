@@ -32,11 +32,3 @@ version = "0"
 [dependencies.steven_resources]
 path = "./resources"
 version = "0"
-
-[profile.dev]
-opt-level = 0
-debug = true
-rpath = false
-lto = false
-debug-assertions = true
-codegen-units = 4
