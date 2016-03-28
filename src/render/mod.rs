@@ -731,8 +731,8 @@ pub struct TextureManager {
     animated_textures: Vec<AnimatedTexture>,
     pending_uploads: Vec<(i32, atlas::Rect, Vec<u8>)>,
 
-    dynamic_textures: HashMap<String, (i32, atlas::Rect), BuildHasherDefault<FNVHash>>,
-    free_dynamics: Vec<(i32, atlas::Rect)>,
+    dynamic_textures: HashMap<String, (Texture, image::DynamicImage), BuildHasherDefault<FNVHash>>,
+    free_dynamics: Vec<Texture>,
 }
 
 impl TextureManager {
@@ -773,8 +773,6 @@ impl TextureManager {
     }
 
     fn update_textures(&mut self, version: usize) {
-        self.dynamic_textures.clear();
-        self.free_dynamics.clear();
         self.pending_uploads.clear();
         self.atlases.clear();
         self.animated_textures.clear();
@@ -782,10 +780,27 @@ impl TextureManager {
         let map = self.textures.clone();
         self.textures.clear();
 
+        self.free_dynamics.clear();
+
         self.add_defaults();
 
         for name in map.keys() {
-            self.load_texture(name);
+            if name.starts_with("steven-dynamic:") {
+                let n = &name["steven-dynamic:".len()..];
+                let (width, height, data) = {
+                    let dyn = match self.dynamic_textures.get(n) {
+                        Some(val) => val,
+                        None => continue,
+                    };
+                    let img = &dyn.1;
+                    let (width, height) = img.dimensions();
+                    (width, height, img.to_rgba().into_vec())
+                };
+                let new_tex = self.put_texture("steven-dynamic", n, width as u32, height as u32, data);
+                self.dynamic_textures.get_mut(n).unwrap().0 = new_tex;
+            } else {
+                self.load_texture(name);
+            }
         }
     }
 
@@ -957,79 +972,45 @@ impl TextureManager {
         t
     }
 
-    pub fn put_dynamic(&mut self, plugin: &str, name: &str, img: image::DynamicImage) -> Texture {
+    pub fn put_dynamic(&mut self, name: &str, img: image::DynamicImage) -> Texture {
         let (width, height) = img.dimensions();
         let (width, height) = (width as usize, height as usize);
         let mut rect = None;
         let mut rect_pos = 0;
         for (i, r) in self.free_dynamics.iter().enumerate() {
-            let (atlas, r) = *r;
             if r.width == width && r.height == height {
                 rect_pos = i;
-                rect = Some((atlas, r));
+                rect = Some(r.clone());
                 break;
             } else if r.width >= width && r.height >= height {
                 rect_pos = i;
-                rect = Some((atlas, r));
+                rect = Some(r.clone());
             }
         }
         let data = img.to_rgba().into_vec();
-        let mut new = false;
-        let (atlas, rect) = if let Some(r) = rect {
+
+        if let Some(tex) = rect {
             self.free_dynamics.remove(rect_pos);
-            r
-        } else {
-            new = true;
-            self.find_free(width as usize, height as usize)
-        };
-
-        let mut full_name = String::new();
-        if plugin != "minecraft" {
-            full_name.push_str(plugin);
-            full_name.push_str(":");
-        }
-        full_name.push_str(name);
-
-        self.dynamic_textures.insert(full_name.clone(), (atlas, rect));
-        if new {
-            self.put_texture(plugin, name, width as u32, height as u32, data)
-        } else {
-            let t = Texture {
-                name: full_name.clone(),
-                version: self.version,
-                atlas: atlas,
-                x: rect.x,
-                y: rect.y,
-                width: rect.width,
-                height: rect.height,
-                rel_x: 0.0,
-                rel_y: 0.0,
-                rel_width: 1.0,
-                rel_height: 1.0,
-                is_rel: false,
-            };
             let rect = atlas::Rect {
-                x: rect.x,
-                y: rect.y,
+                x: tex.x,
+                y: tex.y,
                 width: width,
                 height: height,
             };
-            self.pending_uploads.push((atlas, rect, data));
-            self.textures.insert(full_name.to_owned(), t.clone());
+            self.pending_uploads.push((tex.atlas, rect, data));
+            let t = tex.relative(0.0, 0.0, (width as f32) / (tex.width as f32), (height as f32) / (tex.height as f32));
+            self.dynamic_textures.insert(name.to_owned(), (tex, img));
             t
+        } else {
+            let tex = self.put_texture("steven-dynamic", name, width as u32, height as u32, data);
+            self.dynamic_textures.insert(name.to_owned(), (tex.clone(), img));
+            tex
         }
     }
 
-    pub fn remove_dynamic(&mut self, plugin: &str, name: &str) {
-        let mut full_name = String::new();
-        if plugin != "minecraft" {
-            full_name.push_str(plugin);
-            full_name.push_str(":");
-        }
-        full_name.push_str(name);
-
-        let desc = self.dynamic_textures.remove(&full_name).unwrap();
-        self.free_dynamics.push(desc);
+    pub fn remove_dynamic(&mut self, name: &str) {
+        let desc = self.dynamic_textures.remove(name).unwrap();
+        self.free_dynamics.push(desc.0);
     }
 }
 

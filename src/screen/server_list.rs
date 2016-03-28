@@ -103,7 +103,7 @@ impl ServerList {
             for server in &mut elements.servers {
                 server.collection.remove_all(ui_container);
                 if let Some(ref icon) = server.icon_texture {
-                    tex.remove_dynamic("steven_icon", &icon);
+                    tex.remove_dynamic(&icon);
                 }
             }
         }
@@ -442,13 +442,17 @@ impl super::Screen for ServerList {
         });
         self.reload_server_list(renderer, ui_container);
     }
-    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn on_deactive(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         // Clean up
         {
             let elements = self.elements.as_mut().unwrap();
             elements.logo.remove(ui_container);
             elements.elements.remove_all(ui_container);
+            let mut tex = renderer.get_textures_ref().write().unwrap();
             for server in &mut elements.servers {
+                if let Some(ref icon) = server.icon_texture {
+                    tex.remove_dynamic(&icon);
+                }
                 server.collection.remove_all(ui_container);
             }
             elements.servers.clear();
@@ -535,7 +539,7 @@ impl super::Screen for ServerList {
                             s.icon_texture = Some(name.clone());
                             let icon_tex = tex.write()
                                               .unwrap()
-                                              .put_dynamic("steven_icon", &name, favicon);
+                                              .put_dynamic(&name, favicon);
                             let icon = ui_container.get_mut(&s.icon);
                             icon.set_texture(icon_tex);
                         }
