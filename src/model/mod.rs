@@ -625,8 +625,8 @@ fn rotate_direction(val: Direction, offset: i32, rots: &[Direction], invalid: &[
     }
     let pos = rots.iter()
         .position(|v| *v == val)
-        .unwrap_or(0);
-    rots[(pos + offset as usize) % rots.len()]
+        .unwrap_or(0) as i32;
+    rots[(rots.len() as i32 + pos + offset) as usize % rots.len()]
 }
 
 #[derive(Clone)]

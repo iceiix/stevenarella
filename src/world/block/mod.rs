@@ -1064,8 +1064,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "double_stone_slab" ) },
-        variant format!("seamless={},variant={}", seamless, variant.as_string()),
+        model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
+        variant if seamless { "all" } else { "normal" },
     }
     StoneSlab {
         props {
@@ -1089,8 +1089,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "stone_slab" ) },
-        variant format!("half={},variant={}", half.as_string(), variant.as_string()),
+        model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
+        variant format!("half={}", half.as_string()),
     }
     BrickBlock {
         props {},
@@ -1116,7 +1116,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "tnt" ) },
-        variant format!("explode={}", explode),
     }
     BookShelf {
         props {},
@@ -1467,6 +1466,10 @@ define_blocks! {
         },
         model { ("minecraft", "wooden_door" ) },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        update_state (world, x, y, z) => {
+            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+            Block::WoodenDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+        },
     }
     Ladder {
         props {
@@ -1640,6 +1643,10 @@ define_blocks! {
         },
         model { ("minecraft", "iron_door" ) },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        update_state (world, x, y, z) => {
+            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+            Block::IronDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+        },
     }
     WoodenPressurePlate {
         props {
@@ -2181,8 +2188,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "stonebrick" ) },
-        variant format!("variant={}", variant.as_string()),
+        model { ("minecraft", variant.as_string() ) },
     }
     BrownMushroomBlock {
         props {
@@ -2657,7 +2663,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "redstone_lamp_lit" ) },
+        model { ("minecraft", "lit_redstone_lamp" ) },
     }
     DoubleWoodenSlab {
         props {
@@ -2678,8 +2684,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "double_wooden_slab" ) },
-        variant format!("variant={}", variant.as_string()),
+        model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
     }
     WoodenSlab {
         props {
@@ -2701,8 +2706,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "wooden_slab" ) },
-        variant format!("half={},variant={}", half.as_string(), variant.as_string()),
+        model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
+        variant format!("half={}", half.as_string()),
     }
     Cocoa {
         props {
@@ -3398,8 +3403,20 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "quartz_block" ) },
-        variant format!("variant={}", variant.as_string()),
+        model { ("minecraft", match variant {
+            QuartzVariant::Normal => "quartz_block",
+            QuartzVariant::Chiseled => "chiseled_quartz_block",
+            QuartzVariant::PillarVertical |
+            QuartzVariant::PillarNorthSouth |
+            QuartzVariant::PillarEastWest => "quartz_column",
+        } ) },
+        variant match variant {
+            QuartzVariant::Normal |
+            QuartzVariant::Chiseled => "normal",
+            QuartzVariant::PillarVertical => "axis=y",
+            QuartzVariant::PillarNorthSouth => "axis=z",
+            QuartzVariant::PillarEastWest => "axis=x",
+        },
     }
     QuartzStairs {
         props {
@@ -3570,8 +3587,7 @@ define_blocks! {
             force_shade: true,
             transparent: false,
         },
-        model { ("minecraft", "leaves2" ) },
-        variant format!("check_decay={},decayable={},variant={}", check_decay, decayable, variant.as_string()),
+        model { ("minecraft", format!("{}_leaves", variant.as_string()) ) },
         tint TintType::Foliage,
     }
     Log2 {
@@ -3590,7 +3606,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "log2" ) },
+        model { ("minecraft", format!("{}_log", variant.as_string()) ) },
         variant format!("axis={}", axis.as_string()),
     }
     AcaciaStairs {
@@ -3719,8 +3735,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "prismarine" ) },
-        variant format!("variant={}", variant.as_string()),
+        model { ("minecraft", variant.as_string() ) },
     }
     SeaLantern {
         props {},
@@ -3975,8 +3990,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "double_stone_slab2" ) },
-        variant format!("seamless={},variant={}", seamless, variant.as_string()),
+        model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
+        variant if seamless { "all" } else { "normal" },
     }
     StoneSlab2 {
         props {
@@ -3991,8 +4006,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "stone_slab2" ) },
-        variant format!("half={},variant={}", half.as_string(), variant.as_string()),
+        model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
+        variant format!("half={}", half.as_string()),
     }
     SpruceFenceGate {
         props {
@@ -4222,6 +4237,10 @@ define_blocks! {
         },
         model { ("minecraft", "spruce_door" ) },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        update_state (world, x, y, z) => {
+            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+            Block::SpruceDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+        },
     }
     BirchDoor {
         props {
@@ -4246,6 +4265,10 @@ define_blocks! {
         },
         model { ("minecraft", "birch_door" ) },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        update_state (world, x, y, z) => {
+            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+            Block::BirchDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+        },
     }
     JungleDoor {
         props {
@@ -4270,6 +4293,10 @@ define_blocks! {
         },
         model { ("minecraft", "jungle_door" ) },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        update_state (world, x, y, z) => {
+            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+            Block::JungleDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+        },
     }
     AcaciaDoor {
         props {
@@ -4294,6 +4321,10 @@ define_blocks! {
         },
         model { ("minecraft", "acacia_door" ) },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        update_state (world, x, y, z) => {
+            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+            Block::AcaciaDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+        },
     }
     DarkOakDoor {
         props {
@@ -4318,6 +4349,10 @@ define_blocks! {
         },
         model { ("minecraft", "dark_oak_door" ) },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        update_state (world, x, y, z) => {
+            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+            Block::DarkOakDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+        },
     }
     EndRod {
         props {
@@ -4450,7 +4485,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "purpur_double_slab" ) },
+        model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
     }
     PurpurSlab {
         props {
@@ -4471,8 +4506,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "purpur_slab" ) },
-        variant format!("half={},variant={}", half.as_string(), variant.as_string()),
+        model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
+        variant format!("half={}", half.as_string()),
     }
     EndBricks {
         props {},
@@ -4623,10 +4658,10 @@ fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered
         DoorHalf::Lower => {
             if hinge == Side::Left && !powered {
                 let data = match facing {
-                    Direction::West => 0,
-                    Direction::North => 1,
-                    Direction::East => 2,
-                    Direction::South => 3,
+                    Direction::East => 0,
+                    Direction::South => 1,
+                    Direction::West => 2,
+                    Direction::North => 3,
                     _ => unreachable!(),
                 };
 
@@ -4636,6 +4671,35 @@ fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered
             }
         }
     }
+}
+
+
+
+fn update_door_state(world: &super::World, x: i32, y: i32, z: i32, ohalf: DoorHalf, ofacing: Direction, ohinge: Side, oopen: bool, opowered: bool) -> (Direction, Side, bool, bool) {
+    let oy = if ohalf == DoorHalf::Upper {
+        -1
+    } else {
+        1
+    };
+    match world.get_block(x, y + oy, z) {
+        Block::WoodenDoor{half, facing, hinge, open, powered} |
+        Block::SpruceDoor{half, facing, hinge, open, powered} |
+        Block::BirchDoor{half, facing, hinge, open, powered} |
+        Block::JungleDoor{half, facing, hinge, open, powered} |
+        Block::AcaciaDoor{half, facing, hinge, open, powered} |
+        Block::DarkOakDoor{half, facing, hinge, open, powered} |
+        Block::IronDoor{half, facing, hinge, open, powered} => {
+            if half != ohalf {
+                if ohalf == DoorHalf::Upper {
+                    return (facing, ohinge, open, opowered);
+                } else {
+                    return (ofacing, hinge, oopen, powered);
+                }
+            }
+        },
+        _ => {},
+    }
+    (ofacing, ohinge, oopen, opowered)
 }
 
 fn command_block_data(conditional: bool, facing: Direction) -> Option<usize> {
@@ -4801,7 +4865,7 @@ impl PrismarineVariant {
     pub fn as_string(&self) -> &'static str {
         match *self {
             PrismarineVariant::Normal => "prismarine",
-            PrismarineVariant::Brick => "prismarine_brick",
+            PrismarineVariant::Brick => "prismarine_bricks",
             PrismarineVariant::Dark => "dark_prismarine",
         }
     }
@@ -4926,7 +4990,7 @@ impl ColoredVariant {
             ColoredVariant::White => "white",
             ColoredVariant::Orange => "orange",
             ColoredVariant::Magenta => "magenta",
-            ColoredVariant::LightBlue => "lightBlue",
+            ColoredVariant::LightBlue => "light_blue",
             ColoredVariant::Yellow => "yellow",
             ColoredVariant::Lime => "lime",
             ColoredVariant::Pink => "pink",
