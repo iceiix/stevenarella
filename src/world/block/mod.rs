@@ -787,7 +787,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "stick_piston" ) },
+        model { ("minecraft", "sticky_piston" ) },
         variant format!("extended={},facing={}", extended, facing.as_string()),
     }
     Web {
@@ -1290,7 +1290,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "redstone_wire" ) },
-        variant format!("north={},south={},east={},west={},power={}", north.as_string(), south.as_string(), east.as_string(), west.as_string(), power),
     }
     DiamondOre {
         props {},
@@ -1830,7 +1829,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "cactus" ) },
-        variant format!("age={}", age),
     }
     Clay {
         props {},
@@ -1856,7 +1854,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "reeds" ) },
-        variant format!("age={}", age),
     }
     Jukebox {
         props {
@@ -1889,7 +1886,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "fence" ) },
-        variant format!("north={},south={},east={},west={}", north, south, east, west),
     }
     Pumpkin {
         props {
@@ -2264,7 +2260,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "iron_bars" ) },
-        variant format!("north={},south={},east={},west={}", north, south, east, west),
     }
     GlassPane {
         props {},
@@ -2490,7 +2485,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "nether_brick_fence" ) },
-        variant format!("north={},south={},east={},west={}", north, south, east, west),
     }
     NetherBrickStairs {
         props {
@@ -3016,7 +3010,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "cobblestone_wall" ) },
-        variant format!("north={},south={},east={},west={},up={},variant={}", north, south, east, west, up, variant.data()),
     }
     FlowerPot {
         props {
@@ -3453,14 +3446,11 @@ define_blocks! {
                 RailShape::AscendingNorth,
                 RailShape::AscendingSouth,
                 RailShape::AscendingEast,
-                RailShape::AscendingWest,
-                RailShape::NorthEast,
-                RailShape::NorthWest,
-                RailShape::SouthEast,
-                RailShape::SouthWest
+                RailShape::AscendingWest
             ],
+            powered: bool = [false, true],
         },
-        data Some(shape.data()),
+        data Some(shape.data() | (if powered { 0x8 } else { 0x0 })),
         material Material {
             renderable: true,
             never_cull: false,
@@ -3469,7 +3459,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "activator_rail" ) },
-        variant format!("shape={}", shape.as_string()),
+        variant format!("powered={},shape={}", powered, shape.as_string()),
     }
     Dropper {
         props {
@@ -4140,7 +4130,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "spruce_fence" ) },
-        variant format!("north={},south={},east={},west={}", north, south, east, west),
     }
     BirchFence {
         props {
@@ -4158,7 +4147,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "birch_fence" ) },
-        variant format!("north={},south={},east={},west={}", north, south, east, west),
     }
     JungleFence {
         props {
@@ -4176,7 +4164,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "jungle_fence" ) },
-        variant format!("north={},south={},east={},west={}", north, south, east, west),
     }
     DarkOakFence {
         props {
@@ -4194,7 +4181,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "dark_oak_fence" ) },
-        variant format!("north={},south={},east={},west={}", north, south, east, west),
     }
     AcaciaFence {
         props {
@@ -4212,7 +4198,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "acacia_fence" ) },
-        variant format!("north={},south={},east={},west={}", north, south, east, west),
     }
     SpruceDoor {
         props {
@@ -4404,7 +4389,6 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "chorus_plant" ) },
-        variant format!("north={},south={},east={},west={},up={},down={}", north, south, east, west, up, down),
     }
     ChorusFlower {
         props {

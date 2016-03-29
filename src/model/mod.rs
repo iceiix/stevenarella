@@ -83,7 +83,7 @@ impl Factory {
     pub fn get_state_model<R: Rng, W: Write>(models: &Arc<RwLock<Factory>>, plugin: &str, name: &str, variant: &str, rng: &mut R,
             snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
         let key = Key(plugin.to_owned(), name.to_owned());
-        let mut missing = false;
+        let mut missing_variant = false;
         {
             let m = models.read().unwrap();
             if let Some(model) = m.models.get(&key) {
@@ -91,10 +91,11 @@ impl Factory {
                     let model = var.choose_model(rng);
                     return model.render(&*m, snapshot, x, y, z, buf);
                 }
-                missing = true;
+                missing_variant = true;
             }
         }
-        if !missing {
+        if !missing_variant {
+            // Whole model not loaded, try and load
             let mut m = models.write().unwrap();
             if !m.models.contains_key(&key) && !m.load_model(plugin, name) {
                 error!("Error loading model {}:{}", plugin, name);
@@ -104,10 +105,12 @@ impl Factory {
                     let model = var.choose_model(rng);
                     return model.render(&*m, snapshot, x, y, z, buf);
                 }
+                missing_variant = true;
             }
         }
         let ret = Factory::get_state_model(models, "steven", "missing_block", "normal", rng, snapshot, x, y, z, buf);
-        {
+        if !missing_variant {
+            // Still no model, replace with placeholder
             let mut m = models.write().unwrap();
             let model = m.models.get(&Key("steven".to_owned(), "missing_block".to_owned())).unwrap().clone();
             m.models.insert(key, model);
@@ -118,7 +121,10 @@ impl Factory {
     fn load_model(&mut self, plugin: &str, name: &str) -> bool {
         let file = match self.resources.read().unwrap().open(plugin, &format!("blockstates/{}.json", name)) {
             Some(val) => val,
-            None => return false,
+            None => {
+                error!("Error missing block state for {}:{}", plugin, name);
+                return false;
+            },
         };
         let mdl: serde_json::Value = try_log!(serde_json::from_reader(file));
 
@@ -135,8 +141,8 @@ impl Factory {
                 model.variants.insert(k.clone(), vars);
             }
         }
-        if let Some(multipart) = mdl.find("multipart").and_then(|v| v.as_array()) {
-            warn!("Found unhandled multipart {:?}", multipart);
+        if let Some(_multipart) = mdl.find("multipart").and_then(|v| v.as_array()) {
+            warn!("Found unhandled multipart for {}:{}", plugin, name);
         }
 
         self.models.insert(Key(plugin.to_owned(), name.to_owned()), model);
