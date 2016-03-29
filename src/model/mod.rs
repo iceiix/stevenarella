@@ -417,28 +417,28 @@ impl Factory {
                     let tw = texture.get_width() as i16;
                     let th = texture.get_height() as i16;
                     if face.rotation > 0 {
-                        let x = ux1;
-                        let y = uy1;
-                        let w = ux2 - ux1;
-                        let h = uy2 - uy1;
+                        let ox1 = ux1;
+                        let ox2 = ux2;
+                        let oy1 = uy1;
+                        let oy2 = uy2;
                         match face.rotation {
                             270 => {
-            					uy2 = x + w;
-            					ux1 = tw*16 - (y + h);
-            					ux2 = tw*16 - y;
-            					uy1 = x;
+                                uy1 = tw*16 - ox2;
+                                uy2 = tw*16 - ox1;
+                                ux1 = oy1;
+                                ux2 = oy2;
                             },
                             180 => {
-            					uy1 = th*16 - (y + h);
-            					uy2 = th*16 - y;
-            					ux1 = x + w;
-            					ux2 = x;
+                                uy1 = th*16 - oy2;
+                                uy2 = th*16 - oy1;
+                                ux1 = tw*16 - ox2;
+                                ux2 = tw*16 - ox1;
                             },
                             90 => {
-            					uy2 = x;
-            					uy1 = x + w;
-            					ux2 = y + h;
-            					ux1 = y;
+                                uy1 = ox1;
+                                uy2 = ox2;
+                                ux1 = th*16 - oy2;
+                                ux2 = th*16 - oy1;
                             },
                             _ => {},
                         }
@@ -543,7 +543,7 @@ impl Factory {
                         }
 
                         if face.rotation > 0 {
-                            let rot_y = (face.rotation as f64 * (::std::f64::consts::PI / 180.0)) as f32;
+                            let rot_y = (-face.rotation as f64 * (::std::f64::consts::PI / 180.0)) as f32;
                             let c = rot_y.cos() as i16;
                             let s = rot_y.sin() as i16;
                             let x = v.toffsetx - 8*tw;
@@ -557,10 +557,10 @@ impl Factory {
                             let rot_y = (raw.y * (::std::f64::consts::PI / 180.0)) as f32;
                             let c = rot_y.cos() as i16;
                             let s = rot_y.sin() as i16;
-                            let x = v.toffsetx - 8*16;
-                            let y = v.toffsety - 8*16;
-                            v.toffsetx = 8*16 + (x*c - y*s);
-                            v.toffsety = 8*16 + (y*c + x*s);
+                            let x = v.toffsetx - 8*tw;
+                            let y = v.toffsety - 8*th;
+                            v.toffsetx = 8*tw + (x*c - y*s);
+                            v.toffsety = 8*th + (y*c + x*s);
                         }
 
                         if raw.uvlock && raw.x > 0.0
@@ -568,10 +568,10 @@ impl Factory {
                             let rot_x = (raw.x * (::std::f64::consts::PI / 180.0)) as f32;
                             let c = rot_x.cos() as i16;
                             let s = rot_x.sin() as i16;
-                            let x = v.toffsetx - 8*16;
-                            let y = v.toffsety - 8*16;
-                            v.toffsetx = 8*16 + (x*c - y*s);
-                            v.toffsety = 8*16 + (y*c + x*s);
+                            let x = v.toffsetx - 8*tw;
+                            let y = v.toffsety - 8*th;
+                            v.toffsetx = 8*tw + (x*c - y*s);
+                            v.toffsety = 8*th + (y*c + x*s);
                         }
 
                         if let Some(r) = el.rotation.as_ref() {
@@ -610,17 +610,17 @@ impl Factory {
 }
 
 const FACE_ROTATION: &'static [Direction] = &[
-	Direction::North,
-	Direction::East,
-	Direction::South,
-	Direction::West,
+    Direction::North,
+    Direction::East,
+    Direction::South,
+    Direction::West,
 ];
 
 const FACE_ROTATION_X: &'static [Direction] = &[
-	Direction::North,
-	Direction::Down,
-	Direction::South,
-	Direction::Up,
+    Direction::North,
+    Direction::Down,
+    Direction::South,
+    Direction::Up,
 ];
 
 fn rotate_direction(val: Direction, offset: i32, rots: &[Direction], invalid: &[Direction]) -> Direction {
