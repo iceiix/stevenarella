@@ -19,7 +19,6 @@ pub struct ChunkBuilder {
     built_recv: mpsc::Receiver<(usize, BuildReply)>,
 
     models: Arc<RwLock<model::Factory>>,
-    resources: Arc<RwLock<resources::Manager>>,
     resource_version: usize,
 }
 
@@ -43,16 +42,14 @@ impl ChunkBuilder {
             free_builders: free,
             built_recv: built_recv,
             models: models,
-            resources: resources.clone(),
             resource_version: 0xFFFF,
         }
     }
 
-    pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer, _delta: f64) {
+    pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer, version: usize) {
         {
-            let rm = self.resources.read().unwrap();
-            if rm.version() != self.resource_version {
-                self.resource_version = rm.version();
+            if version != self.resource_version {
+                self.resource_version = version;
                 self.models.write().unwrap().version_change();
             }
         }

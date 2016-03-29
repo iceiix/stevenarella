@@ -218,9 +218,11 @@ fn main() {
 
     let mut events = sdl.event_pump().unwrap();
     while !game.should_close {
-        {
-            game.resource_manager.write().unwrap().tick();
-        }
+        let version = {
+            let mut res = game.resource_manager.write().unwrap();
+            res.tick();
+            res.version()
+        };
 
         let now = time::now();
         let diff = now - last_frame;
@@ -233,7 +235,7 @@ fn main() {
 
         game.renderer.update_camera(width, height);
         game.server.world.compute_render_list(&mut game.renderer);
-        game.chunk_builder.tick(&mut game.server.world, &mut game.renderer, delta);
+        game.chunk_builder.tick(&mut game.server.world, &mut game.renderer, version);
 
         game.screen_sys.tick(delta, &mut game.renderer, &mut ui_container);
         game.console

@@ -41,14 +41,16 @@ impl Logo {
     }
 
     fn init(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        let res = self.resources.read().unwrap();
-
-        let mut logo = res.open("steven", "logo/logo.txt").unwrap();
-        let mut logo_str = String::new();
-        logo.read_to_string(&mut logo_str).unwrap();
+        let logo_str = {
+            let res = self.resources.read().unwrap();
+            let mut logo = res.open("steven", "logo/logo.txt").unwrap();
+            let mut logo_str = String::new();
+            logo.read_to_string(&mut logo_str).unwrap();
+            logo_str
+        };
 
         let solid = render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid");
-        let stone = render::Renderer::get_texture(renderer.get_textures_ref(), "blocks/planks_oak");
+        let front = render::Renderer::get_texture(renderer.get_textures_ref(), "blocks/planks_oak");
 
         let mut shadow_batch = ui::Batch::new(0.0, 8.0, 100.0, 100.0);
         let mut layer0 = ui::Batch::new(0.0, 8.0, 100.0, 100.0);
@@ -88,7 +90,7 @@ impl Logo {
                 shadow_batch.add(shadow);
 
 
-                let img = ui::Image::new(stone.clone(),
+                let img = ui::Image::new(front.clone(),
                                          x as f64,
                                          y as f64,
                                          4.0,
@@ -111,6 +113,7 @@ impl Logo {
             row += 1;
         }
         {
+            let res = self.resources.read().unwrap();
             let mut splashes = res.open_all("minecraft", "texts/splashes.txt");
             for file in &mut splashes {
                 let mut texts = String::new();
