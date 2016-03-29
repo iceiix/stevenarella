@@ -2124,10 +2124,10 @@ define_blocks! {
         },
         data {
             let data = match facing {
-                Direction::South => 0,
-                Direction::North => 1,
-                Direction::East => 2,
-                Direction::West => 3,
+                Direction::North => 0,
+                Direction::South => 1,
+                Direction::West => 2,
+                Direction::East => 3,
                 _ => unreachable!(),
             };
 
@@ -3687,10 +3687,10 @@ define_blocks! {
         },
         data {
             let data = match facing {
-                Direction::South => 0,
-                Direction::North => 1,
-                Direction::East => 2,
-                Direction::West => 3,
+                Direction::North => 0,
+                Direction::South => 1,
+                Direction::West => 2,
+                Direction::East => 3,
                 _ => unreachable!(),
             };
 
@@ -3705,7 +3705,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "sponge" ) },
+        model { ("minecraft", "iron_trapdoor" ) },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
     }
     Prismarine {
@@ -5706,9 +5706,5 @@ impl FlowerPotVariant {
             FlowerPotVariant::PinkTulip => "pink_tulip",
             FlowerPotVariant::Oxeye => "oxeye_daisy",
         }
-    }
-
-    fn data(&self) -> usize { // TODO: How should this be implemented?
-        0
     }
 }
