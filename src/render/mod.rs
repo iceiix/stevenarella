@@ -853,7 +853,7 @@ impl TextureManager {
         if let Some(val) = res.read().unwrap().open(plugin, &path) {
             let meta: serde_json::Value = serde_json::from_reader(val).unwrap();
             let animation = meta.find("animation").unwrap();
-            let frame_time = animation.find("frameTime").and_then(|v| v.as_i64()).unwrap_or(1);
+            let frame_time = animation.find("frametime").and_then(|v| v.as_i64()).unwrap_or(1);
             let interpolate = animation.find("interpolate")
                                        .and_then(|v| v.as_boolean())
                                        .unwrap_or(false);
