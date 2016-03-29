@@ -1407,7 +1407,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "furnace_lit" ) },
+        model { ("minecraft", "lit_furnace" ) },
         variant format!("facing={}", facing.as_string()),
     }
     StandingSign {
@@ -1682,7 +1682,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "redstone_ore_lit" ) },
+        model { ("minecraft", "lit_redstone_ore" ) },
     }
     RedstoneTorchUnlit {
         props {
@@ -1994,7 +1994,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "pumpkin_lit" ) },
+        model { ("minecraft", "lit_pumpkin" ) },
         variant format!("facing={}", facing.as_string()),
     }
     Cake {
@@ -2043,7 +2043,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "repeater_unpowered" ) },
+        model { ("minecraft", "unpowered_repeater" ) },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
     }
     RepeaterPowered {
@@ -2077,7 +2077,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "repeater_powered" ) },
+        model { ("minecraft", "powered_repeater" ) },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
     }
     StainedGlass {
@@ -2142,7 +2142,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "trap_door" ) },
+        model { ("minecraft", "trapdoor" ) },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
     }
     MonsterEgg {
@@ -2151,9 +2151,9 @@ define_blocks! {
                 MonsterEggVariant::Stone,
                 MonsterEggVariant::Cobblestone,
                 MonsterEggVariant::StoneBrick,
-                MonsterEggVariant::MossyStoneBrick,
-                MonsterEggVariant::CrackedStoneBrick,
-                MonsterEggVariant::ChiseledStoneBrick
+                MonsterEggVariant::MossyBrick,
+                MonsterEggVariant::CrackedBrick,
+                MonsterEggVariant::ChiseledBrick
             ],
         },
         data Some(variant.data()),
@@ -2164,8 +2164,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "monster_egg" ) },
-        variant format!("variant={}", variant.as_string()),
+        model { ("minecraft", format!("{}_monster_egg", variant.as_string())) },
     }
     StoneBrick {
         props {
@@ -3271,7 +3270,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "comparator_unpowered" ) },
+        model { ("minecraft", "unpowered_comparator" ) },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
     }
     ComparatorPowered {
@@ -3305,7 +3304,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "comparator_powered" ) },
+        model { ("minecraft", "powered_comparator" ) },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
     }
     DaylightDetector {
@@ -5060,9 +5059,9 @@ pub enum MonsterEggVariant {
     Stone,
     Cobblestone,
     StoneBrick,
-    MossyStoneBrick,
-    CrackedStoneBrick,
-    ChiseledStoneBrick,
+    MossyBrick,
+    CrackedBrick,
+    ChiseledBrick,
 }
 
 impl MonsterEggVariant {
@@ -5071,9 +5070,9 @@ impl MonsterEggVariant {
             MonsterEggVariant::Stone => "stone",
             MonsterEggVariant::Cobblestone => "cobblestone",
             MonsterEggVariant::StoneBrick => "stone_brick",
-            MonsterEggVariant::MossyStoneBrick => "mossy_brick",
-            MonsterEggVariant::CrackedStoneBrick => "cracked_brick",
-            MonsterEggVariant::ChiseledStoneBrick => "chiseled_brick",
+            MonsterEggVariant::MossyBrick => "mossy_brick",
+            MonsterEggVariant::CrackedBrick => "cracked_brick",
+            MonsterEggVariant::ChiseledBrick => "chiseled_brick",
         }
     }
 
@@ -5082,9 +5081,9 @@ impl MonsterEggVariant {
             MonsterEggVariant::Stone => 0,
             MonsterEggVariant::Cobblestone => 1,
             MonsterEggVariant::StoneBrick => 2,
-            MonsterEggVariant::MossyStoneBrick => 3,
-            MonsterEggVariant::CrackedStoneBrick => 4,
-            MonsterEggVariant::ChiseledStoneBrick => 5,
+            MonsterEggVariant::MossyBrick => 3,
+            MonsterEggVariant::CrackedBrick => 4,
+            MonsterEggVariant::ChiseledBrick => 5,
         }
     }
 }
