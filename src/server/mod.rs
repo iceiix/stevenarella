@@ -176,7 +176,7 @@ impl Server {
             for z in -7*16 .. 7*16 {
                 let h = rng.gen_range(3, 10);
                 for y in 0 .. h {
-                    server.world.set_block(x, y, z, block::Dirt{});
+                    server.world.set_block(x, y, z, block::Dirt{ snowy: false, variant: block::DirtVariant::Normal });
                 }
             }
         }

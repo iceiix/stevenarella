@@ -1,3 +1,14 @@
+// TODO: Multipart blocks
+// TODO: Tile entities
+// TODO: Redstone
+// TODO: Skulls
+// TODO: FlowerPot
+// TODO: Repeater lock state update
+// TODO: DoublePlants don't face the right direction?
+// TODO: Pumpkin and Melon stem tint
+// TODO: Tripwire
+// TODO: Portal Axis
+
 use std::fmt::{Display, Formatter, Error};
 use collision::{Aabb, Aabb3};
 use cgmath::Point3;
@@ -287,7 +298,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "air" ) },
+        model { ("minecraft", "air") },
         collision vec![],
     }
     Stone {
@@ -324,12 +335,28 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "grass" ) },
+        model { ("minecraft", "grass") },
         variant format!("snowy={}", snowy),
         tint TintType::Grass,
+        update_state (world, x, y, z) => {
+            Block::Grass{
+                snowy: match world.get_block(x, y + 1, z) {
+                    Block::Snow { .. } | Block::SnowLayer { .. } => true,
+                    _ => false,
+                } 
+            }
+        },
     }
     Dirt {
-        props {},
+        props {
+            snowy: bool = [false, true],
+            variant: DirtVariant = [
+                DirtVariant::Normal,
+                DirtVariant::Coarse,
+                DirtVariant::Podzol
+            ],
+        },
+        data if !snowy { Some(variant.data()) } else { None },
         material Material {
             renderable: true,
             never_cull: false,
@@ -337,7 +364,25 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "dirt" ) },
+        model { ("minecraft", variant.as_string()) },
+        variant {
+            if variant == DirtVariant::Podzol { 
+                format!("snowy={}", snowy)
+            } else {
+                "normal".to_owned()
+            }
+        },
+        update_state (world, x, y, z) => if variant == DirtVariant::Podzol {
+            Block::Dirt{
+                snowy: match world.get_block(x, y + 1, z) {
+                    Block::Snow{ .. } | Block::SnowLayer { .. } => true,
+                    _ => false,
+                }, 
+                variant: variant
+            }
+        } else {
+            Block::Dirt{snowy: snowy, variant: variant}
+        },
     }
     Cobblestone {
         props {},
@@ -348,7 +393,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "cobblestone" ) },
+        model { ("minecraft", "cobblestone") },
     }
     Planks {
         props {
@@ -392,6 +437,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", format!("{}_sapling", variant.as_string()) ) },
+        variant format!("stage={}", stage),
     }
     Bedrock {
         props {},
@@ -402,7 +448,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "bedrock" ) },
+        model { ("minecraft", "bedrock") },
     }
     FlowingWater {
         props {
@@ -416,7 +462,7 @@ define_blocks! {
             force_shade: false,
             transparent: true,
         },
-        model { ("minecraft", "water" ) },
+        model { ("minecraft", "water") },
     }
     Water {
         props {
@@ -430,7 +476,7 @@ define_blocks! {
             force_shade: false,
             transparent: true,
         },
-        model { ("minecraft", "water" ) },
+        model { ("minecraft", "water") },
     }
     FlowingLava {
         props {
@@ -444,7 +490,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lava" ) },
+        model { ("minecraft", "lava") },
     }
     Lava {
         props {
@@ -458,7 +504,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lava" ) },
+        model { ("minecraft", "lava") },
     }
     Sand {
         props {
@@ -483,7 +529,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "gravel" ) },
+        model { ("minecraft", "gravel") },
     }
     GoldOre {
         props {},
@@ -494,7 +540,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "gold_ore" ) },
+        model { ("minecraft", "gold_ore") },
     }
     IronOre {
         props {},
@@ -505,7 +551,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "iron_ore" ) },
+        model { ("minecraft", "iron_ore") },
     }
     CoalOre {
         props {},
@@ -516,7 +562,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "coal_ore" ) },
+        model { ("minecraft", "coal_ore") },
     }
     Log {
         props {
@@ -575,7 +621,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "sponge" ) },
+        model { ("minecraft", "sponge") },
         variant format!("wet={}", wet),
     }
     Glass {
@@ -587,7 +633,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "glass" ) },
+        model { ("minecraft", "glass") },
     }
     LapisOre {
         props {},
@@ -598,7 +644,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lapis_ore" ) },
+        model { ("minecraft", "lapis_ore") },
     }
     LapisBlock {
         props {},
@@ -609,7 +655,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lapis_block" ) },
+        model { ("minecraft", "lapis_block") },
     }
     Dispenser {
         props {
@@ -643,7 +689,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "dispenser" ) },
+        model { ("minecraft", "dispenser") },
         variant format!("facing={}", facing.as_string()),
     }
     Sandstone {
@@ -673,7 +719,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "noteblock" ) },
+        model { ("minecraft", "noteblock") },
     }
     Bed {
         props {
@@ -706,7 +752,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "bed" ) },
+        model { ("minecraft", "bed") },
         variant format!("facing={},part={}", facing.as_string(), part.as_string()),
     }
     GoldenRail {
@@ -729,7 +775,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "golden_rail" ) },
+        model { ("minecraft", "golden_rail") },
         variant format!("powered={},shape={}", powered, shape.as_string()),
     }
     DetectorRail {
@@ -752,7 +798,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "detector_rail" ) },
+        model { ("minecraft", "detector_rail") },
         variant format!("powered={},shape={}", powered, shape.as_string()),
     }
     StickyPiston {
@@ -787,7 +833,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "sticky_piston" ) },
+        model { ("minecraft", "sticky_piston") },
         variant format!("extended={},facing={}", extended, facing.as_string()),
     }
     Web {
@@ -799,7 +845,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "web" ) },
+        model { ("minecraft", "web") },
     }
     TallGrass {
         props {
@@ -833,7 +879,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "dead_bush" ) },
+        model { ("minecraft", "dead_bush") },
     }
     Piston {
         props {
@@ -867,7 +913,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "piston" ) },
+        model { ("minecraft", "piston") },
         variant format!("extended={},facing={}", extended, facing.as_string()),
     }
     PistonHead {
@@ -893,7 +939,9 @@ define_blocks! {
                 Direction::East => 0x5,
                 _ => unreachable!(),
             } | if variant == PistonType::Sticky { 0x8 } else { 0x0 }
-        )} else { None },
+        )} else { 
+            None
+        },
         material Material {
             renderable: true,
             never_cull: false,
@@ -901,7 +949,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "piston_head" ) },
+        model { ("minecraft", "piston_head") },
         variant format!("facing={},short={},type={}", facing.as_string(), short, variant.as_string()),
     }
     Wool {
@@ -945,11 +993,10 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "piston_extension" ) },
+        model { ("minecraft", "piston_extension") },
     }
     YellowFlower {
-        props { // TODO: Define dandelion? Condense all flower types into one enum?
-        },
+        props {},
         material Material {
             renderable: true,
             never_cull: false,
@@ -957,8 +1004,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "yellow_flower" ) },
-        variant "type=dandelion",
+        model { ("minecraft", "dandelion") },
     }
     RedFlower {
         props {
@@ -982,8 +1028,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "red_flower" ) },
-        variant format!("type={}", variant.as_string()),
+        model { ("minecraft", variant.as_string()) },
     }
     BrownMushroom {
         props {},
@@ -994,7 +1039,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "brown_mushroom" ) },
+        model { ("minecraft", "brown_mushroom") },
     }
     RedMushroom {
         props {},
@@ -1005,7 +1050,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "red_mushroom" ) },
+        model { ("minecraft", "red_mushroom") },
     }
     GoldBlock {
         props {},
@@ -1016,7 +1061,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "gold_block" ) },
+        model { ("minecraft", "gold_block") },
     }
     IronBlock {
         props {},
@@ -1027,7 +1072,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "iron_block" ) },
+        model { ("minecraft", "iron_block") },
     }
     DoubleStoneSlab {
         props {
@@ -1101,7 +1146,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "brick_block" ) },
+        model { ("minecraft", "brick_block") },
     }
     TNT {
         props {
@@ -1115,7 +1160,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "tnt" ) },
+        model { ("minecraft", "tnt") },
     }
     BookShelf {
         props {},
@@ -1126,7 +1171,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "bookshelf" ) },
+        model { ("minecraft", "bookshelf") },
     }
     MossyCobblestone {
         props {},
@@ -1137,7 +1182,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "mossy_cobblestone" ) },
+        model { ("minecraft", "mossy_cobblestone") },
     }
     Obsidian {
         props {},
@@ -1148,7 +1193,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "obsidian" ) },
+        model { ("minecraft", "obsidian") },
     }
     Torch {
         props {
@@ -1177,7 +1222,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "torch" ) },
+        model { ("minecraft", "torch") },
         variant format!("facing={}", facing.as_string()),
     }
     Fire {
@@ -1197,8 +1242,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "fire" ) },
-        variant format!("age={},up={},north={},south={},east={},west={}", age, up, north, south, east, west),
+        model { ("minecraft", "fire") },
     }
     MobSpawner {
         props {},
@@ -1209,7 +1253,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "mob_spawner" ) },
+        model { ("minecraft", "mob_spawner") },
     }
     OakStairs {
         props {
@@ -1219,7 +1263,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -1234,7 +1278,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "oak_stairs" ) },
+        model { ("minecraft", "oak_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::OakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -1263,8 +1307,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "chest" ) },
-        variant format!("facing={}", facing.as_string()),
+        model { ("minecraft", "chest") },
     }
     RedstoneWire {
         props {
@@ -1289,7 +1332,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "redstone_wire" ) },
+        model { ("minecraft", "redstone_wire") },
     }
     DiamondOre {
         props {},
@@ -1300,7 +1343,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "diamond_ore" ) },
+        model { ("minecraft", "diamond_ore") },
     }
     DiamondBlock {
         props {},
@@ -1311,7 +1354,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "diamond_block" ) },
+        model { ("minecraft", "diamond_block") },
     }
     CraftingTable {
         props {},
@@ -1322,7 +1365,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "crafting_table" ) },
+        model { ("minecraft", "crafting_table") },
     }
     Wheat {
         props {
@@ -1336,7 +1379,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "wheat" ) },
+        model { ("minecraft", "wheat") },
         variant format!("age={}", age),
     }
     Farmland {
@@ -1351,7 +1394,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "farmland" ) },
+        model { ("minecraft", "farmland") },
         variant format!("moisture={}", moisture),
     }
     Furnace {
@@ -1379,7 +1422,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "furnace" ) },
+        model { ("minecraft", "furnace") },
         variant format!("facing={}", facing.as_string()),
     }
     FurnaceLit {
@@ -1407,7 +1450,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lit_furnace" ) },
+        model { ("minecraft", "lit_furnace") },
         variant format!("facing={}", facing.as_string()),
     }
     StandingSign {
@@ -1439,8 +1482,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "standing_sign" ) },
-        variant format!("rotation={}", rotation.as_string()),
+        model { ("minecraft", "standing_sign") },
     }
     WoodenDoor {
         props {
@@ -1463,7 +1505,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "wooden_door" ) },
+        model { ("minecraft", "wooden_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
             let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
@@ -1473,17 +1515,17 @@ define_blocks! {
     Ladder {
         props {
             facing: Direction = [
-                Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::North,
+                Direction::East
             ],
         },
         data {
             Some(match facing {
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
+                Direction::South => 2,
+                Direction::West => 3,
+                Direction::North => 4,
                 Direction::East => 5,
                 _ => 2,
             })
@@ -1495,7 +1537,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "ladder" ) },
+        model { ("minecraft", "ladder") },
         variant format!("facing={}", facing.as_string()),
     }
     Rail {
@@ -1521,7 +1563,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "rail" ) },
+        model { ("minecraft", "rail") },
         variant format!("shape={}", shape.as_string()),
     }
     StoneStairs {
@@ -1532,7 +1574,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -1547,7 +1589,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "stone_stairs" ) },
+        model { ("minecraft", "stone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::StoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -1576,7 +1618,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "wall_sign" ) },
+        model { ("minecraft", "wall_sign") },
         variant format!("facing={}", facing.as_string()),
     }
     Lever {
@@ -1601,7 +1643,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lever" ) },
+        model { ("minecraft", "lever") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
     }
     StonePressurePlate {
@@ -1616,7 +1658,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "stone_pressure_plate" ) },
+        model { ("minecraft", "stone_pressure_plate") },
         variant format!("powered={}", powered),
     }
     IronDoor {
@@ -1640,7 +1682,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "iron_door" ) },
+        model { ("minecraft", "iron_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
             let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
@@ -1659,7 +1701,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "wooden_pressure_plate" ) },
+        model { ("minecraft", "wooden_pressure_plate") },
         variant format!("powered={}", powered),
     }
     RedstoneOre {
@@ -1671,7 +1713,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "redstone_ore" ) },
+        model { ("minecraft", "redstone_ore") },
     }
     RedstoneOreLit {
         props {},
@@ -1682,7 +1724,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lit_redstone_ore" ) },
+        model { ("minecraft", "lit_redstone_ore") },
     }
     RedstoneTorchUnlit {
         props {
@@ -1711,7 +1753,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "unlit_redstone_torch" ) },
+        model { ("minecraft", "unlit_redstone_torch") },
         variant format!("facing={}", facing.as_string()),
     }
     RedstoneTorch {
@@ -1741,7 +1783,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "redstone_torch" ) },
+        model { ("minecraft", "redstone_torch") },
         variant format!("facing={}", facing.as_string()),
     }
     StoneButton {
@@ -1776,7 +1818,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "stone_button" ) },
+        model { ("minecraft", "stone_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
     }
     SnowLayer {
@@ -1791,7 +1833,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "snow_layer" ) },
+        model { ("minecraft", "snow_layer") },
         variant format!("layers={}", layers),
     }
     Ice {
@@ -1803,7 +1845,7 @@ define_blocks! {
             force_shade: false,
             transparent: true,
         },
-        model { ("minecraft", "ice" ) },
+        model { ("minecraft", "ice") },
     }
     Snow {
         props {},
@@ -1814,7 +1856,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "snow" ) },
+        model { ("minecraft", "snow") },
     }
     Cactus {
         props {
@@ -1828,7 +1870,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "cactus" ) },
+        model { ("minecraft", "cactus") },
     }
     Clay {
         props {},
@@ -1839,7 +1881,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "clay" ) },
+        model { ("minecraft", "clay") },
     }
     Reeds {
         props {
@@ -1853,7 +1895,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "reeds" ) },
+        model { ("minecraft", "reeds") },
+        tint TintType::Foliage,
     }
     Jukebox {
         props {
@@ -1867,8 +1910,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "jukebox" ) },
-        variant format!("has_record={}", has_record),
+        model { ("minecraft", "jukebox") },
     }
     Fence {
         props {
@@ -1885,7 +1927,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "fence" ) },
+        model { ("minecraft", "fence") },
     }
     Pumpkin {
         props {
@@ -1915,7 +1957,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "pumpkin" ) },
+        model { ("minecraft", "pumpkin") },
         variant format!("facing={}", facing.as_string()),
     }
     Netherrack {
@@ -1927,7 +1969,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "netherrack" ) },
+        model { ("minecraft", "netherrack") },
     }
     SoulSand {
         props {},
@@ -1938,7 +1980,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "soul_sand" ) },
+        model { ("minecraft", "soul_sand") },
     }
     Glowstone {
         props {},
@@ -1949,7 +1991,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "glowstone" ) },
+        model { ("minecraft", "glowstone") },
     }
     Portal {
         props {
@@ -1963,8 +2005,18 @@ define_blocks! {
             force_shade: false,
             transparent: true,
         },
-        model { ("minecraft", "portal" ) },
+        model { ("minecraft", "portal") },
         variant format!("axis={}", axis.as_string()),
+        update_state (world, x, y, z) => {
+            let axis = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z), 
+                              world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
+                (Block::Portal{ .. }, _, _, _) | (_, Block::Portal{ .. }, _, _) => Axis::X,
+                (_, _, Block::Portal{ .. }, _) | (_, _, _, Block::Portal{ .. }) => Axis::Z,
+                _ => Axis::X,
+            };
+
+            Block::Portal{axis: axis}
+        },
     }
     PumpkinLit {
         props {
@@ -1994,7 +2046,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lit_pumpkin" ) },
+        model { ("minecraft", "lit_pumpkin") },
         variant format!("facing={}", facing.as_string()),
     }
     Cake {
@@ -2009,12 +2061,12 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "cake" ) },
+        model { ("minecraft", "cake") },
         variant format!("bites={}", bites),
     }
     RepeaterUnpowered {
         props {
-            delay: i32 = [0, 1, 2, 3],
+            delay: i32 = [1, 2, 3, 4],
             facing: Direction = [
                 Direction::North,
                 Direction::East,
@@ -2032,7 +2084,7 @@ define_blocks! {
                 _ => unreachable!(),
             };
 
-            Some(data | (delay as usize) << 2)
+            Some(data | (delay as usize - 1) << 2)
         } else {
             None
         },
@@ -2043,12 +2095,12 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "unpowered_repeater" ) },
+        model { ("minecraft", "unpowered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
     }
     RepeaterPowered {
         props {
-            delay: i32 = [0, 1, 2, 3],
+            delay: i32 = [1, 2, 3, 4],
             facing: Direction = [
                 Direction::North,
                 Direction::South,
@@ -2066,7 +2118,7 @@ define_blocks! {
                 _ => unreachable!(),
             };
 
-            Some(data | (delay as usize) << 2)
+            Some(data | (delay as usize - 1) << 2)
         } else {
             None
         },
@@ -2077,7 +2129,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "powered_repeater" ) },
+        model { ("minecraft", "powered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
     }
     StainedGlass {
@@ -2116,8 +2168,8 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             open: bool = [false, true],
@@ -2142,7 +2194,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "trapdoor" ) },
+        model { ("minecraft", "trapdoor") },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
     }
     MonsterEgg {
@@ -2211,7 +2263,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "brown_mushroom_block" ) },
+        model { ("minecraft", "brown_mushroom_block") },
         variant format!("variant={}", variant.as_string()),
     }
     RedMushroomBlock {
@@ -2240,7 +2292,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "red_mushroom_block" ) },
+        model { ("minecraft", "red_mushroom_block") },
         variant format!("variant={}", variant.as_string()),
     }
     IronBars {
@@ -2258,7 +2310,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "iron_bars" ) },
+        model { ("minecraft", "iron_bars") },
     }
     GlassPane {
         props {},
@@ -2269,7 +2321,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "glass_pane" ) },
+        model { ("minecraft", "glass_pane") },
     }
     MelonBlock {
         props {},
@@ -2280,20 +2332,20 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "melon_block" ) },
+        model { ("minecraft", "melon_block") },
     }
     PumpkinStem {
         props {
             age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
             facing: Direction = [
+                Direction::Up,
                 Direction::North,
                 Direction::South,
                 Direction::East,
-                Direction::West,
-                Direction::Up
+                Direction::West
             ],
         },
-        data if facing == Direction::North { Some(age as usize) } else { None },
+        data if facing == Direction::Up { Some(age as usize) } else { None },
         material Material {
             renderable: true,
             never_cull: false,
@@ -2301,8 +2353,27 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "pumpkin_stem" ) },
-        variant format!("age={},facing={}", age, facing.as_string()),
+        model { ("minecraft", "pumpkin_stem") },
+        variant {
+            if facing == Direction::Up {
+                format!("age={},facing={}", age, facing.as_string())
+            } else {
+                format!("facing={}", facing.as_string())
+            }
+        },
+        tint TintType::Foliage,
+        update_state (world, x, y, z) => {
+            let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z), 
+                                world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) { 
+                (Block::Pumpkin{ .. }, _, _, _) => Direction::East,
+                (_, Block::Pumpkin{ .. }, _, _) => Direction::West,
+                (_, _, Block::Pumpkin{ .. }, _) => Direction::North,
+                (_, _, _, Block::Pumpkin{ .. }) => Direction::South,
+                _ => Direction::Up,
+            };
+
+            Block::PumpkinStem{age: age, facing: facing}
+        },
     }
     MelonStem {
         props {
@@ -2323,8 +2394,27 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "melon_stem" ) },
-        variant format!("age={},facing={}", age, facing.as_string()),
+        model { ("minecraft", "melon_stem") },
+        variant {
+            if facing == Direction::Up {
+                format!("age={},facing={}", age, facing.as_string())
+            } else {
+                format!("facing={}", facing.as_string())
+            }
+        },
+        tint TintType::Foliage,
+        update_state (world, x, y, z) => {
+            let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z), 
+                                world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) { 
+                (Block::MelonBlock{ .. }, _, _, _) => Direction::East,
+                (_, Block::MelonBlock{ .. }, _, _) => Direction::West,
+                (_, _, Block::MelonBlock{ .. }, _) => Direction::North,
+                (_, _, _, Block::MelonBlock{ .. }) => Direction::South,
+                _ => Direction::Up,
+            };
+
+            Block::MelonStem{age: age, facing: facing}
+        },
     }
     Vine {
         props {
@@ -2349,7 +2439,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "vine" ) },
+        model { ("minecraft", "vine") },
         variant format!("east={},north={},south={},up={},west={}", east, north, south, up, west),
         tint TintType::Foliage,
     }
@@ -2373,7 +2463,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "fence_gate" ) },
+        model { ("minecraft", "fence_gate") },
         variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
     }
     BrickStairs {
@@ -2384,7 +2474,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -2399,7 +2489,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "brick_stairs" ) },
+        model { ("minecraft", "brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::BrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -2411,7 +2501,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -2426,7 +2516,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "stone_brick_stairs" ) },
+        model { ("minecraft", "stone_brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::StoneBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -2442,7 +2532,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "mycelium" ) },
+        model { ("minecraft", "mycelium") },
         variant format!("snowy={}", snowy),
     }
     Waterlily {
@@ -2454,7 +2544,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "waterlily" ) },
+        model { ("minecraft", "waterlily") },
         tint TintType::Foliage,
     }
     NetherBrick {
@@ -2466,7 +2556,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "nether_brick" ) },
+        model { ("minecraft", "nether_brick") },
     }
     NetherBrickFence {
         props {
@@ -2483,7 +2573,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "nether_brick_fence" ) },
+        model { ("minecraft", "nether_brick_fence") },
     }
     NetherBrickStairs {
         props {
@@ -2493,7 +2583,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -2508,7 +2598,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "nether_brick_stairs" ) },
+        model { ("minecraft", "nether_brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::NetherBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -2524,7 +2614,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "nether_wart" ) },
+        model { ("minecraft", "nether_wart") },
         variant format!("age={}", age),
     }
     EnchantingTable {
@@ -2536,7 +2626,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "enchanting_table" ) },
+        model { ("minecraft", "enchanting_table") },
     }
     BrewingStand {
         props {
@@ -2554,7 +2644,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "brewing_stand" ) },
+        model { ("minecraft", "brewing_stand") },
         variant format!("has_bottle_0={},has_bottle_1={},has_bottle_2={}", has_bottle_0, has_bottle_1, has_bottle_2),
     }
     Cauldron {
@@ -2569,7 +2659,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "cauldron" ) },
+        model { ("minecraft", "cauldron") },
         variant format!("level={}", level),
     }
     EndPortal {
@@ -2581,7 +2671,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "end_portal" ) },
+        model { ("minecraft", "end_portal") },
     }
     EndPortalFrame {
         props {
@@ -2611,7 +2701,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "end_portal_frame" ) },
+        model { ("minecraft", "end_portal_frame") },
         variant format!("eye={},facing={}", eye, facing.as_string()),
     }
     EndStone {
@@ -2623,7 +2713,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "end_stone" ) },
+        model { ("minecraft", "end_stone") },
     }
     DragonEgg {
         props {},
@@ -2634,7 +2724,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "dragon_egg" ) },
+        model { ("minecraft", "dragon_egg") },
     }
     RedstoneLamp {
         props {},
@@ -2645,7 +2735,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "redstone_lamp" ) },
+        model { ("minecraft", "redstone_lamp") },
     }
     RedstoneLampLit {
         props {},
@@ -2656,7 +2746,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lit_redstone_lamp" ) },
+        model { ("minecraft", "lit_redstone_lamp") },
     }
     DoubleWoodenSlab {
         props {
@@ -2730,7 +2820,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "cocoa" ) },
+        model { ("minecraft", "cocoa") },
         variant format!("age={},facing={}", age, facing.as_string()),
     }
     SandstoneStairs {
@@ -2741,7 +2831,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -2756,7 +2846,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "sandstone_stairs" ) },
+        model { ("minecraft", "sandstone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::SandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -2769,7 +2859,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "emerald_ore" ) },
+        model { ("minecraft", "emerald_ore") },
     }
     EnderChest {
         props {
@@ -2796,7 +2886,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "ender_chest" ) },
+        model { ("minecraft", "ender_chest") },
         variant format!("facing={}", facing.as_string()),
     }
     TripwireHook {
@@ -2830,16 +2920,16 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "tripwire_hook" ) },
+        model { ("minecraft", "tripwire_hook") },
         variant format!("attached={},facing={},powered={}", attached, facing.as_string(), powered),
     }
     Tripwire {
         props {
             attached: bool = [false, true],
             disarmed: bool = [false, true],
+            east: bool = [false, true],
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
             powered: bool = [false, true],
         },
@@ -2859,8 +2949,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "tripwire" ) },
-        variant format!("attached={},disarmed={},north={},south={},east={},west={},powered={}", attached, disarmed, north, south, east, west, powered),
+        model { ("minecraft", "tripwire") },
+        variant format!("attached={},east={},north={},south={},west={}", attached, east, north, south, west),
     }
     EmeraldBlock {
         props {},
@@ -2871,7 +2961,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "emerald_block" ) },
+        model { ("minecraft", "emerald_block") },
     }
     SpruceStairs {
         props {
@@ -2881,7 +2971,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -2896,7 +2986,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "spruce_stairs" ) },
+        model { ("minecraft", "spruce_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::SpruceStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -2908,7 +2998,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -2923,7 +3013,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "birch_stairs" ) },
+        model { ("minecraft", "birch_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::BirchStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -2935,7 +3025,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -2950,7 +3040,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "jungle_stairs" ) },
+        model { ("minecraft", "jungle_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::JungleStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -2974,7 +3064,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "command_block" ) },
+        model { ("minecraft", "command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
     }
     Beacon {
@@ -2986,7 +3076,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "beacon" ) },
+        model { ("minecraft", "beacon") },
     }
     CobblestoneWall {
         props {
@@ -3008,7 +3098,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "cobblestone_wall" ) },
+        model { ("minecraft", "cobblestone_wall") },
     }
     FlowerPot {
         props {
@@ -3047,7 +3137,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "flower_pot" ) },
+        model { ("minecraft", "flower_pot") },
     }
     Carrots {
         props {
@@ -3061,7 +3151,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "carrots" ) },
+        model { ("minecraft", "carrots") },
         variant format!("age={}", age),
     }
     Potatoes {
@@ -3076,7 +3166,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "potatoes" ) },
+        model { ("minecraft", "potatoes") },
         variant format!("age={}", age),
     }
     WoodenButton {
@@ -3111,7 +3201,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "wooden_button" ) },
+        model { ("minecraft", "wooden_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
     }
     Skull {
@@ -3144,7 +3234,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "skull" ) },
+        model { ("minecraft", "skull") },
         variant format!("facing={},nodrop={}", facing.as_string(), nodrop),
     }
     Anvil {
@@ -3178,7 +3268,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "anvil" ) },
+        model { ("minecraft", "anvil") },
         variant format!("damage={},facing={}", damage, facing.as_string()),
     }
     TrappedChest {
@@ -3206,7 +3296,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "trapped_chest" ) },
+        model { ("minecraft", "trapped_chest") },
         variant format!("facing={}", facing.as_string()),
     }
     LightWeightedPressurePlate {
@@ -3221,7 +3311,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "light_weighted_pressure_plate" ) },
+        model { ("minecraft", "light_weighted_pressure_plate") },
         variant format!("power={}", power),
     }
     HeavyWeightedPressurePlate {
@@ -3236,7 +3326,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "heavy_weighted_pressure_plate" ) },
+        model { ("minecraft", "heavy_weighted_pressure_plate") },
         variant format!("power={}", power),
     }
     ComparatorUnpowered {
@@ -3270,7 +3360,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "unpowered_comparator" ) },
+        model { ("minecraft", "unpowered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
     }
     ComparatorPowered {
@@ -3304,7 +3394,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "powered_comparator" ) },
+        model { ("minecraft", "powered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
     }
     DaylightDetector {
@@ -3319,7 +3409,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "daylight_detector" ) },
+        model { ("minecraft", "daylight_detector") },
         variant format!("power={}", power),
     }
     RedstoneBlock {
@@ -3331,7 +3421,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "redstone_block" ) },
+        model { ("minecraft", "redstone_block") },
     }
     QuartzOre {
         props {},
@@ -3342,7 +3432,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "quartz_ore" ) },
+        model { ("minecraft", "quartz_ore") },
     }
     Hopper {
         props {
@@ -3374,8 +3464,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "hopper" ) },
-        variant format!("enabled={},facing={}", enabled, facing.as_string()),
+        model { ("minecraft", "hopper") },
+        variant format!("facing={}", facing.as_string()),
     }
     QuartzBlock {
         props {
@@ -3418,7 +3508,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -3433,7 +3523,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "quartz_stairs" ) },
+        model { ("minecraft", "quartz_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::QuartzStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -3457,7 +3547,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "activator_rail" ) },
+        model { ("minecraft", "activator_rail") },
         variant format!("powered={},shape={}", powered, shape.as_string()),
     }
     Dropper {
@@ -3492,8 +3582,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "dropper" ) },
-        variant format!("facing={},triggered={}", facing.as_string(), triggered),
+        model { ("minecraft", "dropper") },
+        variant format!("facing={}", facing.as_string()),
     }
     StainedHardenedClay {
         props {
@@ -3606,7 +3696,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -3621,7 +3711,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "acacia_stairs" ) },
+        model { ("minecraft", "acacia_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::AcaciaStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -3633,7 +3723,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -3648,7 +3738,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "dark_oak_stairs" ) },
+        model { ("minecraft", "dark_oak_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::DarkOakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -3661,7 +3751,7 @@ define_blocks! {
             force_shade: false,
             transparent: true,
         },
-        model { ("minecraft", "slime" ) },
+        model { ("minecraft", "slime") },
     }
     Barrier {
         props {},
@@ -3672,15 +3762,15 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "barrier" ) },
+        model { ("minecraft", "barrier") },
     }
     IronTrapDoor {
         props {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             open: bool = [false, true],
@@ -3701,11 +3791,11 @@ define_blocks! {
         material Material {
             renderable: true,
             never_cull: false,
-            should_cull_against: true,
+            should_cull_against: false,
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "iron_trapdoor" ) },
+        model { ("minecraft", "iron_trapdoor") },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
     }
     Prismarine {
@@ -3735,13 +3825,13 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "sea_lantern" ) },
+        model { ("minecraft", "sea_lantern") },
     }
     HayBlock {
         props {
-            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
+            axis: Axis = [Axis::Y, Axis::Z, Axis::X],
         },
-        data if axis == Axis::X { Some(0) } else { None },
+        data if axis == Axis::Y { Some(0) } else { None },
         material Material {
             renderable: true,
             never_cull: false,
@@ -3749,7 +3839,8 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "hay_block" ) },
+        model { ("minecraft", "hay_block") },
+        variant format!("axis={}", axis.as_string()),
     }
     Carpet {
         props {
@@ -3791,7 +3882,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "hardened_clay" ) },
+        model { ("minecraft", "hardened_clay") },
     }
     CoalBlock {
         props {},
@@ -3802,7 +3893,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "coal_block" ) },
+        model { ("minecraft", "coal_block") },
     }
     PackedIce {
         props {},
@@ -3813,28 +3904,25 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "packed_ice" ) },
+        model { ("minecraft", "packed_ice") },
     }
     DoublePlant {
         props {
-            half: DoorHalf = [DoorHalf::Upper, DoorHalf::Lower],
+            half: BlockHalf = [BlockHalf::Lower, BlockHalf::Upper],
             variant: DoublePlantVariant = [
                 DoublePlantVariant::Sunflower,
                 DoublePlantVariant::Lilac,
                 DoublePlantVariant::DoubleTallgrass,
                 DoublePlantVariant::LargeFern,
+                DoublePlantVariant::RoseBush,
                 DoublePlantVariant::Peony
             ],
-            facing: Direction = [
-                Direction::North,
-                Direction::South,
-                Direction::East,
-                Direction::West
-            ],
         },
-        data if facing == Direction::North {
-            Some((if half == DoorHalf::Upper { 0x8 } else { 0x0 }) | variant.data())
-        } else { None },
+        data if half == BlockHalf::Lower || variant == DoublePlantVariant::Sunflower {
+            Some(variant.data() | (if half == BlockHalf::Upper { 0x8 } else { 0x0 }))
+        } else {
+            None
+        },
         material Material {
             renderable: true,
             never_cull: false,
@@ -3842,8 +3930,13 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "double_plant" ) },
-        variant format!("half={},variant={},facing={}", half.as_string(), variant.as_string(), facing.as_string()),
+        model { ("minecraft", variant.as_string()) },
+        variant format!("half={}", half.as_string()),
+        tint TintType::Foliage,
+        update_state (world, x, y, z) => {
+            let (half, variant) = update_double_plant_state(world, x, y, z, half, variant);
+            Block::DoublePlant{half: half, variant: variant}
+        },
     }
     StandingBanner {
         props {
@@ -3874,7 +3967,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "standing_banner" ) },
+        model { ("minecraft", "standing_banner") },
         variant format!("rotation={}", rotation.as_string()),
     }
     WallBanner {
@@ -3900,7 +3993,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "wall_banner" ) },
+        model { ("minecraft", "wall_banner") },
         variant format!("facing={}", facing.as_string()),
     }
     DaylightDetectorInverted {
@@ -3915,7 +4008,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "daylight_detector_inverted" ) },
+        model { ("minecraft", "daylight_detector_inverted") },
         variant format!("power={}", power),
     }
     RedSandstone {
@@ -3934,8 +4027,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "red_sandstone" ) },
-        variant format!("type={}", variant.as_string()),
+        model { ("minecraft", variant.as_string()) },
     }
     RedSandstoneStairs {
         props {
@@ -3945,7 +4037,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -3960,7 +4052,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "red_sandstone_stairs" ) },
+        model { ("minecraft", "red_sandstone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::RedSandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -4018,7 +4110,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "spruce_fence_gate" ) },
+        model { ("minecraft", "spruce_fence_gate") },
         variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
     }
     BirchFenceGate {
@@ -4041,7 +4133,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "birch_fence_gate" ) },
+        model { ("minecraft", "birch_fence_gate") },
         variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
     }
     JungleFenceGate {
@@ -4064,7 +4156,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "jungle_fence_gate" ) },
+        model { ("minecraft", "jungle_fence_gate") },
         variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
     }
     DarkOakFenceGate {
@@ -4087,7 +4179,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "dark_oak_fence_gate" ) },
+        model { ("minecraft", "dark_oak_fence_gate") },
         variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
     }
     AcaciaFenceGate {
@@ -4110,7 +4202,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "acacia_fence_gate" ) },
+        model { ("minecraft", "acacia_fence_gate") },
         variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
     }
     SpruceFence {
@@ -4128,7 +4220,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "spruce_fence" ) },
+        model { ("minecraft", "spruce_fence") },
     }
     BirchFence {
         props {
@@ -4145,7 +4237,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "birch_fence" ) },
+        model { ("minecraft", "birch_fence") },
     }
     JungleFence {
         props {
@@ -4162,7 +4254,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "jungle_fence" ) },
+        model { ("minecraft", "jungle_fence") },
     }
     DarkOakFence {
         props {
@@ -4179,7 +4271,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "dark_oak_fence" ) },
+        model { ("minecraft", "dark_oak_fence") },
     }
     AcaciaFence {
         props {
@@ -4196,7 +4288,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "acacia_fence" ) },
+        model { ("minecraft", "acacia_fence") },
     }
     SpruceDoor {
         props {
@@ -4219,7 +4311,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "spruce_door" ) },
+        model { ("minecraft", "spruce_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
             let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
@@ -4247,7 +4339,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "birch_door" ) },
+        model { ("minecraft", "birch_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
             let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
@@ -4275,7 +4367,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "jungle_door" ) },
+        model { ("minecraft", "jungle_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
             let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
@@ -4303,7 +4395,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "acacia_door" ) },
+        model { ("minecraft", "acacia_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
             let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
@@ -4331,7 +4423,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "dark_oak_door" ) },
+        model { ("minecraft", "dark_oak_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
             let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
@@ -4367,7 +4459,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "end_rod" ) },
+        model { ("minecraft", "end_rod") },
         variant format!("facing={}", facing.as_string()),
     }
     ChorusPlant {
@@ -4387,7 +4479,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "chorus_plant" ) },
+        model { ("minecraft", "chorus_plant") },
     }
     ChorusFlower {
         props {
@@ -4401,7 +4493,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "chorus_flower" ) },
+        model { ("minecraft", "chorus_flower") },
         variant format!("age={}", age),
     }
     PurpurBlock {
@@ -4413,7 +4505,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "purpur_block" ) },
+        model { ("minecraft", "purpur_block") },
     }
     PurpurPillar {
         props {
@@ -4427,7 +4519,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "purpur_pillar" ) },
+        model { ("minecraft", "purpur_pillar") },
         variant format!("axis={}", axis.as_string()),
     }
     PurpurStairs {
@@ -4438,7 +4530,7 @@ define_blocks! {
                 Direction::East,
                 Direction::West
             ],
-            half: StairHalf = [StairHalf::Top, StairHalf::Bottom],
+            half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
                 StairShape::InnerLeft, StairShape::InnerRight,
@@ -4453,7 +4545,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "purpur_stairs" ) },
+        model { ("minecraft", "purpur_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::PurpurStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
@@ -4490,7 +4582,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
-        variant format!("half={}", half.as_string()),
+        variant format!("half={},variant=default", half.as_string()),
     }
     EndBricks {
         props {},
@@ -4501,7 +4593,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "end_bricks" ) },
+        model { ("minecraft", "end_bricks") },
     }
     Beetroots {
         props {
@@ -4515,7 +4607,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "beetroots" ) },
+        model { ("minecraft", "beetroots") },
         variant format!("age={}", age),
     }
     GrassPath {
@@ -4527,7 +4619,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "grass_path" ) },
+        model { ("minecraft", "grass_path") },
     }
     EndGateway {
         props {},
@@ -4538,7 +4630,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "end_gateway" ) },
+        model { ("minecraft", "end_gateway") },
     }
     RepeatingCommandBlock {
         props {
@@ -4560,7 +4652,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "repeating_command_block" ) },
+        model { ("minecraft", "repeating_command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
     }
     ChainCommandBlock {
@@ -4583,7 +4675,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "chain_command_block" ) },
+        model { ("minecraft", "chain_command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
     }
     FrostedIce {
@@ -4595,7 +4687,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "frosted_ice" ) },
+        model { ("minecraft", "frosted_ice") },
     }
     Missing {
         props {},
@@ -4607,7 +4699,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("steven", "missing_block" ) },
+        model { ("steven", "missing_block") },
     }
 }
 
@@ -4656,14 +4748,13 @@ fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered
     }
 }
 
-
-
 fn update_door_state(world: &super::World, x: i32, y: i32, z: i32, ohalf: DoorHalf, ofacing: Direction, ohinge: Side, oopen: bool, opowered: bool) -> (Direction, Side, bool, bool) {
     let oy = if ohalf == DoorHalf::Upper {
         -1
     } else {
         1
     };
+
     match world.get_block(x, y + oy, z) {
         Block::WoodenDoor{half, facing, hinge, open, powered} |
         Block::SpruceDoor{half, facing, hinge, open, powered} |
@@ -4682,7 +4773,19 @@ fn update_door_state(world: &super::World, x: i32, y: i32, z: i32, ohalf: DoorHa
         },
         _ => {},
     }
+
     (ofacing, ohinge, oopen, opowered)
+}
+
+fn update_double_plant_state(world: &super::World, x: i32, y: i32, z: i32, ohalf: BlockHalf, ovariant: DoublePlantVariant) -> (BlockHalf, DoublePlantVariant) {
+    if ohalf != BlockHalf::Upper {
+        return (ohalf, ovariant);
+    }
+
+    match world.get_block(x, y - 1, z) {
+        Block::DoublePlant{half, variant} => (ohalf, variant),
+        _ => (ohalf, ovariant),
+    }
 }
 
 fn command_block_data(conditional: bool, facing: Direction) -> Option<usize> {
@@ -4717,7 +4820,7 @@ impl Display for StoneVariant {
 }
 
 impl StoneVariant {
-    fn as_string(&self) -> &'static str {
+    pub fn as_string(&self) -> &'static str {
         match *self {
             StoneVariant::Normal => "stone",
             StoneVariant::Granite => "granite",
@@ -4737,6 +4840,31 @@ impl StoneVariant {
             StoneVariant::SmoothDiorite => 4,
             StoneVariant::Andesite => 5,
             StoneVariant::SmoothAndesite => 6,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum DirtVariant {
+    Normal,
+    Coarse,
+    Podzol,
+}
+
+impl DirtVariant {
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            DirtVariant::Normal => "dirt",
+            DirtVariant::Coarse => "coarse_dirt",
+            DirtVariant::Podzol => "podzol",
+        }
+    }
+
+    fn data(&self) -> usize {
+        match *self {
+            DirtVariant::Normal => 0,
+            DirtVariant::Coarse => 1,
+            DirtVariant::Podzol => 2,
         }
     }
 }
@@ -5333,6 +5461,8 @@ impl WoodSlabVariant {
 pub enum BlockHalf {
     Top,
     Bottom,
+    Upper,
+    Lower,
 }
 
 impl BlockHalf {
@@ -5340,6 +5470,8 @@ impl BlockHalf {
         match *self {
             BlockHalf::Top => "top",
             BlockHalf::Bottom => "bottom",
+            BlockHalf::Upper => "upper",
+            BlockHalf::Lower => "lower",
         }
     }
 }
@@ -5459,21 +5591,6 @@ impl Axis {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum StairHalf {
-    Top,
-    Bottom,
-}
-
-impl StairHalf {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
-            StairHalf::Top => "top",
-            StairHalf::Bottom => "bottom",
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum StairShape {
     Straight,
     InnerLeft,
@@ -5494,7 +5611,7 @@ impl StairShape {
     }
 }
 
-fn get_stair_info(world: &super::World, x: i32, y: i32, z: i32) -> Option<(Direction, StairHalf)> {
+fn get_stair_info(world: &super::World, x: i32, y: i32, z: i32) -> Option<(Direction, BlockHalf)> {
     use self::Block::*;
     match world.get_block(x, y, z) {
         OakStairs{facing, half, ..} |
@@ -5541,7 +5658,7 @@ fn update_stair_shape(world: &super::World, x: i32, y: i32, z: i32, facing: Dire
     StairShape::Straight
 }
 
-fn stair_data(facing: Direction, half: StairHalf, shape: StairShape) -> Option<usize> {
+fn stair_data(facing: Direction, half: BlockHalf, shape: StairShape) -> Option<usize> {
     if shape != StairShape::Straight {
         return None;
     }
@@ -5554,7 +5671,7 @@ fn stair_data(facing: Direction, half: StairHalf, shape: StairShape) -> Option<u
         _ => unreachable!(),
     };
 
-    Some(data | (if half == StairHalf::Top { 0x4 } else { 0x0 }))
+    Some(data | (if half == BlockHalf::Top { 0x4 } else { 0x0 }))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
