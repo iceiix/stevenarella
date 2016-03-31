@@ -5,7 +5,7 @@ Don't expect it to go anywhere, just doing this for fun.
 
 ## Images
 
-![Steven blocks demo](https://i.imgur.com/U46LTZN.png)
+![Steven blocks demo](https://i.imgur.com/FYs4HCJ.png)
 
 In action: http://gfycat.com/NeedyElaborateGypsymoth
 
