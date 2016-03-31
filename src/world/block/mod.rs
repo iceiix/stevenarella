@@ -3745,7 +3745,7 @@ define_blocks! {
                   | (if check_decay { 0x8 } else { 0x0 })),
         material Material {
             renderable: true,
-            never_cull: false,
+            never_cull: true,
             should_cull_against: false,
             force_shade: true,
             transparent: false,
