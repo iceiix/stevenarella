@@ -7,7 +7,6 @@
 // TODO: DoublePlants don't face the right direction?
 // TODO: Pumpkin and Melon stem tint
 // TODO: Tripwire
-// TODO: Portal Axis
 
 use std::fmt::{Display, Formatter, Error};
 use collision::{Aabb, Aabb3};
@@ -2029,7 +2028,7 @@ define_blocks! {
         props {
             axis: Axis = [Axis::X, Axis::Z],
         },
-        data if axis == Axis::X { Some(0) } else { None },
+        data Some(axis.data()),
         material Material {
             renderable: true,
             never_cull: false,
@@ -2039,16 +2038,6 @@ define_blocks! {
         },
         model { ("minecraft", "portal") },
         variant format!("axis={}", axis.as_string()),
-        update_state (world, x, y, z) => {
-            let axis = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
-                              world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
-                (Block::Portal{ .. }, _, _, _) | (_, Block::Portal{ .. }, _, _) => Axis::X,
-                (_, _, Block::Portal{ .. }, _) | (_, _, _, Block::Portal{ .. }) => Axis::Z,
-                _ => Axis::X,
-            };
-
-            Block::Portal{axis: axis}
-        },
     }
     PumpkinLit {
         props {
@@ -3924,9 +3913,14 @@ define_blocks! {
     }
     HayBlock {
         props {
-            axis: Axis = [Axis::Y, Axis::Z, Axis::X],
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
         },
-        data if axis == Axis::Y { Some(0) } else { None },
+        data Some(match axis {
+            Axis::X => 0x4,
+            Axis::Y => 0x0,
+            Axis::Z => 0x8,
+            _ => 0x0,
+        }),
         material Material {
             renderable: true,
             never_cull: false,
@@ -4684,7 +4678,12 @@ define_blocks! {
         props {
             axis: Axis = [Axis::X, Axis::Y, Axis::Z],
         },
-        data if axis == Axis::X { Some(0) } else { None },
+        data Some(match axis {
+            Axis::X => 0x4,
+            Axis::Y => 0x0,
+            Axis::Z => 0x8,
+            _ => 0x0,
+        }),
         material Material {
             renderable: true,
             never_cull: false,
