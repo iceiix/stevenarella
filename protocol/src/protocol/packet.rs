@@ -533,7 +533,7 @@ state_packets!(
                 // The starting gamemode of the client
                 gamemode: u8 =,
                 // The dimension the client is starting in
-                dimension: i8 =,
+                dimension: i32 =,
                 // The difficuilty setting for the server
                 difficulty: u8 =,
                 // The max number of players on the server
