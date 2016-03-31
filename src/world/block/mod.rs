@@ -4013,11 +4013,7 @@ define_blocks! {
                 DoublePlantVariant::Peony
             ],
         },
-        data if half == BlockHalf::Lower || variant == DoublePlantVariant::Sunflower {
-            Some(variant.data() | (if half == BlockHalf::Upper { 0x8 } else { 0x0 }))
-        } else {
-            None
-        },
+        data Some(variant.data() | (if half == BlockHalf::Upper { 0x8 } else { 0x0 })),
         material Material {
             renderable: true,
             never_cull: false,
