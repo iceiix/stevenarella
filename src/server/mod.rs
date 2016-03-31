@@ -286,6 +286,8 @@ impl Server {
                             KeepAliveClientbound => on_keep_alive,
                             ChunkData => on_chunk_data,
                             ChunkUnload => on_chunk_unload,
+                            BlockChange => on_block_change,
+                            MultiBlockChange => on_multi_block_change,
                             TeleportPlayer => on_teleport,
                             TimeUpdate => on_time_update,
                             ChangeGameState => on_game_state_change,
@@ -484,6 +486,28 @@ impl Server {
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
         self.world.unload_chunk(chunk_unload.x, chunk_unload.z);
+    }
+
+    fn on_block_change(&mut self, block_change: packet::play::clientbound::BlockChange) {
+        self.world.set_block(
+            block_change.location.get_x(),
+            block_change.location.get_y(),
+            block_change.location.get_z(),
+            block::Block::by_vanilla_id(block_change.block_id.0 as usize)
+        );
+    }
+
+    fn on_multi_block_change(&mut self, block_change: packet::play::clientbound::MultiBlockChange) {
+        let ox = block_change.chunk_x << 4;
+        let oz = block_change.chunk_z << 4;
+        for record in block_change.records.data {
+            self.world.set_block(
+                ox + (record.xz >> 4) as i32,
+                record.y as i32,
+                oz + (record.xz & 0xF) as i32,
+                block::Block::by_vanilla_id(record.block_id.0 as usize)
+            );
+        }
     }
 }
 

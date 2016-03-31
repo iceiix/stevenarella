@@ -25,20 +25,20 @@ pub struct Position(u64);
 
 impl Position {
     #[allow(dead_code)]
-    fn new(x: i32, y: i32, z: i32) -> Position {
+    pub fn new(x: i32, y: i32, z: i32) -> Position {
         Position((((x as u64) & 0x3FFFFFF) << 38) | (((y as u64) & 0xFFF) << 26) |
                  ((z as u64) & 0x3FFFFFF))
     }
 
-    fn get_x(&self) -> i32 {
+    pub fn get_x(&self) -> i32 {
         ((self.0 as i64) >> 38) as i32
     }
 
-    fn get_y(&self) -> i32 {
+    pub fn get_y(&self) -> i32 {
         (((self.0 as i64) >> 26) & 0xFFF) as i32
     }
 
-    fn get_z(&self) -> i32 {
+    pub fn get_z(&self) -> i32 {
         ((self.0 as i64) << 38 >> 38) as i32
     }
 }

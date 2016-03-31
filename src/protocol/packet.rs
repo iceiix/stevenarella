@@ -385,7 +385,7 @@ state_packets!(
             // MultiBlockChange is used to update a batch of blocks in a single packet.
             MultiBlockChange {
                 chunk_x: i32 =,
-                chunk_y: i32 =,
+                chunk_z: i32 =,
                 records: LenPrefixed<VarInt, packet::BlockChangeRecord> =,
             }
             // ConfirmTransaction notifies the client whether a transaction was successful
