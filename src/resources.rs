@@ -23,7 +23,7 @@ use std::io;
 use std::fs;
 use std::sync::mpsc;
 
-const RESOURCES_VERSION: &'static str = "1.9";
+const RESOURCES_VERSION: &'static str = "1.9.2";
 
 pub trait Pack: Sync + Send {
     fn open(&self, name: &str) -> Option<Box<io::Read>>;
