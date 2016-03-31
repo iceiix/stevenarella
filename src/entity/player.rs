@@ -484,68 +484,68 @@ impl ecs::System for MovementHandler {
                 position.position.x += forward * yaw.cos() * delta * speed;
                 position.position.z -= forward * yaw.sin() * delta * speed;
                 position.position.y += velocity.velocity.y * delta;
-            }
 
-            if !gamemode.noclip() {
-                let mut target = position.position;
-                position.position.y = position.last_position.y;
-                position.position.z = position.last_position.z;
+                if !gamemode.noclip() {
+                    let mut target = position.position;
+                    position.position.y = position.last_position.y;
+                    position.position.z = position.last_position.z;
 
-                // We handle each axis separately to allow for a sliding
-                // effect when pushing up against walls.
+                    // We handle each axis separately to allow for a sliding
+                    // effect when pushing up against walls.
 
-                let (bounds, xhit) = check_collisions(world, position, player_bounds);
-                position.position.x = bounds.min.x + 0.3;
-                position.last_position.x = position.position.x;
+                    let (bounds, xhit) = check_collisions(world, position, player_bounds);
+                    position.position.x = bounds.min.x + 0.3;
+                    position.last_position.x = position.position.x;
 
-                position.position.z = target.z;
-                let (bounds, zhit) = check_collisions(world, position, player_bounds);
-                position.position.z = bounds.min.z + 0.3;
-                position.last_position.z = position.position.z;
-
-                // Half block jumps
-                // Minecraft lets you 'jump' up 0.5 blocks
-                // for slabs and stairs (or smaller blocks).
-                // Currently we implement this as a teleport to the
-                // top of the block if we could move there
-                // but this isn't smooth.
-                if (xhit || zhit) && gravity.as_ref().map_or(false, |v| v.on_ground) {
-                    let mut ox = position.position.x;
-                    let mut oz = position.position.z;
-                    position.position.x = target.x;
                     position.position.z = target.z;
-                    for offset in 1 .. 9 {
-                        let mini = player_bounds.add_v(cgmath::Vector3::new(0.0, offset as f64 / 16.0, 0.0));
-                        let (_, hit) = check_collisions(world, position, mini);
-                        if !hit {
-                            target.y += offset as f64 / 16.0;
-                            ox = target.x;
-                            oz = target.z;
-                            break;
+                    let (bounds, zhit) = check_collisions(world, position, player_bounds);
+                    position.position.z = bounds.min.z + 0.3;
+                    position.last_position.z = position.position.z;
+
+                    // Half block jumps
+                    // Minecraft lets you 'jump' up 0.5 blocks
+                    // for slabs and stairs (or smaller blocks).
+                    // Currently we implement this as a teleport to the
+                    // top of the block if we could move there
+                    // but this isn't smooth.
+                    if (xhit || zhit) && gravity.as_ref().map_or(false, |v| v.on_ground) {
+                        let mut ox = position.position.x;
+                        let mut oz = position.position.z;
+                        position.position.x = target.x;
+                        position.position.z = target.z;
+                        for offset in 1 .. 9 {
+                            let mini = player_bounds.add_v(cgmath::Vector3::new(0.0, offset as f64 / 16.0, 0.0));
+                            let (_, hit) = check_collisions(world, position, mini);
+                            if !hit {
+                                target.y += offset as f64 / 16.0;
+                                ox = target.x;
+                                oz = target.z;
+                                break;
+                            }
                         }
+                        position.position.x = ox;
+                        position.position.z = oz;
                     }
-                    position.position.x = ox;
-                    position.position.z = oz;
-                }
 
-                position.position.y = target.y;
-                let (bounds, yhit) = check_collisions(world, position, player_bounds);
-                position.position.y = bounds.min.y;
-                position.last_position.y = position.position.y;
-                if yhit {
-                    velocity.velocity.y = 0.0;
-                }
+                    position.position.y = target.y;
+                    let (bounds, yhit) = check_collisions(world, position, player_bounds);
+                    position.position.y = bounds.min.y;
+                    position.last_position.y = position.position.y;
+                    if yhit {
+                        velocity.velocity.y = 0.0;
+                    }
 
-                if let Some(gravity) = gravity {
-                    let ground = Aabb3::new(
-                        Point3::new(-0.3, -0.05, -0.3),
-                        Point3::new(0.3, 0.0, 0.3)
-                    );
-                    let prev = gravity.on_ground;
-                    let (_, hit) = check_collisions(world, position, ground);
-                    gravity.on_ground = hit;
-                    if !prev && gravity.on_ground {
-                        movement.did_touch_ground = true;
+                    if let Some(gravity) = gravity {
+                        let ground = Aabb3::new(
+                            Point3::new(-0.3, -0.05, -0.3),
+                            Point3::new(0.3, 0.0, 0.3)
+                        );
+                        let prev = gravity.on_ground;
+                        let (_, hit) = check_collisions(world, position, ground);
+                        gravity.on_ground = hit;
+                        if !prev && gravity.on_ground {
+                            movement.did_touch_ground = true;
+                        }
                     }
                 }
             }
