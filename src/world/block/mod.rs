@@ -51,6 +51,7 @@ macro_rules! define_blocks {
                 $(tint $tint:expr,)*
                 $(collision $collision:expr,)*
                 $(update_state ($world:ident, $x:ident, $y:ident, $z:ident) => $update_state:expr,)*
+                $(multipart ($mkey:ident, $mval:ident) => $multipart:expr,)*
             }
         )+
     ) => (
@@ -242,6 +243,24 @@ macro_rules! define_blocks {
                     )+
                 }
             }
+
+            #[allow(unused_variables, unreachable_code)]
+            pub fn match_multipart(&self, key: &str, val: &str) -> bool{
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            $(
+                                let $mkey = key;
+                                let $mval = val;
+                                return $multipart;
+                            )*
+                            false
+                        }
+                    )+
+                }
+            }
         }
 
         lazy_static! {
@@ -343,7 +362,7 @@ define_blocks! {
                 snowy: match world.get_block(x, y + 1, z) {
                     Block::Snow { .. } | Block::SnowLayer { .. } => true,
                     _ => false,
-                } 
+                }
             }
         },
     }
@@ -366,7 +385,7 @@ define_blocks! {
         },
         model { ("minecraft", variant.as_string()) },
         variant {
-            if variant == DirtVariant::Podzol { 
+            if variant == DirtVariant::Podzol {
                 format!("snowy={}", snowy)
             } else {
                 "normal".to_owned()
@@ -377,7 +396,7 @@ define_blocks! {
                 snowy: match world.get_block(x, y + 1, z) {
                     Block::Snow{ .. } | Block::SnowLayer { .. } => true,
                     _ => false,
-                }, 
+                },
                 variant: variant
             }
         } else {
@@ -939,7 +958,7 @@ define_blocks! {
                 Direction::East => 0x5,
                 _ => unreachable!(),
             } | if variant == PistonType::Sticky { 0x8 } else { 0x0 }
-        )} else { 
+        )} else {
             None
         },
         material Material {
@@ -1928,6 +1947,19 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "fence") },
+        update_state (world, x, y, z) => Block::Fence {
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     Pumpkin {
         props {
@@ -2008,7 +2040,7 @@ define_blocks! {
         model { ("minecraft", "portal") },
         variant format!("axis={}", axis.as_string()),
         update_state (world, x, y, z) => {
-            let axis = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z), 
+            let axis = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
                               world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
                 (Block::Portal{ .. }, _, _, _) | (_, Block::Portal{ .. }, _, _) => Axis::X,
                 (_, _, Block::Portal{ .. }, _) | (_, _, _, Block::Portal{ .. }) => Axis::Z,
@@ -2311,9 +2343,28 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "iron_bars") },
+        update_state (world, x, y, z) => Block::IronBars {
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     GlassPane {
-        props {},
+        props {
+            north: bool = [false, true],
+            south: bool = [false, true],
+            east: bool = [false, true],
+            west: bool = [false, true],
+        },
+        data if !north && !south && !east && !west { Some(0) } else { None },
         material Material {
             renderable: true,
             never_cull: false,
@@ -2322,6 +2373,19 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "glass_pane") },
+        update_state (world, x, y, z) => Block::GlassPane {
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     MelonBlock {
         props {},
@@ -2363,8 +2427,8 @@ define_blocks! {
         },
         tint TintType::Foliage,
         update_state (world, x, y, z) => {
-            let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z), 
-                                world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) { 
+            let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
+                                world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
                 (Block::Pumpkin{ .. }, _, _, _) => Direction::East,
                 (_, Block::Pumpkin{ .. }, _, _) => Direction::West,
                 (_, _, Block::Pumpkin{ .. }, _) => Direction::North,
@@ -2404,8 +2468,8 @@ define_blocks! {
         },
         tint TintType::Foliage,
         update_state (world, x, y, z) => {
-            let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z), 
-                                world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) { 
+            let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
+                                world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
                 (Block::MelonBlock{ .. }, _, _, _) => Direction::East,
                 (_, Block::MelonBlock{ .. }, _, _) => Direction::West,
                 (_, _, Block::MelonBlock{ .. }, _) => Direction::North,
@@ -2574,6 +2638,19 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "nether_brick_fence") },
+        update_state (world, x, y, z) => Block::NetherBrickFence {
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     NetherBrickStairs {
         props {
@@ -3636,8 +3713,12 @@ define_blocks! {
                 ColoredVariant::Red,
                 ColoredVariant::Black
             ],
+            north: bool = [false, true],
+            south: bool = [false, true],
+            east: bool = [false, true],
+            west: bool = [false, true],
         },
-        data Some(color.data()),
+        data if !north && !south && !east && !west { Some(color.data()) } else { None },
         material Material {
             renderable: true,
             never_cull: false,
@@ -3646,6 +3727,20 @@ define_blocks! {
             transparent: true,
         },
         model { ("minecraft", format!("{}_stained_glass_pane", color.as_string()) ) },
+        update_state (world, x, y, z) => Block::StainedGlassPane {
+            color: color,
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     Leaves2 {
         props {
@@ -4221,6 +4316,19 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "spruce_fence") },
+        update_state (world, x, y, z) => Block::SpruceFence {
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     BirchFence {
         props {
@@ -4238,6 +4346,19 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "birch_fence") },
+        update_state (world, x, y, z) => Block::BirchFence {
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     JungleFence {
         props {
@@ -4255,6 +4376,19 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "jungle_fence") },
+        update_state (world, x, y, z) => Block::JungleFence {
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     DarkOakFence {
         props {
@@ -4272,6 +4406,19 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "dark_oak_fence") },
+        update_state (world, x, y, z) => Block::DarkOakFence {
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     AcaciaFence {
         props {
@@ -4289,6 +4436,19 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "acacia_fence") },
+        update_state (world, x, y, z) => Block::AcaciaFence {
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     SpruceDoor {
         props {
@@ -4480,6 +4640,23 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "chorus_plant") },
+        update_state (world, x, y, z) => Block::ChorusPlant {
+            north: match world.get_block(x, y, z - 1) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            south: match world.get_block(x, y, z + 1) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            west: match world.get_block(x - 1, y, z) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            east: match world.get_block(x + 1, y, z) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            up: match world.get_block(x, y + 1, z) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            down: match world.get_block(x, y - 1, z) { Block::ChorusPlant{..} | Block::ChorusFlower{..} | Block::EndStone{..} => true, _ => false,},
+        },
+        multipart (key, val) => match key {
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            "up" => up == (val == "true"),
+            "down" => down == (val == "true"),
+            _ => false,
+        },
     }
     ChorusFlower {
         props {
@@ -4703,6 +4880,11 @@ define_blocks! {
     }
 }
 
+fn can_connect(world: &super::World, x: i32, y: i32, z: i32, dir: Direction) -> bool {
+    let (ox, oy, oz) = dir.get_offset();
+    world.get_block(x + ox, y + oy, z + oz).get_material().renderable
+}
+
 fn fence_gate_data(facing: Direction, in_wall: bool, open: bool, powered: bool) -> Option<usize> {
     if in_wall || powered {
         return None;
@@ -4783,7 +4965,7 @@ fn update_double_plant_state(world: &super::World, x: i32, y: i32, z: i32, ohalf
     }
 
     match world.get_block(x, y - 1, z) {
-        Block::DoublePlant{half, variant} => (ohalf, variant),
+        Block::DoublePlant{variant, ..} => (ohalf, variant),
         _ => (ohalf, ovariant),
     }
 }

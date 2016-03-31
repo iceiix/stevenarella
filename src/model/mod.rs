@@ -3,12 +3,13 @@ pub mod liquid;
 
 use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
+use std::cell::RefCell;
 use std::io::Write;
 use byteorder::{WriteBytesExt, NativeEndian};
 use resources;
 use render;
 use world;
-use world::block::TintType;
+use world::block::{Block, TintType};
 use types::Direction;
 use serde_json;
 
@@ -52,6 +53,10 @@ macro_rules! try_log {
     );
 }
 
+thread_local!(
+    static MULTIPART_CACHE: RefCell<HashMap<(Key, Block), Model, BuildHasherDefault<FNVHash>>> = RefCell::new(HashMap::with_hasher(BuildHasherDefault::default()))
+);
+
 impl Factory {
     pub fn new(resources: Arc<RwLock<resources::Manager>>, textures: Arc<RwLock<render::TextureManager>>) -> Factory {
         Factory {
@@ -80,35 +85,97 @@ impl Factory {
         self.foliage_colors = Factory::load_biome_colors(self.resources.clone(), "foliage");
     }
 
-    pub fn get_state_model<R: Rng, W: Write>(models: &Arc<RwLock<Factory>>, plugin: &str, name: &str, variant: &str, rng: &mut R,
+    fn get_model<R: Rng, W: Write>(&self, key: Key, block: Block, rng: &mut R, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> Result<usize, bool> {
+        use std::collections::hash_map::Entry;
+        if let Some(model) = self.models.get(&key) {
+            if model.multipart.is_empty() {
+                let variant = block.get_model_variant();
+                if let Some(var) = model.get_variants(&variant) {
+                    let model = var.choose_model(rng);
+                    return Ok(model.render(self, snapshot, x, y, z, buf));
+                }
+            } else {
+                return MULTIPART_CACHE.with(|cache| {
+                    let mut cache = cache.borrow_mut();
+                    let entry = cache.entry((key.clone(), block));
+                    match entry {
+                        Entry::Occupied(e) => {
+                            return Ok(e.get().render(self, snapshot, x, y, z, buf));
+                        },
+                        Entry::Vacant(e) => {
+                            let mut res: Option<Model> = None;
+                            for rule in &model.multipart {
+                                let ok = Self::eval_rules(block, &rule.rules);
+                                if ok {
+                                    if res.is_some() {
+                                        res.as_mut().unwrap().join(&rule.apply.choose_model(rng));
+                                    } else {
+                                        res = Some(rule.apply.choose_model(rng).clone());
+                                    }
+                                }
+                            }
+                            if let Some(mdl) = res {
+                                return Ok(e.insert(mdl).render(self, snapshot, x, y, z, buf));
+                            }
+                        },
+                    };
+                    return Err(true);
+                });
+            }
+            return Err(true);
+        }
+        Err(false)
+    }
+
+    fn eval_rules(block: Block, rules: &[Rule]) -> bool {
+        for mrule in rules {
+            match *mrule {
+                Rule::Or(ref sub_rules) => {
+                    let mut ok = false;
+                    for srule in sub_rules {
+                        if Self::eval_rules(block, srule) {
+                            ok = true;
+                            break;
+                        }
+                    }
+                    if !ok {
+                        return false;
+                    }
+                },
+                Rule::Match(ref key, ref val) => {
+                    if !block.match_multipart(&key, &val) {
+                        return false;
+                    }
+                }
+            }
+        }
+        true
+    }
+
+    pub fn get_state_model<R: Rng, W: Write>(models: &Arc<RwLock<Factory>>, block: Block, rng: &mut R,
             snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
+        let (plugin, name) = block.get_model();
         let key = Key(plugin.to_owned(), name.to_owned());
-        let mut missing_variant = false;
+        let mut missing_variant;
         {
             let m = models.read().unwrap();
-            if let Some(model) = m.models.get(&key) {
-                if let Some(var) = model.get_variants(variant) {
-                    let model = var.choose_model(rng);
-                    return model.render(&*m, snapshot, x, y, z, buf);
-                }
-                missing_variant = true;
-            }
+            match m.get_model(key.clone(), block, rng, snapshot, x, y, z, buf) {
+                Ok(val) => return val,
+                Err(val) => missing_variant = val,
+            };
         }
         if !missing_variant {
             // Whole model not loaded, try and load
             let mut m = models.write().unwrap();
-            if !m.models.contains_key(&key) && !m.load_model(plugin, name) {
+            if !m.models.contains_key(&key) && !m.load_model(&plugin, &name) {
                 error!("Error loading model {}:{}", plugin, name);
             }
-            if let Some(model) = m.models.get(&key) {
-                if let Some(var) = model.get_variants(variant) {
-                    let model = var.choose_model(rng);
-                    return model.render(&*m, snapshot, x, y, z, buf);
-                }
-                missing_variant = true;
-            }
+            match m.get_model(key.clone(), block, rng, snapshot, x, y, z, buf) {
+                Ok(val) => return val,
+                Err(val) => missing_variant = val,
+            };
         }
-        let ret = Factory::get_state_model(models, "steven", "missing_block", "normal", rng, snapshot, x, y, z, buf);
+        let ret = Factory::get_state_model(models, Block::Missing{}, rng, snapshot, x, y, z, buf);
         if !missing_variant {
             // Still no model, replace with placeholder
             let mut m = models.write().unwrap();
@@ -130,6 +197,7 @@ impl Factory {
 
         let mut model = StateModel {
             variants: HashMap::with_hasher(BuildHasherDefault::default()),
+            multipart: vec![],
         };
 
         if let Some(variants) = mdl.find("variants").and_then(|v| v.as_object()) {
@@ -141,12 +209,46 @@ impl Factory {
                 model.variants.insert(k.clone(), vars);
             }
         }
-        if let Some(_multipart) = mdl.find("multipart").and_then(|v| v.as_array()) {
-            warn!("Found unhandled multipart for {}:{}", plugin, name);
+        if let Some(multipart) = mdl.find("multipart").and_then(|v| v.as_array()) {
+            for rule in multipart {
+                let apply = self.parse_model_list(plugin, rule.find("apply").unwrap());
+                let mut rules = vec![];
+                if let Some(when) = rule.find("when").and_then(|v| v.as_object()) {
+                    Self::parse_rules(when, &mut rules);
+                }
+                model.multipart.push(MultipartRule {
+                    apply: apply,
+                    rules: rules,
+                })
+            }
         }
 
         self.models.insert(Key(plugin.to_owned(), name.to_owned()), model);
         true
+    }
+
+    fn parse_rules(when: &::std::collections::BTreeMap<String, serde_json::Value>, rules: &mut Vec<Rule>) {
+        for (name, val) in when {
+            if name == "OR" {
+                let mut or_rules = vec![];
+                for sub in val.as_array().unwrap() {
+                    let mut sub_rules = vec![];
+                    Self::parse_rules(sub.as_object().unwrap(), &mut sub_rules);
+                    or_rules.push(sub_rules);
+                }
+                rules.push(Rule::Or(or_rules));
+            } else {
+                let v = match *val {
+                    serde_json::Value::Bool(v) => v.to_string(),
+                    serde_json::Value::I64(v) => v.to_string(),
+                    serde_json::Value::U64(v) => v.to_string(),
+                    serde_json::Value::F64(v) => v.to_string(),
+                    serde_json::Value::String(ref v) => v.to_owned(),
+                    _ => unreachable!(),
+                };
+                rules.push(Rule::Match(name.to_owned(), v));
+            }
+        }
     }
 
     fn parse_model_list(&self, plugin: &str, v: &serde_json::Value) -> Variants {
@@ -638,12 +740,25 @@ fn rotate_direction(val: Direction, offset: i32, rots: &[Direction], invalid: &[
 #[derive(Clone)]
 pub struct StateModel {
     variants: HashMap<String, Variants, BuildHasherDefault<FNVHash>>,
+    multipart: Vec<MultipartRule>,
 }
 
 impl StateModel {
     pub fn get_variants(&self, name: &str) -> Option<&Variants> {
         self.variants.get(name)
     }
+}
+
+#[derive(Clone)]
+struct MultipartRule {
+    apply: Variants,
+    rules: Vec<Rule>,
+}
+
+#[derive(Clone)]
+enum Rule {
+    Match(String, String),
+    Or(Vec<Vec<Rule>>),
 }
 
 #[derive(Clone)]
@@ -745,6 +860,10 @@ struct Face {
 }
 
 impl Model {
+    fn join(&mut self, other: &Model) {
+        self.faces.extend_from_slice(&other.faces);
+    }
+
     fn render<W: Write>(&self, factory: &Factory, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
         let this = snapshot.get_block(x, y, z);
         let this_mat = this.get_material();
