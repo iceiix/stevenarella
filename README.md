@@ -17,6 +17,7 @@ I generally am on the `irc.spi.gt` irc network in the `#think` channel.
 Feel free to pop in to say hi, [Webchat can be found here](https://irc.spi.gt/iris/?channels=think)
 
 ## Building
+For more detailed info and platform specific instructions check the [wiki](https://github.com/Thinkofname/steven-rust/wiki/Compiling-and-or-running]).
 
 Currently requires SDL2 and OpenSSL to build.
 
