@@ -16,8 +16,7 @@ pub mod block;
 
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
-use types::bit;
-use types::nibble;
+use types::{bit, nibble, Direction};
 use types::hash::FNVHash;
 use protocol;
 use render;
@@ -83,6 +82,11 @@ impl World {
                 }
             }
         }
+    }
+
+    pub fn get_block_offset(&self, x: i32, y: i32, z: i32, dir: Direction) -> block::Block {
+        let (ox, oy, oz) = dir.get_offset();
+        self.get_block(x + ox, y + oy, z + oz)
     }
 
     pub fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {

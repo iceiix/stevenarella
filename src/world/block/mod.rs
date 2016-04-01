@@ -14,23 +14,15 @@
 // Barrier
 // EndGateway
 // TODO: Blocks
-// RedstoneWire (Directions/Tint)
 // RedstoneRepeater (Locked State Update)
-// Pumpkin_Stem (Tint)
-// Melon_Stem (Tint)
-// Tripwirue (State Update)
+// Tripwire (State Update)
 // TripwireHook (Rendering issue)
-// Fences (Wooden -> Wooden, Netherbrick -> Netherbrick) (Fence -> Solid)
-// GlassPane (GlassPane -> GlassPlane) (GlassPane -> Solid)
-// StainedGlassPane (StainedGlassPane -> StainedGlassPane) (StainedGlassPane -> Solid)
-// CobblestoneWall (CobblestoneWall -> CobblestoneWall) (CobblestoneWall -> Solid)
-// IronBars (IronBars -> IronBars) (IronBars -> Solid)
 // FlowingWater
 // FlowingLava
 // DoublePlant (Sunflower rendering)
 // PistonExtension?
 // Fire (Update State)
-// Mycelium (Snowy Update State)
+// CobblestoneWall (Connections)
 
 use std::fmt::{Display, Formatter, Error};
 use collision::{Aabb, Aabb3};
@@ -1994,10 +1986,10 @@ define_blocks! {
         },
         model { ("minecraft", "fence") },
         update_state (world, x, y, z) => Block::Fence {
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
+            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
+            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
+            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -2379,11 +2371,18 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "iron_bars") },
-        update_state (world, x, y, z) => Block::IronBars {
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+        update_state (world, x, y, z) => {
+            let f = |block| match block {
+                Block::IronBars{..} => true,
+                _ => false,
+            };
+
+            Block::IronBars {
+                north: can_connect(world, x, y, z, Direction::North, &f),
+                south: can_connect(world, x, y, z, Direction::South, &f),
+                east: can_connect(world, x, y, z, Direction::East, &f),
+                west: can_connect(world, x, y, z, Direction::West, &f),
+            }
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -2410,10 +2409,10 @@ define_blocks! {
         },
         model { ("minecraft", "glass_pane") },
         update_state (world, x, y, z) => Block::GlassPane {
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+            north: can_connect(world, x, y, z, Direction::North, &can_connect_glasspane),
+            south: can_connect(world, x, y, z, Direction::South, &can_connect_glasspane),
+            east: can_connect(world, x, y, z, Direction::East, &can_connect_glasspane),
+            west: can_connect(world, x, y, z, Direction::West, &can_connect_glasspane),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -2461,7 +2460,7 @@ define_blocks! {
                 format!("facing={}", facing.as_string())
             }
         },
-        tint TintType::Foliage,
+        tint TintType::Color{r: age as u8 * 32, g: 255 - (age as u8 * 8), b: age as u8 * 4},
         update_state (world, x, y, z) => {
             let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
                                 world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
@@ -2502,7 +2501,7 @@ define_blocks! {
                 format!("facing={}", facing.as_string())
             }
         },
-        tint TintType::Foliage,
+        tint TintType::Color{r: age as u8 * 32, g: 255 - (age as u8 * 8), b: age as u8 * 4},
         update_state (world, x, y, z) => {
             let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
                                 world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
@@ -2634,6 +2633,14 @@ define_blocks! {
         },
         model { ("minecraft", "mycelium") },
         variant format!("snowy={}", snowy),
+        update_state (world, x, y, z) => {
+            Block::Grass{
+                snowy: match world.get_block(x, y + 1, z) {
+                    Block::Snow { .. } | Block::SnowLayer { .. } => true,
+                    _ => false,
+                }
+            }
+        },
     }
     Waterlily {
         props {},
@@ -2674,11 +2681,18 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "nether_brick_fence") },
-        update_state (world, x, y, z) => Block::NetherBrickFence {
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+        update_state (world, x, y, z) => {
+            let f = |block| match block {
+                Block::NetherBrickFence{..} => true,
+                _ => false,
+            };
+
+            Block::NetherBrickFence {
+                north: can_connect(world, x, y, z, Direction::North, &f),
+                south: can_connect(world, x, y, z, Direction::South, &f),
+                east: can_connect(world, x, y, z, Direction::East, &f),
+                west: can_connect(world, x, y, z, Direction::West, &f),
+            }
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -3217,16 +3231,23 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", format!("{}_wall", variant.as_string())) },
-        update_state (world, x, y, z) => Block::CobblestoneWall {
-            up: can_connect(world, x, y, z, Direction::Up),
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
-            variant: variant,
+        update_state (world, x, y, z) => {
+            let f = |block| match block {
+                Block::CobblestoneWall{..} => true,
+                _ => false,
+            };
+
+            Block::CobblestoneWall {
+                up: can_connect(world, x, y, z, Direction::Up, &f),
+                north: can_connect(world, x, y, z, Direction::North, &f),
+                south: can_connect(world, x, y, z, Direction::South, &f),
+                east: can_connect(world, x, y, z, Direction::East, &f),
+                west: can_connect(world, x, y, z, Direction::West, &f),
+                variant: variant,
+            }
         },
         multipart (key, val) => match key {
-            "up" => up == (val == "up"),
+            "up" => up == (val == "true"),
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
             "east" => east == (val == "true"),
@@ -3786,10 +3807,10 @@ define_blocks! {
         model { ("minecraft", format!("{}_stained_glass_pane", color.as_string()) ) },
         update_state (world, x, y, z) => Block::StainedGlassPane {
             color: color,
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+            north: can_connect(world, x, y, z, Direction::North, &can_connect_glasspane),
+            south: can_connect(world, x, y, z, Direction::South, &can_connect_glasspane),
+            east: can_connect(world, x, y, z, Direction::East, &can_connect_glasspane),
+            west: can_connect(world, x, y, z, Direction::West, &can_connect_glasspane),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -4375,10 +4396,10 @@ define_blocks! {
         },
         model { ("minecraft", "spruce_fence") },
         update_state (world, x, y, z) => Block::SpruceFence {
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
+            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
+            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
+            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -4405,10 +4426,10 @@ define_blocks! {
         },
         model { ("minecraft", "birch_fence") },
         update_state (world, x, y, z) => Block::BirchFence {
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
+            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
+            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
+            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -4435,10 +4456,10 @@ define_blocks! {
         },
         model { ("minecraft", "jungle_fence") },
         update_state (world, x, y, z) => Block::JungleFence {
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
+            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
+            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
+            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -4465,10 +4486,10 @@ define_blocks! {
         },
         model { ("minecraft", "dark_oak_fence") },
         update_state (world, x, y, z) => Block::DarkOakFence {
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
+            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
+            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
+            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -4495,10 +4516,10 @@ define_blocks! {
         },
         model { ("minecraft", "acacia_fence") },
         update_state (world, x, y, z) => Block::AcaciaFence {
-            north: can_connect(world, x, y, z, Direction::North),
-            south: can_connect(world, x, y, z, Direction::South),
-            east: can_connect(world, x, y, z, Direction::East),
-            west: can_connect(world, x, y, z, Direction::West),
+            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
+            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
+            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
+            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -4943,9 +4964,58 @@ define_blocks! {
     }
 }
 
-fn can_connect(world: &super::World, x: i32, y: i32, z: i32, dir: Direction) -> bool {
-    let (ox, oy, oz) = dir.get_offset();
-    world.get_block(x + ox, y + oy, z + oz).get_material().renderable
+fn can_connect<F: Fn(Block) -> bool>(world: &super::World, x: i32, y: i32, z: i32, dir: Direction, f: &F) -> bool {
+    let block = world.get_block_offset(x, y, z, dir);
+    f(block) || (block.get_material().renderable && block.get_material().should_cull_against)
+}
+
+fn can_connect_fence(block: Block) -> bool {
+    match block {
+        Block::Fence{..} |
+        Block::SpruceFence{..} |
+        Block::BirchFence{..} |
+        Block::JungleFence{..} |
+        Block::DarkOakFence{..} |
+        Block::AcaciaFence{..} |
+        Block::FenceGate{..} |
+        Block::SpruceFenceGate{..} |
+        Block::BirchFenceGate{..} |
+        Block::JungleFenceGate{..} |
+        Block::DarkOakFenceGate{..} |
+        Block::AcaciaFenceGate{..} => true,
+        _ => false,
+    }
+}
+
+fn can_connect_glasspane(block: Block) -> bool {
+    match block {
+        Block::Glass{..} |
+        Block::StainedGlass{..} |
+        Block::GlassPane{..} |
+        Block::StainedGlassPane{..} => true,
+        _ => false,
+    }
+}
+
+fn can_connect_redstone(world: &super::World, x: i32, y: i32, z: i32, dir: Direction) -> RedstoneSide {
+    let block = world.get_block_offset(x, y, z, dir);
+
+    if block.get_material().should_cull_against {
+        let side_up = world.get_block_offset(x, y + 1, z, dir);
+        let up = world.get_block(x, y + 1, z);
+
+        if match side_up { Block::RedstoneWire{..} => true, _ => false,} && !up.get_material().should_cull_against {
+            return RedstoneSide::Up;
+        }
+
+        return RedstoneSide::None;
+    }
+
+    let side_down = world.get_block_offset(x, y - 1, z, dir);
+    if match block { Block::RedstoneWire{..} => true, _ => false,} || match side_down { Block::RedstoneWire{..} => true, _ => false,} {
+        return RedstoneSide::Side;
+    }
+    return RedstoneSide::None;
 }
 
 fn fence_gate_data(facing: Direction, in_wall: bool, open: bool, powered: bool) -> Option<usize> {
@@ -5031,25 +5101,6 @@ fn update_double_plant_state(world: &super::World, x: i32, y: i32, z: i32, ohalf
         Block::DoublePlant{variant, ..} => (ohalf, variant),
         _ => (ohalf, ovariant),
     }
-}
-
-fn can_connect_redstone(world: &super::World, x: i32, y: i32, z: i32, dir: Direction) -> RedstoneSide {
-    let (ox, oy, oz) = dir.get_offset();
-
-    let block = world.get_block(x + ox, y + oy, z + oz);
-    if block.get_material().should_cull_against {
-        let side_up = world.get_block(x + ox, y + oy + 1, z + oz);
-        let up = world.get_block(x, y + 1, z);
-        if match side_up { Block::RedstoneWire{..} => true, _ => false,} && !up.get_material().should_cull_against {
-            return RedstoneSide::Up;
-        }
-        return RedstoneSide::None;
-    }
-    let side_down = world.get_block(x + ox, y + oy - 1, z + oz);
-    if match block { Block::RedstoneWire{..} => true, _ => false,} || match side_down { Block::RedstoneWire{..} => true, _ => false,} {
-        return RedstoneSide::Side;
-    }
-    return RedstoneSide::None;
 }
 
 fn command_block_data(conditional: bool, facing: Direction) -> Option<usize> {
