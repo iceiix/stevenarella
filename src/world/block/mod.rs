@@ -1,12 +1,36 @@
-// TODO: Multipart blocks
-// TODO: Tile entities
-// TODO: Redstone
-// TODO: Skulls
-// TODO: FlowerPot
-// TODO: Repeater lock state update
-// TODO: DoublePlants don't face the right direction?
-// TODO: Pumpkin and Melon stem tint
-// TODO: Tripwire
+// TODO: Tile Entities
+// Skulls
+// FlowerPot
+// StandingSign
+// WallSign
+// Chest (DoubleChest)
+// TrappedChest
+// EnderChest
+// StandingBanner
+// WallBanner
+// Enchanting Table
+// EndPortal
+// Beacon
+// Barrier
+// EndGateway
+// TODO: Blocks
+// RedstoneWire (Directions/Tint)
+// RedstoneRepeater (Locked State Update)
+// Pumpkin_Stem (Tint)
+// Melon_Stem (Tint)
+// Tripwirue (State Update)
+// TripwireHook (Rendering issue)
+// Fences (Wooden -> Wooden, Netherbrick -> Netherbrick) (Fence -> Solid)
+// GlassPane (GlassPane -> GlassPlane) (GlassPane -> Solid)
+// StainedGlassPane (StainedGlassPane -> StainedGlassPane) (StainedGlassPane -> Solid)
+// CobblestoneWall (CobblestoneWall -> CobblestoneWall) (CobblestoneWall -> Solid)
+// IronBars (IronBars -> IronBars) (IronBars -> Solid)
+// FlowingWater
+// FlowingLava
+// DoublePlant (Sunflower rendering)
+// PistonExtension?
+// Fire (Update State)
+// Mycelium (Snowy Update State)
 
 use std::fmt::{Display, Formatter, Error};
 use collision::{Aabb, Aabb3};
@@ -244,7 +268,7 @@ macro_rules! define_blocks {
             }
 
             #[allow(unused_variables, unreachable_code)]
-            pub fn match_multipart(&self, key: &str, val: &str) -> bool{
+            pub fn match_multipart(&self, key: &str, val: &str) -> bool {
                 match *self {
                     $(
                         Block::$name {
@@ -480,7 +504,7 @@ define_blocks! {
             force_shade: false,
             transparent: true,
         },
-        model { ("minecraft", "water") },
+        model { ("minecraft", "flowing_water") },
     }
     Water {
         props {
@@ -508,7 +532,7 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "lava") },
+        model { ("minecraft", "flowing_lava") },
     }
     Lava {
         props {
@@ -1261,6 +1285,14 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "fire") },
+        multipart (key, val) => match key {
+            "up" => up == (val == "true"),
+            "north" => north == (val == "true"),
+            "south" => south == (val == "south"),
+            "east" => east == (val == "east"),
+            "west" => west == (val == "west"),
+            _ => false,
+        },
     }
     MobSpawner {
         props {},
@@ -1351,6 +1383,18 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "redstone_wire") },
+        tint TintType::Foliage,
+        update_state (world, x, y, z) => {
+            let (north, south, east, west) = update_redstone_wire_state(world, x, y, z);
+            Block::RedstoneWire {north: north, south: south, east: east, west:west, power: power}
+        },
+        multipart (key, val) => match key {
+            "north" => val == north.as_string(),
+            "south" => val == south.as_string(),
+            "east" => val == east.as_string(),
+            "west" => val == west.as_string(),
+            _ => false,
+        },
     }
     DiamondOre {
         props {},
@@ -1843,7 +1887,7 @@ define_blocks! {
         props {
             layers: i32 = [1, 2, 3, 4, 5, 6, 7, 8],
         },
-        data Some(layers as usize),
+        data Some(layers as usize - 1),
         material Material {
             renderable: true,
             never_cull: false,
@@ -2499,10 +2543,10 @@ define_blocks! {
     FenceGate {
         props {
             facing: Direction = [
-                Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::North,
+                Direction::East
             ],
             in_wall: bool = [false, true],
             open: bool = [false, true],
@@ -2517,7 +2561,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "fence_gate") },
-        variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
+        variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
     BrickStairs {
         props {
@@ -2711,7 +2755,12 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "brewing_stand") },
-        variant format!("has_bottle_0={},has_bottle_1={},has_bottle_2={}", has_bottle_0, has_bottle_1, has_bottle_2),
+        multipart (key, val) => match key {
+            "has_bottle_0" => has_bottle_0,
+            "has_bottle_1" => has_bottle_1,
+            "has_bottle_2" => has_bottle_2,
+            _ => false,
+        },
     }
     Cauldron {
         props {
@@ -3146,11 +3195,11 @@ define_blocks! {
     }
     CobblestoneWall {
         props {
+            up: bool = [false, true],
             north: bool = [false, true],
             south: bool = [false, true],
             east: bool = [false, true],
             west: bool = [false, true],
-            up: bool = [false, true],
             variant: CobblestoneWallVariant = [
                 CobblestoneWallVariant::Normal,
                 CobblestoneWallVariant::Mossy
@@ -3164,7 +3213,23 @@ define_blocks! {
             force_shade: false,
             transparent: false,
         },
-        model { ("minecraft", "cobblestone_wall") },
+        model { ("minecraft", format!("{}_wall", variant.as_string())) },
+        update_state (world, x, y, z) => Block::CobblestoneWall {
+            up: can_connect(world, x, y, z, Direction::Up),
+            north: can_connect(world, x, y, z, Direction::North),
+            south: can_connect(world, x, y, z, Direction::South),
+            east: can_connect(world, x, y, z, Direction::East),
+            west: can_connect(world, x, y, z, Direction::West),
+            variant: variant,
+        },
+        multipart (key, val) => match key {
+            "up" => up == (val == "up"),
+            "north" => north == (val == "true"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
+            _ => false,
+        },
     }
     FlowerPot {
         props {
@@ -4178,10 +4243,10 @@ define_blocks! {
     SpruceFenceGate {
         props {
             facing: Direction = [
-                Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::North,
+                Direction::East
             ],
             in_wall: bool = [false, true],
             open: bool = [false, true],
@@ -4196,15 +4261,15 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "spruce_fence_gate") },
-        variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
+        variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
     BirchFenceGate {
         props {
             facing: Direction = [
-                Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::North,
+                Direction::East
             ],
             in_wall: bool = [false, true],
             open: bool = [false, true],
@@ -4219,15 +4284,15 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "birch_fence_gate") },
-        variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
+        variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
     JungleFenceGate {
         props {
             facing: Direction = [
-                Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::North,
+                Direction::East
             ],
             in_wall: bool = [false, true],
             open: bool = [false, true],
@@ -4242,15 +4307,15 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "jungle_fence_gate") },
-        variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
+        variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
     DarkOakFenceGate {
         props {
             facing: Direction = [
-                Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::North,
+                Direction::East
             ],
             in_wall: bool = [false, true],
             open: bool = [false, true],
@@ -4265,15 +4330,15 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "dark_oak_fence_gate") },
-        variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
+        variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
     AcaciaFenceGate {
         props {
             facing: Direction = [
-                Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::North,
+                Direction::East
             ],
             in_wall: bool = [false, true],
             open: bool = [false, true],
@@ -4288,7 +4353,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "acacia_fence_gate") },
-        variant format!("facing={},in_wall={},open={},powered={}", facing.as_string(), in_wall, open, powered),
+        variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
     SpruceFence {
         props {
@@ -4965,6 +5030,35 @@ fn update_double_plant_state(world: &super::World, x: i32, y: i32, z: i32, ohalf
     }
 }
 
+fn update_redstone_wire_state(world: &super::World, x: i32, y: i32, z: i32) -> (RedstoneSide, RedstoneSide, RedstoneSide, RedstoneSide){
+    let (nx, ny, nz) = Direction::North.get_offset();
+    let (sx, sy, sz) = Direction::South.get_offset();
+    let (ex, ey, ez) = Direction::East.get_offset();
+    let (wx, wy, wz) = Direction::West.get_offset();
+
+    let north = match world.get_block(x + nx, y + ny, z + nz) {
+        RedstoneWire{..} => RedstoneSide::Side,
+        _ => RedstoneSide::None,
+    };
+
+    let south = match world.get_block(x + sx, y + sy, z + sz)  {
+        RedstoneWire{..} => RedstoneSide::Side,
+        _ => RedstoneSide::None,
+    };
+
+    let east = match world.get_block(x + ex, y + ey, z + ez) {
+        RedstoneWire{..} => RedstoneSide::Side,
+        _ => RedstoneSide::None,
+    };
+
+    let west = match world.get_block(x + wx, y + wy, y + wz) {
+        RedstoneWire{..} => RedstoneSide::Side,
+        _ => RedstoneSide::None,
+    };
+
+    (north, south, east, west)
+}
+
 fn command_block_data(conditional: bool, facing: Direction) -> Option<usize> {
     let data = match facing {
         Direction::Down => 0,
@@ -5533,7 +5627,7 @@ impl RedstoneSide {
     pub fn as_string(&self) -> &'static str {
         match *self {
             RedstoneSide::None => "none",
-            RedstoneSide::Side => "side",
+            RedstoneSide::Side => "side|up",
             RedstoneSide::Up => "up",
         }
     }
