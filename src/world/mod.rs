@@ -65,6 +65,7 @@ impl World {
                     if current != new {
                         self.set_block_raw(bx, by, bz, new);
                     }
+                    self.set_dirty(bx >> 4, by >> 4, bz >> 4);
                 }
             }
         }
@@ -217,6 +218,14 @@ impl World {
             }
         }
         out
+    }
+
+    fn set_dirty(&mut self, x: i32, y: i32, z: i32) {
+        if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
+            if let Some(sec) = chunk.sections.get_mut(y as usize).and_then(|v| v.as_mut()) {
+                sec.dirty = true;
+            }
+        }
     }
 
     pub fn is_section_dirty(&self, pos: (i32, i32, i32)) -> bool {
