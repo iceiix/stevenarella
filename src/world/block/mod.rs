@@ -1288,9 +1288,9 @@ define_blocks! {
         multipart (key, val) => match key {
             "up" => up == (val == "true"),
             "north" => north == (val == "true"),
-            "south" => south == (val == "south"),
-            "east" => east == (val == "east"),
-            "west" => west == (val == "west"),
+            "south" => south == (val == "true"),
+            "east" => east == (val == "true"),
+            "west" => west == (val == "true"),
             _ => false,
         },
     }
@@ -2759,9 +2759,9 @@ define_blocks! {
         },
         model { ("minecraft", "brewing_stand") },
         multipart (key, val) => match key {
-            "has_bottle_0" => has_bottle_0,
-            "has_bottle_1" => has_bottle_1,
-            "has_bottle_2" => has_bottle_2,
+            "has_bottle_0" => (val == "true") == has_bottle_0,
+            "has_bottle_1" => (val == "true") == has_bottle_1,
+            "has_bottle_2" => (val == "true") == has_bottle_2,
             _ => false,
         },
     }
