@@ -1178,7 +1178,7 @@ define_blocks! {
         collision match half {
             BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
             BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 0.5, 1.0))],
-            _ => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))],
+            _ => unreachable!(),
         },
     }
     BrickBlock {
@@ -2952,7 +2952,7 @@ define_blocks! {
         collision match half {
             BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
             BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 0.5, 1.0))],
-            _ => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))],
+            _ => unreachable!(),
         },
     }
     Cocoa {
@@ -4306,7 +4306,7 @@ define_blocks! {
         collision match half {
             BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
             BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 0.5, 1.0))],
-            _ => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))],
+            _ => unreachable!(),
         },
     }
     SpruceFenceGate {
@@ -4887,7 +4887,7 @@ define_blocks! {
         collision match half {
             BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
             BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 0.5, 1.0))],
-            _ => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))],
+            _ => unreachable!(),
         },
     }
     EndBricks {
