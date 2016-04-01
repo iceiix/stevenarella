@@ -1175,6 +1175,11 @@ define_blocks! {
         },
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={}", half.as_string()),
+        collision match half {
+            BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
+            BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 0.5, 1.0))],
+            _ => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))],
+        },
     }
     BrickBlock {
         props {},
@@ -2944,6 +2949,11 @@ define_blocks! {
         },
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={}", half.as_string()),
+        collision match half {
+            BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
+            BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 0.5, 1.0))],
+            _ => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))],
+        },
     }
     Cocoa {
         props {
@@ -4293,6 +4303,11 @@ define_blocks! {
         },
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={}", half.as_string()),
+        collision match half {
+            BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
+            BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 0.5, 1.0))],
+            _ => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))],
+        },
     }
     SpruceFenceGate {
         props {
@@ -4859,12 +4874,7 @@ define_blocks! {
             variant: StoneSlabVariant = [StoneSlabVariant::Purpur],
         },
         data {
-            if half == BlockHalf::Top {
-                Some(0x8)
-            } else {
-                Some(0x0)
-            }
-        },
+            if half == BlockHalf::Top { Some(0x8) } else { Some(0x0) } },
         material Material {
             renderable: true,
             never_cull: false,
@@ -4874,6 +4884,11 @@ define_blocks! {
         },
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={},variant=default", half.as_string()),
+        collision match half {
+            BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
+            BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 0.5, 1.0))],
+            _ => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))],
+        },
     }
     EndBricks {
         props {},
