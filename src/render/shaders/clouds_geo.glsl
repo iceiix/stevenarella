@@ -51,7 +51,7 @@ bool isFutureSolid(ivec2 pos) {
 
 void main() {
 	vec3 base = floor(offset) + gl_in[0].gl_Position.xyz;
-	texP = ivec2(gl_in[0].gl_Position.xz + 160.0 + offset.xz);
+	texP = ivec2(gl_in[0].gl_Position.xz + 160.0 + offset.xz) - ivec2(0.0, -1.0);
 	heightP = ivec2(mod(base.xz, 512));
 	if (!isSolid(ivec2(0))) return;
 
