@@ -1383,16 +1383,19 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "redstone_wire") },
-        tint TintType::Foliage,
-        update_state (world, x, y, z) => {
-            let (north, south, east, west) = update_redstone_wire_state(world, x, y, z);
-            Block::RedstoneWire {north: north, south: south, east: east, west:west, power: power}
+        tint TintType::Color{r: ((255.0 / 30.0) * (power as f64) + 14.0) as u8, g: 0, b: 0},
+        update_state (world, x, y, z) => Block::RedstoneWire {
+            north: can_connect_redstone(world, x, y, z, Direction::North),
+            south: can_connect_redstone(world, x, y, z, Direction::South),
+            east: can_connect_redstone(world, x, y, z, Direction::East),
+            west: can_connect_redstone(world, x, y, z, Direction::West),
+            power: power
         },
         multipart (key, val) => match key {
-            "north" => val == north.as_string(),
-            "south" => val == south.as_string(),
-            "east" => val == east.as_string(),
-            "west" => val == west.as_string(),
+            "north" => val.contains(north.as_string()),
+            "south" => val.contains(south.as_string()),
+            "east" => val.contains(east.as_string()),
+            "west" => val.contains(west.as_string()),
             _ => false,
         },
     }
@@ -5030,33 +5033,23 @@ fn update_double_plant_state(world: &super::World, x: i32, y: i32, z: i32, ohalf
     }
 }
 
-fn update_redstone_wire_state(world: &super::World, x: i32, y: i32, z: i32) -> (RedstoneSide, RedstoneSide, RedstoneSide, RedstoneSide){
-    let (nx, ny, nz) = Direction::North.get_offset();
-    let (sx, sy, sz) = Direction::South.get_offset();
-    let (ex, ey, ez) = Direction::East.get_offset();
-    let (wx, wy, wz) = Direction::West.get_offset();
+fn can_connect_redstone(world: &super::World, x: i32, y: i32, z: i32, dir: Direction) -> RedstoneSide {
+    let (ox, oy, oz) = dir.get_offset();
 
-    let north = match world.get_block(x + nx, y + ny, z + nz) {
-        RedstoneWire{..} => RedstoneSide::Side,
-        _ => RedstoneSide::None,
-    };
-
-    let south = match world.get_block(x + sx, y + sy, z + sz)  {
-        RedstoneWire{..} => RedstoneSide::Side,
-        _ => RedstoneSide::None,
-    };
-
-    let east = match world.get_block(x + ex, y + ey, z + ez) {
-        RedstoneWire{..} => RedstoneSide::Side,
-        _ => RedstoneSide::None,
-    };
-
-    let west = match world.get_block(x + wx, y + wy, y + wz) {
-        RedstoneWire{..} => RedstoneSide::Side,
-        _ => RedstoneSide::None,
-    };
-
-    (north, south, east, west)
+    let block = world.get_block(x + ox, y + oy, z + oz);
+    if block.get_material().should_cull_against {
+        let side_up = world.get_block(x + ox, y + oy + 1, z + oz);
+        let up = world.get_block(x, y + 1, z);
+        if match side_up { Block::RedstoneWire{..} => true, _ => false,} && !up.get_material().should_cull_against {
+            return RedstoneSide::Up;
+        }
+        return RedstoneSide::None;
+    }
+    let side_down = world.get_block(x + ox, y + oy - 1, z + oz);
+    if match block { Block::RedstoneWire{..} => true, _ => false,} || match side_down { Block::RedstoneWire{..} => true, _ => false,} {
+        return RedstoneSide::Side;
+    }
+    return RedstoneSide::None;
 }
 
 fn command_block_data(conditional: bool, facing: Direction) -> Option<usize> {
@@ -5627,7 +5620,7 @@ impl RedstoneSide {
     pub fn as_string(&self) -> &'static str {
         match *self {
             RedstoneSide::None => "none",
-            RedstoneSide::Side => "side|up",
+            RedstoneSide::Side => "side",
             RedstoneSide::Up => "up",
         }
     }
