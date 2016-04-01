@@ -903,6 +903,7 @@ define_blocks! {
         },
         model { ("minecraft", variant.as_string() ) },
         tint TintType::Grass,
+        collision vec![],
     }
     DeadBush {
         props {},
@@ -1039,6 +1040,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "dandelion") },
+        collision vec![],
     }
     RedFlower {
         props {
@@ -1063,6 +1065,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", variant.as_string()) },
+        collision vec![],
     }
     BrownMushroom {
         props {},
@@ -1074,6 +1077,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "brown_mushroom") },
+        collision vec![],
     }
     RedMushroom {
         props {},
@@ -1085,6 +1089,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "red_mushroom") },
+        collision vec![],
     }
     GoldBlock {
         props {},
@@ -1258,6 +1263,7 @@ define_blocks! {
         },
         model { ("minecraft", "torch") },
         variant format!("facing={}", facing.as_string()),
+        collision vec![],
     }
     Fire {
         props {
@@ -1277,6 +1283,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "fire") },
+        collision vec![],
         multipart (key, val) => match key {
             "up" => up == (val == "true"),
             "north" => north == (val == "true"),
@@ -1376,6 +1383,7 @@ define_blocks! {
         },
         model { ("minecraft", "redstone_wire") },
         tint TintType::Color{r: ((255.0 / 30.0) * (power as f64) + 14.0) as u8, g: 0, b: 0},
+        collision vec![],
         update_state (world, x, y, z) => Block::RedstoneWire {
             north: can_connect_redstone(world, x, y, z, Direction::North),
             south: can_connect_redstone(world, x, y, z, Direction::South),
@@ -1438,6 +1446,7 @@ define_blocks! {
         },
         model { ("minecraft", "wheat") },
         variant format!("age={}", age),
+        collision vec![],
     }
     Farmland {
         props {
@@ -1622,6 +1631,7 @@ define_blocks! {
         },
         model { ("minecraft", "rail") },
         variant format!("shape={}", shape.as_string()),
+        collision vec![],
     }
     StoneStairs {
         props {
@@ -1702,6 +1712,7 @@ define_blocks! {
         },
         model { ("minecraft", "lever") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
+        collision vec![],
     }
     StonePressurePlate {
         props {
@@ -1812,6 +1823,7 @@ define_blocks! {
         },
         model { ("minecraft", "unlit_redstone_torch") },
         variant format!("facing={}", facing.as_string()),
+        collision vec![],
     }
     RedstoneTorch {
         props {
@@ -1842,6 +1854,7 @@ define_blocks! {
         },
         model { ("minecraft", "redstone_torch") },
         variant format!("facing={}", facing.as_string()),
+        collision vec![],
     }
     StoneButton {
         props {
@@ -1877,6 +1890,7 @@ define_blocks! {
         },
         model { ("minecraft", "stone_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
+        collision vec![],
     }
     SnowLayer {
         props {
@@ -1954,6 +1968,7 @@ define_blocks! {
         },
         model { ("minecraft", "reeds") },
         tint TintType::Foliage,
+        collision vec![],
     }
     Jukebox {
         props {
@@ -2077,6 +2092,7 @@ define_blocks! {
         },
         model { ("minecraft", "portal") },
         variant format!("axis={}", axis.as_string()),
+        collision vec![],
     }
     PumpkinLit {
         props {
@@ -2157,6 +2173,7 @@ define_blocks! {
         },
         model { ("minecraft", "unpowered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
+        collision vec![],
     }
     RepeaterPowered {
         props {
@@ -2191,6 +2208,7 @@ define_blocks! {
         },
         model { ("minecraft", "powered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
+        collision vec![],
     }
     StainedGlass {
         props {
@@ -2461,6 +2479,7 @@ define_blocks! {
             }
         },
         tint TintType::Color{r: age as u8 * 32, g: 255 - (age as u8 * 8), b: age as u8 * 4},
+        collision vec![],
         update_state (world, x, y, z) => {
             let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
                                 world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
@@ -2502,6 +2521,7 @@ define_blocks! {
             }
         },
         tint TintType::Color{r: age as u8 * 32, g: 255 - (age as u8 * 8), b: age as u8 * 4},
+        collision vec![],
         update_state (world, x, y, z) => {
             let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
                                 world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
@@ -2743,6 +2763,7 @@ define_blocks! {
         },
         model { ("minecraft", "nether_wart") },
         variant format!("age={}", age),
+        collision vec![],
     }
     EnchantingTable {
         props {},
@@ -3054,6 +3075,7 @@ define_blocks! {
         },
         model { ("minecraft", "tripwire_hook") },
         variant format!("attached={},facing={},powered={}", attached, facing.as_string(), powered),
+        collision vec![],
     }
     Tripwire {
         props {
@@ -3083,6 +3105,7 @@ define_blocks! {
         },
         model { ("minecraft", "tripwire") },
         variant format!("attached={},east={},north={},south={},west={}", attached, east, north, south, west),
+        collision vec![],
     }
     EmeraldBlock {
         props {},
@@ -3308,6 +3331,7 @@ define_blocks! {
         },
         model { ("minecraft", "carrots") },
         variant format!("age={}", age),
+        collision vec![],
     }
     Potatoes {
         props {
@@ -3323,6 +3347,7 @@ define_blocks! {
         },
         model { ("minecraft", "potatoes") },
         variant format!("age={}", age),
+        collision vec![],
     }
     WoodenButton {
         props {
@@ -3358,6 +3383,7 @@ define_blocks! {
         },
         model { ("minecraft", "wooden_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
+        collision vec![],
     }
     Skull {
         props {
@@ -3517,6 +3543,7 @@ define_blocks! {
         },
         model { ("minecraft", "unpowered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
+        collision vec![],
     }
     ComparatorPowered {
         props {
@@ -3551,6 +3578,7 @@ define_blocks! {
         },
         model { ("minecraft", "powered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
+        collision vec![],
     }
     DaylightDetector {
         props {
@@ -3704,6 +3732,7 @@ define_blocks! {
         },
         model { ("minecraft", "activator_rail") },
         variant format!("powered={},shape={}", powered, shape.as_string()),
+        collision vec![],
     }
     Dropper {
         props {
@@ -4107,6 +4136,7 @@ define_blocks! {
         model { ("minecraft", variant.as_string()) },
         variant format!("half={}", half.as_string()),
         tint TintType::Foliage,
+        collision vec![],
         update_state (world, x, y, z) => {
             let (half, variant) = update_double_plant_state(world, x, y, z, half, variant);
             Block::DoublePlant{half: half, variant: variant}
@@ -4870,6 +4900,7 @@ define_blocks! {
         },
         model { ("minecraft", "beetroots") },
         variant format!("age={}", age),
+        collision vec![],
     }
     GrassPath {
         props {},
