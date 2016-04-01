@@ -162,7 +162,7 @@ impl Clouds {
         }
     }
 
-    pub fn draw(&mut self, camera_pos: &Point3<f64>, perspective_matrix: &Matrix4<f32>, camera_matrix: &Matrix4<f32>, sky_offset: f32, light_level: f32, delta: f64) {
+    pub fn draw(&mut self, camera_pos: &Point3<f64>, perspective_matrix: &Matrix4<f32>, camera_matrix: &Matrix4<f32>, light_level: f32, sky_offset: f32, delta: f64) {
         self.offset += delta;
 
         let tex = super::Renderer::get_texture(&self.textures, "steven:environment/clouds");
