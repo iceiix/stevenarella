@@ -17,6 +17,7 @@ pub use self::server_list::*;
 mod login;
 pub use self::login::*;
 pub mod connecting;
+pub mod edit_server;
 
 use render;
 use ui;

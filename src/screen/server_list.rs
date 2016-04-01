@@ -123,8 +123,8 @@ impl ServerList {
         // General gui icons
         let icons = render::Renderer::get_texture(renderer.get_textures_ref(), "gui/icons");
 
-        for svr in servers {
-            let name = svr.find("name").unwrap().as_string().unwrap();
+        for (index, svr) in servers.iter().enumerate() {
+            let name = svr.find("name").unwrap().as_string().unwrap().to_owned();
             let address = svr.find("address").unwrap().as_string().unwrap().to_owned();
 
             let solid = render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid");
@@ -191,34 +191,22 @@ impl ServerList {
             server.collection.add(ui_container.add(text));
 
             // Server icon
-            let mut icon = ui::Image::new(default_icon.clone(),
-                                          5.0,
-                                          5.0,
-                                          90.0,
-                                          90.0,
-                                          0.0,
-                                          0.0,
-                                          1.0,
-                                          1.0,
-                                          255,
-                                          255,
-                                          255);
+            let mut icon = ui::Image::new(
+                default_icon.clone(),
+                 5.0, 5.0, 90.0, 90.0,
+                 0.0, 0.0, 1.0, 1.0,
+                 255, 255, 255
+             );
             icon.set_parent(&server.back);
             server.icon = server.collection.add(ui_container.add(icon));
 
             // Ping indicator
-            let mut ping = ui::Image::new(icons.clone(),
-                                          5.0,
-                                          5.0,
-                                          20.0,
-                                          16.0,
-                                          0.0,
-                                          56.0 / 256.0,
-                                          10.0 / 256.0,
-                                          8.0 / 256.0,
-                                          255,
-                                          255,
-                                          255);
+            let mut ping = ui::Image::new(
+                icons.clone(),
+                5.0, 5.0, 20.0, 16.0,
+                0.0, 56.0 / 256.0, 10.0 / 256.0, 8.0 / 256.0,
+                255, 255, 255
+            );
             ping.set_h_attach(ui::HAttach::Right);
             ping.set_parent(&server.back);
             server.ping = server.collection.add(ui_container.add(ping));
@@ -259,7 +247,7 @@ impl ServerList {
             let re = ui_container.add(del);
             txt.set_parent(&re);
             let tre = ui_container.add(txt);
-            super::button_action(ui_container, re.clone(), Some(tre.clone()), |_,_| {});
+            super::button_action(ui_container, re.clone(), Some(tre.clone()), |_,_| {}); // TOOO: delete entry
             server.collection.add(re);
             server.collection.add(tre);
 
@@ -271,7 +259,16 @@ impl ServerList {
             let re = ui_container.add(edit);
             txt.set_parent(&re);
             let tre = ui_container.add(txt);
-            super::button_action(ui_container, re.clone(), Some(tre.clone()), |_,_|{});
+            let index = index;
+            let sname = name.clone();
+            let saddr = address.clone();
+            super::button_action(ui_container, re.clone(), Some(tre.clone()), move |game,_|{
+                let sname = sname.clone();
+                let saddr = saddr.clone();
+                game.screen_sys.replace_screen(Box::new(super::edit_server::EditServerEntry::new(
+                    Some((index, sname, saddr))
+                )));
+            });
             server.collection.add(re);
             server.collection.add(tre);
 
@@ -352,18 +349,20 @@ impl super::Screen for ServerList {
         elements.add(tre);
 
         // Add a new server to the list
-        let (mut add, mut txt) = super::new_button_text(renderer,
-                                                        "Add",
-                                                        200.0,
-                                                        -50.0 - 15.0,
-                                                        100.0,
-                                                        30.0);
+        let (mut add, mut txt) = super::new_button_text(
+            renderer, "Add",
+            200.0, -50.0 - 15.0, 100.0, 30.0
+        );
         add.set_v_attach(ui::VAttach::Middle);
         add.set_h_attach(ui::HAttach::Center);
         let re = ui_container.add(add);
         txt.set_parent(&re);
         let tre = ui_container.add(txt);
-        super::button_action(ui_container, re.clone(), Some(tre.clone()), |_, _|{});
+        super::button_action(ui_container, re.clone(), Some(tre.clone()), |game, _|{
+            game.screen_sys.replace_screen(Box::new(super::edit_server::EditServerEntry::new(
+                None
+            )));
+        });
         elements.add(re);
         elements.add(tre);
 
