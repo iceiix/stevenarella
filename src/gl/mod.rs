@@ -285,6 +285,56 @@ impl Texture {
         }
     }
 
+    pub fn image_2d(&self,
+                    target: TextureTarget,
+                    level: i32,
+                    width: u32,
+                    height: u32,
+                    format: TextureFormat,
+                    ty: Type,
+                    pix: Option<&[u8]>) {
+        unsafe {
+            let ptr = match pix {
+                Some(val) => val.as_ptr() as *const gl::types::GLvoid,
+                None => ptr::null(),
+            };
+            gl::TexImage2D(target,
+                           level,
+                           format as i32,
+                           width as i32,
+                           height as i32,
+                           0,
+                           format,
+                           ty,
+                           ptr
+            );
+        }
+    }
+
+    pub fn sub_image_2d(&self,
+                    target: TextureTarget,
+                    level: i32,
+                    x: u32,
+                    y: u32,
+                    width: u32,
+                    height: u32,
+                    format: TextureFormat,
+                    ty: Type,
+                    pix: &[u8]) {
+        unsafe {
+            gl::TexSubImage2D(target,
+                           level,
+                           x as i32,
+                           y as i32,
+                           width as i32,
+                           height as i32,
+                           format,
+                           ty,
+                           pix.as_ptr() as *const _
+            );
+        }
+    }
+
     pub fn image_2d_ex(&self,
                     target: TextureTarget,
                     level: i32,

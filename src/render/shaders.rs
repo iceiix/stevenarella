@@ -33,6 +33,10 @@ pub fn add_shaders(reg: &mut glsl::Registry) {
 
     reg.register("sun_vertex", include_str!("shaders/sun_vertex.glsl"));
     reg.register("sun_frag", include_str!("shaders/sun_frag.glsl"));
+
+    reg.register("clouds_vertex", include_str!("shaders/clouds_vertex.glsl"));
+    reg.register("clouds_geo", include_str!("shaders/clouds_geo.glsl"));
+    reg.register("clouds_frag", include_str!("shaders/clouds_frag.glsl"));
 }
 
 macro_rules! get_shader {

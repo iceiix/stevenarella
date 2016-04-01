@@ -18,6 +18,7 @@ pub mod glsl;
 pub mod shaders;
 pub mod ui;
 pub mod model;
+pub mod clouds;
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -52,6 +53,7 @@ pub struct Renderer {
     textures: Arc<RwLock<TextureManager>>,
     pub ui: ui::UIState,
     pub model: model::Manager,
+    pub clouds: clouds::Clouds,
 
     gl_texture: gl::Texture,
     texture_layers: usize,
@@ -194,6 +196,7 @@ impl Renderer {
         Renderer {
             resource_version: version,
             model: model::Manager::new(&greg),
+            clouds: clouds::Clouds::new(&greg, textures.clone()),
             textures: textures,
             ui: ui,
             resources: res,
@@ -318,7 +321,10 @@ impl Renderer {
         // Line rendering
         // Model rendering
         self.model.draw(&self.frustum, &self.perspective_matrix, &self.camera_matrix, self.light_level, self.sky_offset);
-        // Cloud rendering
+        if world.copy_cloud_heightmap(&mut self.clouds.heightmap_data) {
+            self.clouds.dirty = true;
+        }
+        self.clouds.draw(&self.camera.pos, &self.perspective_matrix, &self.camera_matrix, self.light_level, self.sky_offset, delta);
 
         // Trans chunk rendering
         self.chunk_shader_alpha.program.use_program();

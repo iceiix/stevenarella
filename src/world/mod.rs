@@ -96,6 +96,25 @@ impl World {
         }
     }
 
+    pub fn copy_cloud_heightmap(&mut self, data: &mut [u8]) -> bool {
+        let mut dirty = false;
+        for (_, c) in &mut self.chunks {
+            if c.heightmap_dirty {
+                dirty = true;
+                c.heightmap_dirty = false;
+                for xx in 0 .. 16 {
+                    for zz in 0 .. 16 {
+                        data[
+                            (((c.position.0 << 4) as usize + xx) & 0x1FF) +
+                            ((((c.position.1 << 4) as usize + zz) & 0x1FF) << 9)
+                        ] = c.heightmap[(zz << 4) | xx];
+                    }
+                }
+            }
+        }
+        dirty
+    }
+
     pub fn compute_render_list(&mut self, renderer: &mut render::Renderer) {
         use chunk_builder;
         use types::Direction;
@@ -380,6 +399,8 @@ impl World {
             if new {
                 try!(data.read_exact(&mut chunk.biomes));
             }
+
+            chunk.calculate_heightmap();
         }
 
         for i in 0 .. 16 {
@@ -485,6 +506,9 @@ pub struct Chunk {
     sections: [Option<Section>; 16],
     sections_rendered_on: [u32; 16],
     biomes: [u8; 16 * 16],
+
+    heightmap: [u8; 16 * 16],
+    heightmap_dirty: bool,
 }
 
 impl Chunk {
@@ -499,7 +523,27 @@ impl Chunk {
             ],
             sections_rendered_on: [0; 16],
             biomes: [0; 16 * 16],
+            heightmap: [0; 16 * 16],
+            heightmap_dirty: true,
         }
+    }
+
+    fn calculate_heightmap(&mut self) {
+        for x in 0 .. 16 {
+            for z in 0 .. 16 {
+                let idx = ((z<<4)|x) as usize;
+                for yy in 0 .. 256 {
+                    let sy = 255 - yy;
+                    match self.get_block(x, sy, z) {
+                        block::Block::Air{..} => continue,
+                        _ => {},
+                    };
+                    self.heightmap[idx] = sy as u8;
+                    break;
+                }
+            }
+        }
+        self.heightmap_dirty = true;
     }
 
     fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
@@ -513,8 +557,27 @@ impl Chunk {
             }
             self.sections[s_idx as usize] = Some(Section::new(self.position.0, s_idx as u8, self.position.1));
         }
-        let section = self.sections[s_idx as usize].as_mut().unwrap();
-        section.set_block(x, y & 0xF, z, b);
+        {
+            let section = self.sections[s_idx as usize].as_mut().unwrap();
+            section.set_block(x, y & 0xF, z, b);
+        }
+        let idx = ((z<<4)|x) as usize;
+        if self.heightmap[idx] < y as u8 {
+            self.heightmap[idx] = y as u8;
+            self.heightmap_dirty = true;
+        } else if self.heightmap[idx] == y as u8 {
+            // Find a new lowest
+            for yy in 0 .. y {
+                let sy = y - yy - 1;
+                match self.get_block(x, sy, z) {
+                    block::Block::Air{..} => continue,
+                    _ => {},
+                };
+                self.heightmap[idx] = sy as u8;
+                break;
+            }
+            self.heightmap_dirty = true;
+        }
     }
 
     fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
