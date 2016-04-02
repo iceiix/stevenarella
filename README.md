@@ -23,6 +23,11 @@ Currently requires SDL2 and OpenSSL to build.
 
 `cargo build --release`
 
+Windows users can download pre-compiled builds from here: https://ci.appveyor.com/project/thinkofdeath/steven-rust
+(Select your platform, Click the artifacts tab and download Steven.zip)
+
+The Visual Studio 2015 Redistributable is required to run these builds.
+
 ## Running
 
 ### Standalone
