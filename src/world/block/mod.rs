@@ -472,6 +472,7 @@ define_blocks! {
         },
         model { ("minecraft", format!("{}_sapling", variant.as_string()) ) },
         variant format!("stage={}", stage),
+        collision vec![],
     }
     Bedrock {
         props {},
@@ -497,6 +498,7 @@ define_blocks! {
             transparent: true,
         },
         model { ("minecraft", "flowing_water") },
+        collision vec![],
     }
     Water {
         props {
@@ -511,6 +513,7 @@ define_blocks! {
             transparent: true,
         },
         model { ("minecraft", "water") },
+        collision vec![],
     }
     FlowingLava {
         props {
@@ -525,6 +528,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "flowing_lava") },
+        collision vec![],
     }
     Lava {
         props {
@@ -539,6 +543,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "lava") },
+        collision vec![],
     }
     Sand {
         props {
@@ -788,6 +793,7 @@ define_blocks! {
         },
         model { ("minecraft", "bed") },
         variant format!("facing={},part={}", facing.as_string(), part.as_string()),
+        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 9.0/16.0, 1.0))],
     }
     GoldenRail {
         props {
@@ -811,6 +817,7 @@ define_blocks! {
         },
         model { ("minecraft", "golden_rail") },
         variant format!("powered={},shape={}", powered, shape.as_string()),
+        collision vec![],
     }
     DetectorRail {
         props {
@@ -834,6 +841,7 @@ define_blocks! {
         },
         model { ("minecraft", "detector_rail") },
         variant format!("powered={},shape={}", powered, shape.as_string()),
+        collision vec![],
     }
     StickyPiston {
         props {
@@ -880,6 +888,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "web") },
+        collision vec![],
     }
     TallGrass {
         props {
@@ -915,6 +924,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "dead_bush") },
+        collision vec![],
     }
     Piston {
         props {
@@ -1554,6 +1564,7 @@ define_blocks! {
             transparent: false,
         },
         model { ("minecraft", "standing_sign") },
+        collision vec![],
     }
     WoodenDoor {
         props {
@@ -1692,6 +1703,7 @@ define_blocks! {
         },
         model { ("minecraft", "wall_sign") },
         variant format!("facing={}", facing.as_string()),
+        collision vec![],
     }
     Lever {
         props {
@@ -1733,6 +1745,7 @@ define_blocks! {
         },
         model { ("minecraft", "stone_pressure_plate") },
         variant format!("powered={}", powered),
+        collision vec![],
     }
     IronDoor {
         props {
@@ -1776,6 +1789,7 @@ define_blocks! {
         },
         model { ("minecraft", "wooden_pressure_plate") },
         variant format!("powered={}", powered),
+        collision vec![],
     }
     RedstoneOre {
         props {},
@@ -2178,7 +2192,7 @@ define_blocks! {
         },
         model { ("minecraft", "unpowered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
-        collision vec![],
+        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
     }
     RepeaterPowered {
         props {
@@ -2213,7 +2227,7 @@ define_blocks! {
         },
         model { ("minecraft", "powered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
-        collision vec![],
+        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
     }
     StainedGlass {
         props {
@@ -2566,6 +2580,7 @@ define_blocks! {
         model { ("minecraft", "vine") },
         variant format!("east={},north={},south={},up={},west={}", east, north, south, up, west),
         tint TintType::Foliage,
+        collision vec![],
     }
     FenceGate {
         props {
@@ -2678,6 +2693,7 @@ define_blocks! {
         },
         model { ("minecraft", "waterlily") },
         tint TintType::Foliage,
+        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.1, 1.0))],
     }
     NetherBrick {
         props {},
@@ -3504,6 +3520,7 @@ define_blocks! {
         },
         model { ("minecraft", "light_weighted_pressure_plate") },
         variant format!("power={}", power),
+        collision vec![],
     }
     HeavyWeightedPressurePlate {
         props {
@@ -3519,6 +3536,7 @@ define_blocks! {
         },
         model { ("minecraft", "heavy_weighted_pressure_plate") },
         variant format!("power={}", power),
+        collision vec![],
     }
     ComparatorUnpowered {
         props {
@@ -3553,7 +3571,7 @@ define_blocks! {
         },
         model { ("minecraft", "unpowered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
-        collision vec![],
+        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
     }
     ComparatorPowered {
         props {
@@ -3588,7 +3606,7 @@ define_blocks! {
         },
         model { ("minecraft", "powered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
-        collision vec![],
+        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
     }
     DaylightDetector {
         props {
@@ -3604,6 +3622,7 @@ define_blocks! {
         },
         model { ("minecraft", "daylight_detector") },
         variant format!("power={}", power),
+        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 3.0/8.0, 1.0))],
     }
     RedstoneBlock {
         props {},
@@ -4224,6 +4243,7 @@ define_blocks! {
         },
         model { ("minecraft", "daylight_detector_inverted") },
         variant format!("power={}", power),
+        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 3.0/8.0, 1.0))],
     }
     RedSandstone {
         props {
