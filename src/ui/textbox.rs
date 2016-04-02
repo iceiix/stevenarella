@@ -76,7 +76,6 @@ impl TextBox {
             height: f64,
             delta: f64)
             -> &Vec<u8> {
-        use std::mem;
         if self.dirty || self.focused || self.was_focused {
             self.was_focused = self.focused;
             self.data.clear();
