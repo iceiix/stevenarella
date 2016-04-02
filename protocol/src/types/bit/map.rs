@@ -78,9 +78,9 @@ impl Map {
     pub fn set(&mut self, i: usize, val: usize) {
         let i = i * self.bit_size;
         let pos = i / 64;
-        let mask = (1 << self.bit_size) - 1;
+        let mask = (1u64 << self.bit_size) - 1;
         let ii = i % 64;
-        self.bits[pos] = (self.bits[pos] & !(mask << ii)) | ((val << ii) as u64);
+        self.bits[pos] = (self.bits[pos] & !(mask << ii)) | ((val as u64) << ii);
         let pos2 = (i + self.bit_size - 1) / 64;
         if pos2 != pos {
             let used = 64 - ii;
