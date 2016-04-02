@@ -99,8 +99,8 @@ pub struct Manager {
 
     component_ids: RefCell<HashMap<TypeId, usize, BuildHasherDefault<FNVHash>>>,
 
-    systems: Vec<Box<System + Send>>,
-    render_systems: Vec<Box<System + Send>>,
+    systems: Option<Vec<Box<System + Send>>>,
+    render_systems: Option<Vec<Box<System + Send>>>,
 
     changed_entity_components: HashSet<Entity, BuildHasherDefault<FNVHash>>,
 }
@@ -119,8 +119,8 @@ impl Manager {
             components: vec![],
 
             component_ids: RefCell::new(HashMap::with_hasher(BuildHasherDefault::default())),
-            systems: vec![],
-            render_systems: vec![],
+            systems: Some(vec![]),
+            render_systems: Some(vec![]),
 
             changed_entity_components: HashSet::with_hasher(BuildHasherDefault::default()),
         }
@@ -136,33 +136,33 @@ impl Manager {
 
     /// Adds a system which will be called every tick
     pub fn add_system<S: System + Send + 'static>(&mut self, s: S) {
-        self.systems.push(Box::new(s));
+        self.systems.as_mut().unwrap().push(Box::new(s));
     }
 
     /// Adds a system which will be called every frame
     pub fn add_render_system<S: System + Send + 'static>(&mut self, s: S) {
-        self.render_systems.push(Box::new(s));
+        self.render_systems.as_mut().unwrap().push(Box::new(s));
     }
 
     /// Ticks all tick systems
     pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
         self.process_entity_changes(world, renderer);
-        let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
+        let mut systems = self.systems.take().unwrap();
         for sys in &mut systems {
             sys.update(self, world, renderer);
         }
-        mem::forget(mem::replace(&mut self.systems, systems));
+        self.systems = Some(systems);
         self.process_entity_changes(world, renderer);
     }
 
     /// Ticks all render systems
     pub fn render_tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
         self.process_entity_changes(world, renderer);
-        let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
+        let mut systems = self.render_systems.take().unwrap();
         for sys in &mut systems {
             sys.update(self, world, renderer);
         }
-        mem::forget(mem::replace(&mut self.render_systems, systems));
+        self.render_systems = Some(systems);
         self.process_entity_changes(world, renderer);
     }
 
@@ -319,23 +319,23 @@ impl Manager {
     }
 
     fn trigger_add_for_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet, world: &mut world::World, renderer: &mut render::Renderer) {
-        let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
+        let mut systems = self.systems.take().unwrap();
         for sys in &mut systems {
             if new_set.includes_set(&sys.filter().bits) && !old_set.includes_set(&sys.filter().bits) {
                 sys.entity_added(self, e, world, renderer);
             }
         }
-        mem::forget(mem::replace(&mut self.systems, systems));
+        self.systems = Some(systems);
     }
 
     fn trigger_add_for_render_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet, world: &mut world::World, renderer: &mut render::Renderer) {
-        let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
+        let mut systems = self.render_systems.take().unwrap();
         for sys in &mut systems {
             if new_set.includes_set(&sys.filter().bits) && !old_set.includes_set(&sys.filter().bits) {
                 sys.entity_added(self, e, world, renderer);
             }
         }
-        mem::forget(mem::replace(&mut self.render_systems, systems));
+        self.render_systems = Some(systems);
     }
 
     /// Same as `add_component` but doesn't require a key. Using a key
@@ -378,23 +378,23 @@ impl Manager {
     }
 
     fn trigger_remove_for_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet, world: &mut world::World, renderer: &mut render::Renderer) {
-        let mut systems = mem::replace(&mut self.systems, unsafe { mem::uninitialized() });
+        let mut systems = self.systems.take().unwrap();
         for sys in &mut systems {
             if !new_set.includes_set(&sys.filter().bits) && old_set.includes_set(&sys.filter().bits) {
                 sys.entity_removed(self, e, world, renderer);
             }
         }
-        mem::forget(mem::replace(&mut self.systems, systems));
+        self.systems = Some(systems);
     }
 
     fn trigger_remove_for_render_systems(&mut self, e: Entity, old_set: &BSet, new_set: &BSet, world: &mut world::World, renderer: &mut render::Renderer) {
-        let mut systems = mem::replace(&mut self.render_systems, unsafe { mem::uninitialized() });
+        let mut systems = self.render_systems.take().unwrap();
         for sys in &mut systems {
             if !new_set.includes_set(&sys.filter().bits) && old_set.includes_set(&sys.filter().bits) {
                 sys.entity_removed(self, e, world, renderer);
             }
         }
-        mem::forget(mem::replace(&mut self.render_systems, systems));
+        self.render_systems = Some(systems);
     }
 
     /// Same as `remove_component` but doesn't require a key. Using a key
