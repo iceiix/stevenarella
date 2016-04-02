@@ -125,7 +125,7 @@ impl Clouds {
 
         buffer.set_data(gl::ARRAY_BUFFER, &data, gl::STATIC_DRAW);
 
-        let heightmap_data = vec![120; 512*512];
+        let heightmap_data = vec![0; 512*512];
 
         let texture = gl::Texture::new();
         texture.bind(gl::TEXTURE_2D);
