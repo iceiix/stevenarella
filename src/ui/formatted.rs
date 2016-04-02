@@ -113,17 +113,12 @@ impl Formatted {
             let sy = r.h / self.height;
 
             for e in &mut self.text {
-                let reg = Container::get_draw_region_raw(e, sx, sy, r);
+                let reg = e.get_draw_region(sx, sy, r);
                 e.set_dirty(true);
                 self.data.extend(e.draw(renderer, &reg, width, height, delta));
             }
         }
         &self.data
-    }
-
-    pub fn get_size(&self) -> (f64, f64) {
-        ((self.width + 2.0) * self.scale_x,
-         self.height * self.scale_y)
     }
 
     lazy_field!(width, f64, get_width, set_width);
@@ -150,6 +145,18 @@ impl UIElement for Formatted {
             &mut Element::Formatted(ref mut val) => val,
             _ => panic!("Incorrect type"),
         }
+    }
+
+    fn get_attachment(&self) -> (VAttach, HAttach) {
+        (self.v_attach, self.h_attach)
+    }
+
+    fn get_offset(&self) -> (f64, f64) {
+        (self.x, self.y)
+    }
+
+    fn get_size(&self) -> (f64, f64) {
+        ((self.width + 2.0) * self.scale_x, self.height * self.scale_y)
     }
 }
 

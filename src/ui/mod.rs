@@ -136,33 +136,6 @@ impl Element {
         }
     }
 
-    fn get_attachment(&self) -> (VAttach, HAttach) {
-        match *self {
-            $(
-            Element::$name(ref val) => (val.v_attach, val.h_attach),
-            )+
-            _ => unimplemented!(),
-        }
-    }
-
-    fn get_offset(&self) -> (f64, f64) {
-        match *self {
-            $(
-            Element::$name(ref val) => (val.x, val.y),
-            )+
-            _ => unimplemented!(),
-        }
-    }
-
-    fn get_size(&self) -> (f64, f64) {
-        match *self {
-            $(
-            Element::$name(ref val) => val.get_size(),
-            )+
-            _ => unimplemented!(),
-        }
-    }
-
     fn is_dirty(&self) -> bool {
         match *self {
             $(
@@ -194,6 +167,15 @@ impl Element {
         match *self {
             $(
             Element::$name(ref mut val) => val.draw(renderer, r, width, height, delta),
+            )+
+            _ => unimplemented!(),
+        }
+    }
+
+    fn get_draw_region(&self, sw: f64, sh: f64, super_region: &Region) -> Region {
+        match *self {
+            $(
+            Element::$name(ref val) => Container::get_draw_region_raw(val, sw, sh, super_region),
             )+
             _ => unimplemented!(),
         }
@@ -571,10 +553,10 @@ impl Container {
             Some(ref p) => self.get_draw_region(self.elements.get(p).unwrap(), sw, sh),
             None => SCREEN,
         };
-        Container::get_draw_region_raw(e, sw, sh, &super_region)
+        e.get_draw_region(sw, sh, &super_region)
     }
 
-    fn get_draw_region_raw(e: &Element, sw: f64, sh: f64, super_region: &Region) -> Region {
+    fn get_draw_region_raw<T: UIElement>(e: &T, sw: f64, sh: f64, super_region: &Region) -> Region {
         let mut r = Region {
             x: 0.0,
             y: 0.0,
@@ -614,6 +596,10 @@ pub trait UIElement {
     fn key_type(&mut self, _game: &mut ::Game, _c: char) -> Vec<Rc<ClickFunc>> {
         vec![]
     }
+
+    fn get_attachment(&self) -> (VAttach, HAttach);
+    fn get_offset(&self) -> (f64, f64);
+    fn get_size(&self) -> (f64, f64);
 }
 
 macro_rules! lazy_field {

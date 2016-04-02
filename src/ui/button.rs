@@ -105,10 +105,6 @@ impl Button {
         &self.data
     }
 
-    pub fn get_size(&self) -> (f64, f64) {
-        (self.width, self.height)
-    }
-
     lazy_field!(width, f64, get_width, set_width);
     lazy_field!(height, f64, get_height, set_height);
     lazy_field!(disabled, bool, is_disabled, set_disabled);
@@ -132,5 +128,17 @@ impl UIElement for Button {
             &mut Element::Button(ref mut val) => val,
             _ => panic!("Incorrect type"),
         }
+    }
+
+    fn get_attachment(&self) -> (VAttach, HAttach) {
+        (self.v_attach, self.h_attach)
+    }
+
+    fn get_offset(&self) -> (f64, f64) {
+        (self.x, self.y)
+    }
+
+    fn get_size(&self) -> (f64, f64) {
+        (self.width, self.height)
     }
 }

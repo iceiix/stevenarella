@@ -57,16 +57,12 @@ impl Batch {
             let sy = r.h / self.height;
 
             for e in &mut self.elements {
-                let reg = Container::get_draw_region_raw(e, sx, sy, r);
+                let reg = e.get_draw_region(sx, sy, r);
                 e.set_dirty(true);
                 self.data.extend(e.draw(renderer, &reg, width, height, delta));
             }
         }
         &self.data
-    }
-
-    pub fn get_size(&self) -> (f64, f64) {
-        (self.width, self.height)
     }
 
     pub fn add<T: UIElement>(&mut self, e: T) -> BatchRef<T> {
@@ -116,5 +112,17 @@ impl UIElement for Batch {
             &mut Element::Batch(ref mut val) => val,
             _ => panic!("Incorrect type"),
         }
+    }
+
+    fn get_attachment(&self) -> (VAttach, HAttach) {
+        (self.v_attach, self.h_attach)
+    }
+
+    fn get_offset(&self) -> (f64, f64) {
+        (self.x, self.y)
+    }
+
+    fn get_size(&self) -> (f64, f64) {
+        (self.width, self.height)
     }
 }

@@ -95,10 +95,6 @@ impl Image {
         &self.data
     }
 
-    pub fn get_size(&self) -> (f64, f64) {
-        (self.width, self.height)
-    }
-
     pub fn get_texture(&self) -> render::Texture {
         self.texture.clone()
     }
@@ -139,5 +135,17 @@ impl UIElement for Image {
             &mut Element::Image(ref mut val) => val,
             _ => panic!("Incorrect type"),
         }
+    }
+
+    fn get_attachment(&self) -> (VAttach, HAttach) {
+        (self.v_attach, self.h_attach)
+    }
+
+    fn get_offset(&self) -> (f64, f64) {
+        (self.x, self.y)
+    }
+
+    fn get_size(&self) -> (f64, f64) {
+        (self.width, self.height)
     }
 }

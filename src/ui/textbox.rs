@@ -95,28 +95,15 @@ impl TextBox {
 
             let sx = r.w / self.width;
             let sy = r.h / self.height;
-            let mut btn = mem::replace(&mut self.button, unsafe { mem::uninitialized() }).wrap();
-            let reg = Container::get_draw_region_raw(&btn, sx, sy, r);
-            btn.set_dirty(true);
-            self.data.extend(btn.draw(renderer, &reg, width, height, delta));
-            mem::forget(mem::replace(&mut self.button, match btn {
-                Element::Button(btn)=> btn,
-                _ => unreachable!(),
-            }));
-            let mut txt = mem::replace(&mut self.text, unsafe { mem::uninitialized() }).wrap();
-            let reg = Container::get_draw_region_raw(&txt, sx, sy, r);
-            txt.set_dirty(true);
-            self.data.extend(txt.draw(renderer, &reg, width, height, delta));
-            mem::forget(mem::replace(&mut self.text, match txt {
-                Element::Text(txt)=> txt,
-                _ => unreachable!(),
-            }));
+            let reg = Container::get_draw_region_raw(&self.button, sx, sy, r);
+            self.button.dirty = true;
+            self.data.extend(self.button.draw(renderer, &reg, width, height, delta));
+
+            let reg = Container::get_draw_region_raw(&self.text, sx, sy, r);
+            self.text.dirty = true;
+            self.data.extend(self.text.draw(renderer, &reg, width, height, delta));
         }
         &self.data
-    }
-
-    pub fn get_size(&self) -> (f64, f64) {
-        (self.width, self.height)
     }
 
     pub fn get_input(&self) -> String {
@@ -179,5 +166,17 @@ impl UIElement for TextBox {
             &mut Element::TextBox(ref mut val) => val,
             _ => panic!("Incorrect type"),
         }
+    }
+
+    fn get_attachment(&self) -> (VAttach, HAttach) {
+        (self.v_attach, self.h_attach)
+    }
+
+    fn get_offset(&self) -> (f64, f64) {
+        (self.x, self.y)
+    }
+
+    fn get_size(&self) -> (f64, f64) {
+        (self.width, self.height)
     }
 }

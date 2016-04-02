@@ -102,11 +102,6 @@ impl Text {
         &self.data
     }
 
-    pub fn get_size(&self) -> (f64, f64) {
-        ((self.width + 2.0) * self.scale_x,
-         self.height * self.scale_y)
-    }
-
     pub fn get_text(&self) -> &str {
         &self.val
     }
@@ -145,5 +140,17 @@ impl UIElement for Text {
             &mut Element::Text(ref mut val) => val,
             _ => panic!("Incorrect type"),
         }
+    }
+
+    fn get_attachment(&self) -> (VAttach, HAttach) {
+        (self.v_attach, self.h_attach)
+    }
+
+    fn get_offset(&self) -> (f64, f64) {
+        (self.x, self.y)
+    }
+
+    fn get_size(&self) -> (f64, f64) {
+        ((self.width + 2.0) * self.scale_x, self.height * self.scale_y)
     }
 }
