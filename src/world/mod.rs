@@ -783,7 +783,7 @@ impl Chunk {
     fn get_sky_light(&self, x: i32, y: i32, z: i32) -> u8 {
         let s_idx = y >> 4;
         if s_idx < 0 || s_idx > 15 {
-            return 0;
+            return 15;
         }
         match self.sections[s_idx as usize].as_ref() {
             Some(sec) => sec.get_sky_light(x, y & 0xF, z),
