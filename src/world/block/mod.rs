@@ -455,7 +455,15 @@ define_blocks! {
             level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 0,
+            emitted_light: 15,
+        },
         model { ("minecraft", "flowing_lava") },
         collision vec![],
     }
@@ -464,7 +472,15 @@ define_blocks! {
             level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 0,
+            emitted_light: 15,
+        },
         model { ("minecraft", "lava") },
         collision vec![],
     }
@@ -695,6 +711,8 @@ define_blocks! {
             should_cull_against: !extended,
             force_shade: false,
             transparent: false,
+            absorbed_light: 1,
+            emitted_light: 0,
         },
         model { ("minecraft", "sticky_piston") },
         variant format!("extended={},facing={}", extended, facing.as_string()),
@@ -760,6 +778,8 @@ define_blocks! {
             should_cull_against: !extended,
             force_shade: false,
             transparent: false,
+            absorbed_light: 1,
+            emitted_light: 0,
         },
         model { ("minecraft", "piston") },
         variant format!("extended={},facing={}", extended, facing.as_string()),
@@ -976,7 +996,15 @@ define_blocks! {
                 _ => unreachable!(),
             })
         },
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 14,
+        },
         model { ("minecraft", "torch") },
         variant format!("facing={}", facing.as_string()),
         collision vec![],
@@ -1415,7 +1443,15 @@ define_blocks! {
                 _ => unreachable!(),
             })
         },
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 7,
+        },
         model { ("minecraft", "redstone_torch") },
         variant format!("facing={}", facing.as_string()),
         collision vec![],
@@ -1561,7 +1597,15 @@ define_blocks! {
     }
     Glowstone {
         props {},
-        material material::SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: true,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 15,
+        },
         model { ("minecraft", "glowstone") },
     }
     Portal {
@@ -3042,7 +3086,15 @@ define_blocks! {
     }
     SeaLantern {
         props {},
-        material material::SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: true,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 15,
+        },
         model { ("minecraft", "sea_lantern") },
     }
     HayBlock {

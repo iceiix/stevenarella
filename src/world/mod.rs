@@ -15,6 +15,7 @@
 pub mod block;
 
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::hash::BuildHasherDefault;
 use types::{bit, nibble, Direction};
 use types::hash::FNVHash;
@@ -30,6 +31,36 @@ pub struct World {
     chunks: HashMap<CPos, Chunk, BuildHasherDefault<FNVHash>>,
 
     render_list: Vec<(i32, i32, i32)>,
+
+    light_updates: VecDeque<LightUpdate>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum LightType {
+    Block,
+    Sky
+}
+
+impl LightType {
+    fn get_light(self, world: &World, x: i32, y: i32, z: i32) -> u8 {
+        match self {
+            LightType::Block => world.get_block_light(x, y, z),
+            LightType::Sky => world.get_sky_light(x, y, z),
+        }
+    }
+    fn set_light(self, world: &mut World, x: i32, y: i32, z: i32, light: u8) {
+        match self {
+            LightType::Block => world.set_block_light(x, y, z, light),
+            LightType::Sky => world.set_sky_light(x, y, z, light),
+        }
+    }
+}
+
+struct LightUpdate {
+    ty: LightType,
+    x: i32,
+    y: i32,
+    z: i32,
 }
 
 impl World {
@@ -37,6 +68,7 @@ impl World {
         World {
             chunks: HashMap::with_hasher(BuildHasherDefault::default()),
             render_list: vec![],
+            light_updates: VecDeque::new(),
         }
     }
 
@@ -45,14 +77,15 @@ impl World {
     }
 
     pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
-        self.set_block_raw(x, y, z, b);
-        self.update_block(x, y, z);
+        if self.set_block_raw(x, y, z, b) {
+            self.update_block(x, y, z);
+        }
     }
 
-    fn set_block_raw(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
+    fn set_block_raw(&mut self, x: i32, y: i32, z: i32, b: block::Block) -> bool {
         let cpos = CPos(x >> 4, z >> 4);
         let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
-        chunk.set_block(x & 0xF, y, z & 0xF, b);
+        chunk.set_block(x & 0xF, y, z & 0xF, b)
     }
 
     pub fn update_block(&mut self, x: i32, y: i32, z: i32) {
@@ -66,6 +99,8 @@ impl World {
                         self.set_block_raw(bx, by, bz, new);
                     }
                     self.set_dirty(bx >> 4, by >> 4, bz >> 4);
+                    self.update_light(bx, by, bz, LightType::Block);
+                    self.update_light(bx, by, bz, LightType::Sky);
                 }
             }
         }
@@ -94,6 +129,112 @@ impl World {
         match self.chunks.get(&CPos(x >> 4, z >> 4)) {
             Some(ref chunk) => chunk.get_block(x & 0xF, y, z & 0xF),
             None => block::Missing{},
+        }
+    }
+
+    fn set_block_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
+        let cpos = CPos(x >> 4, z >> 4);
+        let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
+        chunk.set_block_light(x & 0xF, y, z & 0xF, light);
+    }
+
+    fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {
+        match self.chunks.get(&CPos(x >> 4, z >> 4)) {
+            Some(ref chunk) => chunk.get_block_light(x & 0xF, y, z & 0xF),
+            None => 0,
+        }
+    }
+
+    fn set_sky_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
+        let cpos = CPos(x >> 4, z >> 4);
+        let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
+        chunk.set_sky_light(x & 0xF, y, z & 0xF, light);
+    }
+
+    fn get_sky_light(&self, x: i32, y: i32, z: i32) -> u8 {
+        match self.chunks.get(&CPos(x >> 4, z >> 4)) {
+            Some(ref chunk) => chunk.get_sky_light(x & 0xF, y, z & 0xF),
+            None => 15,
+        }
+    }
+
+    fn update_light(&mut self, x: i32, y: i32, z: i32, ty: LightType) {
+        self.light_updates.push_back(LightUpdate {
+            ty: ty,
+            x: x,
+            y: y,
+            z: z,
+        });
+    }
+
+    pub fn tick(&mut self) {
+        use time;
+        let start = time::precise_time_ns();
+        let mut updates_performed = 0;
+        while !self.light_updates.is_empty() {
+            updates_performed += 1;
+            self.do_light_update();
+            if updates_performed & 0xFFF == 0 {
+                let now = time::precise_time_ns();
+                if (now - start) >= 5000000 { // 5 ms for light updates
+                    break;
+                }
+            }
+        }
+    }
+
+    fn do_light_update(&mut self) {
+        use std::cmp;
+        if let Some(update) = self.light_updates.pop_front() {
+            if update.y < 0 || update.y > 255 || !self.is_chunk_loaded(update.x >> 4, update.z >> 4) {
+                return;
+            }
+
+            let block = self.get_block(update.x, update.y, update.z).get_material();
+            // Find the brightest source of light nearby
+            let mut best = update.ty.get_light(self, update.x, update.y, update.z);
+            let old = best;
+            for dir in Direction::all() {
+                let (ox, oy, oz) = dir.get_offset();
+                let light = update.ty.get_light(self, update.x + ox, update.y + oy, update.z + oz);
+                if light > best {
+                    best = light;
+                }
+            }
+            best = best.saturating_sub(cmp::max(1, block.absorbed_light));
+            // If the light from the block itself is brighter than the light passing through
+            // it use that.
+            if update.ty == LightType::Block && block.emitted_light != 0 {
+                best = cmp::max(best, block.emitted_light);
+            }
+            // Sky light doesn't decrease when going down at full brightness
+            if update.ty == LightType::Sky
+                && block.absorbed_light == 0
+                && update.ty.get_light(self, update.x, update.y + 1, update.z) == 15 {
+                best = 15;
+            }
+
+            // Nothing to do, we are already at the right value
+            if best == old {
+                return;
+            }
+            // Use our new light value
+            update.ty.set_light(self, update.x, update.y, update.z, best);
+            // Flag surrounding chunks as dirty
+            for yy in -1 .. 2 {
+                for zz in -1 .. 2 {
+                    for xx in -1 .. 2 {
+                        let (bx, by, bz) = (update.x+xx, update.y+yy, update.z+zz);
+                        self.set_dirty(bx >> 4, by >> 4, bz >> 4);
+                    }
+                }
+            }
+
+            // Update surrounding blocks
+            for dir in Direction::all() {
+                let (ox, oy, oz) = dir.get_offset();
+                self.update_light(update.x + ox, update.y + oy, update.z + oz, update.ty);
+            }
         }
     }
 
@@ -364,11 +505,17 @@ impl World {
             };
 
             for i in 0 .. 16 {
+                if chunk.sections[i].is_none() {
+                    let mut fill_sky = chunk.sections.iter()
+                        .skip(i)
+                        .all(|v| v.is_none());
+                    fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
+                    if !fill_sky || mask & (1 << i) != 0 {
+                        chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
+                    }
+                }
                 if mask & (1 << i) == 0 {
                     continue;
-                }
-                if chunk.sections[i].is_none() {
-                    chunk.sections[i] = Some(Section::new(x, i as u8, z));
                 }
                 let section = chunk.sections[i as usize].as_mut().unwrap();
                 section.dirty = true;
@@ -554,20 +701,25 @@ impl Chunk {
         self.heightmap_dirty = true;
     }
 
-    fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
-        let s_idx = y >> 4;
+    fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) -> bool {
+        let s_idx = (y >> 4) as usize;
         if s_idx < 0 || s_idx > 15 {
-            return;
+            return false;
         }
-        if self.sections[s_idx as usize].is_none() {
+        if self.sections[s_idx].is_none() {
             if let block::Air {} = b {
-                return;
+                return false;
             }
-            self.sections[s_idx as usize] = Some(Section::new(self.position.0, s_idx as u8, self.position.1));
+            let fill_sky = self.sections.iter()
+                .skip(s_idx)
+                .all(|v| v.is_none());
+            self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
         }
         {
             let section = self.sections[s_idx as usize].as_mut().unwrap();
-            section.set_block(x, y & 0xF, z, b);
+            if !section.set_block(x, y & 0xF, z, b) {
+                return false;
+            }
         }
         let idx = ((z<<4)|x) as usize;
         if self.heightmap[idx] < y as u8 {
@@ -585,6 +737,7 @@ impl Chunk {
             }
             self.heightmap_dirty = true;
         }
+        true
     }
 
     fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
@@ -595,6 +748,68 @@ impl Chunk {
         match self.sections[s_idx as usize].as_ref() {
             Some(sec) => sec.get_block(x, y & 0xF, z),
             None => block::Air{},
+        }
+    }
+
+    fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {
+        let s_idx = y >> 4;
+        if s_idx < 0 || s_idx > 15 {
+            return 0;
+        }
+        match self.sections[s_idx as usize].as_ref() {
+            Some(sec) => sec.get_block_light(x, y & 0xF, z),
+            None => 0,
+        }
+    }
+
+    fn set_block_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
+        let s_idx = (y >> 4) as usize;
+        if s_idx < 0 || s_idx > 15 {
+            return;
+        }
+        if self.sections[s_idx].is_none() {
+            if light == 0 {
+                return;
+            }
+            let fill_sky = self.sections.iter()
+                .skip(s_idx)
+                .all(|v| v.is_none());
+            self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
+        }
+        match self.sections[s_idx].as_mut() {
+            Some(sec) => sec.set_block_light(x, y & 0xF, z, light),
+            None => {},
+        }
+    }
+
+    fn get_sky_light(&self, x: i32, y: i32, z: i32) -> u8 {
+        let s_idx = y >> 4;
+        if s_idx < 0 || s_idx > 15 {
+            return 0;
+        }
+        match self.sections[s_idx as usize].as_ref() {
+            Some(sec) => sec.get_sky_light(x, y & 0xF, z),
+            None => 15,
+        }
+    }
+
+    fn set_sky_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
+        let s_idx = (y >> 4) as usize;
+        if s_idx < 0 || s_idx > 15 {
+            return;
+        }
+        if self.sections[s_idx].is_none() {
+            if light == 15 {
+                return;
+            }
+            let fill_sky = self.sections.iter()
+                .skip(s_idx)
+                .all(|v| v.is_none());
+            self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
+        }
+        match self.sections[s_idx as usize].as_mut() {
+            Some(sec) => sec.set_sky_light(x, y & 0xF, z, light),
+            None => {},
         }
     }
 
@@ -626,7 +841,7 @@ pub struct Section {
 }
 
 impl Section {
-    fn new(_x: i32, y: u8, _z: i32) -> Section {
+    fn new(y: u8, fill_sky: bool) -> Section {
         let mut section = Section {
             cull_info: chunk_builder::CullInfo::all_vis(),
             render_buffer: render::ChunkBuffer::new(),
@@ -644,8 +859,10 @@ impl Section {
             dirty: false,
             building: false,
         };
-        for i in 0 .. 16*16*16 {
-            section.sky_light.set(i, 0xF);
+        if fill_sky {
+            for i in 0 .. 16*16*16 {
+                section.sky_light.set(i, 0xF);
+            }
         }
         section.rev_block_map.insert(block::Air{}, 0);
         section
@@ -656,11 +873,11 @@ impl Section {
         self.block_map[idx].0
     }
 
-    fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
+    fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) -> bool {
         use std::collections::hash_map::Entry;
         let old = self.get_block(x, y, z);
         if old == b {
-            return;
+            return false;
         }
         // Clean up old block
         {
@@ -693,11 +910,16 @@ impl Section {
             }
         }
 
-        let idx = self.rev_block_map[&b];
-        let info = &mut self.block_map[idx];
-        info.1 += 1;
-        self.blocks.set(((y << 8) | (z << 4) | x) as usize, idx);
-        self.dirty = true;
+        {
+            let idx = self.rev_block_map[&b];
+            let info = &mut self.block_map[idx];
+            info.1 += 1;
+            self.blocks.set(((y << 8) | (z << 4) | x) as usize, idx);
+            self.dirty = true;
+        }
+        self.set_sky_light(x, y, z, 0);
+        self.set_block_light(x, y, z, 0);
+        true
     }
 
     fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {

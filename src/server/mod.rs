@@ -283,6 +283,8 @@ impl Server {
             sun_model.tick(renderer, self.world_time, self.world_age);
         }
 
+        self.world.tick();
+
         // Copy to camera
         if let Some(player) = self.player {
             let position = self.entities.get_component(player, self.position).unwrap();

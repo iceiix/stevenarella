@@ -5,6 +5,8 @@ pub struct Material {
     pub never_cull: bool, // Because leaves suck
     pub force_shade: bool,
     pub transparent: bool,
+    pub absorbed_light: u8,
+    pub emitted_light: u8,
 }
 
 pub const INVISIBLE: Material = Material {
@@ -13,6 +15,8 @@ pub const INVISIBLE: Material = Material {
     should_cull_against: false,
     force_shade: false,
     transparent: false,
+    absorbed_light: 0, // Special because of sky light
+    emitted_light: 0,
 };
 
 pub const SOLID: Material = Material {
@@ -21,6 +25,8 @@ pub const SOLID: Material = Material {
     should_cull_against: true,
     force_shade: false,
     transparent: false,
+    absorbed_light: 15,
+    emitted_light: 0,
 };
 
 pub const NON_SOLID: Material = Material {
@@ -29,6 +35,8 @@ pub const NON_SOLID: Material = Material {
     should_cull_against: false,
     force_shade: false,
     transparent: false,
+    absorbed_light: 1,
+    emitted_light: 0,
 };
 
 pub const TRANSPARENT: Material = Material {
@@ -37,6 +45,8 @@ pub const TRANSPARENT: Material = Material {
     should_cull_against: false,
     force_shade: false,
     transparent: true,
+    absorbed_light: 1,
+    emitted_light: 0,
 };
 
 pub const LEAVES: Material = Material {
@@ -45,4 +55,6 @@ pub const LEAVES: Material = Material {
     should_cull_against: false,
     force_shade: true,
     transparent: false,
+    absorbed_light: 1,
+    emitted_light: 0,
 };
