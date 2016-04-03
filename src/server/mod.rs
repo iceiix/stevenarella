@@ -110,11 +110,30 @@ impl Server {
             username: profile.username.clone(),
         }));
 
-        let packet = match try!(conn.read_packet()) {
-            protocol::packet::Packet::EncryptionRequest(val) => val,
-            protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
-            val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
-        };
+        let packet;
+        loop {
+            match try!(conn.read_packet()) {
+                protocol::packet::Packet::SetInitialCompression(val) => {
+                    conn.set_compresssion(val.threshold.0);
+                },
+                protocol::packet::Packet::EncryptionRequest(val) => {
+                    packet = val;
+                    break;
+                },
+                protocol::packet::Packet::LoginSuccess(val) => {
+                    warn!("Server is running in offline mode");
+                    debug!("Login: {} {}", val.username, val.uuid);
+                    let mut read = conn.clone();
+                    let mut write = conn.clone();
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    let rx = Self::spawn_reader(read);
+                    return Ok(Server::new(resources, console, Some(write), Some(rx)));
+                }
+                protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
+                val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
+            };
+        }
 
         let mut key = openssl::PublicKey::new(&packet.public_key.data);
         let shared = openssl::gen_random(16);
@@ -138,8 +157,8 @@ impl Server {
         loop {
            match try!(read.read_packet()) {
                protocol::packet::Packet::SetInitialCompression(val) => {
-                   read.set_compresssion(val.threshold.0, true);
-                   write.set_compresssion(val.threshold.0, false);
+                   read.set_compresssion(val.threshold.0);
+                   write.set_compresssion(val.threshold.0);
                }
                protocol::packet::Packet::LoginSuccess(val) => {
                    debug!("Login: {} {}", val.username, val.uuid);
@@ -152,6 +171,12 @@ impl Server {
            }
         }
 
+        let rx = Self::spawn_reader(read);
+
+        Ok(Server::new(resources, console, Some(write), Some(rx)))
+    }
+
+    fn spawn_reader(mut read: protocol::Conn) -> mpsc::Receiver<Result<packet::Packet, protocol::Error>> {
         let (tx, rx) = mpsc::channel();
         thread::spawn(move || {
             loop {
@@ -165,8 +190,7 @@ impl Server {
                 }
             }
         });
-
-        Ok(Server::new(resources, console, Some(write), Some(rx)))
+        rx
     }
 
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>) -> Server {
