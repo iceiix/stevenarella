@@ -36,3 +36,7 @@ version = "0"
 [dependencies.steven_blocks]
 path = "./blocks"
 version = "0"
+
+[dependencies.steven_shared]
+path = "./shared"
+version = "0"

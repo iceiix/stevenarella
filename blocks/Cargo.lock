@@ -5,6 +5,7 @@ dependencies = [
  "cgmath 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "collision 0.5.1 (git+https://github.com/csherratt/collision-rs?rev=f80825e)",
  "lazy_static 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "steven_shared 0.0.1",
 ]
 
 [[package]]
@@ -57,4 +58,8 @@ dependencies = [
 name = "rustc-serialize"
 version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "steven_shared"
+version = "0.0.1"
 

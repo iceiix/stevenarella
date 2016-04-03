@@ -10,7 +10,7 @@ use resources;
 use render;
 use world;
 use world::block::{Block, TintType};
-use types::Direction;
+use shared::Direction;
 use serde_json;
 
 use std::hash::BuildHasherDefault;
@@ -507,7 +507,7 @@ impl Factory {
                         ]);
                     }
 
-                    let mut verts = all_dirs[i].get_verts().to_vec();
+                    let mut verts = BlockVertex::face_by_direction(all_dirs[i]).to_vec();
                     let texture_name = raw.lookup_texture(&face.texture);
                     let texture = render::Renderer::get_texture(&self.textures, &texture_name);
 
@@ -1100,5 +1100,17 @@ impl BlockVertex {
         let _ = w.write_u16::<NativeEndian>(self.sky_light);
         let _ = w.write_u16::<NativeEndian>(0);
         let _ = w.write_u16::<NativeEndian>(0);
+    }
+
+    pub fn face_by_direction(dir: Direction) -> &'static [BlockVertex; 4] {
+        match dir {
+            Direction::Up => PRECOMPUTED_VERTS[0],
+            Direction::Down => PRECOMPUTED_VERTS[1],
+            Direction::North => PRECOMPUTED_VERTS[2],
+            Direction::South => PRECOMPUTED_VERTS[3],
+            Direction::West => PRECOMPUTED_VERTS[4],
+            Direction::East => PRECOMPUTED_VERTS[5],
+            _ => unreachable!(),
+        }
     }
 }

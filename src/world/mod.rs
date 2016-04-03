@@ -17,7 +17,8 @@ pub use steven_blocks as block;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::hash::BuildHasherDefault;
-use types::{bit, nibble, Direction};
+use types::{bit, nibble};
+use shared::{Position, Direction};
 use types::hash::FNVHash;
 use protocol;
 use render;
@@ -42,25 +43,23 @@ enum LightType {
 }
 
 impl LightType {
-    fn get_light(self, world: &World, x: i32, y: i32, z: i32) -> u8 {
+    fn get_light(self, world: &World, pos: Position) -> u8 {
         match self {
-            LightType::Block => world.get_block_light(x, y, z),
-            LightType::Sky => world.get_sky_light(x, y, z),
+            LightType::Block => world.get_block_light(pos),
+            LightType::Sky => world.get_sky_light(pos),
         }
     }
-    fn set_light(self, world: &mut World, x: i32, y: i32, z: i32, light: u8) {
+    fn set_light(self, world: &mut World, pos: Position, light: u8) {
         match self {
-            LightType::Block => world.set_block_light(x, y, z, light),
-            LightType::Sky => world.set_sky_light(x, y, z, light),
+            LightType::Block => world.set_block_light(pos, light),
+            LightType::Sky => world.set_sky_light(pos, light),
         }
     }
 }
 
 struct LightUpdate {
     ty: LightType,
-    x: i32,
-    y: i32,
-    z: i32,
+    pos: Position,
 }
 
 impl World {
@@ -76,31 +75,31 @@ impl World {
         self.chunks.contains_key(&CPos(x, z))
     }
 
-    pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
-        if self.set_block_raw(x, y, z, b) {
-            self.update_block(x, y, z);
+    pub fn set_block(&mut self, pos: Position, b: block::Block) {
+        if self.set_block_raw(pos, b) {
+            self.update_block(pos);
         }
     }
 
-    fn set_block_raw(&mut self, x: i32, y: i32, z: i32, b: block::Block) -> bool {
-        let cpos = CPos(x >> 4, z >> 4);
+    fn set_block_raw(&mut self, pos: Position, b: block::Block) -> bool {
+        let cpos = CPos(pos.x >> 4, pos.z >> 4);
         let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
-        chunk.set_block(x & 0xF, y, z & 0xF, b)
+        chunk.set_block(pos.x & 0xF, pos.y, pos.z & 0xF, b)
     }
 
-    pub fn update_block(&mut self, x: i32, y: i32, z: i32) {
+    pub fn update_block(&mut self, pos: Position) {
         for yy in -1 .. 2 {
             for zz in -1 .. 2 {
                 for xx in -1 .. 2 {
-                    let (bx, by, bz) = (x+xx, y+yy, z+zz);
-                    let current = self.get_block(bx, by, bz);
-                    let new = current.update_state(self, bx, by, bz);
+                    let bp = pos + (xx, yy, zz);
+                    let current = self.get_block(bp);
+                    let new = current.update_state(self, bp);
                     if current != new {
-                        self.set_block_raw(bx, by, bz, new);
+                        self.set_block_raw(bp, new);
                     }
-                    self.set_dirty(bx >> 4, by >> 4, bz >> 4);
-                    self.update_light(bx, by, bz, LightType::Block);
-                    self.update_light(bx, by, bz, LightType::Sky);
+                    self.set_dirty(bp.x >> 4, bp.y >> 4, bp.z >> 4);
+                    self.update_light(bp, LightType::Block);
+                    self.update_light(bp, LightType::Sky);
                 }
             }
         }
@@ -110,60 +109,54 @@ impl World {
         for by in y1 .. y2 {
             for bz in z1 .. z2 {
                 for bx in x1 .. x2 {
-                    let current = self.get_block(bx, by, bz);
-                    let new = current.update_state(self, bx, by, bz);
+                    let bp = Position::new(bx, by, bz);
+                    let current = self.get_block(bp);
+                    let new = current.update_state(self, bp);
                     if current != new {
-                        self.set_block_raw(bx, by, bz, new);
+                        self.set_block_raw(bp, new);
                     }
                 }
             }
         }
     }
 
-    pub fn get_block_offset(&self, x: i32, y: i32, z: i32, dir: Direction) -> block::Block {
-        let (ox, oy, oz) = dir.get_offset();
-        self.get_block(x + ox, y + oy, z + oz)
-    }
-
-    pub fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
-        match self.chunks.get(&CPos(x >> 4, z >> 4)) {
-            Some(ref chunk) => chunk.get_block(x & 0xF, y, z & 0xF),
+    pub fn get_block(&self, pos: Position) -> block::Block {
+        match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
+            Some(ref chunk) => chunk.get_block(pos.x & 0xF, pos.y, pos.z & 0xF),
             None => block::Missing{},
         }
     }
 
-    fn set_block_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
-        let cpos = CPos(x >> 4, z >> 4);
+    fn set_block_light(&mut self, pos: Position, light: u8) {
+        let cpos = CPos(pos.x >> 4, pos.z >> 4);
         let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
-        chunk.set_block_light(x & 0xF, y, z & 0xF, light);
+        chunk.set_block_light(pos.x & 0xF, pos.y, pos.z & 0xF, light);
     }
 
-    fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {
-        match self.chunks.get(&CPos(x >> 4, z >> 4)) {
-            Some(ref chunk) => chunk.get_block_light(x & 0xF, y, z & 0xF),
+    fn get_block_light(&self, pos: Position) -> u8 {
+        match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
+            Some(ref chunk) => chunk.get_block_light(pos.x & 0xF, pos.y, pos.z & 0xF),
             None => 0,
         }
     }
 
-    fn set_sky_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
-        let cpos = CPos(x >> 4, z >> 4);
+    fn set_sky_light(&mut self, pos: Position, light: u8) {
+        let cpos = CPos(pos.x >> 4, pos.z >> 4);
         let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
-        chunk.set_sky_light(x & 0xF, y, z & 0xF, light);
+        chunk.set_sky_light(pos.x & 0xF, pos.y, pos.z & 0xF, light);
     }
 
-    fn get_sky_light(&self, x: i32, y: i32, z: i32) -> u8 {
-        match self.chunks.get(&CPos(x >> 4, z >> 4)) {
-            Some(ref chunk) => chunk.get_sky_light(x & 0xF, y, z & 0xF),
+    fn get_sky_light(&self, pos: Position) -> u8 {
+        match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
+            Some(ref chunk) => chunk.get_sky_light(pos.x & 0xF, pos.y, pos.z & 0xF),
             None => 15,
         }
     }
 
-    fn update_light(&mut self, x: i32, y: i32, z: i32, ty: LightType) {
+    fn update_light(&mut self, pos: Position, ty: LightType) {
         self.light_updates.push_back(LightUpdate {
             ty: ty,
-            x: x,
-            y: y,
-            z: z,
+            pos: pos,
         });
     }
 
@@ -186,17 +179,16 @@ impl World {
     fn do_light_update(&mut self) {
         use std::cmp;
         if let Some(update) = self.light_updates.pop_front() {
-            if update.y < 0 || update.y > 255 || !self.is_chunk_loaded(update.x >> 4, update.z >> 4) {
+            if update.pos.y < 0 || update.pos.y > 255 || !self.is_chunk_loaded(update.pos.x >> 4, update.pos.z >> 4) {
                 return;
             }
 
-            let block = self.get_block(update.x, update.y, update.z).get_material();
+            let block = self.get_block(update.pos).get_material();
             // Find the brightest source of light nearby
-            let mut best = update.ty.get_light(self, update.x, update.y, update.z);
+            let mut best = update.ty.get_light(self, update.pos);
             let old = best;
             for dir in Direction::all() {
-                let (ox, oy, oz) = dir.get_offset();
-                let light = update.ty.get_light(self, update.x + ox, update.y + oy, update.z + oz);
+                let light = update.ty.get_light(self, update.pos.shift(dir));
                 if light > best {
                     best = light;
                 }
@@ -210,7 +202,7 @@ impl World {
             // Sky light doesn't decrease when going down at full brightness
             if update.ty == LightType::Sky
                 && block.absorbed_light == 0
-                && update.ty.get_light(self, update.x, update.y + 1, update.z) == 15 {
+                && update.ty.get_light(self, update.pos.shift(Direction::Up)) == 15 {
                 best = 15;
             }
 
@@ -219,21 +211,20 @@ impl World {
                 return;
             }
             // Use our new light value
-            update.ty.set_light(self, update.x, update.y, update.z, best);
+            update.ty.set_light(self, update.pos, best);
             // Flag surrounding chunks as dirty
             for yy in -1 .. 2 {
                 for zz in -1 .. 2 {
                     for xx in -1 .. 2 {
-                        let (bx, by, bz) = (update.x+xx, update.y+yy, update.z+zz);
-                        self.set_dirty(bx >> 4, by >> 4, bz >> 4);
+                        let bp = update.pos + (xx, yy, zz);
+                        self.set_dirty(bp.x >> 4, bp.y >> 4, bp.z >> 4);
                     }
                 }
             }
 
             // Update surrounding blocks
             for dir in Direction::all() {
-                let (ox, oy, oz) = dir.get_offset();
-                self.update_light(update.x + ox, update.y + oy, update.z + oz, update.ty);
+                self.update_light(update.pos.shift(dir), update.ty);
             }
         }
     }
@@ -259,7 +250,6 @@ impl World {
 
     pub fn compute_render_list(&mut self, renderer: &mut render::Renderer) {
         use chunk_builder;
-        use types::Direction;
         use cgmath::Vector;
         use std::collections::VecDeque;
         self.render_list.clear();
@@ -591,8 +581,8 @@ impl World {
 }
 
 impl block::WorldAccess for World {
-    fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
-        World::get_block(self, x, y, z)
+    fn get_block(&self, pos: Position) -> block::Block {
+        World::get_block(self, pos)
     }
 }
 

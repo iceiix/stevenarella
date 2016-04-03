@@ -9,7 +9,7 @@ use render;
 use resources;
 use model;
 use types::bit::Set;
-use types::Direction;
+use shared::Direction;
 
 const NUM_WORKERS: usize = 8;
 

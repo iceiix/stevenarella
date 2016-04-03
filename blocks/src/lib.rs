@@ -30,7 +30,9 @@ extern crate cgmath;
 extern crate collision;
 #[macro_use]
 extern crate lazy_static;
+extern crate steven_shared as shared;
 
+use shared::{Position, Direction};
 use collision::{Aabb, Aabb3};
 use cgmath::Point3;
 
@@ -40,7 +42,7 @@ pub use self::material::Material;
 pub use self::Block::*;
 
 pub trait WorldAccess {
-    fn get_block(&self, x: i32, y: i32, z: i32) -> Block;
+    fn get_block(&self, pos: Position) -> Block;
 }
 
 #[doc(hidden)]
@@ -102,7 +104,7 @@ macro_rules! define_blocks {
                 $(variant $variant:expr,)*
                 $(tint $tint:expr,)*
                 $(collision $collision:expr,)*
-                $(update_state ($world:ident, $x:ident, $y:ident, $z:ident) => $update_state:expr,)*
+                $(update_state ($world:ident, $pos:ident) => $update_state:expr,)*
                 $(multipart ($mkey:ident, $mval:ident) => $multipart:expr,)*
             }
         )+
@@ -275,7 +277,7 @@ macro_rules! define_blocks {
             }
 
             #[allow(unused_variables, unreachable_code)]
-            pub fn update_state<W: WorldAccess>(&self, world: &W, x: i32, y: i32, z: i32) -> Block {
+            pub fn update_state<W: WorldAccess>(&self, world: &W, pos: Position) -> Block {
                 match *self {
                     $(
                         Block::$name {
@@ -283,9 +285,7 @@ macro_rules! define_blocks {
                         } => {
                             $(
                                 let $world = world;
-                                let $x = x;
-                                let $y = y;
-                                let $z = z;
+                                let $pos = pos;
                                 return $update_state;
                             )*
                             Block::$name {
@@ -383,9 +383,9 @@ define_blocks! {
         model { ("minecraft", "grass") },
         variant format!("snowy={}", snowy),
         tint TintType::Grass,
-        update_state (world, x, y, z) => {
+        update_state (world, pos) => {
             Block::Grass{
-                snowy: match world.get_block(x, y + 1, z) {
+                snowy: match world.get_block(pos.shift(Direction::Up)) {
                     Block::Snow { .. } | Block::SnowLayer { .. } => true,
                     _ => false,
                 }
@@ -411,9 +411,9 @@ define_blocks! {
                 "normal".to_owned()
             }
         },
-        update_state (world, x, y, z) => if variant == DirtVariant::Podzol {
+        update_state (world, pos) => if variant == DirtVariant::Podzol {
             Block::Dirt{
-                snowy: match world.get_block(x, y + 1, z) {
+                snowy: match world.get_block(pos.shift(Direction::Up)) {
                     Block::Snow{ .. } | Block::SnowLayer { .. } => true,
                     _ => false,
                 },
@@ -1121,7 +1121,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "oak_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::OakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::OakStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     Chest {
         props {
@@ -1164,11 +1164,11 @@ define_blocks! {
         model { ("minecraft", "redstone_wire") },
         tint TintType::Color{r: ((255.0 / 30.0) * (power as f64) + 14.0) as u8, g: 0, b: 0},
         collision vec![],
-        update_state (world, x, y, z) => Block::RedstoneWire {
-            north: can_connect_redstone(world, x, y, z, Direction::North),
-            south: can_connect_redstone(world, x, y, z, Direction::South),
-            east: can_connect_redstone(world, x, y, z, Direction::East),
-            west: can_connect_redstone(world, x, y, z, Direction::West),
+        update_state (world, pos) => Block::RedstoneWire {
+            north: can_connect_redstone(world, pos, Direction::North),
+            south: can_connect_redstone(world, pos, Direction::South),
+            east: can_connect_redstone(world, pos, Direction::East),
+            west: can_connect_redstone(world, pos, Direction::West),
             power: power
         },
         multipart (key, val) => match key {
@@ -1308,8 +1308,8 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "wooden_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
-        update_state (world, x, y, z) => {
-            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+        update_state (world, pos) => {
+            let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::WoodenDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
         },
     }
@@ -1375,7 +1375,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "stone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::StoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::StoneStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     WallSign {
         props {
@@ -1447,8 +1447,8 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "iron_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
-        update_state (world, x, y, z) => {
-            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+        update_state (world, pos) => {
+            let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::IronDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
         },
     }
@@ -1636,11 +1636,11 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "fence") },
-        update_state (world, x, y, z) => Block::Fence {
-            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
-            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
-            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
-            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
+        update_state (world, pos) => Block::Fence {
+            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
+            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
+            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
+            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -1953,17 +1953,17 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "iron_bars") },
-        update_state (world, x, y, z) => {
+        update_state (world, pos) => {
             let f = |block| match block {
                 Block::IronBars{..} => true,
                 _ => false,
             };
 
             Block::IronBars {
-                north: can_connect(world, x, y, z, Direction::North, &f),
-                south: can_connect(world, x, y, z, Direction::South, &f),
-                east: can_connect(world, x, y, z, Direction::East, &f),
-                west: can_connect(world, x, y, z, Direction::West, &f),
+                north: can_connect(world, pos.shift(Direction::North), &f),
+                south: can_connect(world, pos.shift(Direction::South), &f),
+                east: can_connect(world, pos.shift(Direction::East), &f),
+                west: can_connect(world, pos.shift(Direction::West), &f),
             }
         },
         multipart (key, val) => match key {
@@ -1984,11 +1984,11 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "glass_pane") },
-        update_state (world, x, y, z) => Block::GlassPane {
-            north: can_connect(world, x, y, z, Direction::North, &can_connect_glasspane),
-            south: can_connect(world, x, y, z, Direction::South, &can_connect_glasspane),
-            east: can_connect(world, x, y, z, Direction::East, &can_connect_glasspane),
-            west: can_connect(world, x, y, z, Direction::West, &can_connect_glasspane),
+        update_state (world, pos) => Block::GlassPane {
+            north: can_connect(world, pos.shift(Direction::North), &can_connect_glasspane),
+            south: can_connect(world, pos.shift(Direction::South), &can_connect_glasspane),
+            east: can_connect(world, pos.shift(Direction::East), &can_connect_glasspane),
+            west: can_connect(world, pos.shift(Direction::West), &can_connect_glasspane),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -2026,9 +2026,9 @@ define_blocks! {
         },
         tint TintType::Color{r: age as u8 * 32, g: 255 - (age as u8 * 8), b: age as u8 * 4},
         collision vec![],
-        update_state (world, x, y, z) => {
-            let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
-                                world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
+        update_state (world, pos) => {
+            let facing = match (world.get_block(pos.shift(Direction::East)), world.get_block(pos.shift(Direction::West)),
+                                world.get_block(pos.shift(Direction::North)), world.get_block(pos.shift(Direction::South))) {
                 (Block::Pumpkin{ .. }, _, _, _) => Direction::East,
                 (_, Block::Pumpkin{ .. }, _, _) => Direction::West,
                 (_, _, Block::Pumpkin{ .. }, _) => Direction::North,
@@ -2062,9 +2062,9 @@ define_blocks! {
         },
         tint TintType::Color{r: age as u8 * 32, g: 255 - (age as u8 * 8), b: age as u8 * 4},
         collision vec![],
-        update_state (world, x, y, z) => {
-            let facing = match (world.get_block(x - 1, y, z), world.get_block(x + 1, y, z),
-                                world.get_block(x, y, z - 1), world.get_block(x, y, z + 1)) {
+        update_state (world, pos) => {
+            let facing = match (world.get_block(pos.shift(Direction::East)), world.get_block(pos.shift(Direction::West)),
+                                world.get_block(pos.shift(Direction::North)), world.get_block(pos.shift(Direction::South))) {
                 (Block::MelonBlock{ .. }, _, _, _) => Direction::East,
                 (_, Block::MelonBlock{ .. }, _, _) => Direction::West,
                 (_, _, Block::MelonBlock{ .. }, _) => Direction::North,
@@ -2133,7 +2133,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::BrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::BrickStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     StoneBrickStairs {
         props {
@@ -2154,7 +2154,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "stone_brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::StoneBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::StoneBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     Mycelium {
         props {
@@ -2164,9 +2164,9 @@ define_blocks! {
         material material::SOLID,
         model { ("minecraft", "mycelium") },
         variant format!("snowy={}", snowy),
-        update_state (world, x, y, z) => {
+        update_state (world, pos) => {
             Block::Grass{
-                snowy: match world.get_block(x, y + 1, z) {
+                snowy: match world.get_block(pos.shift(Direction::Up)) {
                     Block::Snow { .. } | Block::SnowLayer { .. } => true,
                     _ => false,
                 }
@@ -2195,17 +2195,17 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "nether_brick_fence") },
-        update_state (world, x, y, z) => {
+        update_state (world, pos) => {
             let f = |block| match block {
                 Block::NetherBrickFence{..} => true,
                 _ => false,
             };
 
             Block::NetherBrickFence {
-                north: can_connect(world, x, y, z, Direction::North, &f),
-                south: can_connect(world, x, y, z, Direction::South, &f),
-                east: can_connect(world, x, y, z, Direction::East, &f),
-                west: can_connect(world, x, y, z, Direction::West, &f),
+                north: can_connect(world, pos.shift(Direction::North), &f),
+                south: can_connect(world, pos.shift(Direction::South), &f),
+                east: can_connect(world, pos.shift(Direction::East), &f),
+                west: can_connect(world, pos.shift(Direction::West), &f),
             }
         },
         multipart (key, val) => match key {
@@ -2235,7 +2235,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "nether_brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::NetherBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::NetherBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     NetherWart {
         props {
@@ -2450,7 +2450,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "sandstone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::SandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::SandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     EmeraldOre {
         props {},
@@ -2564,7 +2564,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "spruce_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::SpruceStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::SpruceStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     BirchStairs {
         props {
@@ -2585,7 +2585,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "birch_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::BirchStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::BirchStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     JungleStairs {
         props {
@@ -2606,7 +2606,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "jungle_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::JungleStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::JungleStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     CommandBlock {
         props {
@@ -2653,18 +2653,18 @@ define_blocks! {
         data if !north && !south && !east && !west && !up { Some(variant.data()) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", format!("{}_wall", variant.as_string())) },
-        update_state (world, x, y, z) => {
+        update_state (world, pos) => {
             let f = |block| match block {
                 Block::CobblestoneWall{..} => true,
                 _ => false,
             };
 
             Block::CobblestoneWall {
-                up: can_connect(world, x, y, z, Direction::Up, &f),
-                north: can_connect(world, x, y, z, Direction::North, &f),
-                south: can_connect(world, x, y, z, Direction::South, &f),
-                east: can_connect(world, x, y, z, Direction::East, &f),
-                west: can_connect(world, x, y, z, Direction::West, &f),
+                up: can_connect(world, pos.shift(Direction::Up), &f),
+                north: can_connect(world, pos.shift(Direction::North), &f),
+                south: can_connect(world, pos.shift(Direction::South), &f),
+                east: can_connect(world, pos.shift(Direction::East), &f),
+                west: can_connect(world, pos.shift(Direction::West), &f),
                 variant: variant,
             }
         },
@@ -3008,7 +3008,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "quartz_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::QuartzStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::QuartzStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     ActivatorRail {
         props {
@@ -3110,12 +3110,12 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(color.data()) } else { None },
         material material::TRANSPARENT,
         model { ("minecraft", format!("{}_stained_glass_pane", color.as_string()) ) },
-        update_state (world, x, y, z) => Block::StainedGlassPane {
+        update_state (world, pos) => Block::StainedGlassPane {
             color: color,
-            north: can_connect(world, x, y, z, Direction::North, &can_connect_glasspane),
-            south: can_connect(world, x, y, z, Direction::South, &can_connect_glasspane),
-            east: can_connect(world, x, y, z, Direction::East, &can_connect_glasspane),
-            west: can_connect(world, x, y, z, Direction::West, &can_connect_glasspane),
+            north: can_connect(world, pos.shift(Direction::North), &can_connect_glasspane),
+            south: can_connect(world, pos.shift(Direction::South), &can_connect_glasspane),
+            east: can_connect(world, pos.shift(Direction::East), &can_connect_glasspane),
+            west: can_connect(world, pos.shift(Direction::West), &can_connect_glasspane),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -3173,7 +3173,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "acacia_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::AcaciaStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::AcaciaStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     DarkOakStairs {
         props {
@@ -3194,7 +3194,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "dark_oak_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::DarkOakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::DarkOakStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     Slime {
         props {},
@@ -3331,8 +3331,8 @@ define_blocks! {
         variant format!("half={}", half.as_string()),
         tint TintType::Foliage,
         collision vec![],
-        update_state (world, x, y, z) => {
-            let (half, variant) = update_double_plant_state(world, x, y, z, half, variant);
+        update_state (world, pos) => {
+            let (half, variant) = update_double_plant_state(world, pos, half, variant);
             Block::DoublePlant{half: half, variant: variant}
         },
     }
@@ -3423,7 +3423,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "red_sandstone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::RedSandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::RedSandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     DoubleStoneSlab2 {
         props {
@@ -3547,11 +3547,11 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "spruce_fence") },
-        update_state (world, x, y, z) => Block::SpruceFence {
-            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
-            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
-            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
-            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
+        update_state (world, pos) => Block::SpruceFence {
+            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
+            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
+            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
+            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -3571,11 +3571,11 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "birch_fence") },
-        update_state (world, x, y, z) => Block::BirchFence {
-            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
-            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
-            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
-            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
+        update_state (world, pos) => Block::BirchFence {
+            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
+            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
+            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
+            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -3595,11 +3595,11 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "jungle_fence") },
-        update_state (world, x, y, z) => Block::JungleFence {
-            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
-            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
-            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
-            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
+        update_state (world, pos) => Block::JungleFence {
+            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
+            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
+            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
+            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -3619,11 +3619,11 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "dark_oak_fence") },
-        update_state (world, x, y, z) => Block::DarkOakFence {
-            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
-            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
-            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
-            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
+        update_state (world, pos) => Block::DarkOakFence {
+            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
+            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
+            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
+            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -3643,11 +3643,11 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "acacia_fence") },
-        update_state (world, x, y, z) => Block::AcaciaFence {
-            north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
-            south: can_connect(world, x, y, z, Direction::South, &can_connect_fence),
-            east: can_connect(world, x, y, z, Direction::East, &can_connect_fence),
-            west: can_connect(world, x, y, z, Direction::West, &can_connect_fence),
+        update_state (world, pos) => Block::AcaciaFence {
+            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
+            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
+            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
+            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -3674,8 +3674,8 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "spruce_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
-        update_state (world, x, y, z) => {
-            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+        update_state (world, pos) => {
+            let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::SpruceDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
         },
     }
@@ -3696,8 +3696,8 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "birch_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
-        update_state (world, x, y, z) => {
-            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+        update_state (world, pos) => {
+            let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::BirchDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
         },
     }
@@ -3718,8 +3718,8 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "jungle_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
-        update_state (world, x, y, z) => {
-            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+        update_state (world, pos) => {
+            let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::JungleDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
         },
     }
@@ -3740,8 +3740,8 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "acacia_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
-        update_state (world, x, y, z) => {
-            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+        update_state (world, pos) => {
+            let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::AcaciaDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
         },
     }
@@ -3762,8 +3762,8 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "dark_oak_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
-        update_state (world, x, y, z) => {
-            let (facing, hinge, open, powered) = update_door_state(world, x, y, z, half, facing, hinge, open, powered);
+        update_state (world, pos) => {
+            let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::DarkOakDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
         },
     }
@@ -3813,13 +3813,13 @@ define_blocks! {
         data if !north && !south && !east && !west && !up && !down { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "chorus_plant") },
-        update_state (world, x, y, z) => Block::ChorusPlant {
-            north: match world.get_block(x, y, z - 1) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            south: match world.get_block(x, y, z + 1) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            west: match world.get_block(x - 1, y, z) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            east: match world.get_block(x + 1, y, z) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            up: match world.get_block(x, y + 1, z) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            down: match world.get_block(x, y - 1, z) { Block::ChorusPlant{..} | Block::ChorusFlower{..} | Block::EndStone{..} => true, _ => false,},
+        update_state (world, pos) => Block::ChorusPlant {
+            north: match world.get_block(pos.shift(Direction::North)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            south: match world.get_block(pos.shift(Direction::South)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            west: match world.get_block(pos.shift(Direction::West)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            east: match world.get_block(pos.shift(Direction::East)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            up: match world.get_block(pos.shift(Direction::Up)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            down: match world.get_block(pos.shift(Direction::Down)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} | Block::EndStone{..} => true, _ => false,},
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -3878,7 +3878,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "purpur_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
-        update_state (world, x, y, z) => Block::PurpurStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
+        update_state (world, pos) => Block::PurpurStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     PurpurDoubleSlab {
         props {
@@ -3975,9 +3975,8 @@ define_blocks! {
     }
 }
 
-fn can_connect<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, dir: Direction, f: &F) -> bool {
-    let (ox, oy, oz) = dir.get_offset();
-    let block = world.get_block(x + ox, y + oy, z + oz);
+fn can_connect<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f: &F) -> bool {
+    let block = world.get_block(pos);
     f(block) || (block.get_material().renderable && block.get_material().should_cull_against)
 }
 
@@ -4009,13 +4008,13 @@ fn can_connect_glasspane(block: Block) -> bool {
     }
 }
 
-fn can_connect_redstone<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, dir: Direction) -> RedstoneSide {
-    let (ox, oy, oz) = dir.get_offset();
-    let block = world.get_block(x + ox, y + oy, z + oz);
+fn can_connect_redstone<W: WorldAccess>(world: &W, pos: Position, dir: Direction) -> RedstoneSide {
+    let shift_pos = pos.shift(dir);
+    let block = world.get_block(shift_pos);
 
     if block.get_material().should_cull_against {
-        let side_up = world.get_block(x + ox, y + oy + 1, z + oz);
-        let up = world.get_block(x, y + 1, z);
+        let side_up = world.get_block(shift_pos.shift(Direction::Up));
+        let up = world.get_block(pos.shift(Direction::Up));
 
         if match side_up { Block::RedstoneWire{..} => true, _ => false,} && !up.get_material().should_cull_against {
             return RedstoneSide::Up;
@@ -4024,7 +4023,7 @@ fn can_connect_redstone<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, dir: 
         return RedstoneSide::None;
     }
 
-    let side_down = world.get_block(x + ox, y + oy - 1, z + oz);
+    let side_down = world.get_block(shift_pos.shift(Direction::Down));
     if match block { Block::RedstoneWire{..} => true, _ => false,} || match side_down { Block::RedstoneWire{..} => true, _ => false,} {
         return RedstoneSide::Side;
     }
@@ -4076,14 +4075,14 @@ fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered
     }
 }
 
-fn update_door_state<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, ohalf: DoorHalf, ofacing: Direction, ohinge: Side, oopen: bool, opowered: bool) -> (Direction, Side, bool, bool) {
+fn update_door_state<W: WorldAccess>(world: &W, pos: Position, ohalf: DoorHalf, ofacing: Direction, ohinge: Side, oopen: bool, opowered: bool) -> (Direction, Side, bool, bool) {
     let oy = if ohalf == DoorHalf::Upper {
         -1
     } else {
         1
     };
 
-    match world.get_block(x, y + oy, z) {
+    match world.get_block(pos + (0, oy, 0)) {
         Block::WoodenDoor{half, facing, hinge, open, powered} |
         Block::SpruceDoor{half, facing, hinge, open, powered} |
         Block::BirchDoor{half, facing, hinge, open, powered} |
@@ -4105,12 +4104,12 @@ fn update_door_state<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, ohalf: D
     (ofacing, ohinge, oopen, opowered)
 }
 
-fn update_double_plant_state<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, ohalf: BlockHalf, ovariant: DoublePlantVariant) -> (BlockHalf, DoublePlantVariant) {
+fn update_double_plant_state<W: WorldAccess>(world: &W, pos: Position, ohalf: BlockHalf, ovariant: DoublePlantVariant) -> (BlockHalf, DoublePlantVariant) {
     if ohalf != BlockHalf::Upper {
         return (ohalf, ovariant);
     }
 
-    match world.get_block(x, y - 1, z) {
+    match world.get_block(pos.shift(Direction::Down)) {
         Block::DoublePlant{variant, ..} => (ohalf, variant),
         _ => (ohalf, ovariant),
     }
@@ -4933,9 +4932,9 @@ impl StairShape {
     }
 }
 
-fn get_stair_info<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32) -> Option<(Direction, BlockHalf)> {
+fn get_stair_info<W: WorldAccess>(world: &W, pos: Position) -> Option<(Direction, BlockHalf)> {
     use self::Block::*;
-    match world.get_block(x, y, z) {
+    match world.get_block(pos) {
         OakStairs{facing, half, ..} |
         StoneStairs{facing, half, ..} |
         BrickStairs{facing, half, ..} |
@@ -4954,9 +4953,8 @@ fn get_stair_info<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32) -> Option<(
     }
 }
 
-fn update_stair_shape<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, facing: Direction) -> StairShape {
-    let (ox, oy, oz) = facing.get_offset();
-    if let Some((other_facing, _)) = get_stair_info(world, x+ox, y+oy, z+oz) {
+fn update_stair_shape<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> StairShape {
+    if let Some((other_facing, _)) = get_stair_info(world, pos.shift(facing)) {
         if other_facing != facing && other_facing != facing.opposite() {
             if other_facing == facing.clockwise() {
                 return StairShape::OuterRight;
@@ -4966,8 +4964,7 @@ fn update_stair_shape<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, facing:
         }
     }
 
-    let (ox, oy, oz) = facing.opposite().get_offset();
-    if let Some((other_facing, _)) = get_stair_info(world, x+ox, y+oy, z+oz) {
+    if let Some((other_facing, _)) = get_stair_info(world, pos.shift(facing.opposite())) {
         if other_facing != facing && other_facing != facing.opposite() {
             if other_facing == facing.clockwise() {
                 return StairShape::InnerRight;
@@ -5142,99 +5139,6 @@ impl FlowerPotVariant {
             FlowerPotVariant::WhiteTulip => "white_tulip",
             FlowerPotVariant::PinkTulip => "pink_tulip",
             FlowerPotVariant::Oxeye => "oxeye_daisy",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Direction {
-    Invalid,
-    Up,
-    Down,
-    North,
-    South,
-    West,
-    East,
-}
-
-impl Direction {
-    pub fn all() -> Vec<Direction> {
-        vec![
-            Direction::Up, Direction::Down,
-            Direction::North, Direction::South,
-            Direction::West, Direction::East,
-        ]
-    }
-
-    pub fn from_string(val: &str) -> Direction {
-        match val {
-            "up" => Direction::Up,
-            "down" => Direction::Down,
-            "north" => Direction::North,
-            "south" => Direction::South,
-            "west" => Direction::West,
-            "east" => Direction::East,
-            _ => Direction::Invalid,
-        }
-    }
-
-    pub fn opposite(&self) -> Direction {
-        match *self {
-            Direction::Up => Direction::Down,
-            Direction::Down => Direction::Up,
-            Direction::North => Direction::South,
-            Direction::South => Direction::North,
-            Direction::West => Direction::East,
-            Direction::East => Direction::West,
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn clockwise(&self) -> Direction {
-        match *self {
-            Direction::Up => Direction::Up,
-            Direction::Down => Direction::Down,
-            Direction::East => Direction::South,
-            Direction::West => Direction::North,
-            Direction::South => Direction::West,
-            Direction::North => Direction::East,
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn counter_clockwise(&self) -> Direction {
-        match *self {
-            Direction::Up => Direction::Up,
-            Direction::Down => Direction::Down,
-            Direction::East => Direction::North,
-            Direction::West => Direction::South,
-            Direction::South => Direction::East,
-            Direction::North => Direction::West,
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn get_offset(&self) -> (i32, i32, i32) {
-        match *self {
-            Direction::Up => (0, 1, 0),
-            Direction::Down => (0, -1, 0),
-            Direction::North => (0, 0, -1),
-            Direction::South => (0, 0, 1),
-            Direction::West => (-1, 0, 0),
-            Direction::East => (1, 0, 0),
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn as_string(&self) -> &'static str {
-        match *self {
-            Direction::Up => "up",
-            Direction::Down => "down",
-            Direction::North => "north",
-            Direction::South => "south",
-            Direction::West => "west",
-            Direction::East => "east",
-            Direction::Invalid => "invalid",
         }
     }
 }

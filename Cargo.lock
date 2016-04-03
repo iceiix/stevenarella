@@ -19,6 +19,7 @@ dependencies = [
  "steven_gl 0.0.1",
  "steven_openssl 0.0.1",
  "steven_resources 0.1.0",
+ "steven_shared 0.0.1",
  "time 0.1.34 (registry+https://github.com/rust-lang/crates.io-index)",
  "zip 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -483,6 +484,7 @@ dependencies = [
  "cgmath 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "collision 0.5.1 (git+https://github.com/csherratt/collision-rs?rev=f80825e)",
  "lazy_static 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "steven_shared 0.0.1",
 ]
 
 [[package]]
@@ -505,6 +507,10 @@ dependencies = [
 [[package]]
 name = "steven_resources"
 version = "0.1.0"
+
+[[package]]
+name = "steven_shared"
+version = "0.0.1"
 
 [[package]]
 name = "tempdir"

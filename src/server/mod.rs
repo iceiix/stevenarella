@@ -33,6 +33,7 @@ use cgmath;
 use collision::Aabb;
 use sdl2::keyboard::Keycode;
 use types::Gamemode;
+use shared::Position;
 
 mod sun;
 
@@ -200,7 +201,7 @@ impl Server {
             for z in -7*16 .. 7*16 {
                 let h = rng.gen_range(3, 10);
                 for y in 0 .. h {
-                    server.world.set_block(x, y, z, block::Dirt{ snowy: false, variant: block::DirtVariant::Normal });
+                    server.world.set_block(Position::new(x, y, z), block::Dirt{ snowy: false, variant: block::DirtVariant::Normal });
                 }
             }
         }
@@ -513,9 +514,7 @@ impl Server {
 
     fn on_block_change(&mut self, block_change: packet::play::clientbound::BlockChange) {
         self.world.set_block(
-            block_change.location.get_x(),
-            block_change.location.get_y(),
-            block_change.location.get_z(),
+            block_change.location,
             block::Block::by_vanilla_id(block_change.block_id.0 as usize)
         );
     }
@@ -525,9 +524,11 @@ impl Server {
         let oz = block_change.chunk_z << 4;
         for record in block_change.records.data {
             self.world.set_block(
-                ox + (record.xz >> 4) as i32,
-                record.y as i32,
-                oz + (record.xz & 0xF) as i32,
+                Position::new(
+                    ox + (record.xz >> 4) as i32,
+                    record.y as i32,
+                    oz + (record.xz & 0xF) as i32
+                ),
                 block::Block::by_vanilla_id(record.block_id.0 as usize)
             );
         }

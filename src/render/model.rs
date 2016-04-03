@@ -8,8 +8,9 @@ use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::sync::{Arc, RwLock};
 use types::hash::FNVHash;
-use types::Direction;
+use shared::Direction;
 use byteorder::{WriteBytesExt, NativeEndian};
+use model::BlockVertex;
 
 pub struct Manager {
     collections: Vec<Collection>,
@@ -346,7 +347,7 @@ pub fn append_box_texture_scale(
             continue;
         }
         let tex = tex.unwrap();
-        for vert in dir.get_verts() {
+        for vert in BlockVertex::face_by_direction(dir) {
             let (rr, gg, bb) = if dir == Direction::West || dir == Direction::East {
                 ((255.0 * 0.8) as u8, (255.0 * 0.8) as u8, (255.0 * 0.8) as u8)
             } else {

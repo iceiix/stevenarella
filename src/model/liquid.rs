@@ -2,7 +2,8 @@
 use std::io::Write;
 use std::sync::{Arc, RwLock};
 use world::{self, block};
-use types::Direction;
+use shared::Direction;
+use model::BlockVertex;
 use render;
 
 pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lava: bool, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
@@ -42,7 +43,7 @@ pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lav
         let special = dir == Direction::Up && (tl < 8 || tr < 8 || bl < 8 || br < 8);
         let block = snapshot.get_block(x+ox, y+oy, z+oz);
         if special || (!block.get_material().should_cull_against && get_liquid(snapshot, x+ox, y+oy, z+oz).is_none()) {
-            let verts = dir.get_verts();
+            let verts = BlockVertex::face_by_direction(dir);
             for vert in verts {
                 let mut vert = vert.clone();
                 vert.tx = tex.get_x() as u16;

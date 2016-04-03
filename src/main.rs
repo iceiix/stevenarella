@@ -43,6 +43,7 @@ extern crate log;
 extern crate lazy_static;
 extern crate collision;
 pub extern crate steven_blocks;
+extern crate steven_shared as shared;
 
 #[macro_use]
 pub mod macros;

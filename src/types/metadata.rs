@@ -21,6 +21,7 @@ use protocol;
 use protocol::Serializable;
 use format;
 use item;
+use shared::Position;
 
 pub struct MetadataKey<T: MetaValue> {
     index: i32,
@@ -81,12 +82,12 @@ impl Serializable for Metadata {
                                [try!(f32::read_from(buf)),
                                 try!(f32::read_from(buf)),
                                 try!(f32::read_from(buf))]),
-                8 => m.put_raw(index, try!(super::Position::read_from(buf))),
+                8 => m.put_raw(index, try!(Position::read_from(buf))),
                 9 => {
                     if try!(bool::read_from(buf)) {
-                        m.put_raw(index, try!(Option::<super::Position>::read_from(buf)));
+                        m.put_raw(index, try!(Option::<Position>::read_from(buf)));
                     } else {
-                        m.put_raw::<Option<super::Position>>(index, None);
+                        m.put_raw::<Option<Position>>(index, None);
                     }
                 }
                 10 => m.put_raw(index, try!(protocol::VarInt::read_from(buf))),
@@ -199,8 +200,8 @@ pub enum Value {
     OptionalItemStack(Option<item::Stack>),
     Bool(bool),
     Vector([f32; 3]),
-    Position(super::Position),
-    OptionalPosition(Option<super::Position>),
+    Position(Position),
+    OptionalPosition(Option<Position>),
     Direction(protocol::VarInt), // TODO: Proper type
     OptionalUUID(Option<protocol::UUID>),
     Block(u16), // TODO: Proper type
@@ -307,7 +308,7 @@ impl MetaValue for [f32; 3] {
     }
 }
 
-impl MetaValue for super::Position {
+impl MetaValue for Position {
     fn unwrap(value: &Value) -> &Self {
         match *value {
             Value::Position(ref val) => val,
@@ -319,7 +320,7 @@ impl MetaValue for super::Position {
     }
 }
 
-impl MetaValue for Option<super::Position> {
+impl MetaValue for Option<Position> {
     fn unwrap(value: &Value) -> &Self {
         match *value {
             Value::OptionalPosition(ref val) => val,
