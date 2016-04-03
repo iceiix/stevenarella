@@ -196,6 +196,7 @@ impl Server {
 
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>) -> Server {
         let mut server = Server::new(resources, console, None, None);
+        let mut rng = rand::thread_rng();
         for x in -7*16 .. 7*16 {
             for z in -7*16 .. 7*16 {
                 let h = 5 + (6.0 * (x as f64 / 16.0).cos() * (z as f64 / 16.0).sin()) as i32;
@@ -203,6 +204,27 @@ impl Server {
                     server.world.set_block(Position::new(x, y, z), block::Dirt{ snowy: false, variant: block::DirtVariant::Normal });
                 }
                 server.world.set_block(Position::new(x, h, z), block::Grass{ snowy: false });
+
+                if x*x + z*z > 16*16 && rng.gen_weighted_bool(80) {
+                    for i in 0 .. 5 {
+                        server.world.set_block(Position::new(x, h + 1 + i, z), block::Log{ axis: block::Axis::Y, variant: block::TreeVariant::Oak });
+                    }
+                    for xx in -2 .. 3 {
+                        for zz in -2 .. 3 {
+                            if xx == 0 && z == 0 {
+                                continue;
+                            }
+                            server.world.set_block(Position::new(x + xx, h + 3, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false });
+                            server.world.set_block(Position::new(x + xx, h + 4, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false });
+                            if xx.abs() <= 1 && zz.abs() <= 1 {
+                                server.world.set_block(Position::new(x + xx, h + 5, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false });
+                            }
+                            if xx * xx + zz * zz <= 1 {
+                                server.world.set_block(Position::new(x + xx, h + 6, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false });
+                            }
+                        }
+                    }
+                }
             }
         }
         server
