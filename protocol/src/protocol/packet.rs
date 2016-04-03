@@ -59,7 +59,7 @@ state_packets!(
                 text: String =,
                 assume_command: bool =,
                 has_target: bool =,
-                target: Option<types::Position> = when(|p: &TabComplete| p.has_target),
+                target: Option<Position> = when(|p: &TabComplete| p.has_target),
             }
             // ChatMessage is sent by the client when it sends a chat message or
             // executes a command (prefixed by '/').
@@ -177,7 +177,7 @@ state_packets!(
             // It also can be sent for droppping items and eating/shooting.
             PlayerDigging {
                 status: VarInt =,
-                location: types::Position =,
+                location: Position =,
                 face: u8 =,
             }
             // PlayerAction is sent when a player preforms various actions.
@@ -212,7 +212,7 @@ state_packets!(
             }
             // SetSign sets the text on a sign after placing it.
             SetSign {
-                location: types::Position =,
+                location: Position =,
                 line1: String =,
                 line2: String =,
                 line3: String =,
@@ -229,7 +229,7 @@ state_packets!(
             }
             // PlayerBlockPlacement is sent when the client tries to place a block.
             PlayerBlockPlacement {
-                location: types::Position =,
+                location: Position =,
                 face: VarInt =,
                 hand: VarInt =,
                 cursor_x: u8 =,
@@ -300,7 +300,7 @@ state_packets!(
                 entity_id: VarInt =,
                 uuid: UUID =,
                 title: String =,
-                location: types::Position =,
+                location: Position =,
                 direction: u8 =,
             }
             // SpawnPlayer is used to spawn a player when they are in range of the client.
@@ -329,26 +329,26 @@ state_packets!(
             // animation played when a player starts digging a block.
             BlockBreakAnimation {
                 entity_id: VarInt =,
-                location: types::Position =,
+                location: Position =,
                 stage: i8 =,
             }
             // UpdateBlockEntity updates the nbt tag of a block entity in the
             // world.
             UpdateBlockEntity {
-                location: types::Position =,
+                location: Position =,
                 action: u8 =,
                 nbt: Option<nbt::NamedTag> =,
             }
             // BlockAction triggers different actions depending on the target block.
             BlockAction {
-                location: types::Position =,
+                location: Position =,
                 byte1: u8 =,
                 byte2: u8 =,
                 block_type: VarInt =,
             }
             // BlockChange is used to update a single block on the client.
             BlockChange {
-                location: types::Position =,
+                location: Position =,
                 block_id: VarInt =,
             }
             // BossBar displays and/or changes a boss bar that is displayed on the
@@ -505,7 +505,7 @@ state_packets!(
             // DisableRelative is set to true.
             Effect {
                 effect_id: i32 =,
-                location: types::Position =,
+                location: Position =,
                 data: i32 =,
                 disable_relative: bool =,
             }
@@ -596,7 +596,7 @@ state_packets!(
             // SignEditorOpen causes the client to open the editor for a sign so that
             // it can write to it. Only sent in vanilla when the player places a sign.
             SignEditorOpen {
-                location: types::Position =,
+                location: Position =,
             }
             // PlayerAbilities is used to modify the players current abilities. Flying,
             // creative, god mode etc.
@@ -634,7 +634,7 @@ state_packets!(
             // EntityUsedBed is sent by the server when a player goes to bed.
             EntityUsedBed {
                 entity_id: VarInt =,
-                location: types::Position =,
+                location: Position =,
             }
             // EntityDestroy destroys the entities with the ids in the provided slice.
             EntityDestroy {
@@ -765,7 +765,7 @@ state_packets!(
             // SpawnPosition is sent to change the player's current spawn point. Currently
             // only used by the client for the compass.
             SpawnPosition {
-                location: types::Position =,
+                location: Position =,
             }
             // TimeUpdate is sent to sync the world's time to the client, the client
             // will manually tick the time itself so this doesn't need to sent repeatedly
@@ -786,7 +786,7 @@ state_packets!(
             }
             // UpdateSign sets or changes the text on a sign.
             UpdateSign {
-                location: types::Position =,
+                location: Position =,
                 line1: format::Component =,
                 line2: format::Component =,
                 line3: format::Component =,

@@ -32,6 +32,7 @@ use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2;
 use time;
+use shared::Position;
 
 pub const SUPPORTED_PROTOCOL: i32 = 109;
 
@@ -73,6 +74,7 @@ macro_rules! state_packets {
                 use nbt;
                 use types;
                 use item;
+                use shared::Position;
 
 
                 pub mod internal_ids {
@@ -619,6 +621,25 @@ impl fmt::Debug for VarLong {
         write!(f, "{}", self.0)
     }
 }
+
+impl Serializable for Position {
+    fn read_from(buf: &mut io::Read) -> Result<Position, io::Error> {
+        let pos = try!(buf.read_u64::<BigEndian>());
+        Ok(Position::new(
+            ((pos as i64) >> 38) as i32,
+            (((pos as i64) >> 26) & 0xFFF) as i32,
+            ((pos as i64) << 38 >> 38) as i32
+        ))
+    }
+    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+        let pos = (((self.x as u64) & 0x3FFFFFF) << 38)
+            | (((self.y as u64) & 0xFFF) << 26)
+            | ((self.z as u64) & 0x3FFFFFF);
+        try!(buf.write_u64::<BigEndian>(pos));
+        Result::Ok(())
+    }
+}
+
 
 /// Direction is used to define whether packets are going to the
 /// server or the client.
