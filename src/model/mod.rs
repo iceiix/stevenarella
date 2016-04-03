@@ -119,7 +119,7 @@ impl Factory {
                             }
                         },
                     };
-                    return Err(true);
+                    Err(true)
                 });
             }
             return Err(true);
@@ -881,30 +881,27 @@ impl Model {
             }
 
             let (mut cr, mut cg, mut cb) = (255, 255, 255);
-            match face.tint_index {
-                0 => {
-                    match tint {
-                        TintType::Default => {},
-                        TintType::Color{r, g, b} => {
-                            cr = r;
-                            cg = g;
-                            cb = b;
-                        },
-                        TintType::Grass => {
-                            let (r, g, b) = calculate_biome(snapshot, x, z, &factory.grass_colors);
-                            cr = r;
-                            cg = g;
-                            cb = b;
-                        },
-                        TintType::Foliage => {
-                            let (r, g, b) = calculate_biome(snapshot, x, z, &factory.foliage_colors);
-                            cr = r;
-                            cg = g;
-                            cb = b;
-                        },
-                    }
-                },
-                _ => {},
+            if face.tint_index == 0 {
+                match tint {
+                    TintType::Default => {},
+                    TintType::Color{r, g, b} => {
+                        cr = r;
+                        cg = g;
+                        cb = b;
+                    },
+                    TintType::Grass => {
+                        let (r, g, b) = calculate_biome(snapshot, x, z, &factory.grass_colors);
+                        cr = r;
+                        cg = g;
+                        cb = b;
+                    },
+                    TintType::Foliage => {
+                        let (r, g, b) = calculate_biome(snapshot, x, z, &factory.foliage_colors);
+                        cr = r;
+                        cg = g;
+                        cb = b;
+                    },
+                }
             }
             if face.facing == Direction::West || face.facing == Direction::East {
                 cr = ((cr as f64) * 0.8) as u8;

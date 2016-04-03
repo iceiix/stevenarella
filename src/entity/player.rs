@@ -210,18 +210,16 @@ impl ecs::System for PlayerRenderer {
                   * Matrix4::from(Quaternion::from_angle_x(Rad::new(-(i_time.sin() * 0.06) as f32)));
 
                 let mut update = true;
-                if !position.moved {
-                    if player_model.still_time > 5.0 {
-                        if (time - 15.0).abs() <= 1.5 * delta {
-                            time = 15.0;
-                            update = false;
-                        }
-                        dir = (15.0 - time).signum() as i32;
-                    } else {
-                        player_model.still_time += delta;
-                    }
-                } else {
+                if position.moved {
                     player_model.still_time = 0.0;
+                } else if player_model.still_time > 5.0 {
+                    if (time - 15.0).abs() <= 1.5 * delta {
+                        time = 15.0;
+                        update = false;
+                    }
+                    dir = (15.0 - time).signum() as i32;
+                } else {
+                    player_model.still_time += delta;
                 }
 
                 if update {

@@ -444,16 +444,13 @@ impl Server {
     }
 
     fn on_game_state_change(&mut self, game_state: packet::play::clientbound::ChangeGameState) {
-        match game_state.reason {
-            3 => {
-                if let Some(player) = self.player {
-                    let gamemode = Gamemode::from_int(game_state.value as i32);
-                    *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
-                    // TODO: Temp
-                    self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
-                }
-            },
-            _ => {},
+        if game_state.reason == 3 {
+            if let Some(player) = self.player {
+                let gamemode = Gamemode::from_int(game_state.value as i32);
+                *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
+                // TODO: Temp
+                self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
+            }
         }
     }
 
@@ -521,9 +518,9 @@ enum TeleportFlag {
 }
 
 fn calculate_relative_teleport(flag: TeleportFlag, flags: u8, base: f64, val: f64) -> f64 {
-    if (flags & (flag as u8)) != 0 {
-        base + val
-    } else {
+    if (flags & (flag as u8)) == 0 {
         val
+    } else {
+        base + val
     }
 }

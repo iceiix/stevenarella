@@ -73,7 +73,7 @@ pub fn clear_color(r: f32, g: f32, b: f32, a: f32) {
     }
 }
 
-/// ClearFlags is a set of flags to mark what should be cleared during
+/// `ClearFlags` is a set of flags to mark what should be cleared during
 /// a Clear call.
 pub enum ClearFlags {
     /// Marks the color buffer to be cleared
@@ -110,7 +110,7 @@ pub fn depth_mask(f: bool) {
     unsafe { gl::DepthMask(f as u8); }
 }
 
-/// Func is a function to be preformed on two values.
+/// `Func` is a function to be preformed on two values.
 pub type Func = u32;
 
 pub const NEVER: Func = gl::NEVER;
@@ -157,7 +157,7 @@ pub fn active_texture(id: u32) {
     }
 }
 
-/// Factor is used in blending
+/// `Factor` is used in blending
 pub type Factor = u32;
 pub const SRC_ALPHA: Factor = gl::SRC_ALPHA;
 pub const ONE_MINUS_SRC_ALPHA: Factor = gl::ONE_MINUS_SRC_ALPHA;
@@ -201,7 +201,7 @@ pub fn front_face(dir: FaceDirection) {
     unsafe { gl::FrontFace(dir) }
 }
 
-/// Type is a type of data used by various operations.
+/// `Type` is a type of data used by various operations.
 pub type Type = u32;
 pub const UNSIGNED_BYTE: Type = gl::UNSIGNED_BYTE;
 pub const UNSIGNED_SHORT: Type = gl::UNSIGNED_SHORT;
@@ -209,7 +209,7 @@ pub const UNSIGNED_INT: Type = gl::UNSIGNED_INT;
 pub const SHORT: Type = gl::SHORT;
 pub const FLOAT: Type = gl::FLOAT;
 
-/// TextureTarget is a target were a texture can be bound to
+/// `TextureTarget` is a target were a texture can be bound to
 pub type TextureTarget = u32;
 
 pub const TEXTURE_2D: TextureTarget = gl::TEXTURE_2D;
@@ -217,7 +217,7 @@ pub const TEXTURE_2D_MULTISAMPLE: TextureTarget = gl::TEXTURE_2D_MULTISAMPLE;
 pub const TEXTURE_2D_ARRAY: TextureTarget = gl::TEXTURE_2D_ARRAY;
 pub const TEXTURE_3D: TextureTarget = gl::TEXTURE_3D;
 
-/// TextureFormat is the format of a texture either internally or
+/// `TextureFormat` is the format of a texture either internally or
 /// to be uploaded.
 pub type TextureFormat = u32;
 
@@ -230,7 +230,7 @@ pub const R16F: TextureFormat = gl::R16F;
 pub const DEPTH_COMPONENT24: TextureFormat = gl::DEPTH_COMPONENT24;
 pub const DEPTH_COMPONENT: TextureFormat = gl::DEPTH_COMPONENT;
 
-/// TextureParameter is a parameter that can be read or set on a texture.
+/// `TextureParameter` is a parameter that can be read or set on a texture.
 pub type TextureParameter = u32;
 
 pub const TEXTURE_MIN_FILTER: TextureParameter = gl::TEXTURE_MIN_FILTER;
@@ -239,7 +239,7 @@ pub const TEXTURE_WRAP_S: TextureParameter = gl::TEXTURE_WRAP_S;
 pub const TEXTURE_WRAP_T: TextureParameter = gl::TEXTURE_WRAP_T;
 pub const TEXTURE_MAX_LEVEL: TextureParameter = gl::TEXTURE_MAX_LEVEL;
 
-/// TextureValue is a value that be set on a texture's parameter.
+/// `TextureValue` is a value that be set on a texture's parameter.
 pub type TextureValue = i32;
 
 pub const NEAREST: TextureValue = gl::NEAREST as TextureValue;
@@ -250,7 +250,7 @@ pub const NEAREST_MIPMAP_NEAREST: TextureValue = gl::NEAREST_MIPMAP_NEAREST as T
 pub const NEAREST_MIPMAP_LINEAR: TextureValue = gl::NEAREST_MIPMAP_LINEAR as TextureValue;
 pub const CLAMP_TO_EDGE: TextureValue = gl::CLAMP_TO_EDGE as TextureValue;
 
-/// Texture is a buffer of data used by fragment shaders.
+/// `Texture` is a buffer of data used by fragment shaders.
 pub struct Texture(u32);
 
 impl Texture {
@@ -650,7 +650,7 @@ impl Attribute {
 pub struct VertexArray(u32);
 
 impl VertexArray {
-    /// Allocates a new VertexArray.
+    /// Allocates a new `VertexArray`.
     pub fn new() -> VertexArray {
         let mut va = VertexArray(0);
         unsafe {
@@ -659,9 +659,9 @@ impl VertexArray {
         va
     }
 
-    /// Marks the VertexArray as the currently active one, this
+    /// Marks the `VertexArray` as the currently active one, this
     /// means buffers/the format of the buffers etc will be bound to
-    /// this VertexArray.
+    /// this `VertexArray`.
     pub fn bind(&self) {
         unsafe {
             gl::BindVertexArray(self.0);
@@ -678,13 +678,13 @@ impl Drop for VertexArray {
     }
 }
 
-/// BufferTarget is a target for a buffer to be bound to.
+/// `BufferTarget` is a target for a buffer to be bound to.
 pub type BufferTarget = u32;
 
 pub const ARRAY_BUFFER: BufferTarget = gl::ARRAY_BUFFER;
 pub const ELEMENT_ARRAY_BUFFER: BufferTarget = gl::ELEMENT_ARRAY_BUFFER;
 
-/// BufferUsage states how a buffer is going to be used by the program.
+/// `BufferUsage` states how a buffer is going to be used by the program.
 pub type BufferUsage = u32;
 
 /// Marks the buffer as 'not going to change' after the
@@ -706,7 +706,7 @@ pub const READ_ONLY: Access = gl::READ_ONLY;
 /// to.
 pub const WRITE_ONLY: Access = gl::WRITE_ONLY;
 
-/// Buffer is a storage for vertex data.
+/// `Buffer` is a storage for vertex data.
 pub struct Buffer(u32);
 
 impl Buffer {

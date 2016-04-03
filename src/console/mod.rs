@@ -195,7 +195,7 @@ impl Console {
             let reader = BufReader::new(file);
             for line in reader.lines() {
                 let line = line.unwrap();
-                if line.starts_with("#") || line.is_empty() {
+                if line.starts_with('#') || line.is_empty() {
                     continue;
                 }
                 let parts = line.splitn(2, ' ').map(|v| v.to_owned()).collect::<Vec<String>>();

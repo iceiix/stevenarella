@@ -5081,7 +5081,7 @@ fn can_connect_redstone(world: &super::World, x: i32, y: i32, z: i32, dir: Direc
     if match block { Block::RedstoneWire{..} => true, _ => false,} || match side_down { Block::RedstoneWire{..} => true, _ => false,} {
         return RedstoneSide::Side;
     }
-    return RedstoneSide::None;
+    RedstoneSide::None
 }
 
 fn fence_gate_data(facing: Direction, in_wall: bool, open: bool, powered: bool) -> Option<usize> {
@@ -5790,7 +5790,9 @@ impl StoneSlabVariant {
 
     fn data(&self) -> usize {
         match *self {
-            StoneSlabVariant::Stone => 0,
+            StoneSlabVariant::Stone |
+            StoneSlabVariant::RedSandstone |
+            StoneSlabVariant::Purpur => 0,
             StoneSlabVariant::Sandstone => 1,
             StoneSlabVariant::Wood => 2,
             StoneSlabVariant::Cobblestone => 3,
@@ -5798,8 +5800,6 @@ impl StoneSlabVariant {
             StoneSlabVariant::StoneBrick => 5,
             StoneSlabVariant::NetherBrick => 6,
             StoneSlabVariant::Quartz => 7,
-            StoneSlabVariant::RedSandstone => 0,
-            StoneSlabVariant::Purpur => 0,
         }
     }
 }
@@ -6079,12 +6079,10 @@ impl TreeVariant {
 
     pub fn data(&self) -> usize {
         match *self {
-            TreeVariant::Oak => 0,
-            TreeVariant::Spruce => 1,
+            TreeVariant::Oak | TreeVariant::Acacia => 0,
+            TreeVariant::Spruce | TreeVariant::DarkOak => 1,
             TreeVariant::Birch => 2,
             TreeVariant::Jungle => 3,
-            TreeVariant::Acacia => 0,
-            TreeVariant::DarkOak => 1,
         }
     }
 

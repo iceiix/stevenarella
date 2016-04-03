@@ -520,7 +520,7 @@ impl ComponentMem {
         let data = self.data[idx].as_ref().unwrap();
         let start = rem * self.component_size;
         unsafe {
-            mem::transmute(data.0.as_ptr().offset(start as isize))
+            &*(data.0.as_ptr().offset(start as isize) as *const T)
         }
     }
 
@@ -530,7 +530,7 @@ impl ComponentMem {
         let data = self.data[idx].as_mut().unwrap();
         let start = rem * self.component_size;
         unsafe {
-            mem::transmute(data.0.as_mut_ptr().offset(start as isize))
+            &mut *(data.0.as_mut_ptr().offset(start as isize) as *mut T)
         }
     }
 }

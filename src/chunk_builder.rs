@@ -159,13 +159,13 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
                         _ => {},
                     }
 
-                    if !mat.transparent {
-                        solid_count += model::Factory::get_state_model(
-                            &models, block, &mut rng, &snapshot, x, y, z, &mut solid_buffer
-                        );
-                    } else {
+                    if mat.transparent {
                         trans_count += model::Factory::get_state_model(
                             &models, block, &mut rng, &snapshot, x, y, z, &mut trans_buffer
+                        );
+                    } else {
+                        solid_count += model::Factory::get_state_model(
+                            &models, block, &mut rng, &snapshot, x, y, z, &mut solid_buffer
                         );
                     }
                 }
