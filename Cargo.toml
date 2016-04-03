@@ -32,3 +32,7 @@ version = "0"
 [dependencies.steven_resources]
 path = "./resources"
 version = "0"
+
+[dependencies.steven_blocks]
+path = "./blocks"
+version = "0"

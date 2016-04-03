@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod block;
+pub use steven_blocks as block;
 
 use std::collections::HashMap;
 use std::collections::VecDeque;
@@ -587,6 +587,12 @@ impl World {
                 sec.dirty = true;
             }
         }
+    }
+}
+
+impl block::WorldAccess for World {
+    fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
+        World::get_block(self, x, y, z)
     }
 }
 

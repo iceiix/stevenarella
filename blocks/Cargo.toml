@@ -1,0 +1,9 @@
+[package]
+name = "steven_blocks"
+version = "0.0.1"
+authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
+
+[dependencies]
+lazy_static = "0.1.15"
+cgmath = "0.7.0"
+collision = {git = "https://github.com/csherratt/collision-rs", rev = "f80825e"}

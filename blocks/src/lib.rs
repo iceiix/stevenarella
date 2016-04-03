@@ -24,14 +24,49 @@
 // Fire (Update State)
 // CobblestoneWall (Connections)
 
+#![recursion_limit="300"]
+
+extern crate cgmath;
+extern crate collision;
+#[macro_use]
+extern crate lazy_static;
+
 use collision::{Aabb, Aabb3};
 use cgmath::Point3;
-use types::Direction;
 
 pub mod material;
 pub use self::material::Material;
 
 pub use self::Block::*;
+
+pub trait WorldAccess {
+    fn get_block(&self, x: i32, y: i32, z: i32) -> Block;
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! create_ids {
+    ($t:ty, ) => ();
+    ($t:ty, prev($prev:ident), $name:ident) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = $prev + 1;
+    );
+    ($t:ty, prev($prev:ident), $name:ident, $($n:ident),+) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = $prev + 1;
+        create_ids!($t, prev($name), $($n),+);
+    );
+    ($t:ty, $name:ident, $($n:ident),+) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = 0;
+        create_ids!($t, prev($name), $($n),+);
+    );
+    ($t:ty, $name:ident) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = 0;
+    );
+}
+
 
 macro_rules! consume_token { ($i:tt) => (0) }
 
@@ -240,7 +275,7 @@ macro_rules! define_blocks {
             }
 
             #[allow(unused_variables, unreachable_code)]
-            pub fn update_state(&self, world: &super::World, x: i32, y: i32, z: i32) -> Block {
+            pub fn update_state<W: WorldAccess>(&self, world: &W, x: i32, y: i32, z: i32) -> Block {
                 match *self {
                     $(
                         Block::$name {
@@ -3940,8 +3975,9 @@ define_blocks! {
     }
 }
 
-fn can_connect<F: Fn(Block) -> bool>(world: &super::World, x: i32, y: i32, z: i32, dir: Direction, f: &F) -> bool {
-    let block = world.get_block_offset(x, y, z, dir);
+fn can_connect<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, dir: Direction, f: &F) -> bool {
+    let (ox, oy, oz) = dir.get_offset();
+    let block = world.get_block(x + ox, y + oy, z + oz);
     f(block) || (block.get_material().renderable && block.get_material().should_cull_against)
 }
 
@@ -3973,11 +4009,12 @@ fn can_connect_glasspane(block: Block) -> bool {
     }
 }
 
-fn can_connect_redstone(world: &super::World, x: i32, y: i32, z: i32, dir: Direction) -> RedstoneSide {
-    let block = world.get_block_offset(x, y, z, dir);
+fn can_connect_redstone<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, dir: Direction) -> RedstoneSide {
+    let (ox, oy, oz) = dir.get_offset();
+    let block = world.get_block(x + ox, y + oy, z + oz);
 
     if block.get_material().should_cull_against {
-        let side_up = world.get_block_offset(x, y + 1, z, dir);
+        let side_up = world.get_block(x + ox, y + oy + 1, z + oz);
         let up = world.get_block(x, y + 1, z);
 
         if match side_up { Block::RedstoneWire{..} => true, _ => false,} && !up.get_material().should_cull_against {
@@ -3987,7 +4024,7 @@ fn can_connect_redstone(world: &super::World, x: i32, y: i32, z: i32, dir: Direc
         return RedstoneSide::None;
     }
 
-    let side_down = world.get_block_offset(x, y - 1, z, dir);
+    let side_down = world.get_block(x + ox, y + oy - 1, z + oz);
     if match block { Block::RedstoneWire{..} => true, _ => false,} || match side_down { Block::RedstoneWire{..} => true, _ => false,} {
         return RedstoneSide::Side;
     }
@@ -4039,7 +4076,7 @@ fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered
     }
 }
 
-fn update_door_state(world: &super::World, x: i32, y: i32, z: i32, ohalf: DoorHalf, ofacing: Direction, ohinge: Side, oopen: bool, opowered: bool) -> (Direction, Side, bool, bool) {
+fn update_door_state<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, ohalf: DoorHalf, ofacing: Direction, ohinge: Side, oopen: bool, opowered: bool) -> (Direction, Side, bool, bool) {
     let oy = if ohalf == DoorHalf::Upper {
         -1
     } else {
@@ -4068,7 +4105,7 @@ fn update_door_state(world: &super::World, x: i32, y: i32, z: i32, ohalf: DoorHa
     (ofacing, ohinge, oopen, opowered)
 }
 
-fn update_double_plant_state(world: &super::World, x: i32, y: i32, z: i32, ohalf: BlockHalf, ovariant: DoublePlantVariant) -> (BlockHalf, DoublePlantVariant) {
+fn update_double_plant_state<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, ohalf: BlockHalf, ovariant: DoublePlantVariant) -> (BlockHalf, DoublePlantVariant) {
     if ohalf != BlockHalf::Upper {
         return (ohalf, ovariant);
     }
@@ -4896,7 +4933,7 @@ impl StairShape {
     }
 }
 
-fn get_stair_info(world: &super::World, x: i32, y: i32, z: i32) -> Option<(Direction, BlockHalf)> {
+fn get_stair_info<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32) -> Option<(Direction, BlockHalf)> {
     use self::Block::*;
     match world.get_block(x, y, z) {
         OakStairs{facing, half, ..} |
@@ -4917,7 +4954,7 @@ fn get_stair_info(world: &super::World, x: i32, y: i32, z: i32) -> Option<(Direc
     }
 }
 
-fn update_stair_shape(world: &super::World, x: i32, y: i32, z: i32, facing: Direction) -> StairShape {
+fn update_stair_shape<W: WorldAccess>(world: &W, x: i32, y: i32, z: i32, facing: Direction) -> StairShape {
     let (ox, oy, oz) = facing.get_offset();
     if let Some((other_facing, _)) = get_stair_info(world, x+ox, y+oy, z+oz) {
         if other_facing != facing && other_facing != facing.opposite() {
@@ -5105,6 +5142,99 @@ impl FlowerPotVariant {
             FlowerPotVariant::WhiteTulip => "white_tulip",
             FlowerPotVariant::PinkTulip => "pink_tulip",
             FlowerPotVariant::Oxeye => "oxeye_daisy",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Direction {
+    Invalid,
+    Up,
+    Down,
+    North,
+    South,
+    West,
+    East,
+}
+
+impl Direction {
+    pub fn all() -> Vec<Direction> {
+        vec![
+            Direction::Up, Direction::Down,
+            Direction::North, Direction::South,
+            Direction::West, Direction::East,
+        ]
+    }
+
+    pub fn from_string(val: &str) -> Direction {
+        match val {
+            "up" => Direction::Up,
+            "down" => Direction::Down,
+            "north" => Direction::North,
+            "south" => Direction::South,
+            "west" => Direction::West,
+            "east" => Direction::East,
+            _ => Direction::Invalid,
+        }
+    }
+
+    pub fn opposite(&self) -> Direction {
+        match *self {
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
+            Direction::North => Direction::South,
+            Direction::South => Direction::North,
+            Direction::West => Direction::East,
+            Direction::East => Direction::West,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn clockwise(&self) -> Direction {
+        match *self {
+            Direction::Up => Direction::Up,
+            Direction::Down => Direction::Down,
+            Direction::East => Direction::South,
+            Direction::West => Direction::North,
+            Direction::South => Direction::West,
+            Direction::North => Direction::East,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn counter_clockwise(&self) -> Direction {
+        match *self {
+            Direction::Up => Direction::Up,
+            Direction::Down => Direction::Down,
+            Direction::East => Direction::North,
+            Direction::West => Direction::South,
+            Direction::South => Direction::East,
+            Direction::North => Direction::West,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_offset(&self) -> (i32, i32, i32) {
+        match *self {
+            Direction::Up => (0, 1, 0),
+            Direction::Down => (0, -1, 0),
+            Direction::North => (0, 0, -1),
+            Direction::South => (0, 0, 1),
+            Direction::West => (-1, 0, 0),
+            Direction::East => (1, 0, 0),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn as_string(&self) -> &'static str {
+        match *self {
+            Direction::Up => "up",
+            Direction::Down => "down",
+            Direction::North => "north",
+            Direction::South => "south",
+            Direction::West => "west",
+            Direction::East => "east",
+            Direction::Invalid => "invalid",
         }
     }
 }

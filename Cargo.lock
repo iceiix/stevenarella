@@ -15,6 +15,7 @@ dependencies = [
  "sdl2 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "steven_blocks 0.0.1",
  "steven_gl 0.0.1",
  "steven_openssl 0.0.1",
  "steven_resources 0.1.0",
@@ -473,6 +474,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "hpack 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "steven_blocks"
+version = "0.0.1"
+dependencies = [
+ "cgmath 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "collision 0.5.1 (git+https://github.com/csherratt/collision-rs?rev=f80825e)",
+ "lazy_static 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
