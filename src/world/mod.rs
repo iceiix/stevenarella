@@ -702,10 +702,11 @@ impl Chunk {
     }
 
     fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) -> bool {
-        let s_idx = (y >> 4) as usize;
+        let s_idx = y >> 4;
         if s_idx < 0 || s_idx > 15 {
             return false;
         }
+        let s_idx = s_idx as usize;
         if self.sections[s_idx].is_none() {
             if let block::Air {} = b {
                 return false;
@@ -763,10 +764,11 @@ impl Chunk {
     }
 
     fn set_block_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
-        let s_idx = (y >> 4) as usize;
+        let s_idx = y >> 4;
         if s_idx < 0 || s_idx > 15 {
             return;
         }
+        let s_idx = s_idx as usize;
         if self.sections[s_idx].is_none() {
             if light == 0 {
                 return;
@@ -794,10 +796,11 @@ impl Chunk {
     }
 
     fn set_sky_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
-        let s_idx = (y >> 4) as usize;
+        let s_idx = y >> 4;
         if s_idx < 0 || s_idx > 15 {
             return;
         }
+        let s_idx = s_idx as usize;
         if self.sections[s_idx].is_none() {
             if light == 15 {
                 return;
