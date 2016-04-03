@@ -377,7 +377,7 @@ impl World {
                 let mut block_map = HashMap::with_hasher(BuildHasherDefault::<FNVHash>::default());
                 if bit_size == 0 {
                     bit_size = 13;
-                } else {                    
+                } else {
                     let count = try!(VarInt::read_from(&mut data)).0;
                     for i in 0 .. count {
                         let id = try!(VarInt::read_from(&mut data)).0;
@@ -543,7 +543,7 @@ impl Chunk {
                 let idx = ((z<<4)|x) as usize;
                 for yy in 0 .. 256 {
                     let sy = 255 - yy;
-                    if let block::Block::Air{..} = self.get_block(x, sy, z) {
+                    if let block::Air{..} = self.get_block(x, sy, z) {
                         continue
                     }
                     self.heightmap[idx] = sy as u8;
@@ -577,7 +577,7 @@ impl Chunk {
             // Find a new lowest
             for yy in 0 .. y {
                 let sy = y - yy - 1;
-                if let block::Block::Air{..} = self.get_block(x, sy, z) {
+                if let block::Air{..} = self.get_block(x, sy, z) {
                     continue
                 }
                 self.heightmap[idx] = sy as u8;

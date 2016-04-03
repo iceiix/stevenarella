@@ -29,6 +29,9 @@ use collision::{Aabb, Aabb3};
 use cgmath::Point3;
 use types::Direction;
 
+pub mod material;
+pub use self::material::Material;
+
 pub use self::Block::*;
 
 macro_rules! consume_token { ($i:tt) => (0) }
@@ -306,14 +309,6 @@ macro_rules! define_blocks {
     );
 }
 
-pub struct Material {
-    pub renderable: bool,
-    pub should_cull_against: bool,
-    pub never_cull: bool, // Because leaves suck
-    pub force_shade: bool,
-    pub transparent: bool,
-}
-
 #[derive(Clone, Copy)]
 pub enum TintType {
     Default,
@@ -325,13 +320,7 @@ pub enum TintType {
 define_blocks! {
     Air {
         props {},
-        material Material {
-            renderable: false,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::INVISIBLE,
         model { ("minecraft", "air") },
         collision vec![],
     }
@@ -348,13 +337,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", variant.as_string() ) },
     }
     Grass {
@@ -362,13 +345,7 @@ define_blocks! {
             snowy: bool = [false, true],
         },
         data { if snowy { None } else { Some(0) } },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "grass") },
         variant format!("snowy={}", snowy),
         tint TintType::Grass,
@@ -391,13 +368,7 @@ define_blocks! {
             ],
         },
         data if !snowy { Some(variant.data()) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", variant.as_string()) },
         variant {
             if variant == DirtVariant::Podzol {
@@ -420,13 +391,7 @@ define_blocks! {
     }
     Cobblestone {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "cobblestone") },
     }
     Planks {
@@ -441,13 +406,7 @@ define_blocks! {
             ],
         },
         data Some(variant.plank_data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_planks", variant.as_string()) ) },
     }
     Sapling {
@@ -463,26 +422,14 @@ define_blocks! {
             stage: i32 = [0, 1],
         },
         data Some(variant.plank_data() | ((stage as usize) << 3)),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", format!("{}_sapling", variant.as_string()) ) },
         variant format!("stage={}", stage),
         collision vec![],
     }
     Bedrock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "bedrock") },
     }
     FlowingWater {
@@ -490,13 +437,7 @@ define_blocks! {
             level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
-        },
+        material material::TRANSPARENT,
         model { ("minecraft", "flowing_water") },
         collision vec![],
     }
@@ -505,13 +446,7 @@ define_blocks! {
             level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
-        },
+        material material::TRANSPARENT,
         model { ("minecraft", "water") },
         collision vec![],
     }
@@ -520,13 +455,7 @@ define_blocks! {
             level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "flowing_lava") },
         collision vec![],
     }
@@ -535,13 +464,7 @@ define_blocks! {
             level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "lava") },
         collision vec![],
     }
@@ -550,57 +473,27 @@ define_blocks! {
             red: bool = [false, true],
         },
         data Some(if red { 1 } else { 0 }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", if red { "red_sand" } else { "sand" } ) },
     }
     Gravel {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "gravel") },
     }
     GoldOre {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "gold_ore") },
     }
     IronOre {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "iron_ore") },
     }
     CoalOre {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "coal_ore") },
     }
     Log {
@@ -614,13 +507,7 @@ define_blocks! {
             axis: Axis = [Axis::Y, Axis::Z, Axis::X, Axis::None],
         },
         data Some(variant.data() | (axis.data() << 2)),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_log", variant.as_string()) ) },
         variant format!("axis={}", axis.as_string()),
     }
@@ -638,13 +525,7 @@ define_blocks! {
         data Some(variant.data()
                   | (if decayable { 0x4 } else { 0x0 })
                   | (if check_decay { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: true,
-            should_cull_against: false,
-            force_shade: true,
-            transparent: false,
-        },
+        material material::LEAVES,
         model { ("minecraft", format!("{}_leaves", variant.as_string()) ) },
         tint TintType::Foliage,
     }
@@ -653,47 +534,23 @@ define_blocks! {
             wet: bool = [false, true],
         },
         data Some(if wet { 1 } else { 0 }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "sponge") },
         variant format!("wet={}", wet),
     }
     Glass {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "glass") },
     }
     LapisOre {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "lapis_ore") },
     }
     LapisBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "lapis_block") },
     }
     Dispenser {
@@ -721,13 +578,7 @@ define_blocks! {
 
             Some(data | (if triggered { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "dispenser") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -740,24 +591,12 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", variant.as_string() ) },
     }
     NoteBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "noteblock") },
     }
     Bed {
@@ -784,13 +623,7 @@ define_blocks! {
                  | (if occupied { 0x4 } else { 0x0 })
                  | (if part == BedPart::Head { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "bed") },
         variant format!("facing={},part={}", facing.as_string(), part.as_string()),
         collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 9.0/16.0, 1.0))],
@@ -808,13 +641,7 @@ define_blocks! {
             ],
         },
         data Some(shape.data() | (if powered { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "golden_rail") },
         variant format!("powered={},shape={}", powered, shape.as_string()),
         collision vec![],
@@ -832,13 +659,7 @@ define_blocks! {
             ],
         },
         data Some(shape.data() | (if powered { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "detector_rail") },
         variant format!("powered={},shape={}", powered, shape.as_string()),
         collision vec![],
@@ -880,13 +701,7 @@ define_blocks! {
     }
     Web {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "web") },
         collision vec![],
     }
@@ -903,26 +718,14 @@ define_blocks! {
             TallGrassVariant::TallGrass => 1,
             TallGrassVariant::Fern => 2,
         }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", variant.as_string() ) },
         tint TintType::Grass,
         collision vec![],
     }
     DeadBush {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "dead_bush") },
         collision vec![],
     }
@@ -987,13 +790,7 @@ define_blocks! {
         )} else {
             None
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "piston_head") },
         variant format!("facing={},short={},type={}", facing.as_string(), short, variant.as_string()),
     }
@@ -1019,36 +816,18 @@ define_blocks! {
             ],
         },
         data Some(color.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_wool", color.as_string()) ) },
     }
     PistonExtension {
         props {},
         data Some(0),
-        material Material {
-            renderable: false,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::INVISIBLE,
         model { ("minecraft", "piston_extension") },
     }
     YellowFlower {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "dandelion") },
         collision vec![],
     }
@@ -1067,60 +846,30 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", variant.as_string()) },
         collision vec![],
     }
     BrownMushroom {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "brown_mushroom") },
         collision vec![],
     }
     RedMushroom {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "red_mushroom") },
         collision vec![],
     }
     GoldBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "gold_block") },
     }
     IronBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "iron_block") },
     }
     DoubleStoneSlab {
@@ -1151,13 +900,7 @@ define_blocks! {
 
             Some(data)
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
         variant if seamless { "all" } else { "normal" },
     }
@@ -1176,13 +919,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data() | (if half == BlockHalf::Top { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={}", half.as_string()),
         collision match half {
@@ -1193,13 +930,7 @@ define_blocks! {
     }
     BrickBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "brick_block") },
     }
     TNT {
@@ -1207,46 +938,22 @@ define_blocks! {
             explode: bool = [false, true],
         },
         data Some(if explode { 1 } else { 0 }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "tnt") },
     }
     BookShelf {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "bookshelf") },
     }
     MossyCobblestone {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "mossy_cobblestone") },
     }
     Obsidian {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "obsidian") },
     }
     Torch {
@@ -1269,13 +976,7 @@ define_blocks! {
                 _ => unreachable!(),
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "torch") },
         variant format!("facing={}", facing.as_string()),
         collision vec![],
@@ -1290,13 +991,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !up && !north && !south && !east && !west { Some(age as usize) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "fire") },
         collision vec![],
         multipart (key, val) => match key {
@@ -1310,13 +1005,7 @@ define_blocks! {
     }
     MobSpawner {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "mob_spawner") },
     }
     OakStairs {
@@ -1335,13 +1024,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "oak_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::OakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -1364,13 +1047,7 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "chest") },
     }
     RedstoneWire {
@@ -1389,13 +1066,7 @@ define_blocks! {
                 None
             }
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "redstone_wire") },
         tint TintType::Color{r: ((255.0 / 30.0) * (power as f64) + 14.0) as u8, g: 0, b: 0},
         collision vec![],
@@ -1416,35 +1087,17 @@ define_blocks! {
     }
     DiamondOre {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "diamond_ore") },
     }
     DiamondBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "diamond_block") },
     }
     CraftingTable {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "crafting_table") },
     }
     Wheat {
@@ -1452,13 +1105,7 @@ define_blocks! {
             age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
         },
         data Some(age as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "wheat") },
         variant format!("age={}", age),
         collision vec![],
@@ -1468,13 +1115,7 @@ define_blocks! {
             moisture: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
         },
         data Some(moisture as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "farmland") },
         variant format!("moisture={}", moisture),
     }
@@ -1496,13 +1137,7 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "furnace") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -1524,13 +1159,7 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "lit_furnace") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -1556,13 +1185,7 @@ define_blocks! {
             ],
         },
         data Some(rotation.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "standing_sign") },
         collision vec![],
     }
@@ -1580,13 +1203,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data door_data(facing, half, hinge, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "wooden_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
@@ -1612,13 +1229,7 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "ladder") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -1638,13 +1249,7 @@ define_blocks! {
             ],
         },
         data Some(shape.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "rail") },
         variant format!("shape={}", shape.as_string()),
         collision vec![],
@@ -1665,13 +1270,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "stone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::StoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -1694,13 +1293,7 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "wall_sign") },
         variant format!("facing={}", facing.as_string()),
         collision vec![],
@@ -1720,13 +1313,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data Some(facing.data() | (if powered { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "lever") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
         collision vec![],
@@ -1736,13 +1323,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data Some(if powered { 1 } else { 0 }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "stone_pressure_plate") },
         variant format!("powered={}", powered),
         collision vec![],
@@ -1761,13 +1342,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data door_data(facing, half, hinge, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "iron_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
@@ -1780,37 +1355,19 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data Some(if powered { 1 } else { 0 }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "wooden_pressure_plate") },
         variant format!("powered={}", powered),
         collision vec![],
     }
     RedstoneOre {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "redstone_ore") },
     }
     RedstoneOreLit {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "lit_redstone_ore") },
     }
     RedstoneTorchUnlit {
@@ -1833,13 +1390,7 @@ define_blocks! {
                 _ => unreachable!(),
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "unlit_redstone_torch") },
         variant format!("facing={}", facing.as_string()),
         collision vec![],
@@ -1864,13 +1415,7 @@ define_blocks! {
                 _ => unreachable!(),
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "redstone_torch") },
         variant format!("facing={}", facing.as_string()),
         collision vec![],
@@ -1900,13 +1445,7 @@ define_blocks! {
 
             Some(data | (if powered { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "stone_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
         collision vec![],
@@ -1916,36 +1455,18 @@ define_blocks! {
             layers: i32 = [1, 2, 3, 4, 5, 6, 7, 8],
         },
         data Some(layers as usize - 1),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "snow_layer") },
         variant format!("layers={}", layers),
     }
     Ice {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
-        },
+        material material::TRANSPARENT,
         model { ("minecraft", "ice") },
     }
     Snow {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "snow") },
     }
     Cactus {
@@ -1953,24 +1474,12 @@ define_blocks! {
             age: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(age as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "cactus") },
     }
     Clay {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "clay") },
     }
     Reeds {
@@ -1978,13 +1487,7 @@ define_blocks! {
             age: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(age as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "reeds") },
         tint TintType::Foliage,
         collision vec![],
@@ -1994,13 +1497,7 @@ define_blocks! {
             has_record: bool = [false, true],
         },
         data Some(if has_record { 1 } else { 0 }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "jukebox") },
     }
     Fence {
@@ -2011,13 +1508,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "fence") },
         update_state (world, x, y, z) => Block::Fence {
             north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
@@ -2054,47 +1545,23 @@ define_blocks! {
 
             Some(data | (if without_face { 0x4 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "pumpkin") },
         variant format!("facing={}", facing.as_string()),
     }
     Netherrack {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "netherrack") },
     }
     SoulSand {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "soul_sand") },
     }
     Glowstone {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "glowstone") },
     }
     Portal {
@@ -2102,13 +1569,7 @@ define_blocks! {
             axis: Axis = [Axis::X, Axis::Z],
         },
         data Some(axis.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
-        },
+        material material::TRANSPARENT,
         model { ("minecraft", "portal") },
         variant format!("axis={}", axis.as_string()),
         collision vec![],
@@ -2134,13 +1595,7 @@ define_blocks! {
 
             Some(data | (if without_face { 0x4 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "lit_pumpkin") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -2149,13 +1604,7 @@ define_blocks! {
             bites: i32 = [0, 1, 2, 3, 4, 5, 6],
         },
         data Some(bites as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "cake") },
         variant format!("bites={}", bites),
     }
@@ -2183,13 +1632,7 @@ define_blocks! {
         } else {
             None
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "unpowered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
         collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
@@ -2218,13 +1661,7 @@ define_blocks! {
         } else {
             None
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "powered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
         collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
@@ -2251,13 +1688,7 @@ define_blocks! {
             ],
         },
         data Some(color.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
-        },
+        material material::TRANSPARENT,
         model { ("minecraft", format!("{}_stained_glass", color.as_string()) ) },
     }
     TrapDoor {
@@ -2284,13 +1715,7 @@ define_blocks! {
                  | (if open { 0x4 } else { 0x0 })
                  | (if half == BlockHalf::Top { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "trapdoor") },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
     }
@@ -2306,13 +1731,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_monster_egg", variant.as_string())) },
     }
     StoneBrick {
@@ -2325,13 +1744,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", variant.as_string() ) },
     }
     BrownMushroomBlock {
@@ -2353,13 +1766,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "brown_mushroom_block") },
         variant format!("variant={}", variant.as_string()),
     }
@@ -2382,13 +1789,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "red_mushroom_block") },
         variant format!("variant={}", variant.as_string()),
     }
@@ -2400,13 +1801,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "iron_bars") },
         update_state (world, x, y, z) => {
             let f = |block| match block {
@@ -2437,13 +1832,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "glass_pane") },
         update_state (world, x, y, z) => Block::GlassPane {
             north: can_connect(world, x, y, z, Direction::North, &can_connect_glasspane),
@@ -2461,13 +1850,7 @@ define_blocks! {
     }
     MelonBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "melon_block") },
     }
     PumpkinStem {
@@ -2482,13 +1865,7 @@ define_blocks! {
             ],
         },
         data if facing == Direction::Up { Some(age as usize) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "pumpkin_stem") },
         variant {
             if facing == Direction::Up {
@@ -2524,13 +1901,7 @@ define_blocks! {
             ],
         },
         data if facing == Direction::North { Some(age as usize) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "melon_stem") },
         variant {
             if facing == Direction::Up {
@@ -2570,13 +1941,7 @@ define_blocks! {
         } else {
             None
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "vine") },
         variant format!("east={},north={},south={},up={},west={}", east, north, south, up, west),
         tint TintType::Foliage,
@@ -2595,13 +1960,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data fence_gate_data(facing, in_wall, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
@@ -2621,13 +1980,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::BrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -2648,13 +2001,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "stone_brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::StoneBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -2664,13 +2011,7 @@ define_blocks! {
             snowy: bool = [false, true],
         },
         data if snowy { None } else { Some(0) },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "mycelium") },
         variant format!("snowy={}", snowy),
         update_state (world, x, y, z) => {
@@ -2684,26 +2025,14 @@ define_blocks! {
     }
     Waterlily {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "waterlily") },
         tint TintType::Foliage,
         collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.1, 1.0))],
     }
     NetherBrick {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "nether_brick") },
     }
     NetherBrickFence {
@@ -2714,13 +2043,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "nether_brick_fence") },
         update_state (world, x, y, z) => {
             let f = |block| match block {
@@ -2759,13 +2082,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "nether_brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::NetherBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -2775,26 +2092,14 @@ define_blocks! {
             age: i32 = [0, 1, 2, 3],
         },
         data Some(age as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "nether_wart") },
         variant format!("age={}", age),
         collision vec![],
     }
     EnchantingTable {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "enchanting_table") },
     }
     BrewingStand {
@@ -2806,13 +2111,7 @@ define_blocks! {
         data Some((if has_bottle_0 { 0x1 } else { 0x0 })
                   | (if has_bottle_1 { 0x2 } else { 0x0 })
                   | (if has_bottle_2 { 0x4 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "brewing_stand") },
         multipart (key, val) => match key {
             "has_bottle_0" => (val == "true") == has_bottle_0,
@@ -2826,25 +2125,13 @@ define_blocks! {
             level: i32 = [0, 1, 2, 3],
         },
         data Some(level as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "cauldron") },
         variant format!("level={}", level),
     }
     EndPortal {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "end_portal") },
     }
     EndPortalFrame {
@@ -2868,58 +2155,28 @@ define_blocks! {
 
             Some(data | (if eye { 0x4 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "end_portal_frame") },
         variant format!("eye={},facing={}", eye, facing.as_string()),
     }
     EndStone {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "end_stone") },
     }
     DragonEgg {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "dragon_egg") },
     }
     RedstoneLamp {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "redstone_lamp") },
     }
     RedstoneLampLit {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "lit_redstone_lamp") },
     }
     DoubleWoodenSlab {
@@ -2934,13 +2191,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
     }
     WoodenSlab {
@@ -2956,13 +2207,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data() | (if half == BlockHalf::Top { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={}", half.as_string()),
         collision match half {
@@ -2992,13 +2237,7 @@ define_blocks! {
 
             Some(data | (age as usize) << 2)
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "cocoa") },
         variant format!("age={},facing={}", age, facing.as_string()),
     }
@@ -3018,26 +2257,14 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "sandstone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::SandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     EmeraldOre {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "emerald_ore") },
     }
     EnderChest {
@@ -3058,13 +2285,7 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "ender_chest") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -3092,13 +2313,7 @@ define_blocks! {
                  | (if attached { 0x4 } else { 0x0 })
                  | (if powered { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "tripwire_hook") },
         variant format!("attached={},facing={},powered={}", attached, facing.as_string(), powered),
         collision vec![],
@@ -3122,26 +2337,14 @@ define_blocks! {
                 None
             }
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "tripwire") },
         variant format!("attached={},east={},north={},south={},west={}", attached, east, north, south, west),
         collision vec![],
     }
     EmeraldBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "emerald_block") },
     }
     SpruceStairs {
@@ -3160,13 +2363,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "spruce_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::SpruceStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -3187,13 +2384,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "birch_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::BirchStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -3214,13 +2405,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "jungle_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::JungleStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -3238,25 +2423,13 @@ define_blocks! {
             ],
         },
         data command_block_data(conditional, facing),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
     }
     Beacon {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "beacon") },
     }
     CobblestoneWall {
@@ -3272,13 +2445,7 @@ define_blocks! {
             ],
         },
         data if !north && !south && !east && !west && !up { Some(variant.data()) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", format!("{}_wall", variant.as_string())) },
         update_state (world, x, y, z) => {
             let f = |block| match block {
@@ -3334,13 +2501,7 @@ define_blocks! {
             legacy_data: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data if contents == FlowerPotVariant::Empty { Some(legacy_data as usize) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "flower_pot") },
     }
     Carrots {
@@ -3348,13 +2509,7 @@ define_blocks! {
             age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
         },
         data Some(age as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "carrots") },
         variant format!("age={}", age),
         collision vec![],
@@ -3364,13 +2519,7 @@ define_blocks! {
             age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
         },
         data Some(age as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "potatoes") },
         variant format!("age={}", age),
         collision vec![],
@@ -3400,13 +2549,7 @@ define_blocks! {
 
             Some(data | (if powered { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "wooden_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
         collision vec![],
@@ -3434,13 +2577,7 @@ define_blocks! {
         } else {
             None
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "skull") },
         variant format!("facing={},nodrop={}", facing.as_string(), nodrop),
     }
@@ -3468,13 +2605,7 @@ define_blocks! {
                  else if damage == 2 { 0x8 }
                  else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "anvil") },
         variant format!("damage={},facing={}", damage, facing.as_string()),
     }
@@ -3496,13 +2627,7 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "trapped_chest") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -3511,13 +2636,7 @@ define_blocks! {
             power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(power as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "light_weighted_pressure_plate") },
         variant format!("power={}", power),
         collision vec![],
@@ -3527,13 +2646,7 @@ define_blocks! {
             power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(power as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "heavy_weighted_pressure_plate") },
         variant format!("power={}", power),
         collision vec![],
@@ -3562,13 +2675,7 @@ define_blocks! {
                  | (if mode == ComparatorMode::Subtract { 0x4 } else { 0x0 })
                  | (if powered { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "unpowered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
         collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
@@ -3597,13 +2704,7 @@ define_blocks! {
                  | (if mode == ComparatorMode::Subtract { 0x4 } else { 0x0 })
                  | (if powered { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "powered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
         collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
@@ -3613,37 +2714,19 @@ define_blocks! {
             power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(power as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "daylight_detector") },
         variant format!("power={}", power),
         collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 3.0/8.0, 1.0))],
     }
     RedstoneBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "redstone_block") },
     }
     QuartzOre {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "quartz_ore") },
     }
     Hopper {
@@ -3669,13 +2752,7 @@ define_blocks! {
 
             Some(data | (if enabled { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "hopper") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -3690,13 +2767,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", match variant {
             QuartzVariant::Normal => "quartz_block",
             QuartzVariant::Chiseled => "chiseled_quartz_block",
@@ -3728,13 +2799,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "quartz_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::QuartzStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -3752,13 +2817,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data Some(shape.data() | (if powered { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "activator_rail") },
         variant format!("powered={},shape={}", powered, shape.as_string()),
         collision vec![],
@@ -3788,13 +2847,7 @@ define_blocks! {
 
             Some(data | (if triggered { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "dropper") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -3820,13 +2873,7 @@ define_blocks! {
             ],
         },
         data Some(color.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_stained_hardened_clay", color.as_string()) ) },
     }
     StainedGlassPane {
@@ -3855,13 +2902,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(color.data()) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
-        },
+        material material::TRANSPARENT,
         model { ("minecraft", format!("{}_stained_glass_pane", color.as_string()) ) },
         update_state (world, x, y, z) => Block::StainedGlassPane {
             color: color,
@@ -3890,13 +2931,7 @@ define_blocks! {
         data Some(variant.data()
                   | (if decayable { 0x4 } else { 0x0 })
                   | (if check_decay { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: true,
-            should_cull_against: false,
-            force_shade: true,
-            transparent: false,
-        },
+        material material::LEAVES,
         model { ("minecraft", format!("{}_leaves", variant.as_string()) ) },
         tint TintType::Foliage,
     }
@@ -3909,13 +2944,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data() | (axis.data() << 2)),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_log", variant.as_string()) ) },
         variant format!("axis={}", axis.as_string()),
     }
@@ -3935,13 +2964,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "acacia_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::AcaciaStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -3962,37 +2985,19 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "dark_oak_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::DarkOakStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
     }
     Slime {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
-        },
+        material material::TRANSPARENT,
         model { ("minecraft", "slime") },
     }
     Barrier {
         props {},
-        material Material {
-            renderable: false,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::INVISIBLE,
         model { ("minecraft", "barrier") },
     }
     IronTrapDoor {
@@ -4019,13 +3024,7 @@ define_blocks! {
                  | (if open { 0x4 } else { 0x0 })
                  | (if half == BlockHalf::Top { 0x8 } else { 0x0 }))
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "iron_trapdoor") },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
     }
@@ -4038,24 +3037,12 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", variant.as_string() ) },
     }
     SeaLantern {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "sea_lantern") },
     }
     HayBlock {
@@ -4068,13 +3055,7 @@ define_blocks! {
             Axis::Z => 0x8,
             _ => 0x0,
         }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "hay_block") },
         variant format!("axis={}", axis.as_string()),
     }
@@ -4100,46 +3081,22 @@ define_blocks! {
             ],
         },
         data Some(color.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", format!("{}_carpet", color.as_string()) ) },
     }
     HardenedClay {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "hardened_clay") },
     }
     CoalBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "coal_block") },
     }
     PackedIce {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "packed_ice") },
     }
     DoublePlant {
@@ -4155,13 +3112,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data() | (if half == BlockHalf::Upper { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", variant.as_string()) },
         variant format!("half={}", half.as_string()),
         tint TintType::Foliage,
@@ -4193,13 +3144,7 @@ define_blocks! {
             ],
         },
         data Some(rotation.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "standing_banner") },
         variant format!("rotation={}", rotation.as_string()),
     }
@@ -4219,13 +3164,7 @@ define_blocks! {
                 Direction::East => 5,
                 _ => unreachable!(),
              }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "wall_banner") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -4234,13 +3173,7 @@ define_blocks! {
             power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(power as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "daylight_detector_inverted") },
         variant format!("power={}", power),
         collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 3.0/8.0, 1.0))],
@@ -4254,13 +3187,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", variant.as_string()) },
     }
     RedSandstoneStairs {
@@ -4279,13 +3206,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "red_sandstone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::RedSandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -4298,13 +3219,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data() | (if seamless { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
         variant if seamless { "all" } else { "normal" },
     }
@@ -4314,13 +3229,7 @@ define_blocks! {
             variant: StoneSlabVariant = [StoneSlabVariant::RedSandstone],
         },
         data Some(variant.data() | (if half == BlockHalf::Top { 0x8 } else { 0x0 })),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={}", half.as_string()),
         collision match half {
@@ -4342,13 +3251,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data fence_gate_data(facing, in_wall, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "spruce_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
@@ -4365,13 +3268,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data fence_gate_data(facing, in_wall, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "birch_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
@@ -4388,13 +3285,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data fence_gate_data(facing, in_wall, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "jungle_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
@@ -4411,13 +3302,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data fence_gate_data(facing, in_wall, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "dark_oak_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
@@ -4434,13 +3319,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data fence_gate_data(facing, in_wall, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "acacia_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
     }
@@ -4452,13 +3331,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "spruce_fence") },
         update_state (world, x, y, z) => Block::SpruceFence {
             north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
@@ -4482,13 +3355,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "birch_fence") },
         update_state (world, x, y, z) => Block::BirchFence {
             north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
@@ -4512,13 +3379,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "jungle_fence") },
         update_state (world, x, y, z) => Block::JungleFence {
             north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
@@ -4542,13 +3403,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "dark_oak_fence") },
         update_state (world, x, y, z) => Block::DarkOakFence {
             north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
@@ -4572,13 +3427,7 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "acacia_fence") },
         update_state (world, x, y, z) => Block::AcaciaFence {
             north: can_connect(world, x, y, z, Direction::North, &can_connect_fence),
@@ -4608,13 +3457,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data door_data(facing, half, hinge, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "spruce_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
@@ -4636,13 +3479,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data door_data(facing, half, hinge, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "birch_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
@@ -4664,13 +3501,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data door_data(facing, half, hinge, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "jungle_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
@@ -4692,13 +3523,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data door_data(facing, half, hinge, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "acacia_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
@@ -4720,13 +3545,7 @@ define_blocks! {
             powered: bool = [false, true],
         },
         data door_data(facing, half, hinge, open, powered),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "dark_oak_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
         update_state (world, x, y, z) => {
@@ -4756,13 +3575,7 @@ define_blocks! {
                 _ => unreachable!(),
             })
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "end_rod") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -4776,13 +3589,7 @@ define_blocks! {
             down: bool = [false, true],
         },
         data if !north && !south && !east && !west && !up && !down { Some(0) } else { None },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "chorus_plant") },
         update_state (world, x, y, z) => Block::ChorusPlant {
             north: match world.get_block(x, y, z - 1) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
@@ -4807,25 +3614,13 @@ define_blocks! {
             age: i32 = [0, 1, 2, 3, 4, 5],
         },
         data Some(age as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "chorus_flower") },
         variant format!("age={}", age),
     }
     PurpurBlock {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "purpur_block") },
     }
     PurpurPillar {
@@ -4838,13 +3633,7 @@ define_blocks! {
             Axis::Z => 0x8,
             _ => 0x0,
         }),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "purpur_pillar") },
         variant format!("axis={}", axis.as_string()),
     }
@@ -4864,13 +3653,7 @@ define_blocks! {
             ],
         },
         data stair_data(facing, half, shape),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "purpur_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
         update_state (world, x, y, z) => Block::PurpurStairs{facing: facing, half: half, shape: update_stair_shape(world, x, y, z, facing)},
@@ -4879,13 +3662,7 @@ define_blocks! {
         props {
             variant: StoneSlabVariant = [StoneSlabVariant::Purpur],
         },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
     }
     PurpurSlab {
@@ -4895,13 +3672,7 @@ define_blocks! {
         },
         data {
             if half == BlockHalf::Top { Some(0x8) } else { Some(0x0) } },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={},variant=default", half.as_string()),
         collision match half {
@@ -4912,13 +3683,7 @@ define_blocks! {
     }
     EndBricks {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "end_bricks") },
     }
     Beetroots {
@@ -4926,37 +3691,19 @@ define_blocks! {
             age: i32 = [0, 1, 2, 3],
         },
         data Some(age as usize),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "beetroots") },
         variant format!("age={}", age),
         collision vec![],
     }
     GrassPath {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "grass_path") },
     }
     EndGateway {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::NON_SOLID,
         model { ("minecraft", "end_gateway") },
     }
     RepeatingCommandBlock {
@@ -4972,13 +3719,7 @@ define_blocks! {
             ],
         },
         data command_block_data(conditional, facing),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "repeating_command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
     }
@@ -4995,37 +3736,19 @@ define_blocks! {
             ],
         },
         data command_block_data(conditional, facing),
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "chain_command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
     }
     FrostedIce {
         props {},
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("minecraft", "frosted_ice") },
     }
     Missing {
         props {},
         data { None::<usize> },
-        material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-        },
+        material material::SOLID,
         model { ("steven", "missing_block") },
     }
 }
