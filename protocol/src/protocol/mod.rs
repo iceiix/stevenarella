@@ -492,7 +492,7 @@ impl Lengthable for i32 {
     }
 }
 
-/// VarInt have a variable size (between 1 and 5 bytes) when encoded based
+/// `VarInt` have a variable size (between 1 and 5 bytes) when encoded based
 /// on the size of the number
 #[derive(Clone, Copy)]
 pub struct VarInt(pub i32);
@@ -508,7 +508,7 @@ impl Lengthable for VarInt {
 }
 
 impl Serializable for VarInt {
-    /// Decodes a VarInt from the Reader
+    /// Decodes a `VarInt` from the Reader
     fn read_from(buf: &mut io::Read) -> Result<VarInt, io::Error> {
         const PART : u32 = 0x7F;
         let mut size = 0;
@@ -529,7 +529,7 @@ impl Serializable for VarInt {
         Result::Ok(VarInt(val as i32))
     }
 
-    /// Encodes a VarInt into the Writer
+    /// Encodes a `VarInt` into the Writer
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
         const PART : u32 = 0x7F;
         let mut val = self.0 as u32;
@@ -556,7 +556,7 @@ impl fmt::Debug for VarInt {
     }
 }
 
-/// VarLong have a variable size (between 1 and 10 bytes) when encoded based
+/// `VarLong` have a variable size (between 1 and 10 bytes) when encoded based
 /// on the size of the number
 #[derive(Clone, Copy)]
 pub struct VarLong(pub i64);
@@ -572,7 +572,7 @@ impl Lengthable for VarLong {
 }
 
 impl Serializable for VarLong {
-    /// Decodes a VarLong from the Reader
+    /// Decodes a `VarLong` from the Reader
     fn read_from(buf: &mut io::Read) -> Result<VarLong, io::Error> {
         const PART : u64 = 0x7F;
         let mut size = 0;
@@ -593,7 +593,7 @@ impl Serializable for VarLong {
         Result::Ok(VarLong(val as i64))
     }
 
-    /// Encodes a VarLong into the Writer
+    /// Encodes a `VarLong` into the Writer
     fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
         const PART : u64 = 0x7F;
         let mut val = self.0 as u64;
@@ -707,7 +707,7 @@ pub struct Conn {
 impl Conn {
     pub fn new(target: &str) -> Result<Conn, Error> {
         // TODO SRV record support
-        let mut parts = target.split(":").collect::<Vec<&str>>();
+        let mut parts = target.split(':').collect::<Vec<&str>>();
         let address = if parts.len() == 1 {
             parts.push("25565");
             format!("{}:25565", parts[0])
