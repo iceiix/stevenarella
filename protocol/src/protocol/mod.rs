@@ -739,6 +739,9 @@ impl Conn {
             0
         };
         if self.compression_threshold >= 0 && buf.len() as i32 > self.compression_threshold {
+            if self.compression_write.is_none() {
+                self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), flate2::Compression::Default));
+            }
             extra = 0;
             let uncompressed_size = buf.len();
             let mut new = Vec::new();
@@ -766,6 +769,9 @@ impl Conn {
         let mut buf = io::Cursor::new(ibuf);
 
         if self.compression_threshold >= 0 {
+            if self.compression_read.is_none() {
+                self.compression_read = Some(ZlibDecoder::new(io::Cursor::new(Vec::new())));
+            }
             let uncompressed_size = try!(VarInt::read_from(&mut buf)).0;
             if uncompressed_size != 0 {
                 let mut new = Vec::with_capacity(uncompressed_size as usize);
@@ -806,13 +812,8 @@ impl Conn {
         self.cipher = Option::Some(openssl::EVPCipher::new(key, key, decrypt));
     }
 
-    pub fn set_compresssion(&mut self, threshold: i32, read: bool) {
+    pub fn set_compresssion(&mut self, threshold: i32) {
         self.compression_threshold = threshold;
-        if read {
-            self.compression_read = Some(ZlibDecoder::new(io::Cursor::new(Vec::new())));
-        } else {
-            self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), flate2::Compression::Default));
-        }
     }
 
     pub fn do_status(mut self) -> Result<(Status, time::Duration), Error> {
