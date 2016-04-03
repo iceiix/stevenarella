@@ -258,7 +258,7 @@ impl World {
         for dir in Direction::all() {
             let (ox, oy, oz) = dir.get_offset();
             let dir_vec = cgmath::Vector3::new(ox as f32, oy as f32, oz as f32);
-            valid_dirs[dir.index()] = renderer.view_vector.dot(dir_vec) > -0.8;
+            valid_dirs[dir.index()] = renderer.view_vector.dot(dir_vec) > -0.9;
         }
 
         let start = (
