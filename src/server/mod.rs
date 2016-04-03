@@ -196,13 +196,13 @@ impl Server {
 
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>) -> Server {
         let mut server = Server::new(resources, console, None, None);
-        let mut rng = rand::thread_rng();
         for x in -7*16 .. 7*16 {
             for z in -7*16 .. 7*16 {
-                let h = rng.gen_range(3, 10);
+                let h = 5 + (6.0 * (x as f64 / 16.0).cos() * (z as f64 / 16.0).sin()) as i32;
                 for y in 0 .. h {
                     server.world.set_block(Position::new(x, y, z), block::Dirt{ snowy: false, variant: block::DirtVariant::Normal });
                 }
+                server.world.set_block(Position::new(x, h, z), block::Grass{ snowy: false });
             }
         }
         server
