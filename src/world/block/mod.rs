@@ -24,7 +24,6 @@
 // Fire (Update State)
 // CobblestoneWall (Connections)
 
-use std::fmt::{Display, Formatter, Error};
 use collision::{Aabb, Aabb3};
 use cgmath::Point3;
 use types::Direction;
@@ -4103,12 +4102,6 @@ pub enum StoneVariant {
     SmoothDiorite,
     Andesite,
     SmoothAndesite,
-}
-
-impl Display for StoneVariant {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{}", self.as_string())
-    }
 }
 
 impl StoneVariant {
