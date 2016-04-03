@@ -437,7 +437,15 @@ define_blocks! {
             level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
-        material material::TRANSPARENT,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: true,
+            absorbed_light: 2,
+            emitted_light: 0,
+        },
         model { ("minecraft", "flowing_water") },
         collision vec![],
     }
@@ -446,7 +454,15 @@ define_blocks! {
             level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
-        material material::TRANSPARENT,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: true,
+            absorbed_light: 2,
+            emitted_light: 0,
+        },
         model { ("minecraft", "water") },
         collision vec![],
     }
@@ -461,7 +477,7 @@ define_blocks! {
             should_cull_against: false,
             force_shade: false,
             transparent: false,
-            absorbed_light: 0,
+            absorbed_light: 15,
             emitted_light: 15,
         },
         model { ("minecraft", "flowing_lava") },
@@ -478,7 +494,7 @@ define_blocks! {
             should_cull_against: false,
             force_shade: false,
             transparent: false,
-            absorbed_light: 0,
+            absorbed_light: 15,
             emitted_light: 15,
         },
         model { ("minecraft", "lava") },
@@ -872,7 +888,15 @@ define_blocks! {
     }
     BrownMushroom {
         props {},
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 1,
+        },
         model { ("minecraft", "brown_mushroom") },
         collision vec![],
     }
@@ -1019,7 +1043,15 @@ define_blocks! {
             west: bool = [false, true],
         },
         data if !up && !north && !south && !east && !west { Some(age as usize) } else { None },
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 15,
+        },
         model { ("minecraft", "fire") },
         collision vec![],
         multipart (key, val) => match key {
@@ -1187,7 +1219,15 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material material::SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: true,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 15,
+            emitted_light: 13,
+        },
         model { ("minecraft", "lit_furnace") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -1395,7 +1435,15 @@ define_blocks! {
     }
     RedstoneOreLit {
         props {},
-        material material::SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: true,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 15,
+            emitted_light: 9,
+        },
         model { ("minecraft", "lit_redstone_ore") },
     }
     RedstoneTorchUnlit {
@@ -1497,7 +1545,15 @@ define_blocks! {
     }
     Ice {
         props {},
-        material material::TRANSPARENT,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: true,
+            absorbed_light: 2,
+            emitted_light: 0,
+        },
         model { ("minecraft", "ice") },
     }
     Snow {
@@ -1603,7 +1659,7 @@ define_blocks! {
             should_cull_against: true,
             force_shade: false,
             transparent: false,
-            absorbed_light: 1,
+            absorbed_light: 15,
             emitted_light: 15,
         },
         model { ("minecraft", "glowstone") },
@@ -1613,7 +1669,15 @@ define_blocks! {
             axis: Axis = [Axis::X, Axis::Z],
         },
         data Some(axis.data()),
-        material material::TRANSPARENT,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: true,
+            absorbed_light: 1,
+            emitted_light: 11,
+        },
         model { ("minecraft", "portal") },
         variant format!("axis={}", axis.as_string()),
         collision vec![],
@@ -1639,7 +1703,15 @@ define_blocks! {
 
             Some(data | (if without_face { 0x4 } else { 0x0 }))
         },
-        material material::SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: true,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 15,
+            emitted_light: 15,
+        },
         model { ("minecraft", "lit_pumpkin") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -2155,7 +2227,15 @@ define_blocks! {
         data Some((if has_bottle_0 { 0x1 } else { 0x0 })
                   | (if has_bottle_1 { 0x2 } else { 0x0 })
                   | (if has_bottle_2 { 0x4 } else { 0x0 })),
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 1,
+        },
         model { ("minecraft", "brewing_stand") },
         multipart (key, val) => match key {
             "has_bottle_0" => (val == "true") == has_bottle_0,
@@ -2175,7 +2255,15 @@ define_blocks! {
     }
     EndPortal {
         props {},
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 15,
+        },
         model { ("minecraft", "end_portal") },
     }
     EndPortalFrame {
@@ -2199,7 +2287,15 @@ define_blocks! {
 
             Some(data | (if eye { 0x4 } else { 0x0 }))
         },
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 1,
+        },
         model { ("minecraft", "end_portal_frame") },
         variant format!("eye={},facing={}", eye, facing.as_string()),
     }
@@ -2210,7 +2306,15 @@ define_blocks! {
     }
     DragonEgg {
         props {},
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 1,
+        },
         model { ("minecraft", "dragon_egg") },
     }
     RedstoneLamp {
@@ -2220,7 +2324,15 @@ define_blocks! {
     }
     RedstoneLampLit {
         props {},
-        material material::SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: true,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 15,
+            emitted_light: 15,
+        },
         model { ("minecraft", "lit_redstone_lamp") },
     }
     DoubleWoodenSlab {
@@ -2329,7 +2441,15 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 7,
+        },
         model { ("minecraft", "ender_chest") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -2473,7 +2593,15 @@ define_blocks! {
     }
     Beacon {
         props {},
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 15,
+        },
         model { ("minecraft", "beacon") },
     }
     CobblestoneWall {
@@ -3092,7 +3220,7 @@ define_blocks! {
             should_cull_against: true,
             force_shade: false,
             transparent: false,
-            absorbed_light: 1,
+            absorbed_light: 15,
             emitted_light: 15,
         },
         model { ("minecraft", "sea_lantern") },
@@ -3627,7 +3755,15 @@ define_blocks! {
                 _ => unreachable!(),
             })
         },
-        material material::NON_SOLID,
+        material Material {
+            renderable: true,
+            never_cull: false,
+            should_cull_against: false,
+            force_shade: false,
+            transparent: false,
+            absorbed_light: 1,
+            emitted_light: 14,
+        },
         model { ("minecraft", "end_rod") },
         variant format!("facing={}", facing.as_string()),
     }
