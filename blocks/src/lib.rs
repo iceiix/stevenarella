@@ -14,15 +14,9 @@
 // Barrier
 // EndGateway
 // TODO: Blocks
-// RedstoneRepeater (Locked State Update)
-// Tripwire (State Update)
-// TripwireHook (Rendering issue)
-// FlowingWater
-// FlowingLava
-// DoublePlant (Sunflower rendering)
-// PistonExtension?
-// Fire (Update State)
-// CobblestoneWall (Connections)
+// Rendering: TripwireHook, FlowingWater, FlowingLava, DoublePlant (Sunflower)
+// State Updates: Fire, CobblestoneWall, Tripwire, FenceGate (in_wall), RedstoneRepeater (locked)
+// Collisions: Chest, Hopper, CobblestoneWall, Stairs, SnowLayer
 
 #![recursion_limit="300"]
 
@@ -766,6 +760,7 @@ define_blocks! {
         },
         model { ("minecraft", "sticky_piston") },
         variant format!("extended={},facing={}", extended, facing.as_string()),
+        collision piston_collision(extended, facing),
     }
     Web {
         props {},
@@ -833,6 +828,7 @@ define_blocks! {
         },
         model { ("minecraft", "piston") },
         variant format!("extended={},facing={}", extended, facing.as_string()),
+        collision piston_collision(extended, facing),
     }
     PistonHead {
         props {
@@ -863,6 +859,22 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "piston_head") },
         variant format!("facing={},short={},type={}", facing.as_string(), short, variant.as_string()),
+        collision {
+            let (min_x, min_y, min_z, max_x, max_y, max_z) = match facing {
+                Direction::Up => (3.0/8.0, -0.25, 3.0/8.0, 5.0/8.0, 0.75, 5.0/8.0),
+                Direction::Down => (3.0/8.0, 0.25, 3.0/8.0, 5.0/8.0, 1.25, 0.625),
+                Direction::North => (3.0/8.0, 3.0/8.0, 0.25, 5.0/8.0, 5.0/8.0, 1.25),
+                Direction::South => (3.0/8.0, 3.0/8.0, -0.25, 5.0/8.0, 5.0/8.0, 0.75),
+                Direction::West => (0.25, 3.0/8.0, 3.0/8.0, 1.25, 5.0/8.0, 5.0/8.0),
+                Direction::East => (-0.25, 3.0/8.0, 3.0/8.0, 0.75, 5.0/8.0, 5.0/8.0),
+                _ => unreachable!(),
+            };
+
+            vec![Aabb3::new(
+                Point3::new(min_x, min_y, min_z),
+                Point3::new(max_x, max_y, max_z)
+            )]
+        },
     }
     Wool {
         props {
@@ -1212,6 +1224,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "farmland") },
         variant format!("moisture={}", moisture),
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 15.0/16.0, 1.0)
+        )],
     }
     Furnace {
         props {
@@ -1308,6 +1324,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "wooden_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::WoodenDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
@@ -1447,6 +1464,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "iron_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::IronDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
@@ -1602,6 +1620,10 @@ define_blocks! {
         data Some(age as usize),
         material material::NON_SOLID,
         model { ("minecraft", "cactus") },
+        collision vec![Aabb3::new(
+            Point3::new(1.0/16.0, 0.0, 1.0/16.0),
+            Point3::new(1.0 - (1.0/16.0), 1.0 - (1.0/16.0), 1.0 - (1.0/16.0))
+        )],
     }
     Clay {
         props {},
@@ -1636,6 +1658,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "fence") },
+        collision fence_collision(north, south, east, west),
         update_state (world, pos) => Block::Fence {
             north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
             south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
@@ -1684,6 +1707,10 @@ define_blocks! {
         props {},
         material material::NON_SOLID,
         model { ("minecraft", "soul_sand") },
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 7.0/8.0, 1.0)
+        )],
     }
     Glowstone {
         props {},
@@ -1757,6 +1784,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "cake") },
         variant format!("bites={}", bites),
+        collision vec![Aabb3::new(
+            Point3::new((1.0 + (bites as f64 * 2.0)) / 16.0, 0.0, 1.0/16.0),
+            Point3::new(1.0 - (1.0/16.0), 0.5, 1.0 - (1.0/16.0))
+        )],
     }
     RepeaterUnpowered {
         props {
@@ -1785,7 +1816,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "unpowered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
-        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 1.0/8.0, 1.0)
+        )],
     }
     RepeaterPowered {
         props {
@@ -1814,7 +1848,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "powered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
-        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 1.0/8.0, 1.0)
+        )],
     }
     StainedGlass {
         props {
@@ -1868,6 +1905,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "trapdoor") },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
+        collision trapdoor_collision(facing, half, open),
     }
     MonsterEgg {
         props {
@@ -1953,6 +1991,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "iron_bars") },
+        collision pane_collision(north, south, east, west),
         update_state (world, pos) => {
             let f = |block| match block {
                 Block::IronBars{..} => true,
@@ -1984,6 +2023,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "glass_pane") },
+        collision pane_collision(north, south, east, west),
         update_state (world, pos) => Block::GlassPane {
             north: can_connect(world, pos.shift(Direction::North), &can_connect_glasspane),
             south: can_connect(world, pos.shift(Direction::South), &can_connect_glasspane),
@@ -2113,6 +2153,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
+        collision fence_gate_collision(facing, in_wall, open),
     }
     BrickStairs {
         props {
@@ -2178,7 +2219,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "waterlily") },
         tint TintType::Foliage,
-        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.1, 1.0))],
+        collision vec![Aabb3::new(
+            Point3::new(1.0/16.0, 0.0, 1.0/16.0),
+            Point3::new(15.0/16.0, 3.0/32.0, 15.0/16.0))
+        ],
     }
     NetherBrick {
         props {},
@@ -2195,6 +2239,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "nether_brick_fence") },
+        collision fence_collision(north, south, east, west),
         update_state (world, pos) => {
             let f = |block| match block {
                 Block::NetherBrickFence{..} => true,
@@ -2251,6 +2296,10 @@ define_blocks! {
         props {},
         material material::NON_SOLID,
         model { ("minecraft", "enchanting_table") },
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 0.75, 1.0))
+        ],
     }
     BrewingStand {
         props {
@@ -2299,6 +2348,7 @@ define_blocks! {
             emitted_light: 15,
         },
         model { ("minecraft", "end_portal") },
+        collision vec![],
     }
     EndPortalFrame {
         props {
@@ -2332,6 +2382,21 @@ define_blocks! {
         },
         model { ("minecraft", "end_portal_frame") },
         variant format!("eye={},facing={}", eye, facing.as_string()),
+        collision {
+            let base_aabb = Aabb3::new(
+                Point3::new(0.0, 0.0, 0.0),
+                Point3::new(1.0, 13.0/16.0, 1.0)
+            );
+
+            if eye {
+                vec![base_aabb, Aabb3::new(
+                    Point3::new(5.0/16.0, 13.0/16.0, 5.0/16.0),
+                    Point3::new(11.0/16.0, 1.0, 11.0/16.0)
+                )]
+            } else {
+                vec![base_aabb]
+            }
+        },
     }
     EndStone {
         props {},
@@ -2350,6 +2415,10 @@ define_blocks! {
             emitted_light: 1,
         },
         model { ("minecraft", "dragon_egg") },
+        collision vec![Aabb3::new(
+            Point3::new(1.0/16.0, 0.0, 1.0/16.0),
+            Point3::new(15.0/16.0, 1.0, 15.0/16.0)
+        )],
     }
     RedstoneLamp {
         props {},
@@ -2401,8 +2470,14 @@ define_blocks! {
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={}", half.as_string()),
         collision match half {
-            BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
-            BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 1.0, 1.0))],
+            BlockHalf::Bottom => vec![Aabb3::new(
+                Point3::new(0.0, 0.0, 0.0),
+                Point3::new(1.0, 0.5, 1.0)
+            )],
+            BlockHalf::Top => vec![Aabb3::new(
+                Point3::new(0.0, 0.5, 0.0),
+                Point3::new(1.0, 1.0, 1.0))
+            ],
             _ => unreachable!(),
         },
     }
@@ -2410,10 +2485,10 @@ define_blocks! {
         props {
             age: i32 = [0, 1, 2],
             facing: Direction = [
-                Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::North,
+                Direction::East
             ],
         },
         data {
@@ -2430,6 +2505,24 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "cocoa") },
         variant format!("age={},facing={}", age, facing.as_string()),
+        collision {
+            let i = 4.0 + age as f64 * 2.0;
+            let j = 5.0 + age as f64 * 2.0;
+            let f = i / 2.0;
+
+            let (min_x, min_y, min_z, max_x, max_y, max_z) = match facing {
+                Direction::South => (8.0 - f, 12.0 - j, 15.0 - i, 8.0 + f, 12.0, 15.0),
+                Direction::West => (1.0, 12.0 - j, 8.0 - f, 1.0 + i, 12.0, 8.0 + f),
+                Direction::North => (8.0 - f, 12.0 - j, 1.0, 8.0 + f, 12.0, 8.0 + i),
+                Direction::East => (15.0 - i, 12.0 - j, 8.0 - f, 15.0, 12.0, 8.0 + f),
+                _ => unreachable!(),
+            };
+
+            vec![Aabb3::new(
+                Point3::new(min_x / 16.0, min_y / 16.0, min_z / 16.0),
+                Point3::new(max_x / 16.0, max_y / 16.0, max_z / 16.0))
+            ]
+        },
     }
     SandstoneStairs {
         props {
@@ -2486,6 +2579,10 @@ define_blocks! {
         },
         model { ("minecraft", "ender_chest") },
         variant format!("facing={}", facing.as_string()),
+        collision vec![Aabb3::new(
+            Point3::new(1.0/16.0, 0.0, 1.0/16.0),
+            Point3::new(15.0/16.0, 7.0/8.0, 15.0/16.0)
+        )],
     }
     TripwireHook {
         props {
@@ -2786,23 +2883,38 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "skull") },
         variant format!("facing={},nodrop={}", facing.as_string(), nodrop),
+        collision {
+            let (min_x, min_y, min_z, max_x, max_y, max_z) = match facing {
+                Direction::Up => (0.25, 0.0, 0.25, 0.75, 0.5, 0.75),
+                Direction::North => (0.25, 0.25, 0.5, 0.75, 0.75, 1.0),
+                Direction::South => (0.25, 0.25, 0.0, 0.75, 0.75, 0.5),
+                Direction::West => (0.5, 0.25, 0.25, 1.0, 0.75, 0.75),
+                Direction::East => (0.0, 0.25, 0.25, 0.5, 0.75, 0.75),
+                _ => unreachable!(),
+            };
+
+            vec![Aabb3::new(
+                Point3::new(min_x, min_y, min_z),
+                Point3::new(max_x, max_y, max_z)
+            )]
+        },
     }
     Anvil {
         props {
             damage: i32 = [0, 1, 2],
             facing: Direction = [
-                Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::North,
+                Direction::East
             ],
         },
         data {
             let data = match facing {
-                Direction::North => 0,
-                Direction::East => 1,
-                Direction::South => 2,
-                Direction::West => 3,
+                Direction::South => 0,
+                Direction::West => 1,
+                Direction::North => 2,
+                Direction::East => 3,
                 _ => unreachable!(),
             };
 
@@ -2814,6 +2926,17 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "anvil") },
         variant format!("damage={},facing={}", damage, facing.as_string()),
+        collision match facing {
+            Direction::South | Direction::North => vec![Aabb3::new(
+                Point3::new(1.0/8.0, 0.0, 0.0),
+                Point3::new(7.0/8.0, 1.0, 1.0)
+            )],
+            Direction::West | Direction::East => vec![Aabb3::new(
+                Point3::new(0.0, 0.0, 1.0/8.0),
+                Point3::new(1.0, 1.0, 7.0/8.0)
+            )],
+            _ => unreachable!(),
+        },
     }
     TrappedChest {
         props {
@@ -2836,6 +2959,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "trapped_chest") },
         variant format!("facing={}", facing.as_string()),
+        collision vec![Aabb3::new(
+            Point3::new(1.0/16.0, 0.0, 1.0/16.0),
+            Point3::new(15.0/16.0, 7.0/8.0, 15.0/16.0)
+        )],
     }
     LightWeightedPressurePlate {
         props {
@@ -2884,7 +3011,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "unpowered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
-        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 1.0/8.0, 1.0)
+        )],
     }
     ComparatorPowered {
         props {
@@ -2913,7 +3043,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "powered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
-        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.125, 1.0))],
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 1.0/8.0, 1.0)
+        )],
     }
     DaylightDetector {
         props {
@@ -2923,7 +3056,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "daylight_detector") },
         variant format!("power={}", power),
-        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 3.0/8.0, 1.0))],
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 3.0/8.0, 1.0)
+        )],
     }
     RedstoneBlock {
         props {},
@@ -3110,6 +3246,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(color.data()) } else { None },
         material material::TRANSPARENT,
         model { ("minecraft", format!("{}_stained_glass_pane", color.as_string()) ) },
+        collision pane_collision(north, south, east, west),
         update_state (world, pos) => Block::StainedGlassPane {
             color: color,
             north: can_connect(world, pos.shift(Direction::North), &can_connect_glasspane),
@@ -3233,6 +3370,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "iron_trapdoor") },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
+        collision trapdoor_collision(facing, half, open),
     }
     Prismarine {
         props {
@@ -3297,6 +3435,10 @@ define_blocks! {
         data Some(color.data()),
         material material::NON_SOLID,
         model { ("minecraft", format!("{}_carpet", color.as_string()) ) },
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 1.0/16.0, 1.0)
+        )],
     }
     HardenedClay {
         props {},
@@ -3390,7 +3532,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "daylight_detector_inverted") },
         variant format!("power={}", power),
-        collision vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 3.0/8.0, 1.0))],
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 3.0/8.0, 1.0)
+        )],
     }
     RedSandstone {
         props {
@@ -3447,8 +3592,14 @@ define_blocks! {
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={}", half.as_string()),
         collision match half {
-            BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
-            BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 1.0, 1.0))],
+            BlockHalf::Bottom => vec![Aabb3::new(
+                Point3::new(0.0, 0.0, 0.0),
+                Point3::new(1.0, 0.5, 1.0)
+            )],
+            BlockHalf::Top => vec![Aabb3::new(
+                Point3::new(0.0, 0.5, 0.0),
+                Point3::new(1.0, 1.0, 1.0)
+            )],
             _ => unreachable!(),
         },
     }
@@ -3468,6 +3619,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "spruce_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
+        collision fence_gate_collision(facing, in_wall, open),
     }
     BirchFenceGate {
         props {
@@ -3485,6 +3637,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "birch_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
+        collision fence_gate_collision(facing, in_wall, open),
     }
     JungleFenceGate {
         props {
@@ -3502,6 +3655,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "jungle_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
+        collision fence_gate_collision(facing, in_wall, open),
     }
     DarkOakFenceGate {
         props {
@@ -3519,6 +3673,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "dark_oak_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
+        collision fence_gate_collision(facing, in_wall, open),
     }
     AcaciaFenceGate {
         props {
@@ -3536,6 +3691,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "acacia_fence_gate") },
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
+        collision fence_gate_collision(facing, in_wall, open),
     }
     SpruceFence {
         props {
@@ -3547,6 +3703,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "spruce_fence") },
+        collision fence_collision(north, south, east, west),
         update_state (world, pos) => Block::SpruceFence {
             north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
             south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
@@ -3571,6 +3728,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "birch_fence") },
+        collision fence_collision(north, south, east, west),
         update_state (world, pos) => Block::BirchFence {
             north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
             south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
@@ -3595,6 +3753,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "jungle_fence") },
+        collision fence_collision(north, south, east, west),
         update_state (world, pos) => Block::JungleFence {
             north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
             south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
@@ -3619,6 +3778,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "dark_oak_fence") },
+        collision fence_collision(north, south, east, west),
         update_state (world, pos) => Block::DarkOakFence {
             north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
             south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
@@ -3643,6 +3803,7 @@ define_blocks! {
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "acacia_fence") },
+        collision fence_collision(north, south, east, west),
         update_state (world, pos) => Block::AcaciaFence {
             north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
             south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
@@ -3674,6 +3835,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "spruce_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::SpruceDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
@@ -3696,6 +3858,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "birch_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::BirchDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
@@ -3718,6 +3881,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "jungle_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::JungleDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
@@ -3740,6 +3904,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "acacia_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::AcaciaDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
@@ -3762,6 +3927,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "dark_oak_door") },
         variant format!("facing={},half={},hinge={},open={}", facing.as_string(), half.as_string(), hinge.as_string(), open),
+        collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
             Block::DarkOakDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
@@ -3800,19 +3966,86 @@ define_blocks! {
         },
         model { ("minecraft", "end_rod") },
         variant format!("facing={}", facing.as_string()),
+        collision {
+            match facing {
+                Direction::Up | Direction::Down => vec![Aabb3::new(
+                    Point3::new(3.0/8.0, 0.0, 3.0/8.0),
+                    Point3::new(5.0/8.0, 1.0, 5.0/8.0))
+                ],
+                Direction::North | Direction::South => vec![Aabb3::new(
+                    Point3::new(3.0/8.0, 3.0/8.0, 0.0),
+                    Point3::new(5.0/8.0, 5.0/8.0, 1.0))
+                ],
+                Direction::East | Direction::West => vec![Aabb3::new(
+                    Point3::new(0.0, 3.0/8.0, 3.0/8.0),
+                    Point3::new(1.0, 5.0/8.0, 5.0/8.0))
+                ],
+                _ => unreachable!(),
+            }
+        },
     }
     ChorusPlant {
         props {
+            up: bool = [false, true],
+            down: bool = [false, true],
             north: bool = [false, true],
             south: bool = [false, true],
             east: bool = [false, true],
             west: bool = [false, true],
-            up: bool = [false, true],
-            down: bool = [false, true],
         },
         data if !north && !south && !east && !west && !up && !down { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "chorus_plant") },
+        collision {
+            let mut collision = vec![Aabb3::new(
+                Point3::new(3.0/16.0, 3.0/16.0, 3.0/16.0),
+                Point3::new(13.0/16.0, 13.0/16.0, 13.0/16.0))
+            ];
+
+            if up {
+                collision.push(Aabb3::new(
+                    Point3::new(3.0/16.0, 13.0/16.0, 3.0/16.0),
+                    Point3::new(13.0/16.0, 1.0, 13.0/16.0))
+                );
+            }
+
+            if down {
+                collision.push(Aabb3::new(
+                    Point3::new(3.0/16.0, 0.0, 3.0/16.0),
+                    Point3::new(13.0/16.0, 3.0/16.0, 13.0/16.0))
+                );
+            }
+
+            if north {
+                collision.push(Aabb3::new(
+                    Point3::new(3.0/16.0, 3.0/16.0, 0.0),
+                    Point3::new(13.0/16.0, 13.0/16.0, 3.0/16.0))
+                );
+            }
+
+            if south {
+                collision.push(Aabb3::new(
+                    Point3::new(3.0/16.0, 3.0/16.0, 13.0/16.0),
+                    Point3::new(13.0/16.0, 13.0/16.0, 1.0))
+                );
+            }
+
+            if east {
+                collision.push(Aabb3::new(
+                    Point3::new(13.0/16.0, 3.0/16.0, 3.0/16.0),
+                    Point3::new(1.0, 13.0/16.0, 13.0/16.0))
+                );
+            }
+
+            if west {
+                collision.push(Aabb3::new(
+                    Point3::new(0.0, 3.0/16.0, 3.0/16.0),
+                    Point3::new(3.0/16.0, 13.0/16.0, 13.0/16.0))
+                );
+            }
+
+            collision
+        },
         update_state (world, pos) => Block::ChorusPlant {
             north: match world.get_block(pos.shift(Direction::North)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
             south: match world.get_block(pos.shift(Direction::South)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
@@ -3898,8 +4131,14 @@ define_blocks! {
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={},variant=default", half.as_string()),
         collision match half {
-            BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
-            BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 1.0, 1.0))],
+            BlockHalf::Bottom => vec![Aabb3::new(
+                Point3::new(0.0, 0.0, 0.0),
+                Point3::new(1.0, 0.5, 1.0)
+            )],
+            BlockHalf::Top => vec![Aabb3::new(
+                Point3::new(0.0, 0.5, 0.0),
+                Point3::new(1.0, 1.0, 1.0)
+            )],
             _ => unreachable!(),
         },
     }
@@ -3922,11 +4161,16 @@ define_blocks! {
         props {},
         material material::NON_SOLID,
         model { ("minecraft", "grass_path") },
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, 15.0/16.0, 1.0)
+        )],
     }
     EndGateway {
         props {},
         material material::NON_SOLID,
         model { ("minecraft", "end_gateway") },
+        collision vec![],
     }
     RepeatingCommandBlock {
         props {
@@ -4046,6 +4290,32 @@ fn fence_gate_data(facing: Direction, in_wall: bool, open: bool, powered: bool) 
     Some(data | (if open { 0x4 } else { 0x0 }))
 }
 
+fn fence_gate_collision(facing: Direction, in_wall: bool, open: bool) -> Vec<Aabb3<f64>> {
+    if open {
+        return vec![];
+    }
+
+    let (min_x, min_y, min_z, max_x, max_y, max_z) = if in_wall {
+        match facing {
+            Direction::North | Direction::South => (0.0, 0.0, 3.0/8.0, 1.0, 13.0/16.0, 5.0/8.0),
+            Direction::West | Direction::East => (3.0/8.0, 0.0, 0.0, 5.0/8.0, 13.0/16.0, 1.0),
+            _ => unreachable!(),
+        }
+    } else {
+        match facing {
+            Direction::North | Direction::South => (0.0, 0.0, 3.0/8.0, 1.0, 1.0, 5.0/8.0),
+            Direction::West | Direction::East => (3.0/8.0, 0.0, 0.0, 5.0/8.0, 1.0, 1.0),
+            _ => unreachable!(),
+        }
+    };
+
+    vec![Aabb3::new(
+        Point3::new(min_x, min_y, min_z),
+        Point3::new(max_x, max_y, max_z)
+    )]
+}
+
+
 fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered: bool) -> Option<usize> {
     match half {
         DoorHalf::Upper => {
@@ -4127,6 +4397,219 @@ fn command_block_data(conditional: bool, facing: Direction) -> Option<usize> {
     };
 
     Some(data | (if conditional { 0x8 } else { 0x0 }))
+}
+
+fn piston_collision(extended: bool, facing: Direction) -> Vec<Aabb3<f64>> {
+    let (min_x, min_y, min_z, max_x, max_y, max_z) = if extended {
+        match facing {
+            Direction::Up => (0.0, 0.0, 0.0, 1.0, 0.75, 1.0),
+            Direction::Down => (0.0, 0.25, 0.0, 1.0, 1.0, 1.0),
+            Direction::North => (0.0, 0.0, 0.25, 1.0, 1.0, 1.0),
+            Direction::South => (0.0, 0.0, 0.0, 1.0, 1.0, 0.75),
+            Direction::West => (0.25, 0.0, 0.0, 1.0, 1.0, 0.75),
+            Direction::East => (0.0, 0.0, 0.0, 0.75, 1.0, 1.0),
+            _ => unreachable!(),
+        }
+    } else {
+        (0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
+    };
+
+    vec![Aabb3::new(
+        Point3::new(min_x, min_y, min_z),
+        Point3::new(max_x, max_y, max_z)
+    )]
+}
+
+fn door_collision(facing: Direction, hinge: Side, open: bool) -> Vec<Aabb3<f64>> {
+    let (min_x, min_y, min_z, max_x, max_y, max_z) = if open {
+        if hinge == Side::Left {
+            match facing {
+                Direction::North => (1.0 - (3.0 / 16.0), 0.0, 0.0, 1.0, 1.0, 1.0),
+                Direction::East => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
+                Direction::South => (0.0, 0.0, 0.0, 3.0 / 16.0, 1.0, 1.0),
+                Direction::West => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
+                _ => unreachable!(),
+            }
+        } else {
+            match facing {
+                Direction::North => (0.0, 0.0, 0.0, 3.0/16.0, 1.0, 1.0),
+                Direction::East => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
+                Direction::South => (1.0 - (3.0 / 16.0), 0.0, 0.0, 1.0, 1.0, 1.0),
+                Direction::West => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
+                _ => unreachable!(),
+            }
+        }
+    } else {
+        match facing {
+            Direction::North => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
+            Direction::East => (0.0, 0.0, 0.0, 3.0 / 16.0, 1.0, 1.0),
+            Direction::South => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
+            Direction::West => (1.0 - (3.0 / 16.0), 0.0, 0.0, 1.0, 1.0, 1.0),
+            _ => unreachable!(),
+        }
+    };
+
+    vec![Aabb3::new(
+        Point3::new(min_x, min_y, min_z),
+        Point3::new(max_x, max_y, max_z))
+    ]
+}
+
+fn trapdoor_collision(facing: Direction, half: BlockHalf, open: bool) -> Vec<Aabb3<f64>> {
+    let (min_x, min_y, min_z, max_x, max_y, max_z) = if open {
+        match facing {
+            Direction::North => (0.0, 0.0, 3.0/16.0, 1.0, 1.0, 1.0),
+            Direction::South => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0/16.0),
+            Direction::West => (3.0/16.0, 0.0, 0.0, 1.0, 1.0, 1.0),
+            Direction::East => (0.0, 0.0, 0.0, 3.0/16.0, 1.0, 1.0),
+            _ => unreachable!(),
+        }
+    } else {
+        match half {
+            BlockHalf::Bottom => (0.0, 0.0, 0.0, 1.0, 3.0/16.0, 1.0),
+            BlockHalf::Top => (0.0, 3.0/16.0, 0.0, 1.0, 1.0, 1.0),
+            _ => unreachable!(),
+        }
+    };
+
+    vec![Aabb3::new(
+        Point3::new(min_x, min_y, min_z),
+        Point3::new(max_x, max_y, max_z))
+    ]
+}
+
+fn fence_collision(north: bool, south: bool, east: bool, west: bool) -> Vec<Aabb3<f64>> {
+    let mut collision = vec![Aabb3::new(
+        Point3::new(3.0/8.0, 0.0, 3.0/8.0),
+        Point3::new(5.0/8.0, 1.5, 5.0/8.0))
+    ];
+
+    if north {
+        collision.push(Aabb3::new(
+            Point3::new(3.0/8.0, 0.0, 0.0),
+            Point3::new(5.0/8.0, 1.5, 3.0/8.0))
+        );
+    }
+
+    if south {
+        collision.push(Aabb3::new(
+            Point3::new(3.0/8.0, 0.0, 5.0/8.0),
+            Point3::new(5.0/8.0, 1.5, 1.0))
+        );
+    }
+
+    if west {
+        collision.push(Aabb3::new(
+            Point3::new(0.0, 0.0, 3.0/8.0),
+            Point3::new(3.0/8.0, 1.5, 5.0/8.0))
+        );
+    }
+
+    if east {
+        collision.push(Aabb3::new(
+            Point3::new(5.0/8.0, 0.0, 3.0/8.0),
+            Point3::new(1.0, 1.5, 5.0/8.0))
+        );
+    }
+
+    collision
+}
+
+fn pane_collision(north: bool, south: bool, east: bool, west: bool) -> Vec<Aabb3<f64>> {
+    let mut collision = vec![Aabb3::new(
+        Point3::new(7.0/16.0, 0.0, 7.0/16.0),
+        Point3::new(9.0/16.0, 1.0, 9.0/16.0))
+    ];
+
+    if north {
+        collision.push(Aabb3::new(
+            Point3::new(7.0/16.0, 0.0, 0.0),
+            Point3::new(9.0/16.0, 1.0, 9.0/16.0))
+        );
+    }
+
+    if south {
+        collision.push(Aabb3::new(
+            Point3::new(7.0/16.0, 0.0, 7.0/16.0),
+            Point3::new(9.0/16.0, 1.0, 1.0))
+        );
+    }
+
+    if west {
+        collision.push(Aabb3::new(
+            Point3::new(0.0, 0.0, 7.0/16.0),
+            Point3::new(9.0/16.0, 1.0, 9.0/16.0))
+        );
+    }
+
+    if east {
+        collision.push(Aabb3::new(
+            Point3::new(7.0/16.0, 0.0, 7.0/16.0),
+            Point3::new(1.0, 1.0, 9.0/16.0))
+        );
+    }
+
+    collision
+}
+
+fn get_stair_info<W: WorldAccess>(world: &W, pos: Position) -> Option<(Direction, BlockHalf)> {
+    match world.get_block(pos) {
+        Block::OakStairs{facing, half, ..} |
+        Block::StoneStairs{facing, half, ..} |
+        Block::BrickStairs{facing, half, ..} |
+        Block::StoneBrickStairs{facing, half, ..} |
+        Block::NetherBrickStairs{facing, half, ..} |
+        Block::SandstoneStairs{facing, half, ..} |
+        Block::SpruceStairs{facing, half, ..} |
+        Block::BirchStairs{facing, half, ..} |
+        Block::JungleStairs{facing, half, ..} |
+        Block::QuartzStairs{facing, half, ..} |
+        Block::AcaciaStairs{facing, half, ..} |
+        Block::DarkOakStairs{facing, half, ..} |
+        Block::RedSandstoneStairs{facing, half, ..} |
+        Block::PurpurStairs{facing, half, ..} => Some((facing, half)),
+        _ => None,
+    }
+}
+
+fn update_stair_shape<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> StairShape {
+    if let Some((other_facing, _)) = get_stair_info(world, pos.shift(facing)) {
+        if other_facing != facing && other_facing != facing.opposite() {
+            if other_facing == facing.clockwise() {
+                return StairShape::OuterRight;
+            }
+
+            return StairShape::OuterLeft;
+        }
+    }
+
+    if let Some((other_facing, _)) = get_stair_info(world, pos.shift(facing.opposite())) {
+        if other_facing != facing && other_facing != facing.opposite() {
+            if other_facing == facing.clockwise() {
+                return StairShape::InnerRight;
+            }
+
+            return StairShape::InnerLeft;
+        }
+    }
+
+    StairShape::Straight
+}
+
+fn stair_data(facing: Direction, half: BlockHalf, shape: StairShape) -> Option<usize> {
+    if shape != StairShape::Straight {
+        return None;
+    }
+
+    let data = match facing {
+        Direction::East => 0,
+        Direction::West => 1,
+        Direction::South => 2,
+        Direction::North => 3,
+        _ => unreachable!(),
+    };
+
+    Some(data | (if half == BlockHalf::Top { 0x4 } else { 0x0 }))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -4932,66 +5415,6 @@ impl StairShape {
     }
 }
 
-fn get_stair_info<W: WorldAccess>(world: &W, pos: Position) -> Option<(Direction, BlockHalf)> {
-    use self::Block::*;
-    match world.get_block(pos) {
-        OakStairs{facing, half, ..} |
-        StoneStairs{facing, half, ..} |
-        BrickStairs{facing, half, ..} |
-        StoneBrickStairs{facing, half, ..} |
-        NetherBrickStairs{facing, half, ..} |
-        SandstoneStairs{facing, half, ..} |
-        SpruceStairs{facing, half, ..} |
-        BirchStairs{facing, half, ..} |
-        JungleStairs{facing, half, ..} |
-        QuartzStairs{facing, half, ..} |
-        AcaciaStairs{facing, half, ..} |
-        DarkOakStairs{facing, half, ..} |
-        RedSandstoneStairs{facing, half, ..} |
-        PurpurStairs{facing, half, ..} => Some((facing, half)),
-        _ => None,
-    }
-}
-
-fn update_stair_shape<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> StairShape {
-    if let Some((other_facing, _)) = get_stair_info(world, pos.shift(facing)) {
-        if other_facing != facing && other_facing != facing.opposite() {
-            if other_facing == facing.clockwise() {
-                return StairShape::OuterRight;
-            }
-
-            return StairShape::OuterLeft;
-        }
-    }
-
-    if let Some((other_facing, _)) = get_stair_info(world, pos.shift(facing.opposite())) {
-        if other_facing != facing && other_facing != facing.opposite() {
-            if other_facing == facing.clockwise() {
-                return StairShape::InnerRight;
-            }
-
-            return StairShape::InnerLeft;
-        }
-    }
-
-    StairShape::Straight
-}
-
-fn stair_data(facing: Direction, half: BlockHalf, shape: StairShape) -> Option<usize> {
-    if shape != StairShape::Straight {
-        return None;
-    }
-
-    let data = match facing {
-        Direction::East => 0,
-        Direction::West => 1,
-        Direction::South => 2,
-        Direction::North => 3,
-        _ => unreachable!(),
-    };
-
-    Some(data | (if half == BlockHalf::Top { 0x4 } else { 0x0 }))
-}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TreeVariant {
