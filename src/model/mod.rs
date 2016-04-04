@@ -879,46 +879,34 @@ impl Model {
                     continue;
                 }
             }
-
-            let (mut cr, mut cg, mut cb) = (255, 255, 255);
-            if face.tint_index == 0 {
-                match tint {
-                    TintType::Default => {},
-                    TintType::Color{r, g, b} => {
-                        cr = r;
-                        cg = g;
-                        cb = b;
-                    },
-                    TintType::Grass => {
-                        let (r, g, b) = calculate_biome(snapshot, x, z, &factory.grass_colors);
-                        cr = r;
-                        cg = g;
-                        cb = b;
-                    },
-                    TintType::Foliage => {
-                        let (r, g, b) = calculate_biome(snapshot, x, z, &factory.foliage_colors);
-                        cr = r;
-                        cg = g;
-                        cb = b;
-                    },
-                }
-            }
-            if face.facing == Direction::West || face.facing == Direction::East {
-                cr = ((cr as f64) * 0.8) as u8;
-                cg = ((cg as f64) * 0.8) as u8;
-                cb = ((cb as f64) * 0.8) as u8;
-            }
             indices += face.indices;
 
             for vert in &face.vertices {
                 let mut vert = vert.clone();
-                vert.r = cr;
-                vert.g = cg;
-                vert.b = cb;
 
                 vert.x += x as f32;
                 vert.y += y as f32;
                 vert.z += z as f32;
+
+                let (mut cr, mut cg, mut cb) = if face.tint_index == 0 {
+                    match tint {
+                        TintType::Default => (255, 255, 255),
+                        TintType::Color{r, g, b} => (r, g, b),
+                        TintType::Grass => calculate_biome(snapshot, vert.x as i32, vert.z as i32, &factory.grass_colors),
+                        TintType::Foliage => calculate_biome(snapshot, vert.x as i32, vert.z as i32, &factory.foliage_colors),
+                    }
+                } else {
+                    (255, 255, 255)
+                };
+                if face.facing == Direction::West || face.facing == Direction::East {
+                    cr = ((cr as f64) * 0.8) as u8;
+                    cg = ((cg as f64) * 0.8) as u8;
+                    cb = ((cb as f64) * 0.8) as u8;
+                }
+
+                vert.r = cr;
+                vert.g = cg;
+                vert.b = cb;
 
                 let (bl, sl) = calculate_light(
                     &snapshot,
@@ -945,8 +933,8 @@ fn calculate_biome(snapshot: &world::Snapshot, x: i32, z: i32, img: &image::Dyna
     let mut r = 0;
     let mut g = 0;
     let mut b = 0;
-    for xx in -2 .. 3 {
-        for zz in -2 .. 3 {
+    for xx in -1 .. 2 {
+        for zz in -1 .. 2 {
             let bi = snapshot.get_biome(x+xx, z+zz);
             let ix = bi.color_index & 0xFF;
             let iy = bi.color_index >> 8;

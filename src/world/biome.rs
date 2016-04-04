@@ -12,8 +12,8 @@ impl Biome {
         Biome {
             id: id,
             temperature: t,
-            moisture: m,
-            color_index: (((1.0 - t) * 255.0) as usize) | ((((1.0 - t) * 255.0) as usize) << 8),
+            moisture: m*t,
+            color_index: (((1.0 - t) * 255.0) as usize) | ((((1.0 - (m*t)) * 255.0) as usize) << 8),
         }
     }
 

@@ -650,11 +650,11 @@ impl Snapshot {
     }
 
     pub fn get_biome(&self, x: i32, z: i32) -> biome::Biome {
-        biome::Biome::by_id(self.biomes[((x - self.x) | ((z - self.z) << 4)) as usize] as usize)
+        biome::Biome::by_id(self.biomes[((x - self.x) + ((z - self.z) * self.w)) as usize] as usize)
     }
 
     pub fn set_biome(&mut self, x: i32, z: i32, b: biome::Biome) {
-        self.biomes[((x - self.x) | ((z - self.z) << 4)) as usize] = b.id as u8;
+        self.biomes[((x - self.x) + ((z - self.z) * self.w)) as usize] = b.id as u8;
     }
 
     #[inline]
