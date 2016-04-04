@@ -521,7 +521,12 @@ impl Server {
         }
     }
 
-    fn on_sign_update(&mut self, update_sign: packet::play::clientbound::UpdateSign) {
+    fn on_sign_update(&mut self, mut update_sign: packet::play::clientbound::UpdateSign) {
+        use format;
+        format::convert_legacy(&mut update_sign.line1);
+        format::convert_legacy(&mut update_sign.line2);
+        format::convert_legacy(&mut update_sign.line3);
+        format::convert_legacy(&mut update_sign.line4);
         self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
             update_sign.location,
             update_sign.line1,
