@@ -617,7 +617,7 @@ state_packets!(
             /// PlayerInfo is sent by the server for every player connected to the server
             /// to provide skin and username information as well as ping and gamemode info.
             packet PlayerInfo {
-                field inner: packet::PlayerInfoData =, 
+                field inner: packet::PlayerInfoData =,
             }
             /// TeleportPlayer is sent to change the player's position. The client is expected
             /// to reply to the server with the same positions as contained in this packet
@@ -919,21 +919,24 @@ state_packets!(
             /// and optionally a favicon.
             //
             /// The structure is as follows
-            ///     {
-            ///         "version": {
-            ///             "name": "1.8.3",
-            ///             "protocol": 47,
-            ///         },
-            ///         "players": {
-            ///             "max": 20,
-            ///             "online": 1,
-            ///             "sample": [
-            ///                packet  {"name": "Thinkofdeath", "id": "4566e69f-c907-48ee-8d71-d7ba5aa00d20"}
-            ///             ]
-            ///         },
-            ///         "description": "Hello world",
-            ///         "favicon": "data:image/png;base64,<data>"
-            ///     }
+            ///
+            /// ```json
+            /// {
+            ///     "version": {
+            ///         "name": "1.8.3",
+            ///         "protocol": 47,
+            ///     },
+            ///     "players": {
+            ///         "max": 20,
+            ///         "online": 1,
+            ///         "sample": [
+            ///            packet  {"name": "Thinkofdeath", "id": "4566e69f-c907-48ee-8d71-d7ba5aa00d20"}
+            ///         ]
+            ///     },
+            ///     "description": "Hello world",
+            ///     "favicon": "data:image/png;base64,<data>"
+            /// }
+            /// ```
             packet StatusResponse {
                 field status: String =,
             }
