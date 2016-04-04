@@ -43,9 +43,11 @@ macro_rules! state_packets {
      ($($state:ident $stateName:ident {
         $($dir:ident $dirName:ident {
             $(
-                $name:ident {
-                $($field:ident: $field_type:ty = $(when ($cond:expr))*, )+
-            })*
+                $(#[$attr:meta])*
+                packet $name:ident {
+                    $($(#[$fattr:meta])*field $field:ident: $field_type:ty = $(when ($cond:expr))*, )+
+                }
+            )*
         })+
     })+) => {
         use protocol::*;
@@ -83,8 +85,8 @@ macro_rules! state_packets {
 
                 $(
                     #[derive(Default, Debug)]
-                    pub struct $name {
-                        $(pub $field: $field_type),+,
+                    $(#[$attr])* pub struct $name {
+                        $($(#[$fattr])* pub $field: $field_type),+,
                     }
 
                     impl PacketType for $name {
