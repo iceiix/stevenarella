@@ -511,31 +511,38 @@ impl World {
                 section.dirty = true;
 
                 let mut bit_size = try!(data.read_u8());
-                let mut block_map = HashMap::with_hasher(BuildHasherDefault::<FNVHash>::default());
+                section.block_map.clear();
                 if bit_size == 0 {
                     bit_size = 13;
                 } else {
                     let count = try!(VarInt::read_from(&mut data)).0;
                     for i in 0 .. count {
                         let id = try!(VarInt::read_from(&mut data)).0;
-                        block_map.insert(i as usize, id);
+                        let bl = block::Block::by_vanilla_id(id as usize);
+                        section.block_map.push((bl, 0));
+                        section.rev_block_map.insert(bl, i as usize);
                     }
                 }
 
                 let bits = try!(LenPrefixed::<VarInt, u64>::read_from(&mut data)).data;
                 let m = bit::Map::from_raw(bits, bit_size as usize);
 
+                section.blocks = m;
                 for i in 0 .. 4096 {
-                    let val = m.get(i);
-                    let block_id = block_map.get(&val).map_or(val, |v| *v as usize);
-                    let block = block::Block::by_vanilla_id(block_id);
-                    let i = i as i32;
-                    section.set_block(
-                        i & 0xF,
-                        i >> 8,
-                        (i >> 4) & 0xF,
-                        block
-                    );
+                    let bl_id = section.blocks.get(i);
+                    if bit_size == 13 {
+                        if let block::Air{} = section.block_map.get(bl_id)
+                                .map(|v| v.0)
+                                .unwrap_or(block::Air{}) {
+                            if bl_id >= section.block_map.len() {
+                                section.block_map.resize(bl_id + 1, (block::Air{}, 0));
+                            }
+                            let bl = block::Block::by_vanilla_id(bl_id as usize);
+                            section.block_map[bl_id] = (bl, 0);
+                            section.rev_block_map.insert(bl, bl_id);
+                        }
+                    }
+                    section.block_map.get_mut(bl_id).unwrap().1 += 1;
                 }
 
                 try!(data.read_exact(&mut section.block_light.data));

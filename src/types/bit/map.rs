@@ -61,7 +61,7 @@ impl Map {
     }
     pub fn from_raw(bits: Vec<u64>, size: usize) -> Map {
         Map {
-            length: (bits.len()*64 + 63) / size,
+            length: (bits.len()*64 + (size-1)) / size,
             bit_size: size,
             bits: bits,
         }
