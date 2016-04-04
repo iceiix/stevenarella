@@ -512,6 +512,7 @@ impl World {
 
                 let mut bit_size = try!(data.read_u8());
                 section.block_map.clear();
+                section.rev_block_map.clear();
                 if bit_size == 0 {
                     bit_size = 13;
                 } else {
@@ -531,9 +532,9 @@ impl World {
                 for i in 0 .. 4096 {
                     let bl_id = section.blocks.get(i);
                     if bit_size == 13 {
-                        if let block::Air{} = section.block_map.get(bl_id)
-                                .map(|v| v.0)
-                                .unwrap_or(block::Air{}) {
+                        if section.block_map.get(bl_id)
+                                .map(|v| v.1)
+                                .unwrap_or(0) == 0 {
                             if bl_id >= section.block_map.len() {
                                 section.block_map.resize(bl_id + 1, (block::Air{}, 0));
                             }
@@ -543,6 +544,12 @@ impl World {
                         }
                     }
                     section.block_map.get_mut(bl_id).unwrap().1 += 1;
+                }
+
+                for entry in &section.block_map {
+                    if entry.1 == 0 {
+                        section.rev_block_map.remove(&entry.0);
+                    }
                 }
 
                 try!(data.read_exact(&mut section.block_light.data));
@@ -822,11 +829,6 @@ impl Chunk {
     fn get_biome(&self, x: i32, z: i32) -> biome::Biome {
         biome::Biome::by_id(self.biomes[((z<<4)|x) as usize] as usize)
     }
-}
-
-#[derive(PartialEq, Eq, Hash)]
-pub struct SectionKey {
-    pos: (i32, u8, i32),
 }
 
 pub struct Section {
