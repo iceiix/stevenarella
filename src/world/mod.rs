@@ -25,6 +25,9 @@ use render;
 use collision;
 use cgmath;
 use chunk_builder;
+use ecs;
+use entity::block_entity;
+use format;
 
 pub mod biome;
 
@@ -34,6 +37,15 @@ pub struct World {
     render_list: Vec<(i32, i32, i32)>,
 
     light_updates: VecDeque<LightUpdate>,
+
+    block_entity_actions: VecDeque<BlockEntityAction>,
+}
+
+#[derive(Clone, Debug)]
+pub enum BlockEntityAction {
+    Create(Position),
+    Remove(Position),
+    UpdateSignText(Position, format::Component, format::Component, format::Component, format::Component),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -68,6 +80,7 @@ impl World {
             chunks: HashMap::with_hasher(BuildHasherDefault::default()),
             render_list: vec![],
             light_updates: VecDeque::new(),
+            block_entity_actions: VecDeque::new(),
         }
     }
 
@@ -84,7 +97,17 @@ impl World {
     fn set_block_raw(&mut self, pos: Position, b: block::Block) -> bool {
         let cpos = CPos(pos.x >> 4, pos.z >> 4);
         let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
-        chunk.set_block(pos.x & 0xF, pos.y, pos.z & 0xF, b)
+        if chunk.set_block(pos.x & 0xF, pos.y, pos.z & 0xF, b) {
+            if chunk.block_entities.contains_key(&pos) {
+                self.block_entity_actions.push_back(BlockEntityAction::Remove(pos));
+            }
+            if block_entity::BlockEntityType::get_block_entity(b).is_some() {
+                self.block_entity_actions.push_back(BlockEntityAction::Create(pos));
+            }
+            true
+        } else {
+            false
+        }
     }
 
     pub fn update_block(&mut self, pos: Position) {
@@ -133,7 +156,7 @@ impl World {
         chunk.set_block_light(pos.x & 0xF, pos.y, pos.z & 0xF, light);
     }
 
-    fn get_block_light(&self, pos: Position) -> u8 {
+    pub fn get_block_light(&self, pos: Position) -> u8 {
         match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
             Some(ref chunk) => chunk.get_block_light(pos.x & 0xF, pos.y, pos.z & 0xF),
             None => 0,
@@ -146,7 +169,7 @@ impl World {
         chunk.set_sky_light(pos.x & 0xF, pos.y, pos.z & 0xF, light);
     }
 
-    fn get_sky_light(&self, pos: Position) -> u8 {
+    pub fn get_sky_light(&self, pos: Position) -> u8 {
         match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
             Some(ref chunk) => chunk.get_sky_light(pos.x & 0xF, pos.y, pos.z & 0xF),
             None => 15,
@@ -160,7 +183,11 @@ impl World {
         });
     }
 
-    pub fn tick(&mut self) {
+    pub fn add_block_entity_action(&mut self, action: BlockEntityAction) {
+        self.block_entity_actions.push_back(action);
+    }
+
+    pub fn tick(&mut self, m: &mut ecs::Manager) {
         use time;
         let start = time::precise_time_ns();
         let mut updates_performed = 0;
@@ -171,6 +198,48 @@ impl World {
                 let now = time::precise_time_ns();
                 if (now - start) >= 5000000 { // 5 ms for light updates
                     break;
+                }
+            }
+        }
+
+        let sign_info: ecs::Key<block_entity::sign::SignInfo> = m.get_key();
+
+        while let Some(action) = self.block_entity_actions.pop_front() {
+            match action {
+                BlockEntityAction::Remove(pos) => {
+                    if let Some(chunk) = self.chunks.get_mut(&CPos(pos.x >> 4, pos.z >> 4)) {
+                        if let Some(entity) = chunk.block_entities.remove(&pos) {
+                            m.remove_entity(entity);
+                        }
+                    }
+                },
+                BlockEntityAction::Create(pos) => {
+                    if let Some(chunk) = self.chunks.get_mut(&CPos(pos.x >> 4, pos.z >> 4)) {
+                        // Remove existing entity
+                        if let Some(entity) = chunk.block_entities.remove(&pos) {
+                            m.remove_entity(entity);
+                        }
+                        let block = chunk.get_block(pos.x & 0xF, pos.y, pos.z & 0xF);
+                        if let Some(entity_type) = block_entity::BlockEntityType::get_block_entity(block) {
+                            let entity = entity_type.create_entity(m, pos);
+                            chunk.block_entities.insert(pos, entity);
+                        }
+                    }
+                },
+                BlockEntityAction::UpdateSignText(pos, line1, line2, line3, line4) => {
+                    if let Some(chunk) = self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
+                        if let Some(entity) = chunk.block_entities.get(&pos) {
+                            if let Some(sign) = m.get_component_mut(*entity, sign_info) {
+                                sign.lines = [
+                                    line1,
+                                    line2,
+                                    line3,
+                                    line4,
+                                ];
+                                sign.dirty = true;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -471,8 +540,12 @@ impl World {
         snapshot
     }
 
-    pub fn unload_chunk(&mut self, x: i32, z: i32) {
-        self.chunks.remove(&CPos(x, z));
+    pub fn unload_chunk(&mut self, x: i32, z: i32, m: &mut ecs::Manager) {
+        if let Some(chunk) = self.chunks.remove(&CPos(x, z)) {
+            for entity in chunk.block_entities.values() {
+                m.remove_entity(*entity);
+            }
+        }
     }
 
     pub fn load_chunk(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
@@ -529,8 +602,8 @@ impl World {
                 let m = bit::Map::from_raw(bits, bit_size as usize);
 
                 section.blocks = m;
-                for i in 0 .. 4096 {
-                    let bl_id = section.blocks.get(i);
+                for bi in 0 .. 4096 {
+                    let bl_id = section.blocks.get(bi);
                     if bit_size == 13 {
                         if section.block_map.get(bl_id)
                                 .map(|v| v.1)
@@ -543,7 +616,19 @@ impl World {
                             section.rev_block_map.insert(bl, bl_id);
                         }
                     }
-                    section.block_map.get_mut(bl_id).unwrap().1 += 1;
+                    let bmap = section.block_map.get_mut(bl_id).unwrap();
+                    bmap.1 += 1;
+                    if block_entity::BlockEntityType::get_block_entity(bmap.0).is_some() {
+                        let pos = Position::new(
+                            (bi & 0xF) as i32,
+                            (bi >> 8) as i32,
+                            ((bi >> 4) & 0xF) as i32
+                        ) + (chunk.position.0 << 4, (i << 4) as i32, chunk.position.1 << 4);
+                        if chunk.block_entities.contains_key(&pos) {
+                            self.block_entity_actions.push_back(BlockEntityAction::Remove(pos))
+                        }
+                        self.block_entity_actions.push_back(BlockEntityAction::Create(pos))
+                    }
                 }
 
                 for entry in &section.block_map {
@@ -675,6 +760,8 @@ pub struct Chunk {
 
     heightmap: [u8; 16 * 16],
     heightmap_dirty: bool,
+
+    block_entities: HashMap<Position, ecs::Entity, BuildHasherDefault<FNVHash>>,
 }
 
 impl Chunk {
@@ -691,6 +778,7 @@ impl Chunk {
             biomes: [0; 16 * 16],
             heightmap: [0; 16 * 16],
             heightmap_dirty: true,
+            block_entities: HashMap::with_hasher(BuildHasherDefault::default()),
         }
     }
 

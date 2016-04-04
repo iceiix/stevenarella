@@ -3,7 +3,7 @@ use std::fmt;
 use direction::Direction;
 use std::ops;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Position {
     pub x: i32,
     pub y: i32,

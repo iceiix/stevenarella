@@ -1,5 +1,6 @@
 
 pub mod player;
+pub mod block_entity;
 
 use ecs;
 use cgmath::Vector3;
@@ -17,6 +18,8 @@ pub fn add_systems(m: &mut ecs::Manager) {
     m.add_system(sys);
     let sys = systems::ApplyGravity::new(m);
     m.add_system(sys);
+
+    block_entity::add_systems(m);
 }
 
 /// Location of an entity in the world.

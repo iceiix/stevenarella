@@ -1303,7 +1303,7 @@ define_blocks! {
             ],
         },
         data Some(rotation.data()),
-        material material::NON_SOLID,
+        material material::INVISIBLE,
         model { ("minecraft", "standing_sign") },
         collision vec![],
     }
@@ -1412,7 +1412,7 @@ define_blocks! {
                 _ => 2,
             })
         },
-        material material::NON_SOLID,
+        material material::INVISIBLE,
         model { ("minecraft", "wall_sign") },
         variant format!("facing={}", facing.as_string()),
         collision vec![],
@@ -5344,7 +5344,7 @@ impl Rotation {
         }
     }
 
-    fn data(&self) -> usize {
+    pub fn data(&self) -> usize {
         match *self {
             Rotation::South => 0,
             Rotation::SouthSouthWest => 1,

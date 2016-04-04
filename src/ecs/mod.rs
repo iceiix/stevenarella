@@ -170,7 +170,13 @@ impl Manager {
         let changes = self.changed_entity_components.clone();
         self.changed_entity_components = HashSet::with_hasher(BuildHasherDefault::default());
         for entity in changes {
-            let state = self.entities[entity.id].0.as_mut().unwrap().clone();
+            let (cur, state) = {
+                let state = self.entities[entity.id].0.as_mut().unwrap();
+                let cur = state.components.clone();
+                let orig = state.clone();
+                state.components.or(&state.last_components);
+                (cur, orig)
+            };
             self.trigger_add_for_systems(entity, &state.last_components, &state.components, world, renderer);
             self.trigger_add_for_render_systems(entity, &state.last_components, &state.components, world, renderer);
             self.trigger_remove_for_systems(entity, &state.last_components, &state.components, world, renderer);
@@ -182,12 +188,14 @@ impl Manager {
                 }
             }
 
+            {
+                let state = self.entities[entity.id].0.as_mut().unwrap();
+                state.components = cur;
+                state.last_components = state.components.clone();
+            }
             if state.removed {
                 self.free_entities.push(entity.id);
                 self.entities[entity.id].0 = None;
-            } else {
-                let state = self.entities[entity.id].0.as_mut().unwrap();
-                state.last_components = state.components.clone();
             }
         }
     }
@@ -244,6 +252,7 @@ impl Manager {
         if let Some(set) = self.entities[e.id].0.as_mut() {
             set.components = BSet::new(self.components.len());
             set.removed = true;
+            self.changed_entity_components.insert(e);
         }
     }
 

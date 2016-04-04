@@ -306,7 +306,7 @@ impl Server {
             sun_model.tick(renderer, self.world_time, self.world_age);
         }
 
-        self.world.tick();
+        self.world.tick(&mut self.entities);
 
         // Copy to camera
         if let Some(player) = self.player {
@@ -340,6 +340,7 @@ impl Server {
                             TeleportPlayer => on_teleport,
                             TimeUpdate => on_time_update,
                             ChangeGameState => on_game_state_change,
+                            UpdateSign => on_sign_update,
                         }
                     },
                     Err(err) => panic!("Err: {:?}", err),
@@ -520,6 +521,16 @@ impl Server {
         }
     }
 
+    fn on_sign_update(&mut self, update_sign: packet::play::clientbound::UpdateSign) {
+        self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+            update_sign.location,
+            update_sign.line1,
+            update_sign.line2,
+            update_sign.line3,
+            update_sign.line4,
+        ));
+    }
+
     fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
         self.world.load_chunk(
             chunk_data.chunk_x,
@@ -531,7 +542,7 @@ impl Server {
     }
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
-        self.world.unload_chunk(chunk_unload.x, chunk_unload.z);
+        self.world.unload_chunk(chunk_unload.x, chunk_unload.z, &mut self.entities);
     }
 
     fn on_block_change(&mut self, block_change: packet::play::clientbound::BlockChange) {

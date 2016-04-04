@@ -204,7 +204,7 @@ impl Manager {
         }
     }
 
-    pub fn draw(&mut self, frustum: &Frustum<f32>, perspective_matrix: &Matrix4<f32>, camera_matrix: &Matrix4<f32>, sky_offset: f32, light_level: f32) {
+    pub fn draw(&mut self, frustum: &Frustum<f32>, perspective_matrix: &Matrix4<f32>, camera_matrix: &Matrix4<f32>, light_level: f32, sky_offset: f32) {
         let m = if self.index_type == gl::UNSIGNED_SHORT {
             2
         } else {
@@ -359,7 +359,7 @@ pub fn append_box_texture_scale(
                 z: vert.z * d + z,
                 texture: tex.clone(),
                 texture_x: (vert.toffsetx as f64) * texture_scale[dir.index()][0],
-                texture_y: (vert.toffsety as f64) * texture_scale[dir.index()][0],
+                texture_y: (vert.toffsety as f64) * texture_scale[dir.index()][1],
                 r: rr,
                 g: gg,
                 b: bb,

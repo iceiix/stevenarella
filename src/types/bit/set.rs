@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Set {
     data: Vec<u64>,
 }
@@ -64,5 +64,11 @@ impl Set {
             }
         }
         true
+    }
+
+    pub fn or(&mut self, other: &Set) {
+        for (a, b) in self.data.iter_mut().zip(&other.data) {
+            *a = (*a) | *b;
+        }
     }
 }
