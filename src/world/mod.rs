@@ -135,8 +135,13 @@ impl World {
                     let bp = Position::new(bx, by, bz);
                     let current = self.get_block(bp);
                     let new = current.update_state(self, bp);
+                    let sky_light = self.get_sky_light(bp);
+                    let block_light = self.get_block_light(bp);
                     if current != new {
                         self.set_block_raw(bp, new);
+                        // Restore old lighting
+                        self.set_sky_light(bp, sky_light);
+                        self.set_block_light(bp, block_light);
                     }
                 }
             }
