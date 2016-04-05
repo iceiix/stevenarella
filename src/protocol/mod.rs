@@ -343,7 +343,7 @@ impl Serializable for f64 {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct UUID(u64, u64);
 
 impl Default for UUID {

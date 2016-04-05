@@ -34,6 +34,7 @@ use collision::Aabb;
 use sdl2::keyboard::Keycode;
 use types::Gamemode;
 use shared::Position;
+use format;
 
 mod sun;
 
@@ -63,12 +64,23 @@ pub struct Server {
 
     pub player: Option<ecs::Entity>,
     entity_map: HashMap<i32, ecs::Entity, BuildHasherDefault<FNVHash>>,
+    players: HashMap<protocol::UUID, PlayerInfo, BuildHasherDefault<FNVHash>>,
 
     pressed_keys: HashMap<Keycode, bool, BuildHasherDefault<FNVHash>>,
     tick_timer: f64,
     entity_tick_timer: f64,
 
     sun_model: Option<sun::SunModel>,
+}
+
+pub struct PlayerInfo {
+    name: String,
+    uuid: protocol::UUID,
+    skin_url: Option<String>,
+
+    display_name: Option<format::Component>,
+    ping: i32,
+    gamemode: Gamemode,
 }
 
 macro_rules! handle_packet {
@@ -270,6 +282,7 @@ impl Server {
             entities: entities,
             player: None,
             entity_map: HashMap::with_hasher(BuildHasherDefault::default()),
+            players: HashMap::with_hasher(BuildHasherDefault::default()),
 
             tick_timer: 0.0,
             entity_tick_timer: 0.0,
@@ -341,6 +354,7 @@ impl Server {
                             TimeUpdate => on_time_update,
                             ChangeGameState => on_game_state_change,
                             UpdateSign => on_sign_update,
+                            PlayerInfo => on_player_info,
                         }
                     },
                     Err(err) => panic!("Err: {:?}", err),
@@ -534,6 +548,78 @@ impl Server {
             update_sign.line3,
             update_sign.line4,
         ));
+    }
+
+    fn on_player_info(&mut self, player_info: packet::play::clientbound::PlayerInfo) {
+        use protocol::packet::PlayerDetail::*;
+        use rustc_serialize::base64::FromBase64;
+        use serde_json;
+        for detail in player_info.inner.players {
+            match detail {
+                Add { name, uuid, properties, display, gamemode, ping} => {
+                    let info = self.players.entry(uuid.clone()).or_insert(PlayerInfo {
+                        name: name.clone(),
+                        uuid: uuid,
+                        skin_url: None,
+
+                        display_name: display.clone(),
+                        ping: ping.0,
+                        gamemode: Gamemode::from_int(gamemode.0),
+                    });
+                    // Re-set the props of the player in case of dodgy server implementations
+                    info.name = name;
+                    info.display_name = display;
+                    info.ping = ping.0;
+                    info.gamemode = Gamemode::from_int(gamemode.0);
+                    for prop in properties {
+                        if prop.name != "textures" {
+                            continue;
+                        }
+                        // Ideally we would check the signature of the blob to
+                        // verify it was from Mojang and not faked by the server
+                        // but this requires the public key which is distributed
+                        // authlib. We could download authlib on startup and extract
+                        // the key but this seems like overkill compared to just
+                        // whitelisting Mojang's texture servers instead.
+                        let skin_blob = match prop.value.from_base64() {
+                            Ok(val) => val,
+                            Err(err) => {
+                                error!("Failed to decode skin blob, {:?}", err);
+                                continue;
+                            },
+                        };
+                        let skin_blob: serde_json::Value = match serde_json::from_slice(&skin_blob) {
+                            Ok(val) => val,
+                            Err(err) => {
+                                error!("Failed to parse skin blob, {:?}", err);
+                                continue;
+                            },
+                        };
+                        if let Some(skin_url) = skin_blob.lookup("textures.SKIN.url").and_then(|v| v.as_string()) {
+                            info.skin_url = Some(skin_url.to_owned());
+                        }
+                    }
+                },
+                UpdateGamemode { uuid, gamemode } => {
+                    if let Some(info) = self.players.get_mut(&uuid) {
+                        info.gamemode = Gamemode::from_int(gamemode.0);
+                    }
+                },
+                UpdateLatency { uuid, ping } => {
+                    if let Some(info) = self.players.get_mut(&uuid) {
+                        info.ping = ping.0;
+                    }
+                },
+                UpdateDisplayName { uuid, display } => {
+                    if let Some(info) = self.players.get_mut(&uuid) {
+                        info.display_name = display;
+                    }
+                },
+                Remove { uuid } => {
+                    self.players.remove(&uuid);
+                },
+            }
+        }
     }
 
     fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
