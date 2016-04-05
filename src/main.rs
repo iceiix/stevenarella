@@ -230,7 +230,7 @@ fn main() {
         let diff = now - last_frame;
         last_frame = now;
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
-        let (width, height) = window.size();
+        let (width, height) = window.drawable_size();
 
         game.tick(delta);
         game.server.tick(&mut game.renderer, delta);
