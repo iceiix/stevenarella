@@ -14,7 +14,7 @@
 
 #![allow(dead_code)]
 
-use openssl;
+use openssl::crypto::symm;
 use serde_json;
 use hyper;
 
@@ -720,12 +720,15 @@ pub struct Conn {
     direction: Direction,
     pub state: State,
 
-    cipher: Option<openssl::EVPCipher>,
+    cipher: Option<symm::Crypter>,
 
     compression_threshold: i32,
     compression_read: Option<ZlibDecoder<io::Cursor<Vec<u8>>>>,
     compression_write: Option<ZlibEncoder<io::Cursor<Vec<u8>>>>,
 }
+
+// Needed because symm::Crypter isn't send
+unsafe impl Send for Conn {}
 
 impl Conn {
     pub fn new(target: &str) -> Result<Conn, Error> {
@@ -832,7 +835,9 @@ impl Conn {
     }
 
     pub fn enable_encyption(&mut self, key: &[u8], decrypt: bool) {
-        self.cipher = Option::Some(openssl::EVPCipher::new(key, key, decrypt));
+        let cipher = symm::Crypter::new(symm::Type::AES_128_CFB8);
+        cipher.init(if decrypt { symm::Mode::Decrypt } else { symm::Mode::Encrypt }, key, key);
+        self.cipher = Option::Some(cipher);
     }
 
     pub fn set_compresssion(&mut self, threshold: i32) {
@@ -940,7 +945,7 @@ impl Read for Conn {
             Option::None => self.stream.read(buf),
             Option::Some(cipher) => {
                 let ret = try!(self.stream.read(buf));
-                let data = cipher.decrypt(&buf[..ret]);
+                let data = cipher.update(&buf[..ret]);
                 for i in 0..ret {
                     buf[i] = data[i];
                 }
@@ -955,7 +960,7 @@ impl Write for Conn {
         match self.cipher.as_mut() {
             Option::None => self.stream.write(buf),
             Option::Some(cipher) => {
-                let data = cipher.encrypt(buf);
+                let data = cipher.update(buf);
                 try!(self.stream.write_all(&data[..]));
                 Ok(buf.len())
             }

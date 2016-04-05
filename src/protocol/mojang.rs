@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use openssl;
+use openssl::crypto::hash;
 use serde_json;
 use serde_json::builder::ObjectBuilder;
 use hyper;
@@ -101,11 +101,12 @@ impl Profile {
     }
 
     pub fn join_server(&self, server_id: &str, shared_key: &[u8], public_key: &[u8]) -> Result<(), super::Error> {
-        let mut sha1 = openssl::SHA1::new();
-        sha1.update(server_id.as_bytes());
-        sha1.update(shared_key);
-        sha1.update(public_key);
-        let mut hash = sha1.bytes();
+        use std::io::Write;
+        let mut sha1 = hash::Hasher::new(hash::Type::SHA1);
+        sha1.write_all(server_id.as_bytes()).unwrap();
+        sha1.write_all(shared_key).unwrap();
+        sha1.write_all(public_key).unwrap();
+        let mut hash = sha1.finish();
 
         // Mojang uses a hex method which allows for
         // negatives so we have to account for that.

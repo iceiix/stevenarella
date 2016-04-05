@@ -21,7 +21,7 @@ extern crate image;
 extern crate time;
 extern crate byteorder;
 extern crate serde_json;
-extern crate steven_openssl as openssl;
+extern crate openssl;
 extern crate hyper;
 extern crate flate2;
 extern crate rand;

@@ -23,7 +23,6 @@ use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use types::hash::FNVHash;
 use resources;
-use openssl;
 use console;
 use render;
 use auth;
@@ -99,6 +98,8 @@ macro_rules! handle_packet {
 impl Server {
 
     pub fn connect(resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>, address: &str) -> Result<Server, protocol::Error> {
+        use openssl::crypto::pkey;
+        use openssl::crypto::rand::rand_bytes;
         let mut conn = try!(protocol::Conn::new(address));
 
         let profile = {
@@ -148,11 +149,12 @@ impl Server {
             };
         }
 
-        let mut key = openssl::PublicKey::new(&packet.public_key.data);
-        let shared = openssl::gen_random(16);
+        let mut key = pkey::PKey::new();
+        key.load_pub(&packet.public_key.data);
+        let shared = rand_bytes(16);
 
-        let shared_e = key.encrypt(&shared);
-        let token_e = key.encrypt(&packet.verify_token.data);
+        let shared_e = key.public_encrypt_with_padding(&shared, pkey::EncryptionPadding::PKCS1v15);
+        let token_e = key.public_encrypt_with_padding(&packet.verify_token.data, pkey::EncryptionPadding::PKCS1v15);
 
         try!(profile.join_server(&packet.server_id, &shared, &packet.public_key.data));
 
