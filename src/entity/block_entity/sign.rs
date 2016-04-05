@@ -103,51 +103,38 @@ impl ecs::System for SignRenderer {
                 }
             },
             Block::StandingSign{rotation} => {
-                info.offset_z = 5.0 / 16.0;
+                info.offset_y = 5.0 / 16.0;
                 info.has_stand = true;
                 info.rotation = -(rotation.data() as f64 / 16.0) * PI * 2.0 + PI;
             }
             _ => return,
         }
-        let wood = render::Renderer::get_texture(renderer.get_textures_ref(), "blocks/planks_oak");
+        let tex = render::Renderer::get_texture(renderer.get_textures_ref(), "entity/sign");
 
         macro_rules! rel {
-            ($tex:expr, $x:expr, $y:expr, $w:expr, $h:expr) => (
-                Some($tex.relative(($x) / 16.0, ($y) / 16.0, ($w) / 16.0, ($h) / 16.0))
+            ($x:expr, $y:expr, $w:expr, $h:expr) => (
+                Some(tex.relative(($x) / 64.0, ($y) / 32.0, ($w) / 64.0, ($h) / 32.0))
             );
         }
 
         let mut verts = vec![];
         // Backboard
-        model::append_box_texture_scale(&mut verts, -0.5, -4.0/16.0, -0.5/16.0, 1.0, 8.0/16.0, 1.0/16.0, [
-            rel!(wood, 0.0, 0.0, 16.0, 2.0), // Up
-            rel!(wood, 0.0, 0.0, 16.0, 2.0), // Down
-            rel!(wood, 0.0, 4.0, 16.0, 12.0), // North
-            rel!(wood, 0.0, 4.0, 16.0, 12.0), // South
-            rel!(wood, 0.0, 0.0, 2.0, 12.0), // West
-            rel!(wood, 0.0, 0.0, 2.0, 12.0), // East
-        ], [
-            [1.5, 1.0], // Up
-            [1.5, 1.0], // Down
-            [1.5, 1.0], // North
-            [1.5, 1.0], // South
-            [1.0, 1.0], // West
-            [1.0, 1.0], // East
+        model::append_box(&mut verts, -0.5, -4.0/16.0, -0.5/16.0, 1.0, 8.0/16.0, 1.0/16.0, [
+            rel!(2.0, 0.0, 24.0, 2.0), // Up
+            rel!(26.0, 0.0, 24.0, 2.0), // Down
+            rel!(2.0, 2.0, 24.0, 12.0), // North
+            rel!(26.0, 2.0, 24.0, 12.0), // South
+            rel!(0.0, 2.0, 2.0, 12.0), // West
+            rel!(50.0, 2.0, 2.0, 12.0), // East
         ]);
-        for vert in &mut verts[8..12] {
-            vert.r = 183;
-            vert.g = 183;
-            vert.b = 196;
-        }
         if info.has_stand {
-            let log = render::Renderer::get_texture(renderer.get_textures_ref(), "blocks/log_oak");
             model::append_box(&mut verts, -0.5/16.0, -0.25-9.0/16.0, -0.5/16.0, 1.0/16.0, 9.0/16.0, 1.0/16.0, [
-                rel!(log, 0.0, 0.0, 2.0, 2.0), // Up
-                rel!(log, 0.0, 0.0, 2.0, 2.0), // Down
-                rel!(log, 0.0, 4.0, 2.0, 12.0), // North
-                rel!(log, 0.0, 4.0, 2.0, 12.0), // South
-                rel!(log, 0.0, 0.0, 2.0, 12.0), // West
-                rel!(log, 0.0, 0.0, 2.0, 12.0), // East
+                rel!(2.0, 14.0, 2.0, 2.0), // Up
+                rel!(4.0, 14.0, 2.0, 2.0), // Down
+                rel!(2.0, 16.0, 2.0, 12.0), // North
+                rel!(6.0, 16.0, 2.0, 12.0), // South
+                rel!(0.0, 16.0, 2.0, 12.0), // West
+                rel!(4.0, 16.0, 2.0, 12.0), // East
             ]);
         }
 
