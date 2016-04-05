@@ -19,7 +19,7 @@ Feel free to pop in to say hi, [Webchat can be found here](https://irc.spi.gt/ir
 ## Building
 For more detailed info and platform specific instructions check the [wiki](https://github.com/Thinkofname/steven-rust/wiki/Compiling-and-or-running).
 
-Currently requires SDL2 and OpenSSL to build.
+Currently requires SDL2, OpenSSL and **nighly** rust to build.
 
 `cargo build --release`
 
