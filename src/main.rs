@@ -14,7 +14,6 @@
 
 #![recursion_limit="300"]
 #![feature(const_fn)]
-#![feature(plugin)]
 
 extern crate sdl2;
 extern crate image;
