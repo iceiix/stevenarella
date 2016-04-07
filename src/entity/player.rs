@@ -354,9 +354,9 @@ impl ecs::System for PlayerRenderer {
         let player_model = m.get_component_mut(e, self.player_model).unwrap();
         if let Some(model) = player_model.model.take() {
             renderer.model.remove_model(model);
-        }
-        if let Some(url) = player_model.skin_url.take() {
-            renderer.get_textures_ref().read().unwrap().release_skin(&url);
+            if let Some(url) = player_model.skin_url.as_ref() {
+                renderer.get_textures_ref().read().unwrap().release_skin(&url);
+            }
         }
     }
 }
