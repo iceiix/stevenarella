@@ -546,13 +546,6 @@ impl Factory {
                         }
                     }
 
-                    let mut min_x = ::std::f32::INFINITY;
-                    let mut min_y = ::std::f32::INFINITY;
-                    let mut min_z = ::std::f32::INFINITY;
-                    let mut max_x = ::std::f32::NEG_INFINITY;
-                    let mut max_y = ::std::f32::NEG_INFINITY;
-                    let mut max_z = ::std::f32::NEG_INFINITY;
-
                     for v in &mut verts {
                         processed_face.vertices_texture.push(texture.clone());
                         v.tx = texture.get_x() as u16;
@@ -580,36 +573,57 @@ impl Factory {
                         }
 
                         if let Some(r) = el.rotation.as_ref() {
+                            let angle = r.angle * (::std::f64::consts::PI / 180.0);
+                            let angle = if r.axis == "z" { angle } else { -angle } as f32;
+                            let ci = 1.0 / angle.cos();
+                            v.x -= (r.origin[0] / 16.0) as f32;
+                            v.y -= (r.origin[1] / 16.0) as f32;
+                            v.z -= (r.origin[2] / 16.0) as f32;
                             match &*r.axis {
                                 "y" => {
-                                    let rot_y = (-r.angle * (::std::f64::consts::PI / 180.0)) as f32;
-                                    let c = rot_y.cos();
-                                    let s = rot_y.sin();
-                                    let x = v.x - ((r.origin[0] as f32)/16.0);
-                                    let z = v.z - ((r.origin[2] as f32)/16.0);
-                                    v.x = ((r.origin[0] as f32)/16.0) + (x*c - z*s);
-                                    v.z = ((r.origin[2] as f32)/16.0) + (z*c + x*s);
+                                    let c = angle.cos();
+                                    let s = angle.sin();
+                                    let x = v.x;
+                                    let z = v.z;
+                                    v.x = x*c - z*s;
+                                    v.z = z*c + x*s;
+
+                                    if r.rescale {
+                                        v.x = v.x * ci;
+                                        v.z = v.z * ci;
+                                    }
                                 },
                                 "x" => {
-                                    let rot_x = (-r.angle * (::std::f64::consts::PI / 180.0)) as f32;
-                                    let c = rot_x.cos();
-                                    let s = rot_x.sin();
-                                    let z = v.z - ((r.origin[2] as f32)/16.0);
-                                    let y = v.y - ((r.origin[1] as f32)/16.0);
-                                    v.z = ((r.origin[2] as f32)/16.0) + (z*c - y*s);
-                                    v.y = ((r.origin[1] as f32)/16.0) + (y*c + z*s);
+                                    let c = angle.cos();
+                                    let s = angle.sin();
+                                    let z = v.z;
+                                    let y = v.y;
+                                    v.z = z*c - y*s;
+                                    v.y = y*c + z*s;
+
+                                    if r.rescale {
+                                        v.z = v.z * ci;
+                                        v.y = v.y * ci;
+                                    }
                                 },
                                 "z" => {
-                                    let rot_z = (r.angle * (::std::f64::consts::PI / 180.0)) as f32;
-                                    let c = rot_z.cos();
-                                    let s = rot_z.sin();
-                                    let x = v.x - ((r.origin[0] as f32)/16.0);
-                                    let y = v.y - ((r.origin[1] as f32)/16.0);
-                                    v.x = ((r.origin[0] as f32)/16.0) + (x*c - y*s);
-                                    v.y = ((r.origin[1] as f32)/16.0) + (y*c + x*s);
+                                    let c = angle.cos();
+                                    let s = angle.sin();
+                                    let x = v.x;
+                                    let y = v.y;
+                                    v.x = x*c - y*s;
+                                    v.y = y*c + x*s;
+
+                                    if r.rescale {
+                                        v.x = v.x * ci;
+                                        v.y = v.y * ci;
+                                    }
                                 },
                                 _ => {}
                             }
+                            v.x += (r.origin[0] / 16.0) as f32;
+                            v.y += (r.origin[1] / 16.0) as f32;
+                            v.z += (r.origin[2] / 16.0) as f32;
                         }
 
                         if raw.x > 0.0 {
@@ -675,29 +689,10 @@ impl Factory {
                             v.toffsetx = 8*tw + (x*c - y*s);
                             v.toffsety = 8*th + (y*c + x*s);
                         }
-
-                        if let Some(r) = el.rotation.as_ref() {
-                            if r.rescale {
-                                min_x = min_x.min(v.x);
-                                min_y = min_y.min(v.y);
-                                min_z = min_z.min(v.z);
-                                max_x = max_x.max(v.x);
-                                max_y = max_y.max(v.y);
-                                max_z = max_z.max(v.z);
-                            }
-                        }
                     }
 
                     if let Some(r) = el.rotation.as_ref() {
                         if r.rescale {
-                            let dx = max_x - min_x;
-                            let dy = max_y - min_y;
-                            let dz = max_z - min_z;
-                            for v in &mut verts {
-                                v.x = (v.x - min_x) / dx;
-                                v.y = (v.y - min_y) / dy;
-                                v.z = (v.z - min_z) / dz;
-                            }
                         }
                     }
 
