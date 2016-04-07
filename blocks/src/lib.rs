@@ -16,7 +16,7 @@
 // TODO: Blocks
 // Rendering: TripwireHook, FlowingWater, FlowingLava, DoublePlant (Sunflower)
 // State Updates: Fire, CobblestoneWall, Tripwire, FenceGate (in_wall), RedstoneRepeater (locked)
-// Collisions: Chest, Hopper, CobblestoneWall, Stairs, SnowLayer
+// Collisions: Chest, Hopper, CobblestoneWall, Stairs
 
 #![recursion_limit="300"]
 
@@ -1594,6 +1594,10 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "snow_layer") },
         variant format!("layers={}", layers),
+        collision vec![Aabb3::new(
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(1.0, (layers as f64)/8.0, 1.0),
+        )],
     }
     Ice {
         props {},
