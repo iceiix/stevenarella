@@ -691,11 +691,6 @@ impl Factory {
                         }
                     }
 
-                    if let Some(r) = el.rotation.as_ref() {
-                        if r.rescale {
-                        }
-                    }
-
                     processed_face.vertices = verts;
                     processed_face.indices = 6;
                     model.faces.push(processed_face);
