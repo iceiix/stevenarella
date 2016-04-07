@@ -18,6 +18,10 @@ pub fn add_systems(m: &mut ecs::Manager) {
     m.add_system(sys);
     let sys = systems::ApplyGravity::new(m);
     m.add_system(sys);
+    let sys = systems::LerpPosition::new(m);
+    m.add_render_system(sys);
+    let sys = systems::LerpRotation::new(m);
+    m.add_render_system(sys);
 
     block_entity::add_systems(m);
 }
@@ -41,6 +45,23 @@ impl Position {
 
     pub fn zero() -> Position {
         Position::new(0.0, 0.0, 0.0)
+    }
+}
+
+#[derive(Debug)]
+pub struct TargetPosition {
+    pub position: Vector3<f64>,
+}
+
+impl TargetPosition {
+    pub fn new(x: f64, y: f64, z: f64) -> TargetPosition {
+        TargetPosition {
+            position: Vector3::new(x, y, z),
+        }
+    }
+
+    pub fn zero() -> TargetPosition {
+        TargetPosition::new(0.0, 0.0, 0.0)
     }
 }
 
@@ -79,6 +100,24 @@ impl Rotation {
 
     pub fn zero() -> Rotation {
         Rotation::new(0.0, 0.0)
+    }
+}
+#[derive(Debug)]
+pub struct TargetRotation {
+    pub yaw: f64,
+    pub pitch: f64,
+}
+
+impl TargetRotation {
+    pub fn new(yaw: f64, pitch: f64) -> TargetRotation {
+        TargetRotation {
+            yaw: yaw,
+            pitch: pitch,
+        }
+    }
+
+    pub fn zero() -> TargetRotation {
+        TargetRotation::new(0.0, 0.0)
     }
 }
 

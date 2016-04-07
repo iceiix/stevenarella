@@ -2,8 +2,10 @@
 use ecs;
 use super::{
     Position,
+    TargetPosition,
     Velocity,
     Rotation,
+    TargetRotation,
     Gravity,
     Bounds,
     GameInfo,
@@ -42,6 +44,21 @@ pub fn create_local(m: &mut ecs::Manager) -> ecs::Entity {
         Point3::new(0.3, 1.8, 0.3)
     )));
     m.add_component_direct(entity, PlayerModel::new(false, false, true));
+    entity
+}
+
+pub fn create_remote(m: &mut ecs::Manager) -> ecs::Entity {
+    let entity = m.create_entity();
+    m.add_component_direct(entity, Position::new(0.0, 0.0, 0.0));
+    m.add_component_direct(entity, TargetPosition::new(0.0, 0.0, 0.0));
+    m.add_component_direct(entity, Rotation::new(0.0, 0.0));
+    m.add_component_direct(entity, TargetRotation::new(0.0, 0.0));
+    m.add_component_direct(entity, Velocity::new(0.0, 0.0, 0.0));
+    m.add_component_direct(entity, Bounds::new(Aabb3::new(
+        Point3::new(-0.3, 0.0, -0.3),
+        Point3::new(0.3, 1.8, 0.3)
+    )));
+    m.add_component_direct(entity, PlayerModel::new(true, true, false));
     entity
 }
 
