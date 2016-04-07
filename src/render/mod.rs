@@ -843,15 +843,32 @@ impl TextureManager {
     fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
         use hyper;
         use std::io::Read;
+        use std::fs;
+        use std::path::Path;
         let client = hyper::Client::new();
         loop {
             // TODO: Cache
             let hash = recv.recv().unwrap();
             trace!("Fetching skin {:?}", hash);
-            let url = format!("http://textures.minecraft.net/texture/{}", hash);
-            let mut res = client.get(&url).send().unwrap();
+            let path = format!("skin-cache/{}/{}.png", &hash[..2], hash);
+            let cache_path = Path::new(&path);
+            fs::create_dir_all(cache_path.parent().unwrap()).unwrap();
             let mut buf = vec![];
-            res.read_to_end(&mut buf).unwrap();
+            if fs::metadata(cache_path).is_ok() {
+                debug!("Loading skin {} from cache", hash);
+                // We have a cached image
+                let mut file = fs::File::open(cache_path).unwrap();
+                file.read_to_end(&mut buf).unwrap();
+            } else {
+                debug!("Downloading skin {}", hash);
+                // Need to download it
+                let url = format!("http://textures.minecraft.net/texture/{}", hash);
+                let mut res = client.get(&url).send().unwrap();
+                res.read_to_end(&mut buf).unwrap();
+                // Save to cache
+                let mut file = fs::File::create(cache_path).unwrap();
+                file.write_all(&buf).unwrap();
+            }
             let img = match image::load_from_memory(&buf) {
                 Ok(val) => val,
                 Err(_) => {
