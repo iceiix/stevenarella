@@ -35,6 +35,9 @@ use collision;
 
 use std::hash::BuildHasherDefault;
 use types::hash::FNVHash;
+use std::sync::atomic::{AtomicIsize, Ordering};
+use std::thread;
+use std::sync::mpsc;
 
 const ATLAS_SIZE: usize = 1024;
 
@@ -82,6 +85,8 @@ pub struct Renderer {
     // Light renderering
     pub light_level: f32,
     pub sky_offset: f32,
+    skin_request: mpsc::Sender<String>,
+    skin_reply: mpsc::Receiver<(String, Option<image::DynamicImage>)>,
 }
 
 pub struct ChunkBuffer {
@@ -170,7 +175,8 @@ impl Renderer {
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
 
-        let textures = Arc::new(RwLock::new(TextureManager::new(res.clone())));
+        let (textures, skin_req, skin_reply) = TextureManager::new(res.clone());
+        let textures = Arc::new(RwLock::new(textures));
 
         let mut greg = glsl::Registry::new();
         shaders::add_shaders(&mut greg);
@@ -230,6 +236,8 @@ impl Renderer {
 
             light_level: 0.8,
             sky_offset: 1.0,
+            skin_request: skin_req,
+            skin_reply: skin_reply,
         }
     }
 
@@ -529,6 +537,27 @@ impl Renderer {
     }
 
     fn update_textures(&mut self, delta: f64) {
+        {
+            let mut tex = self.textures.write().unwrap();
+            while let Ok((hash, img)) = self.skin_reply.try_recv() {
+                    if let Some(img) = img {
+                    debug!("Got completed skin: {:?}", hash);
+                    tex.update_skin(hash, img);
+                } else {
+                    debug!("Failed to get skin for {:?}", hash);
+                }
+            }
+            let mut old_skins = vec![];
+            for (skin, refcount) in &tex.skins {
+                if refcount.load(Ordering::Relaxed) == 0 {
+                    old_skins.push(skin.clone());
+                }
+            }
+            for skin in old_skins {
+                tex.skins.remove(&skin);
+                tex.remove_dynamic(&format!("skin-{}", skin));
+            }
+        }
         self.gl_texture.bind(gl::TEXTURE_2D_ARRAY);
         self.do_pending_textures();
 
@@ -599,6 +628,26 @@ impl Renderer {
                 } else {
                     t.load_texture(name);
                     t.get_texture(name).unwrap()
+                }
+            }
+        }
+    }
+
+    pub fn get_skin(&self, textures: &RwLock<TextureManager>, url: &str) -> Texture {
+        let tex = {
+            textures.read().unwrap().get_skin(url)
+        };
+        match tex {
+            Some(val) => val,
+            None => {
+                let mut t = textures.write().unwrap();
+                // Make sure it hasn't already been loaded since we switched
+                // locks.
+                if let Some(val) = t.get_skin(url) {
+                    val
+                } else {
+                    t.load_skin(self, url);
+                    t.get_skin(url).unwrap()
                 }
             }
         }
@@ -739,13 +788,23 @@ pub struct TextureManager {
 
     dynamic_textures: HashMap<String, (Texture, image::DynamicImage), BuildHasherDefault<FNVHash>>,
     free_dynamics: Vec<Texture>,
+
+    skins: HashMap<String, AtomicIsize, BuildHasherDefault<FNVHash>>,
+
+    _skin_thread: thread::JoinHandle<()>,
 }
 
 impl TextureManager {
-    fn new(res: Arc<RwLock<resources::Manager>>) -> TextureManager {
+    fn new(res: Arc<RwLock<resources::Manager>>) -> (TextureManager, mpsc::Sender<String>, mpsc::Receiver<(String, Option<image::DynamicImage>)>) {
+        let (tx, rx) = mpsc::channel();
+        let (stx, srx) = mpsc::channel();
+        let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
         let mut tm = TextureManager {
             textures: HashMap::with_hasher(BuildHasherDefault::default()),
-            version: 0xFFFF,
+            version: {
+                let ver = res.read().unwrap().version();
+                ver
+            },
             resources: res,
             atlases: Vec::new(),
             animated_textures: Vec::new(),
@@ -753,9 +812,12 @@ impl TextureManager {
 
             dynamic_textures: HashMap::with_hasher(BuildHasherDefault::default()),
             free_dynamics: Vec::new(),
+            skins: HashMap::with_hasher(BuildHasherDefault::default()),
+
+            _skin_thread: skin_thread,
         };
         tm.add_defaults();
-        tm
+        (tm, stx, rx)
     }
 
     fn add_defaults(&mut self) {
@@ -776,6 +838,29 @@ impl TextureManager {
                          vec![
             255, 255, 255, 255,
         ]);
+    }
+
+    fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
+        use hyper;
+        use std::io::Read;
+        let client = hyper::Client::new();
+        loop {
+            // TODO: Cache
+            let hash = recv.recv().unwrap();
+            trace!("Fetching skin {:?}", hash);
+            let url = format!("http://textures.minecraft.net/texture/{}", hash);
+            let mut res = client.get(&url).send().unwrap();
+            let mut buf = vec![];
+            res.read_to_end(&mut buf).unwrap();
+            let img = match image::load_from_memory(&buf) {
+                Ok(val) => val,
+                Err(_) => {
+                    reply.send((hash, None)).unwrap();
+                    continue;
+                }
+            };
+            reply.send((hash, Some(img))).unwrap();
+        }
     }
 
     fn update_textures(&mut self, version: usize) {
@@ -808,6 +893,48 @@ impl TextureManager {
                 self.load_texture(name);
             }
         }
+    }
+
+    fn get_skin(&self, url: &str) -> Option<Texture> {
+        let hash = &url["http://textures.minecraft.net/texture/".len()..];
+        if let Some(skin) = self.skins.get(hash) {
+            skin.fetch_add(1, Ordering::Relaxed);
+        }
+        self.get_texture(&format!("steven-dynamic:skin-{}", hash))
+    }
+
+    pub fn release_skin(&self, url: &str) {
+        let hash = &url["http://textures.minecraft.net/texture/".len()..];
+        if let Some(skin) = self.skins.get(hash) {
+            skin.fetch_sub(1, Ordering::Relaxed);
+        }
+    }
+
+    fn load_skin(&mut self, renderer: &Renderer, url: &str) {
+        let hash = &url["http://textures.minecraft.net/texture/".len()..];
+        let res = self.resources.clone();
+        // TODO: This shouldn't be hardcoded to steve but instead
+        // have a way to select alex as a default.
+        let mut val = res.read().unwrap().open("minecraft", "textures/entity/steve.png").unwrap();
+        let mut data = Vec::new();
+        val.read_to_end(&mut data).unwrap();
+        let img = image::load_from_memory(&data).unwrap();
+        self.put_dynamic(&format!("skin-{}", hash), img);
+        self.skins.insert(hash.to_owned(), AtomicIsize::new(0));
+        renderer.skin_request.send(hash.to_owned()).unwrap();
+    }
+
+    fn update_skin(&mut self, hash: String, img: image::DynamicImage) {
+        if !self.skins.contains_key(&hash) { return; }
+        let tex = self.get_texture(&format!("steven-dynamic:skin-{}", hash)).unwrap();
+        let rect = atlas::Rect {
+            x: tex.x,
+            y: tex.y,
+            width: tex.width,
+            height: tex.height,
+        };
+
+        self.pending_uploads.push((tex.atlas, rect, img.to_rgba().into_vec()));
     }
 
     fn get_texture(&self, name: &str) -> Option<Texture> {
@@ -1005,7 +1132,12 @@ impl TextureManager {
             };
             self.pending_uploads.push((tex.atlas, rect, data));
             let t = tex.relative(0.0, 0.0, (width as f32) / (tex.width as f32), (height as f32) / (tex.height as f32));
-            self.dynamic_textures.insert(name.to_owned(), (tex, img));
+            self.dynamic_textures.insert(name.to_owned(), (tex.clone(), img));
+            // We need to rename the texture itself so that get_texture calls
+            // work with the new name
+            let mut old = self.textures.remove(&tex.name).unwrap();
+            old.name = name.to_owned();
+            self.textures.insert(format!("steven-dynamic:{}", name), old);
             t
         } else {
             let tex = self.put_texture("steven-dynamic", name, width as u32, height as u32, data);

@@ -488,6 +488,10 @@ impl Server {
     fn on_game_join(&mut self, join: packet::play::clientbound::JoinGame) {
         let gamemode = Gamemode::from_int((join.gamemode & 0x7) as i32);
         let player = entity::player::create_local(&mut self.entities);
+        if let Some(info) = self.players.get(&self.uuid) {
+            let model = self.entities.get_component_mut_direct::<entity::player::PlayerModel>(player).unwrap();
+            model.set_skin(info.skin_url.clone());
+        }
         *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
         // TODO: Temp
         self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
@@ -609,6 +613,16 @@ impl Server {
                         if let Some(skin_url) = skin_blob.lookup("textures.SKIN.url").and_then(|v| v.as_string()) {
                             info.skin_url = Some(skin_url.to_owned());
                         }
+                    }
+
+                    // Refresh our own skin when the server sends it to us.
+                    // The join game packet can come before this packet meaning
+                    // we may not have the skin in time for spawning ourselves.
+                    // This isn't an issue for other players because this packet
+                    // must come before the spawn player packet.
+                    if info.uuid == self.uuid {
+                        let model = self.entities.get_component_mut_direct::<entity::player::PlayerModel>(self.player.unwrap()).unwrap();
+                        model.set_skin(info.skin_url.clone());
                     }
                 },
                 UpdateGamemode { uuid, gamemode } => {

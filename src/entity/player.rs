@@ -48,6 +48,8 @@ pub fn create_local(m: &mut ecs::Manager) -> ecs::Entity {
 
 pub struct PlayerModel {
     model: Option<model::ModelKey>,
+    skin_url: Option<String>,
+    dirty: bool,
 
     has_head: bool,
     has_name_tag: bool,
@@ -64,6 +66,8 @@ impl PlayerModel {
     pub fn new(has_head: bool, has_name_tag: bool, first_person: bool) -> PlayerModel {
         PlayerModel {
             model: None,
+            skin_url: None,
+            dirty: false,
 
             has_head: has_head,
             has_name_tag: has_name_tag,
@@ -75,6 +79,11 @@ impl PlayerModel {
             idle_time: 0.0,
             arm_time: 0.0,
         }
+    }
+
+    pub fn set_skin(&mut self, skin: Option<String>) {
+        self.skin_url = skin;
+        self.dirty = true;
     }
 }
 
@@ -122,7 +131,7 @@ impl ecs::System for PlayerRenderer {
         &self.filter
     }
 
-    fn update(&mut self, m: &mut ecs::Manager, _: &mut world::World, renderer: &mut render::Renderer) {
+    fn update(&mut self, m: &mut ecs::Manager, world: &mut world::World, renderer: &mut render::Renderer) {
         use std::f32::consts::PI;
         use std::f64::consts::PI as PI64;
         let world_entity = m.get_world();
@@ -131,6 +140,11 @@ impl ecs::System for PlayerRenderer {
             let player_model = m.get_component_mut(e, self.player_model).unwrap();
             let position = m.get_component_mut(e, self.position).unwrap();
             let rotation = m.get_component_mut(e, self.rotation).unwrap();
+
+            if player_model.dirty {
+                self.entity_removed(m, e, world, renderer);
+                self.entity_added(m, e, world, renderer);
+            }
 
             if let Some(pmodel) = player_model.model {
                 let mdl = renderer.model.get_model(pmodel).unwrap();
@@ -242,7 +256,13 @@ impl ecs::System for PlayerRenderer {
     fn entity_added(&mut self, m: &mut ecs::Manager, e: ecs::Entity, _: &mut world::World, renderer: &mut render::Renderer) {
         let player_model = m.get_component_mut(e, self.player_model).unwrap();
 
-        let skin = render::Renderer::get_texture(renderer.get_textures_ref(), "entity/steve");
+        player_model.dirty = false;
+
+        let skin = if let Some(url) = player_model.skin_url.as_ref() {
+            renderer.get_skin(renderer.get_textures_ref(), &url)
+        } else {
+            render::Renderer::get_texture(renderer.get_textures_ref(), "entity/steve")
+        };
 
         macro_rules! srel {
             ($x:expr, $y:expr, $w:expr, $h:expr) => (
@@ -334,6 +354,9 @@ impl ecs::System for PlayerRenderer {
         let player_model = m.get_component_mut(e, self.player_model).unwrap();
         if let Some(model) = player_model.model.take() {
             renderer.model.remove_model(model);
+        }
+        if let Some(url) = player_model.skin_url.take() {
+            renderer.get_textures_ref().read().unwrap().release_skin(&url);
         }
     }
 }
