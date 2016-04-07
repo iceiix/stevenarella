@@ -1123,24 +1123,22 @@ impl TextureManager {
     }
 
     pub fn put_dynamic(&mut self, name: &str, img: image::DynamicImage) -> Texture {
+        use std::mem;
         let (width, height) = img.dimensions();
         let (width, height) = (width as usize, height as usize);
-        let mut rect = None;
-        let mut rect_pos = 0;
+        let mut rect_pos = None;
         for (i, r) in self.free_dynamics.iter().enumerate() {
             if r.width == width && r.height == height {
-                rect_pos = i;
-                rect = Some(r.clone());
+                rect_pos = Some(i);
                 break;
             } else if r.width >= width && r.height >= height {
-                rect_pos = i;
-                rect = Some(r.clone());
+                rect_pos = Some(i);
             }
         }
         let data = img.to_rgba().into_vec();
 
-        if let Some(tex) = rect {
-            self.free_dynamics.remove(rect_pos);
+        if let Some(rect_pos) = rect_pos {
+            let mut tex = self.free_dynamics.remove(rect_pos);
             let rect = atlas::Rect {
                 x: tex.x,
                 y: tex.y,
@@ -1149,11 +1147,12 @@ impl TextureManager {
             };
             self.pending_uploads.push((tex.atlas, rect, data));
             let t = tex.relative(0.0, 0.0, (width as f32) / (tex.width as f32), (height as f32) / (tex.height as f32));
+            let old_name = mem::replace(&mut tex.name, format!("steven-dynamic:{}", name));
             self.dynamic_textures.insert(name.to_owned(), (tex.clone(), img));
             // We need to rename the texture itself so that get_texture calls
             // work with the new name
-            let mut old = self.textures.remove(&tex.name).unwrap();
-            old.name = name.to_owned();
+            let mut old = self.textures.remove(&old_name).unwrap();
+            old.name = format!("steven-dynamic:{}", name);
             self.textures.insert(format!("steven-dynamic:{}", name), old);
             t
         } else {
