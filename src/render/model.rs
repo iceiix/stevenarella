@@ -11,6 +11,7 @@ use types::hash::FNVHash;
 use shared::Direction;
 use byteorder::{WriteBytesExt, NativeEndian};
 use model::BlockVertex;
+use format::{self, Component};
 
 pub struct Manager {
     collections: Vec<Collection>,
@@ -367,5 +368,67 @@ pub fn append_box_texture_scale(
                 id: 0,
             });
         }
+    }
+}
+
+pub struct FormatState<'a> {
+    pub offset: f32,
+    pub width: f32,
+    pub text: Vec<Vertex>,
+    pub renderer: &'a mut super::Renderer,
+    pub y_scale: f32,
+    pub x_scale: f32,
+}
+
+impl <'a> FormatState<'a> {
+    pub fn build(&mut self, c: &Component, color: format::Color) {
+        match c {
+            &format::Component::Text(ref txt) => {
+                let col = FormatState::get_color(&txt.modifier, color);
+                self.append_text(&txt.text, col);
+                let modi = &txt.modifier;
+                if let Some(ref extra) = modi.extra {
+                    for e in extra {
+                        self.build(e, col);
+                    }
+                }
+            }
+        }
+    }
+
+    fn append_text(&mut self, txt: &str, color: format::Color) {
+        let (rr, gg, bb) = color.to_rgb();
+        for ch in txt.chars() {
+            if ch == ' ' {
+                self.offset += 6.0 * self.x_scale;
+                continue;
+            }
+            let texture = self.renderer.ui.character_texture(ch);
+            let w = self.renderer.ui.size_of_char(ch) as f32;
+
+            for vert in ::model::BlockVertex::face_by_direction(Direction::North) {
+                self.text.push(Vertex {
+                    x: vert.x * self.x_scale * w - (self.offset + w * self.x_scale),
+                    y: vert.y * self.y_scale + 2.1 / 16.0,
+                    z: -0.6 / 16.0,
+                    texture: texture.clone(),
+                    texture_x: vert.toffsetx as f64,
+                    texture_y: vert.toffsety as f64,
+                    r: rr,
+                    g: gg,
+                    b: bb,
+                    a: 255,
+                    id: 0,
+                });
+            }
+            self.offset += (w + 2.0) * self.x_scale;
+        }
+        if self.offset > self.width {
+            self.width = self.offset;
+        }
+    }
+
+    fn get_color(modi: &format::Modifier, color: format::Color) -> format::Color {
+        modi.color.unwrap_or(color)
     }
 }

@@ -5,7 +5,7 @@ use shared::{Direction, Position};
 use world;
 use world::block::Block;
 use render;
-use render::model;
+use render::model::{self, FormatState};
 
 pub fn add_systems(m: &mut ecs::Manager) {
     let sys = SignRenderer::new(m);
@@ -139,18 +139,22 @@ impl ecs::System for SignRenderer {
         }
 
         for (i, line) in info.lines.iter().enumerate() {
+            const Y_SCALE: f32 = (6.0 / 16.0) / 4.0;
+            const X_SCALE: f32 = Y_SCALE / 16.0;
             let mut state = FormatState {
-                line: i as f32,
                 width: 0.0,
                 offset: 0.0,
                 text: Vec::new(),
                 renderer: renderer,
+                y_scale: Y_SCALE,
+                x_scale: X_SCALE,
             };
             state.build(line, format::Color::Black);
             let width = state.width;
             // Center align text
             for vert in &mut state.text {
                 vert.x += width * 0.5;
+                vert.y -= (Y_SCALE + 0.4/16.0) * (i as f32);
             }
             verts.extend_from_slice(&state.text);
         }
@@ -182,69 +186,5 @@ impl ecs::System for SignRenderer {
             renderer.model.remove_model(model);
         }
         info.model = None;
-    }
-}
-
-struct FormatState<'a> {
-    line: f32,
-    offset: f32,
-    width: f32,
-    text: Vec<model::Vertex>,
-    renderer: &'a mut render::Renderer,
-}
-
-impl <'a> FormatState<'a> {
-    fn build(&mut self, c: &Component, color: format::Color) {
-        match c {
-            &format::Component::Text(ref txt) => {
-                let col = FormatState::get_color(&txt.modifier, color);
-                self.append_text(&txt.text, col);
-                let modi = &txt.modifier;
-                if let Some(ref extra) = modi.extra {
-                    for e in extra {
-                        self.build(e, col);
-                    }
-                }
-            }
-        }
-    }
-
-    fn append_text(&mut self, txt: &str, color: format::Color) {
-        const Y_SCALE: f32 = (6.0 / 16.0) / 4.0;
-        const X_SCALE: f32 = Y_SCALE / 16.0;
-
-        let (rr, gg, bb) = color.to_rgb();
-        for ch in txt.chars() {
-            if ch == ' ' {
-                self.offset += 6.0 * X_SCALE;
-                continue;
-            }
-            let texture = self.renderer.ui.character_texture(ch);
-            let w = self.renderer.ui.size_of_char(ch) as f32;
-
-            for vert in ::model::BlockVertex::face_by_direction(Direction::North) {
-                self.text.push(model::Vertex {
-                    x: vert.x * X_SCALE * w - (self.offset + w * X_SCALE),
-                    y: vert.y * Y_SCALE - (Y_SCALE + 0.4/16.0) * self.line + 2.1 / 16.0,
-                    z: -0.6 / 16.0,
-                    texture: texture.clone(),
-                    texture_x: vert.toffsetx as f64,
-                    texture_y: vert.toffsety as f64,
-                    r: rr,
-                    g: gg,
-                    b: bb,
-                    a: 255,
-                    id: 0,
-                });
-            }
-            self.offset += (w + 2.0) * X_SCALE;
-        }
-        if self.offset > self.width {
-            self.width = self.offset;
-        }
-    }
-
-    fn get_color(modi: &format::Modifier, color: format::Color) -> format::Color {
-        modi.color.unwrap_or(color)
     }
 }

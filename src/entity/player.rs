@@ -12,7 +12,7 @@ use super::{
 };
 use world;
 use render;
-use render::model;
+use render::model::{self, FormatState};
 use types::Gamemode;
 use collision::{Aabb, Aabb3};
 use cgmath::{self, Point3, Vector3, Matrix4, Decomposed, Rotation3, Rad, Angle, Quaternion};
@@ -21,6 +21,7 @@ use std::hash::BuildHasherDefault;
 use types::hash::FNVHash;
 use sdl2::keyboard::Keycode;
 use shared::Position as BPosition;
+use format;
 
 pub fn add_systems(m: &mut ecs::Manager) {
     // Not actually rendering related but the faster
@@ -43,11 +44,11 @@ pub fn create_local(m: &mut ecs::Manager) -> ecs::Entity {
         Point3::new(-0.3, 0.0, -0.3),
         Point3::new(0.3, 1.8, 0.3)
     )));
-    m.add_component_direct(entity, PlayerModel::new(false, false, true));
+    m.add_component_direct(entity, PlayerModel::new("", false, false, true));
     entity
 }
 
-pub fn create_remote(m: &mut ecs::Manager) -> ecs::Entity {
+pub fn create_remote(m: &mut ecs::Manager, name: &str) -> ecs::Entity {
     let entity = m.create_entity();
     m.add_component_direct(entity, Position::new(0.0, 0.0, 0.0));
     m.add_component_direct(entity, TargetPosition::new(0.0, 0.0, 0.0));
@@ -58,7 +59,7 @@ pub fn create_remote(m: &mut ecs::Manager) -> ecs::Entity {
         Point3::new(-0.3, 0.0, -0.3),
         Point3::new(0.3, 1.8, 0.3)
     )));
-    m.add_component_direct(entity, PlayerModel::new(true, true, false));
+    m.add_component_direct(entity, PlayerModel::new(name, true, true, false));
     entity
 }
 
@@ -67,6 +68,7 @@ pub struct PlayerModel {
     model: Option<model::ModelKey>,
     skin_url: Option<String>,
     dirty: bool,
+    name: String,
 
     has_head: bool,
     has_name_tag: bool,
@@ -80,11 +82,12 @@ pub struct PlayerModel {
 }
 
 impl PlayerModel {
-    pub fn new(has_head: bool, has_name_tag: bool, first_person: bool) -> PlayerModel {
+    pub fn new(name: &str, has_head: bool, has_name_tag: bool, first_person: bool) -> PlayerModel {
         PlayerModel {
             model: None,
             skin_url: None,
             dirty: false,
+            name: name.to_owned(),
 
             has_head: has_head,
             has_name_tag: has_name_tag,
@@ -137,8 +140,8 @@ enum PlayerModelPart {
     LegRight = 3,
     ArmLeft = 4,
     ArmRight = 5,
-    Cape = 6,
-    NameTag = 7
+    NameTag = 6,
+    Cape = 7,
 }
 
 // TODO: Setup culling
@@ -185,6 +188,16 @@ impl ecs::System for PlayerRenderer {
                     rot: Quaternion::from_angle_y(Rad::new((PI + rotation.yaw as f32))),
                     disp: offset,
                 });
+
+                // TODO This sucks
+                if player_model.has_name_tag {
+                    let ang = (position.position.x - renderer.camera.pos.x).atan2(position.position.z - renderer.camera.pos.z) as f32;
+                    mdl.matrix[PlayerModelPart::NameTag as usize] = Matrix4::from(Decomposed {
+                        scale: 1.0,
+                        rot: Quaternion::from_angle_y(Rad::new(ang)),
+                        disp: offset + Vector3::new(0.0, (-24.0/16.0) - 0.6, 0.0),
+                    });
+                }
 
                 mdl.matrix[PlayerModelPart::Head as usize] = offset_matrix * Matrix4::from(Decomposed {
                     scale: 1.0,
@@ -354,6 +367,39 @@ impl ecs::System for PlayerRenderer {
             ]);
         }
 
+        let mut name_verts = vec![];
+        if player_model.has_name_tag {
+            let mut state = FormatState {
+                width: 0.0,
+                offset: 0.0,
+                text: Vec::new(),
+                renderer: renderer,
+                y_scale: 0.16,
+                x_scale: 0.01,
+            };
+            let mut name = format::Component::Text(format::TextComponent::new(&player_model.name));
+            format::convert_legacy(&mut name);
+            state.build(&name, format::Color::Black);
+            let width = state.width;
+            // Center align text
+            for vert in &mut state.text {
+                vert.x += width * 0.5;
+                vert.r = 64;
+                vert.g = 64;
+                vert.b = 64;
+            }
+            name_verts.extend_from_slice(&state.text);
+            for vert in &mut state.text {
+                vert.x -= 0.01;
+                vert.y -= 0.01;
+                vert.z -= 0.05;
+                vert.r = 255;
+                vert.g = 255;
+                vert.b = 255;
+            }
+            name_verts.extend_from_slice(&state.text);
+        }
+
         player_model.model = Some(renderer.model.create_model(
             model::DEFAULT,
             vec![
@@ -363,6 +409,7 @@ impl ecs::System for PlayerRenderer {
                 part_verts[1].clone(),
                 part_verts[2].clone(),
                 part_verts[3].clone(),
+                name_verts
             ]
         ));
     }

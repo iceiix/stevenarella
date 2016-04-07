@@ -601,7 +601,7 @@ impl Server {
         if let Some(entity) = self.entity_map.remove(&spawn.entity_id.0) {
             self.entities.remove_entity(entity);
         }
-        let entity = entity::player::create_remote(&mut self.entities);
+        let entity = entity::player::create_remote(&mut self.entities, self.players.get(&spawn.uuid).map_or("MISSING", |v| &v.name));
         let position = self.entities.get_component_mut(entity, self.position).unwrap();
         let target_position = self.entities.get_component_mut(entity, self.target_position).unwrap();
         let rotation = self.entities.get_component_mut(entity, self.rotation).unwrap();
