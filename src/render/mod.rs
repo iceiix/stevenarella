@@ -869,13 +869,41 @@ impl TextureManager {
                 let mut file = fs::File::create(cache_path).unwrap();
                 file.write_all(&buf).unwrap();
             }
-            let img = match image::load_from_memory(&buf) {
+            let mut img = match image::load_from_memory(&buf) {
                 Ok(val) => val,
                 Err(_) => {
                     reply.send((hash, None)).unwrap();
                     continue;
                 }
             };
+            let (_, height) = img.dimensions();
+            if height == 32 {
+                // Needs changing to the new format
+                let mut new = image::DynamicImage::new_rgba8(64, 64);
+                new.copy_from(&img, 0, 0);
+                new.copy_from(&img.sub_image(0, 16, 16, 16), 16, 48);
+                new.copy_from(&img.sub_image(40, 16, 16, 16), 32, 48);
+                img = new;
+            }
+            // Block transparent pixels in blacklisted areas
+            let blacklist = [
+                // X, Y, W, H
+                (0, 0, 32, 16),
+                (16, 16, 24, 16),
+                (0, 16, 16, 16),
+                (16, 48, 16, 16),
+                (32, 48, 16, 16),
+                (40, 16, 16, 16),
+            ];
+            for bl in blacklist.into_iter() {
+                for x in bl.0 .. (bl.0 + bl.2) {
+                    for y in bl.1 .. (bl.1 + bl.3) {
+                        let mut col = img.get_pixel(x, y);
+                        col.data[3] = 255;
+                        img.put_pixel(x, y, col);
+                    }
+                }
+            }
             reply.send((hash, Some(img))).unwrap();
         }
     }
