@@ -100,12 +100,21 @@ impl Game {
 
     pub fn tick(&mut self, delta: f64) {
         if !self.server.is_connected() {
-            self.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
             self.renderer.camera.yaw += 0.005 * delta;
             if self.renderer.camera.yaw > ::std::f64::consts::PI * 2.0 {
                 self.renderer.camera.yaw = 0.0;
             }
         }
+
+        if let Some(disconnect_reason) = self.server.disconnect_reason.take() {
+            self.screen_sys.replace_screen(Box::new(screen::ServerList::new(
+                Some(disconnect_reason)
+            )));
+        }
+        if !self.server.is_connected() {
+            self.focused = false;
+        }
+
         let mut clear_reply = false;
         if let Some(ref recv) = self.connect_reply {
             if let Ok(server) = recv.try_recv() {
@@ -206,6 +215,7 @@ fn main() {
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
     };
+    game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
 
     let mut events = sdl.event_pump().unwrap();
     while !game.should_close {
@@ -278,6 +288,9 @@ fn handle_window_event(window: &sdl2::video::Window,
                     }
                 }
             } else {
+                if mouse.relative_mouse_mode() {
+                    mouse.set_relative_mouse_mode(false);
+                }
                 ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);
             }
         }
@@ -289,6 +302,9 @@ fn handle_window_event(window: &sdl2::video::Window,
                 mouse.set_relative_mouse_mode(true);
                 mouse.warp_mouse_in_window(&window, (width/2) as i32, (height/2) as i32);
                 return;
+            }
+            if mouse.relative_mouse_mode() {
+                mouse.set_relative_mouse_mode(false);
             }
             if !game.focused {
                 ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);

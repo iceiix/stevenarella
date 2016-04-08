@@ -42,6 +42,7 @@ pub struct Server {
     uuid: protocol::UUID,
     conn: Option<protocol::Conn>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
+    pub disconnect_reason: Option<format::Component>,
 
     pub world: world::World,
     pub entities: ecs::Manager,
@@ -270,6 +271,7 @@ impl Server {
             uuid: uuid,
             conn: conn,
             read_queue: read_queue,
+            disconnect_reason: None,
 
             world: world::World::new(),
             world_age: 0,
@@ -370,6 +372,7 @@ impl Server {
                             ChangeGameState => on_game_state_change,
                             UpdateSign => on_sign_update,
                             PlayerInfo => on_player_info,
+                            Disconnect => on_disconnect,
                             // Entities
                             EntityDestroy => on_entity_destroy,
                             SpawnPlayer => on_player_spawn,
@@ -381,8 +384,15 @@ impl Server {
                     },
                     Err(err) => panic!("Err: {:?}", err),
                 }
+                // Disconnected
+                if self.conn.is_none() {
+                    break;
+                }
             }
-            self.read_queue = Some(rx);
+
+            if self.conn.is_some() {
+                self.read_queue = Some(rx);
+            }
         }
 
         self.entity_tick_timer += delta;
@@ -487,7 +497,7 @@ impl Server {
     }
 
     pub fn write_packet<T: protocol::PacketType>(&mut self, p: T) {
-        self.conn.as_mut().unwrap().write_packet(p).unwrap(); // TODO handle errors
+        let _ = self.conn.as_mut().unwrap().write_packet(p); // TODO handle errors
     }
 
     fn on_keep_alive(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound) {
@@ -519,6 +529,14 @@ impl Server {
             *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
             // TODO: Temp
             self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
+        }
+    }
+
+    fn on_disconnect(&mut self, disconnect: packet::play::clientbound::Disconnect) {
+        self.conn = None;
+        self.disconnect_reason = Some(disconnect.reason);
+        if let Some(player) = self.player.take() {
+            self.entities.remove_entity(player);
         }
     }
 
