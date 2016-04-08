@@ -637,7 +637,7 @@ impl World {
                 }
 
                 for entry in &section.block_map {
-                    if entry.1 == 0 {
+                    if entry.1 == 0 && match entry.0 { block::Air{} => false, _ => true } {
                         section.rev_block_map.remove(&entry.0);
                     }
                 }
