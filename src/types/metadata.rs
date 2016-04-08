@@ -62,7 +62,7 @@ impl Metadata {
 
 impl Serializable for Metadata {
 
-    fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
         let mut m = Metadata::new();
         loop {
             let index = try!(u8::read_from(buf)) as i32;
@@ -99,15 +99,13 @@ impl Serializable for Metadata {
                     }
                 }
                 12 => m.put_raw(index, try!(protocol::VarInt::read_from(buf)).0 as u16),
-                _ => return Err(io::Error::new(io::ErrorKind::InvalidInput,
-                                               protocol::Error::Err("unknown metadata type"
-                                                                        .to_owned()))),
+                _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
             }
         }
         Ok(m)
     }
 
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
         for (k, v) in &self.map {
             try!((*k as u8).write_to(buf));
             match *v {

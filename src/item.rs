@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use nbt;
-use protocol::Serializable;
+use protocol::{self, Serializable};
 use std::io;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
@@ -38,7 +38,7 @@ impl Default for Stack {
 }
 
 impl Serializable for Option<Stack> {
-    fn read_from(buf: &mut io::Read) -> Result<Option<Stack>, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Option<Stack>, protocol::Error> {
         let id = try!(buf.read_i16::<BigEndian>());
         if id == -1 {
             return Ok(None);
@@ -50,7 +50,7 @@ impl Serializable for Option<Stack> {
             tag: try!(Serializable::read_from(buf)),
         }))
     }
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
         match *self {
             Some(ref val) => {
                 try!(buf.write_i16::<BigEndian>(val.id as i16));

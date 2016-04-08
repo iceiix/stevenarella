@@ -957,14 +957,14 @@ pub struct Statistic {
 }
 
 impl Serializable for Statistic {
-    fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(Statistic {
             name: try!(Serializable::read_from(buf)),
             value: try!(Serializable::read_from(buf)),
         })
     }
 
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         try!(self.name.write_to(buf));
         self.value.write_to(buf)
     }
@@ -978,7 +978,7 @@ pub struct BlockChangeRecord {
 }
 
 impl Serializable for BlockChangeRecord {
-    fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(BlockChangeRecord {
             xz: try!(Serializable::read_from(buf)),
             y: try!(Serializable::read_from(buf)),
@@ -986,7 +986,7 @@ impl Serializable for BlockChangeRecord {
         })
     }
 
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         try!(self.xz.write_to(buf));
         try!(self.y.write_to(buf));
         self.block_id.write_to(buf)
@@ -1001,7 +1001,7 @@ pub struct ExplosionRecord {
 }
 
 impl Serializable for ExplosionRecord {
-    fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(ExplosionRecord {
             x: try!(Serializable::read_from(buf)),
             y: try!(Serializable::read_from(buf)),
@@ -1009,7 +1009,7 @@ impl Serializable for ExplosionRecord {
         })
     }
 
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         try!(self.x.write_to(buf));
         try!(self.y.write_to(buf));
         self.z.write_to(buf)
@@ -1024,7 +1024,7 @@ pub struct MapIcon {
 }
 
 impl Serializable for MapIcon {
-    fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(MapIcon {
             direction_type: try!(Serializable::read_from(buf)),
             x: try!(Serializable::read_from(buf)),
@@ -1032,7 +1032,7 @@ impl Serializable for MapIcon {
         })
     }
 
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         try!(self.direction_type.write_to(buf));
         try!(self.x.write_to(buf));
         self.z.write_to(buf)
@@ -1057,7 +1057,7 @@ pub struct EntityProperty {
 }
 
 impl Serializable for EntityProperty {
-    fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(EntityProperty {
             key: try!(Serializable::read_from(buf)),
             value: try!(Serializable::read_from(buf)),
@@ -1065,7 +1065,7 @@ impl Serializable for EntityProperty {
         })
     }
 
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         try!(self.key.write_to(buf));
         try!(self.value.write_to(buf));
         self.modifiers.write_to(buf)
@@ -1080,7 +1080,7 @@ pub struct PropertyModifier {
 }
 
 impl Serializable for PropertyModifier {
-    fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(PropertyModifier {
             uuid: try!(Serializable::read_from(buf)),
             amount: try!(Serializable::read_from(buf)),
@@ -1088,7 +1088,7 @@ impl Serializable for PropertyModifier {
         })
     }
 
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         try!(self.uuid.write_to(buf));
         try!(self.amount.write_to(buf));
         self.operation.write_to(buf)
@@ -1102,7 +1102,7 @@ pub struct PlayerInfoData {
 }
 
 impl Serializable for PlayerInfoData {
-    fn read_from(buf: &mut io::Read) -> Result<Self, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         let mut m = PlayerInfoData {
             action: try!(Serializable::read_from(buf)),
             players: Vec::new(),
@@ -1175,7 +1175,7 @@ impl Serializable for PlayerInfoData {
         Ok(m)
     }
 
-    fn write_to(&self, _: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
         unimplemented!() // I'm lazy
     }
 }
