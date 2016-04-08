@@ -454,6 +454,7 @@ impl Server {
     }
 
     pub fn minecraft_tick(&mut self) {
+        use std::f32::consts::PI;
         if let Some(player) = self.player {
             let movement = self.entities.get_component_mut(player, self.player_movement).unwrap();
             let on_ground = self.entities.get_component(player, self.gravity).map_or(false, |v| v.on_ground);
@@ -476,8 +477,8 @@ impl Server {
                 x: position.position.x,
                 y: position.position.y,
                 z: position.position.z,
-                yaw: rotation.yaw as f32,
-                pitch: rotation.pitch as f32,
+                yaw: -(rotation.yaw as f32) * (180.0 / PI),
+                pitch: (-rotation.pitch as f32) * (180.0 / PI) + 180.0,
                 on_ground: on_ground,
             };
             self.write_packet(packet);
@@ -648,6 +649,7 @@ impl Server {
     }
 
     fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {
+        use std::f64::consts::PI;
         if let Some(player) = self.player {
             let position = self.entities.get_component_mut(player, self.position).unwrap();
             let rotation = self.entities.get_component_mut(player, self.rotation).unwrap();
@@ -655,8 +657,14 @@ impl Server {
             position.position.x = calculate_relative_teleport(TeleportFlag::RelX, teleport.flags, position.position.x, teleport.x);
             position.position.y = calculate_relative_teleport(TeleportFlag::RelY, teleport.flags, position.position.y, teleport.y);
             position.position.z = calculate_relative_teleport(TeleportFlag::RelZ, teleport.flags, position.position.z, teleport.z);
-            rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, teleport.flags, rotation.yaw, -teleport.yaw as f64);
-            rotation.pitch = calculate_relative_teleport(TeleportFlag::RelPitch, teleport.flags, rotation.pitch, -teleport.pitch as f64);
+            rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, teleport.flags, rotation.yaw, -teleport.yaw as f64 * (PI / 180.0));
+
+            rotation.pitch = -((calculate_relative_teleport(
+                TeleportFlag::RelPitch,
+                teleport.flags,
+                (-rotation.pitch) * (180.0 / PI) + 180.0,
+                teleport.pitch as f64
+            ) - 180.0) * (PI / 180.0));
 
             self.write_packet(packet::play::serverbound::TeleportConfirm {
                 teleport_id: teleport.teleport_id,
