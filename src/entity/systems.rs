@@ -3,6 +3,7 @@ use super::*;
 use ecs;
 use world;
 use render;
+use shared::Position as BPos;
 
 pub struct ApplyVelocity {
     filter: ecs::Filter,
@@ -211,6 +212,83 @@ impl ecs::System for LerpRotation {
             rot.pitch += delta_pitch * 0.2 * delta;
             rot.yaw = (PI*2.0 + rot.yaw) % (PI*2.0);
             rot.pitch = (PI*2.0 + rot.pitch) % (PI*2.0);
+        }
+    }
+}
+
+pub struct LightEntity {
+    filter: ecs::Filter,
+    position: ecs::Key<Position>,
+    bounds: ecs::Key<Bounds>,
+    light: ecs::Key<Light>
+}
+
+impl LightEntity {
+    pub fn new(m: &mut ecs::Manager) -> LightEntity {
+        let position = m.get_key();
+        let bounds = m.get_key();
+        let light = m.get_key();
+        LightEntity {
+            filter: ecs::Filter::new()
+                .with(position)
+                .with(bounds)
+                .with(light),
+            position: position,
+            bounds: bounds,
+            light: light,
+        }
+    }
+}
+
+impl ecs::System for LightEntity {
+
+    fn filter(&self) -> &ecs::Filter {
+        &self.filter
+    }
+
+    fn update(&mut self, m: &mut ecs::Manager, world: &mut world::World, _: &mut render::Renderer) {
+        use cgmath::EuclideanVector;
+        for e in m.find(&self.filter) {
+            let pos = m.get_component(e, self.position).unwrap();
+            let bounds = m.get_component(e, self.bounds).unwrap();
+            let light = m.get_component_mut(e, self.light).unwrap();
+            let mut count = 0.0;
+            let mut block_light = 0.0;
+            let mut sky_light = 0.0;
+
+            let min_x = (pos.position.x + bounds.bounds.min.x).floor() as i32;
+            let min_y = (pos.position.y + bounds.bounds.min.y).floor() as i32;
+            let min_z = (pos.position.z + bounds.bounds.min.z).floor() as i32;
+            let max_x = (pos.position.x + bounds.bounds.max.x).ceil() as i32 + 1;
+            let max_y = (pos.position.y + bounds.bounds.max.y).ceil() as i32 + 1;
+            let max_z = (pos.position.z + bounds.bounds.max.z).ceil() as i32 + 1;
+
+            let length = (bounds.bounds.max - bounds.bounds.min).length() as f32;
+
+            for y in min_y .. max_y {
+                for z in min_z .. max_z {
+                    for x in min_x .. max_x {
+                        let dist = length - (
+                                ((x as f32 + 0.5) - pos.position.x as f32).powi(2)
+                                + ((y as f32 + 0.5) - pos.position.y as f32).powi(2)
+                                + ((z as f32 + 0.5) - pos.position.z as f32).powi(2)
+                            )
+                            .sqrt()
+                            .min(length);
+                        let dist = dist / length;
+                        count += dist;
+                        block_light += world.get_block_light(BPos::new(x, y, z)) as f32 * dist;
+                        sky_light += world.get_sky_light(BPos::new(x, y, z)) as f32 * dist;
+                    }
+                }
+            }
+            if count <= 0.01 {
+                light.block_light = 0.0;
+                light.sky_light = 0.0;
+            } else {
+                light.block_light = block_light / count;
+                light.sky_light = sky_light / count;
+            }
         }
     }
 }

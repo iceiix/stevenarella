@@ -22,6 +22,8 @@ pub fn add_systems(m: &mut ecs::Manager) {
     m.add_render_system(sys);
     let sys = systems::LerpRotation::new(m);
     m.add_render_system(sys);
+    let sys = systems::LightEntity::new(m);
+    m.add_render_system(sys);
 
     block_entity::add_systems(m);
 }
@@ -153,6 +155,20 @@ impl GameInfo {
     pub fn new() -> GameInfo {
         GameInfo {
             delta: 0.0,
+        }
+    }
+}
+
+pub struct Light {
+    pub block_light: f32,
+    pub sky_light: f32,
+}
+
+impl Light {
+    pub fn new() -> Light {
+        Light {
+            block_light: 0.0,
+            sky_light: 0.0,
         }
     }
 }

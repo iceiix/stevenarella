@@ -9,6 +9,7 @@ use super::{
     Gravity,
     Bounds,
     GameInfo,
+    Light
 };
 use world;
 use render;
@@ -45,6 +46,7 @@ pub fn create_local(m: &mut ecs::Manager) -> ecs::Entity {
         Point3::new(0.3, 1.8, 0.3)
     )));
     m.add_component_direct(entity, PlayerModel::new("", false, false, true));
+    m.add_component_direct(entity, Light::new());
     entity
 }
 
@@ -60,6 +62,7 @@ pub fn create_remote(m: &mut ecs::Manager, name: &str) -> ecs::Entity {
         Point3::new(0.3, 1.8, 0.3)
     )));
     m.add_component_direct(entity, PlayerModel::new(name, true, true, false));
+    m.add_component_direct(entity, Light::new());
     entity
 }
 
@@ -113,6 +116,7 @@ struct PlayerRenderer {
     position: ecs::Key<Position>,
     rotation: ecs::Key<Rotation>,
     game_info: ecs::Key<GameInfo>,
+    light: ecs::Key<Light>,
 }
 
 impl PlayerRenderer {
@@ -120,15 +124,18 @@ impl PlayerRenderer {
         let player_model = m.get_key();
         let position = m.get_key();
         let rotation = m.get_key();
+        let light = m.get_key();
         PlayerRenderer {
             filter: ecs::Filter::new()
                 .with(player_model)
                 .with(position)
-                .with(rotation),
+                .with(rotation)
+                .with(light),
             player_model: player_model,
             position: position,
             rotation: rotation,
             game_info: m.get_key(),
+            light: light,
         }
     }
 }
@@ -160,6 +167,7 @@ impl ecs::System for PlayerRenderer {
             let player_model = m.get_component_mut(e, self.player_model).unwrap();
             let position = m.get_component_mut(e, self.position).unwrap();
             let rotation = m.get_component_mut(e, self.rotation).unwrap();
+            let light = m.get_component(e, self.light).unwrap();
 
             if player_model.dirty {
                 self.entity_removed(m, e, world, renderer);
@@ -168,6 +176,10 @@ impl ecs::System for PlayerRenderer {
 
             if let Some(pmodel) = player_model.model {
                 let mdl = renderer.model.get_model(pmodel).unwrap();
+
+                mdl.block_light = light.block_light;
+                mdl.sky_light = light.sky_light;
+
                 let offset = if player_model.first_person {
                     let ox = (rotation.yaw - PI64/2.0).cos() * 0.25;
                     let oz = -(rotation.yaw - PI64/2.0).sin() * 0.25;
