@@ -172,7 +172,7 @@ impl Tag {
         }
     }
 
-    fn read_type(id: u8, buf: &mut io::Read) -> Result<Tag, io::Error> {
+    fn read_type<R: io::Read>(id: u8, buf: &mut R) -> Result<Tag, protocol::Error> {
         match id {
             0 => unreachable!(),
             1 => Ok(Tag::Byte(try!(buf.read_i8()))),
@@ -217,18 +217,17 @@ impl Tag {
                 }
                 data
             })),
-            _ => Err(io::Error::new(io::ErrorKind::InvalidData,
-                                    protocol::Error::Err("invalid tag".to_owned()))),
+            _ => Err(protocol::Error::Err("invalid tag".to_owned())),
         }
     }
 }
 
 impl Serializable for Tag {
-    fn read_from(buf: &mut io::Read) -> Result<Tag, io::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Tag, protocol::Error> {
         Tag::read_type(10, buf)
     }
 
-    fn write_to(&self, buf: &mut io::Write) -> Result<(), io::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
         match *self {
             Tag::End => {}
             Tag::Byte(val) => try!(buf.write_i8(val)),
@@ -273,13 +272,13 @@ impl Serializable for Tag {
     }
 }
 
-pub fn write_string(buf: &mut io::Write, s: &str) -> io::Result<()> {
+pub fn write_string<W: io::Write>(buf: &mut W, s: &str) -> Result<(), protocol::Error> {
     let data = s.as_bytes();
     try!((data.len() as i16).write_to(buf));
-    buf.write_all(data)
+    buf.write_all(data).map_err(|v| v.into())
 }
 
-pub fn read_string(buf: &mut io::Read) -> io::Result<String> {
+pub fn read_string<R: io::Read>(buf: &mut R) -> Result<String, protocol::Error> {
     let len: i16 = try!(buf.read_i16::<BigEndian>());
     let mut ret = String::new();
     try!(buf.take(len as u64).read_to_string(&mut ret));
