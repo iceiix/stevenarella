@@ -614,7 +614,7 @@ impl World {
                                 .map(|v| v.1)
                                 .unwrap_or(0) == 0 {
                             if bl_id >= section.block_map.len() {
-                                section.block_map.resize(bl_id + 1, (block::Air{}, 0));
+                                section.block_map.resize(bl_id + 1, (block::Air{}, 0xFFFFF)); // Impossible to reach this value normally
                             }
                             let bl = block::Block::by_vanilla_id(bl_id as usize);
                             section.block_map[bl_id] = (bl, 0);
@@ -622,6 +622,9 @@ impl World {
                         }
                     }
                     let bmap = section.block_map.get_mut(bl_id).unwrap();
+                    if bmap.1 == 0xFFFFF {
+                        bmap.1 = 0;
+                    }
                     bmap.1 += 1;
                     if block_entity::BlockEntityType::get_block_entity(bmap.0).is_some() {
                         let pos = Position::new(
@@ -637,7 +640,7 @@ impl World {
                 }
 
                 for entry in &section.block_map {
-                    if entry.1 == 0 && match entry.0 { block::Air{} => false, _ => true } {
+                    if entry.1 == 0xFFFFF {
                         section.rev_block_map.remove(&entry.0);
                     }
                 }
