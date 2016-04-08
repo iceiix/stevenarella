@@ -4,6 +4,7 @@ use ecs;
 use world;
 use render;
 use shared::Position as BPos;
+use cgmath::EuclideanVector;
 
 pub struct ApplyVelocity {
     filter: ecs::Filter,
@@ -114,7 +115,7 @@ impl ecs::System for UpdateLastPosition {
         for e in m.find(&self.filter) {
             let pos = m.get_component_mut(e, self.position).unwrap();
 
-            pos.moved = pos.position != pos.last_position;
+            pos.moved = (pos.position - pos.last_position).length2() > 0.01;
             pos.last_position = pos.position;
         }
     }
@@ -156,6 +157,9 @@ impl ecs::System for LerpPosition {
             let target_pos = m.get_component(e, self.target_position).unwrap();
 
             pos.position = pos.position + (target_pos.position - pos.position) * delta * 0.2;
+            if (pos.position - target_pos.position).length2() < 0.01 {
+                pos.position = target_pos.position;
+            }
         }
     }
 }
@@ -247,7 +251,6 @@ impl ecs::System for LightEntity {
     }
 
     fn update(&mut self, m: &mut ecs::Manager, world: &mut world::World, _: &mut render::Renderer) {
-        use cgmath::EuclideanVector;
         for e in m.find(&self.filter) {
             let pos = m.get_component(e, self.position).unwrap();
             let bounds = m.get_component(e, self.bounds).unwrap();

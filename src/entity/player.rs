@@ -269,7 +269,7 @@ impl ecs::System for PlayerRenderer {
                 let mut update = true;
                 if position.moved {
                     player_model.still_time = 0.0;
-                } else if player_model.still_time > 5.0 {
+                } else if player_model.still_time > 2.0 {
                     if (time - 15.0).abs() <= 1.5 * delta {
                         time = 15.0;
                         update = false;
