@@ -1003,9 +1003,8 @@ impl Section {
             }
             if !found {
                 if self.block_map.len() >= 1 << self.blocks.bit_size {
-                    let new_size = self.blocks.bit_size << 1;
-                    let new_blocks = self.blocks.resize(new_size);
-                    self.blocks = new_blocks;
+                    let new_size = self.blocks.bit_size + 1;
+                    self.blocks = self.blocks.resize(new_size);
                 }
                 self.block_map.push((b, 0));
             }
