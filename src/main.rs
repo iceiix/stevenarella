@@ -299,14 +299,15 @@ fn handle_window_event(window: &sdl2::video::Window,
 
             if game.server.is_connected() && !game.focused {
                 game.focused = true;
-                mouse.set_relative_mouse_mode(true);
-                mouse.warp_mouse_in_window(&window, (width/2) as i32, (height/2) as i32);
+                if !mouse.relative_mouse_mode() {
+                    mouse.set_relative_mouse_mode(true);
+                }
                 return;
             }
-            if mouse.relative_mouse_mode() {
-                mouse.set_relative_mouse_mode(false);
-            }
             if !game.focused {
+                if mouse.relative_mouse_mode() {
+                    mouse.set_relative_mouse_mode(false);
+                }
                 ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
             }
         }
