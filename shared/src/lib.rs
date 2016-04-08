@@ -1,4 +1,7 @@
 
+pub mod axis;
+pub use axis::Axis;
+
 pub mod direction;
 pub use direction::Direction;
 

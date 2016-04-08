@@ -32,7 +32,7 @@ use cgmath;
 use collision::Aabb;
 use sdl2::keyboard::Keycode;
 use types::Gamemode;
-use shared::Position;
+use shared::{Axis, Position};
 use format;
 
 mod sun;
@@ -230,7 +230,7 @@ impl Server {
 
                 if x*x + z*z > 16*16 && rng.gen_weighted_bool(80) {
                     for i in 0 .. 5 {
-                        server.world.set_block(Position::new(x, h + 1 + i, z), block::Log{ axis: block::Axis::Y, variant: block::TreeVariant::Oak });
+                        server.world.set_block(Position::new(x, h + 1 + i, z), block::Log{ axis: Axis::Y, variant: block::TreeVariant::Oak });
                     }
                     for xx in -2 .. 3 {
                         for zz in -2 .. 3 {

@@ -30,31 +30,18 @@ pub const SOLID: Material = Material {
 };
 
 pub const NON_SOLID: Material = Material {
-    renderable: true,
-    never_cull: false,
     should_cull_against: false,
-    force_shade: false,
-    transparent: false,
     absorbed_light: 1,
-    emitted_light: 0,
+    ..SOLID
 };
 
 pub const TRANSPARENT: Material = Material {
-    renderable: true,
-    never_cull: false,
-    should_cull_against: false,
-    force_shade: false,
     transparent: true,
-    absorbed_light: 1,
-    emitted_light: 0,
+    ..NON_SOLID
 };
 
 pub const LEAVES: Material = Material {
-    renderable: true,
     never_cull: true,
-    should_cull_against: false,
     force_shade: true,
-    transparent: false,
-    absorbed_light: 1,
-    emitted_light: 0,
+    ..NON_SOLID
 };

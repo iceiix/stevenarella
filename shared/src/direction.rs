@@ -1,8 +1,11 @@
+
+use axis::Axis;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Direction {
     Invalid,
-    Up,
     Down,
+    Up,
     North,
     South,
     West,
@@ -12,7 +15,7 @@ pub enum Direction {
 impl Direction {
     pub fn all() -> Vec<Direction> {
         vec![
-            Direction::Up, Direction::Down,
+            Direction::Down, Direction::Up,
             Direction::North, Direction::South,
             Direction::West, Direction::East,
         ]
@@ -20,8 +23,8 @@ impl Direction {
 
     pub fn from_string(val: &str) -> Direction {
         match val {
-            "up" => Direction::Up,
             "down" => Direction::Down,
+            "up" => Direction::Up,
             "north" => Direction::North,
             "south" => Direction::South,
             "west" => Direction::West,
@@ -32,8 +35,8 @@ impl Direction {
 
     pub fn opposite(&self) -> Direction {
         match *self {
-            Direction::Up => Direction::Down,
             Direction::Down => Direction::Up,
+            Direction::Up => Direction::Down,
             Direction::North => Direction::South,
             Direction::South => Direction::North,
             Direction::West => Direction::East,
@@ -44,8 +47,8 @@ impl Direction {
 
     pub fn clockwise(&self) -> Direction {
         match *self {
-            Direction::Up => Direction::Up,
             Direction::Down => Direction::Down,
+            Direction::Up => Direction::Up,
             Direction::East => Direction::South,
             Direction::West => Direction::North,
             Direction::South => Direction::West,
@@ -56,8 +59,8 @@ impl Direction {
 
     pub fn counter_clockwise(&self) -> Direction {
         match *self {
-            Direction::Up => Direction::Up,
             Direction::Down => Direction::Down,
+            Direction::Up => Direction::Up,
             Direction::East => Direction::North,
             Direction::West => Direction::South,
             Direction::South => Direction::East,
@@ -68,8 +71,8 @@ impl Direction {
 
     pub fn get_offset(&self) -> (i32, i32, i32) {
         match *self {
-            Direction::Up => (0, 1, 0),
             Direction::Down => (0, -1, 0),
+            Direction::Up => (0, 1, 0),
             Direction::North => (0, 0, -1),
             Direction::South => (0, 0, 1),
             Direction::West => (-1, 0, 0),
@@ -80,8 +83,8 @@ impl Direction {
 
     pub fn as_string(&self) -> &'static str {
         match *self {
-            Direction::Up => "up",
             Direction::Down => "down",
+            Direction::Up => "up",
             Direction::North => "north",
             Direction::South => "south",
             Direction::West => "west",
@@ -92,12 +95,31 @@ impl Direction {
 
     pub fn index(&self) -> usize {
         match *self {
-            Direction::Up => 0,
-            Direction::Down => 1,
+            Direction::Down => 0,
+            Direction::Up => 1,
             Direction::North => 2,
             Direction::South => 3,
             Direction::West => 4,
             Direction::East => 5,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn horizontal_index(&self) -> usize {
+        match *self {
+            Direction::North => 2,
+            Direction::South => 0,
+            Direction::West => 1,
+            Direction::East => 3,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn axis(&self) -> Axis {
+        match *self {
+            Direction::Down | Direction::Up => Axis::Y,
+            Direction::North | Direction::South => Axis::Z,
+            Direction::West | Direction::East => Axis::X,
             _ => unreachable!(),
         }
     }

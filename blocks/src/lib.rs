@@ -1,22 +1,3 @@
-// TODO: Tile Entities
-// Skulls
-// FlowerPot
-// StandingSign
-// WallSign
-// Chest (DoubleChest)
-// TrappedChest
-// EnderChest
-// StandingBanner
-// WallBanner
-// Enchanting Table
-// EndPortal
-// Beacon
-// Barrier
-// EndGateway
-// TODO: Blocks
-// Rendering: TripwireHook, FlowingWater, FlowingLava, DoublePlant (Sunflower)
-// State Updates: Fire, CobblestoneWall, Tripwire, FenceGate (in_wall), RedstoneRepeater (locked)
-// Collisions: Chest, Hopper, CobblestoneWall, Stairs
 
 #![recursion_limit="300"]
 
@@ -26,7 +7,7 @@ extern crate collision;
 extern crate lazy_static;
 extern crate steven_shared as shared;
 
-use shared::{Position, Direction};
+use shared::{Axis, Direction, Position};
 use collision::{Aabb, Aabb3};
 use cgmath::Point3;
 
@@ -377,14 +358,7 @@ define_blocks! {
         model { ("minecraft", "grass") },
         variant format!("snowy={}", snowy),
         tint TintType::Grass,
-        update_state (world, pos) => {
-            Block::Grass{
-                snowy: match world.get_block(pos.shift(Direction::Up)) {
-                    Block::Snow { .. } | Block::SnowLayer { .. } => true,
-                    _ => false,
-                }
-            }
-        },
+        update_state (world, pos) => Block::Grass{snowy: is_snowy(world, pos)},
     }
     Dirt {
         props {
@@ -406,13 +380,7 @@ define_blocks! {
             }
         },
         update_state (world, pos) => if variant == DirtVariant::Podzol {
-            Block::Dirt{
-                snowy: match world.get_block(pos.shift(Direction::Up)) {
-                    Block::Snow{ .. } | Block::SnowLayer { .. } => true,
-                    _ => false,
-                },
-                variant: variant
-            }
+            Block::Dirt{snowy: is_snowy(world, pos), variant: variant}
         } else {
             Block::Dirt{snowy: snowy, variant: variant}
         },
@@ -466,13 +434,8 @@ define_blocks! {
         },
         data Some(level as usize),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
             absorbed_light: 2,
-            emitted_light: 0,
+            ..material::TRANSPARENT
         },
         model { ("minecraft", "flowing_water") },
         collision vec![],
@@ -483,13 +446,8 @@ define_blocks! {
         },
         data Some(level as usize),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
             absorbed_light: 2,
-            emitted_light: 0,
+            ..material::TRANSPARENT
         },
         model { ("minecraft", "water") },
         collision vec![],
@@ -500,13 +458,9 @@ define_blocks! {
         },
         data Some(level as usize),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
             absorbed_light: 15,
             emitted_light: 15,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "flowing_lava") },
         collision vec![],
@@ -517,13 +471,9 @@ define_blocks! {
         },
         data Some(level as usize),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
             absorbed_light: 15,
             emitted_light: 15,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "lava") },
         collision vec![],
@@ -566,7 +516,7 @@ define_blocks! {
             ],
             axis: Axis = [Axis::Y, Axis::Z, Axis::X, Axis::None],
         },
-        data Some(variant.data() | (axis.data() << 2)),
+        data Some(variant.data() | (axis.index() << 2)),
         material material::SOLID,
         model { ("minecraft", format!("{}_log", variant.as_string()) ) },
         variant format!("axis={}", axis.as_string()),
@@ -616,28 +566,16 @@ define_blocks! {
     Dispenser {
         props {
             facing: Direction = [
+                Direction::Up,
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::East
             ],
             triggered: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::Down => 0,
-                Direction::Up => 1,
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if triggered { 0x8 } else { 0x0 }))
-        },
+        data Some(facing.index() | (if triggered { 0x8 } else { 0x0 })),
         material material::SOLID,
         model { ("minecraft", "dispenser") },
         variant format!("facing={}", facing.as_string()),
@@ -664,25 +602,15 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             occupied: bool = [false, true],
             part: BedPart = [BedPart::Head, BedPart::Foot],
         },
-        data {
-            let data = match facing {
-                Direction::South => 0,
-                Direction::West => 1,
-                Direction::North => 2,
-                Direction::East => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data
-                 | (if occupied { 0x4 } else { 0x0 })
-                 | (if part == BedPart::Head { 0x8 } else { 0x0 }))
-        },
+        data Some(facing.horizontal_index()
+                  | (if occupied { 0x4 } else { 0x0 })
+                  | (if part == BedPart::Head { 0x8 } else { 0x0 })),
         material material::NON_SOLID,
         model { ("minecraft", "bed") },
         variant format!("facing={},part={}", facing.as_string(), part.as_string()),
@@ -728,35 +656,18 @@ define_blocks! {
         props {
             extended: bool = [false, true],
             facing: Direction = [
+                Direction::Up,
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::East
             ],
         },
-        data {
-            let data = match facing {
-                Direction::Down => 0,
-                Direction::Up => 1,
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::East => 5,
-                Direction::West => 4,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if extended { 0x8 } else { 0x0 }))
-        },
+        data Some(facing.index() | (if extended { 0x8 } else { 0x0 })),
         material Material {
-            renderable: true,
-            never_cull: false,
             should_cull_against: !extended,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
-            emitted_light: 0,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "sticky_piston") },
         variant format!("extended={},facing={}", extended, facing.as_string()),
@@ -776,11 +687,7 @@ define_blocks! {
                 TallGrassVariant::Fern
             ],
         },
-        data Some(match variant {
-            TallGrassVariant::DeadBush => 0,
-            TallGrassVariant::TallGrass => 1,
-            TallGrassVariant::Fern => 2,
-        }),
+        data Some(variant.data()),
         material material::NON_SOLID,
         model { ("minecraft", variant.as_string() ) },
         tint TintType::Grass,
@@ -796,35 +703,18 @@ define_blocks! {
         props {
             extended: bool = [false, true],
             facing: Direction = [
+                Direction::Up,
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::East
             ],
         },
-        data {
-            let data = match facing {
-                Direction::Down => 0,
-                Direction::Up => 1,
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::East => 5,
-                Direction::West => 4,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if extended { 0x8 } else { 0x0 }))
-        },
+        data Some(facing.index() | (if extended { 0x8 } else { 0x0 })),
         material Material {
-            renderable: true,
-            never_cull: false,
             should_cull_against: !extended,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
-            emitted_light: 0,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "piston") },
         variant format!("extended={},facing={}", extended, facing.as_string()),
@@ -833,29 +723,17 @@ define_blocks! {
     PistonHead {
         props {
             facing: Direction = [
+                Direction::Up,
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::East
             ],
             short: bool = [false, true],
             variant: PistonType = [PistonType::Normal, PistonType::Sticky],
         },
-        data if !short { Some(
-            match facing {
-                Direction::Down => 0x0,
-                Direction::Up => 0x1,
-                Direction::North => 0x2,
-                Direction::South => 0x3,
-                Direction::West => 0x4,
-                Direction::East => 0x5,
-                _ => unreachable!(),
-            } | if variant == PistonType::Sticky { 0x8 } else { 0x0 }
-        )} else {
-            None
-        },
+        data if !short { Some(facing.index() | if variant == PistonType::Sticky { 0x8 } else { 0x0 })} else { None },
         material material::NON_SOLID,
         model { ("minecraft", "piston_head") },
         variant format!("facing={},short={},type={}", facing.as_string(), short, variant.as_string()),
@@ -903,7 +781,6 @@ define_blocks! {
     }
     PistonExtension {
         props {},
-        data Some(0),
         material material::INVISIBLE,
         model { ("minecraft", "piston_extension") },
     }
@@ -935,13 +812,8 @@ define_blocks! {
     BrownMushroom {
         props {},
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 1,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "brown_mushroom") },
         collision vec![],
@@ -1013,8 +885,14 @@ define_blocks! {
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={}", half.as_string()),
         collision match half {
-            BlockHalf::Bottom => vec![Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0))],
-            BlockHalf::Top => vec![Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 1.0, 1.0))],
+            BlockHalf::Bottom => vec![Aabb3::new(
+                Point3::new(0.0, 0.0, 0.0),
+                Point3::new(1.0, 0.5, 1.0)
+            )],
+            BlockHalf::Top => vec![Aabb3::new(
+                Point3::new(0.0, 0.5, 0.0),
+                Point3::new(1.0, 1.0, 1.0)
+            )],
             _ => unreachable!(),
         },
     }
@@ -1067,13 +945,8 @@ define_blocks! {
             })
         },
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 14,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "torch") },
         variant format!("facing={}", facing.as_string()),
@@ -1085,18 +958,13 @@ define_blocks! {
             up: bool = [false, true],
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
-        data if !up && !north && !south && !east && !west { Some(age as usize) } else { None },
+        data if !up && !north && !south && !west && !east { Some(age as usize) } else { None },
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 15,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "fire") },
         collision vec![],
@@ -1104,8 +972,8 @@ define_blocks! {
             "up" => up == (val == "true"),
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
@@ -1119,14 +987,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -1144,15 +1014,7 @@ define_blocks! {
                 Direction::East
             ],
         },
-        data {
-            Some(match facing {
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => 2,
-            })
-        },
+        data Some(facing.index()),
         material material::NON_SOLID,
         model { ("minecraft", "chest") },
     }
@@ -1160,13 +1022,13 @@ define_blocks! {
         props {
             north: RedstoneSide = [RedstoneSide::None, RedstoneSide::Side, RedstoneSide::Up],
             south: RedstoneSide = [RedstoneSide::None, RedstoneSide::Side, RedstoneSide::Up],
-            east: RedstoneSide = [RedstoneSide::None, RedstoneSide::Side, RedstoneSide::Up],
             west: RedstoneSide = [RedstoneSide::None, RedstoneSide::Side, RedstoneSide::Up],
+            east: RedstoneSide = [RedstoneSide::None, RedstoneSide::Side, RedstoneSide::Up],
             power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data {
             if north == RedstoneSide::None && south == RedstoneSide::None
-                && east == RedstoneSide::None && west == RedstoneSide::None  {
+                && west == RedstoneSide::None && east == RedstoneSide::None {
                 Some(power as usize)
             } else {
                 None
@@ -1179,15 +1041,15 @@ define_blocks! {
         update_state (world, pos) => Block::RedstoneWire {
             north: can_connect_redstone(world, pos, Direction::North),
             south: can_connect_redstone(world, pos, Direction::South),
-            east: can_connect_redstone(world, pos, Direction::East),
             west: can_connect_redstone(world, pos, Direction::West),
+            east: can_connect_redstone(world, pos, Direction::East),
             power: power
         },
         multipart (key, val) => match key {
             "north" => val.contains(north.as_string()),
             "south" => val.contains(south.as_string()),
-            "east" => val.contains(east.as_string()),
             "west" => val.contains(west.as_string()),
+            "east" => val.contains(east.as_string()),
             _ => false,
         },
     }
@@ -1238,15 +1100,7 @@ define_blocks! {
                 Direction::East
             ],
         },
-        data {
-            Some(match facing {
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => 2,
-            })
-        },
+        data Some(facing.index()),
         material material::SOLID,
         model { ("minecraft", "furnace") },
         variant format!("facing={}", facing.as_string()),
@@ -1260,23 +1114,10 @@ define_blocks! {
                 Direction::East
             ],
         },
-        data {
-            Some(match facing {
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => 2,
-            })
-        },
+        data Some(facing.index()),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 15,
             emitted_light: 13,
+            ..material::SOLID
         },
         model { ("minecraft", "lit_furnace") },
         variant format!("facing={}", facing.as_string()),
@@ -1312,8 +1153,8 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: DoorHalf = [DoorHalf::Upper, DoorHalf::Lower],
             hinge: Side = [Side::Left, Side::Right],
@@ -1333,21 +1174,13 @@ define_blocks! {
     Ladder {
         props {
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
         },
-        data {
-            Some(match facing {
-                Direction::South => 2,
-                Direction::West => 3,
-                Direction::North => 4,
-                Direction::East => 5,
-                _ => 2,
-            })
-        },
+        data Some(facing.index()),
         material material::NON_SOLID,
         model { ("minecraft", "ladder") },
         variant format!("facing={}", facing.as_string()),
@@ -1378,14 +1211,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -1399,19 +1234,11 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
         },
-        data {
-            Some(match facing {
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => 2,
-            })
-        },
+        data Some(facing.index()),
         material material::INVISIBLE,
         model { ("minecraft", "wall_sign") },
         variant format!("facing={}", facing.as_string()),
@@ -1452,8 +1279,8 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: DoorHalf = [DoorHalf::Upper, DoorHalf::Lower],
             hinge: Side = [Side::Left, Side::Right],
@@ -1488,13 +1315,8 @@ define_blocks! {
     RedstoneOreLit {
         props {},
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 15,
             emitted_light: 9,
+            ..material::SOLID
         },
         model { ("minecraft", "lit_redstone_ore") },
     }
@@ -1526,11 +1348,11 @@ define_blocks! {
     RedstoneTorch {
         props {
             facing: Direction = [
-                Direction::Up,
-                Direction::North,
                 Direction::East,
+                Direction::West,
                 Direction::South,
-                Direction::West
+                Direction::North,
+                Direction::Up
             ],
         },
         data {
@@ -1544,13 +1366,8 @@ define_blocks! {
             })
         },
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 7,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "redstone_torch") },
         variant format!("facing={}", facing.as_string()),
@@ -1559,28 +1376,24 @@ define_blocks! {
     StoneButton {
         props {
             facing: Direction = [
-                Direction::North,
-                Direction::South,
+                Direction::Down,
                 Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::South,
+                Direction::North,
+                Direction::Up
             ],
             powered: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::Down => 0,
-                Direction::East => 1,
-                Direction::West => 2,
-                Direction::South => 3,
-                Direction::North => 4,
-                Direction::Up => 5,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if powered { 0x8 } else { 0x0 }))
-        },
+        data Some(match facing {
+            Direction::Down => 0,
+            Direction::East => 1,
+            Direction::West => 2,
+            Direction::South => 3,
+            Direction::North => 4,
+            Direction::Up => 5,
+            _ => unreachable!(),
+        } | (if powered { 0x8 } else { 0x0 })),
         material material::NON_SOLID,
         model { ("minecraft", "stone_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
@@ -1602,13 +1415,8 @@ define_blocks! {
     Ice {
         props {},
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
             absorbed_light: 2,
-            emitted_light: 0,
+            ..material::TRANSPARENT
         },
         model { ("minecraft", "ice") },
     }
@@ -1656,48 +1464,36 @@ define_blocks! {
         props {
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "fence") },
-        collision fence_collision(north, south, east, west),
-        update_state (world, pos) => Block::Fence {
-            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
-            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
-            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
-            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
+        collision fence_collision(north, south, west, east),
+        update_state (world, pos) => {
+            let (north, south, west, east) = can_connect_sides(world, pos, &can_connect_fence);
+            Block::Fence{north: north, south: south, west: west, east: east}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
     Pumpkin {
         props {
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
             without_face: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::South => 0,
-                Direction::West => 1,
-                Direction::North => 2,
-                Direction::East => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if without_face { 0x4 } else { 0x0 }))
-        },
+        data Some(facing.horizontal_index() | (if without_face { 0x4 } else { 0x0 })),
         material material::SOLID,
         model { ("minecraft", "pumpkin") },
         variant format!("facing={}", facing.as_string()),
@@ -1719,13 +1515,8 @@ define_blocks! {
     Glowstone {
         props {},
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 15,
             emitted_light: 15,
+            ..material::SOLID
         },
         model { ("minecraft", "glowstone") },
     }
@@ -1733,15 +1524,10 @@ define_blocks! {
         props {
             axis: Axis = [Axis::X, Axis::Z],
         },
-        data Some(axis.data()),
+        data Some(axis.index()),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: true,
-            absorbed_light: 1,
             emitted_light: 11,
+            ..material::TRANSPARENT
         },
         model { ("minecraft", "portal") },
         variant format!("axis={}", axis.as_string()),
@@ -1750,32 +1536,17 @@ define_blocks! {
     PumpkinLit {
         props {
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
             without_face: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::South => 0,
-                Direction::West => 1,
-                Direction::North => 2,
-                Direction::East => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if without_face { 0x4 } else { 0x0 }))
-        },
+        data Some(facing.horizontal_index() | (if without_face { 0x4 } else { 0x0 })),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 15,
             emitted_light: 15,
+            ..material::SOLID
         },
         model { ("minecraft", "lit_pumpkin") },
         variant format!("facing={}", facing.as_string()),
@@ -1798,25 +1569,13 @@ define_blocks! {
             delay: i32 = [1, 2, 3, 4],
             facing: Direction = [
                 Direction::North,
-                Direction::East,
                 Direction::South,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             locked: bool = [false, true],
         },
-        data if !locked {
-            let data = match facing {
-                Direction::North => 0,
-                Direction::East => 1,
-                Direction::South => 2,
-                Direction::West => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data | (delay as usize - 1) << 2)
-        } else {
-            None
-        },
+        data if !locked { Some(facing.horizontal_index() | (delay as usize - 1) << 2) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "unpowered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
@@ -1831,24 +1590,12 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             locked: bool = [false, true],
         },
-        data if !locked {
-            let data = match facing {
-                Direction::North => 0,
-                Direction::East => 1,
-                Direction::South => 2,
-                Direction::West => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data | (delay as usize - 1) << 2)
-        } else {
-            None
-        },
+        data if !locked { Some(facing.horizontal_index() | (delay as usize - 1) << 2) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "powered_repeater") },
         variant format!("delay={},facing={},locked={}", delay, facing.as_string(), locked),
@@ -1893,19 +1640,13 @@ define_blocks! {
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             open: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::North => 0,
-                Direction::South => 1,
-                Direction::West => 2,
-                Direction::East => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data
-                 | (if open { 0x4 } else { 0x0 })
-                 | (if half == BlockHalf::Top { 0x8 } else { 0x0 }))
-        },
+        data Some(match facing {
+            Direction::North => 0,
+            Direction::South => 1,
+            Direction::West => 2,
+            Direction::East => 3,
+            _ => unreachable!(),
+        } | (if open { 0x4 } else { 0x0 }) | (if half == BlockHalf::Top { 0x8 } else { 0x0 })),
         material material::NON_SOLID,
         model { ("minecraft", "trapdoor") },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
@@ -1989,10 +1730,10 @@ define_blocks! {
         props {
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
-        data if !north && !south && !east && !west { Some(0) } else { None },
+        data if !north && !south && !west && !east { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "iron_bars") },
         collision pane_collision(north, south, east, west),
@@ -2002,18 +1743,14 @@ define_blocks! {
                 _ => false,
             };
 
-            Block::IronBars {
-                north: can_connect(world, pos.shift(Direction::North), &f),
-                south: can_connect(world, pos.shift(Direction::South), &f),
-                east: can_connect(world, pos.shift(Direction::East), &f),
-                west: can_connect(world, pos.shift(Direction::West), &f),
-            }
+            let (north, south, west, east) = can_connect_sides(world, pos, &f);
+            Block::IronBars{north: north, south: south, west: west, east: east}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
@@ -2021,24 +1758,22 @@ define_blocks! {
         props {
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
-        data if !north && !south && !east && !west { Some(0) } else { None },
+        data if !north && !south && !west && !east { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "glass_pane") },
         collision pane_collision(north, south, east, west),
-        update_state (world, pos) => Block::GlassPane {
-            north: can_connect(world, pos.shift(Direction::North), &can_connect_glasspane),
-            south: can_connect(world, pos.shift(Direction::South), &can_connect_glasspane),
-            east: can_connect(world, pos.shift(Direction::East), &can_connect_glasspane),
-            west: can_connect(world, pos.shift(Direction::West), &can_connect_glasspane),
+        update_state (world, pos) => {
+            let (north, south, west, east) = can_connect_sides(world, pos, &can_connect_glasspane);
+            Block::GlassPane{north: north, south: south, west: west, east: east}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
@@ -2054,8 +1789,8 @@ define_blocks! {
                 Direction::Up,
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
         },
         data if facing == Direction::Up { Some(age as usize) } else { None },
@@ -2087,11 +1822,11 @@ define_blocks! {
         props {
             age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
             facing: Direction = [
+                Direction::Up,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up
+                Direction::East
             ],
         },
         data if facing == Direction::North { Some(age as usize) } else { None },
@@ -2121,10 +1856,10 @@ define_blocks! {
     }
     Vine {
         props {
-             north: bool = [false, true],
              south: bool = [false, true],
-             east: bool = [false, true],
              west: bool = [false, true],
+             north: bool = [false, true],
+             east: bool = [false, true],
              up: bool = [false, true],
         },
         data if !up {
@@ -2144,9 +1879,9 @@ define_blocks! {
     FenceGate {
         props {
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
             in_wall: bool = [false, true],
@@ -2164,14 +1899,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -2185,14 +1922,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -2209,14 +1948,7 @@ define_blocks! {
         material material::SOLID,
         model { ("minecraft", "mycelium") },
         variant format!("snowy={}", snowy),
-        update_state (world, pos) => {
-            Block::Grass{
-                snowy: match world.get_block(pos.shift(Direction::Up)) {
-                    Block::Snow { .. } | Block::SnowLayer { .. } => true,
-                    _ => false,
-                }
-            }
-        },
+        update_state (world, pos) => Block::Mycelium{snowy: is_snowy(world, pos)},
     }
     Waterlily {
         props {},
@@ -2237,31 +1969,33 @@ define_blocks! {
         props {
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
-        data if !north && !south && !east && !west { Some(0) } else { None },
+        data if !north && !south && !west && !east { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "nether_brick_fence") },
-        collision fence_collision(north, south, east, west),
+        collision fence_collision(north, south, west, east),
         update_state (world, pos) => {
             let f = |block| match block {
-                Block::NetherBrickFence{..} => true,
+                Block::NetherBrickFence{..} |
+                Block::FenceGate{..} |
+                Block::SpruceFenceGate{..} |
+                Block::BirchFenceGate{..} |
+                Block::JungleFenceGate{..} |
+                Block::DarkOakFenceGate{..} |
+                Block::AcaciaFenceGate{..} => true,
                 _ => false,
             };
 
-            Block::NetherBrickFence {
-                north: can_connect(world, pos.shift(Direction::North), &f),
-                south: can_connect(world, pos.shift(Direction::South), &f),
-                east: can_connect(world, pos.shift(Direction::East), &f),
-                west: can_connect(world, pos.shift(Direction::West), &f),
-            }
+            let (north, south, west, east) = can_connect_sides(world, pos, &f);
+            Block::NetherBrickFence{north: north, south: south, west: west, east: east}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
@@ -2270,14 +2004,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -2315,13 +2051,8 @@ define_blocks! {
                   | (if has_bottle_1 { 0x2 } else { 0x0 })
                   | (if has_bottle_2 { 0x4 } else { 0x0 })),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 1,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "brewing_stand") },
         multipart (key, val) => match key {
@@ -2343,13 +2074,8 @@ define_blocks! {
     EndPortal {
         props {},
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 15,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "end_portal") },
         collision vec![],
@@ -2364,42 +2090,27 @@ define_blocks! {
                 Direction::West
             ],
         },
-        data {
-            let data = match facing {
-                Direction::South => 0,
-                Direction::West => 1,
-                Direction::North => 2,
-                Direction::East => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if eye { 0x4 } else { 0x0 }))
-        },
+        data Some(facing.horizontal_index() | (if eye { 0x4 } else { 0x0 })),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 1,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "end_portal_frame") },
         variant format!("eye={},facing={}", eye, facing.as_string()),
         collision {
-            let base_aabb = Aabb3::new(
+            let mut collision = vec![Aabb3::new(
                 Point3::new(0.0, 0.0, 0.0),
                 Point3::new(1.0, 13.0/16.0, 1.0)
-            );
+            )];
 
             if eye {
-                vec![base_aabb, Aabb3::new(
+                collision.push(Aabb3::new(
                     Point3::new(5.0/16.0, 13.0/16.0, 5.0/16.0),
                     Point3::new(11.0/16.0, 1.0, 11.0/16.0)
-                )]
-            } else {
-                vec![base_aabb]
+                ));
             }
+
+            collision
         },
     }
     EndStone {
@@ -2410,13 +2121,8 @@ define_blocks! {
     DragonEgg {
         props {},
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 1,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "dragon_egg") },
         collision vec![Aabb3::new(
@@ -2432,13 +2138,8 @@ define_blocks! {
     RedstoneLampLit {
         props {},
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 15,
             emitted_light: 15,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "lit_redstone_lamp") },
     }
@@ -2489,23 +2190,13 @@ define_blocks! {
         props {
             age: i32 = [0, 1, 2],
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
         },
-        data {
-            let data = match facing {
-                Direction::South => 0,
-                Direction::West => 1,
-                Direction::North => 2,
-                Direction::East => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data | (age as usize) << 2)
-        },
+        data Some(facing.horizontal_index() | ((age as usize) << 2)),
         material material::NON_SOLID,
         model { ("minecraft", "cocoa") },
         variant format!("age={},facing={}", age, facing.as_string()),
@@ -2515,9 +2206,9 @@ define_blocks! {
             let f = i / 2.0;
 
             let (min_x, min_y, min_z, max_x, max_y, max_z) = match facing {
+                Direction::North => (8.0 - f, 12.0 - j, 1.0, 8.0 + f, 12.0, 8.0 + i),
                 Direction::South => (8.0 - f, 12.0 - j, 15.0 - i, 8.0 + f, 12.0, 15.0),
                 Direction::West => (1.0, 12.0 - j, 8.0 - f, 1.0 + i, 12.0, 8.0 + f),
-                Direction::North => (8.0 - f, 12.0 - j, 1.0, 8.0 + f, 12.0, 8.0 + i),
                 Direction::East => (15.0 - i, 12.0 - j, 8.0 - f, 15.0, 12.0, 8.0 + f),
                 _ => unreachable!(),
             };
@@ -2533,14 +2224,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -2559,27 +2252,14 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
         },
-        data {
-            Some(match facing {
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => 2,
-            })
-        },
+        data Some(facing.index()),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 7,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "ender_chest") },
         variant format!("facing={}", facing.as_string()),
@@ -2594,24 +2274,14 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             powered: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::South => 0,
-                Direction::West => 1,
-                Direction::North => 2,
-                Direction::East => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data
-                 | (if attached { 0x4 } else { 0x0 })
-                 | (if powered { 0x8 } else { 0x0 }))
-        },
+        data Some(facing.horizontal_index()
+                  | (if attached { 0x4 } else { 0x0 })
+                  | (if powered { 0x8 } else { 0x0 })),
         material material::NON_SOLID,
         model { ("minecraft", "tripwire_hook") },
         variant format!("attached={},facing={},powered={}", attached, facing.as_string(), powered),
@@ -2627,14 +2297,12 @@ define_blocks! {
             west: bool = [false, true],
             powered: bool = [false, true],
         },
-        data {
-            if !north && !south && !east && !west {
-                Some((if powered { 0x1 } else { 0x0 })
-                     | (if attached { 0x4 } else { 0x0 })
-                     | (if disarmed { 0x8 } else { 0x0 }))
-            } else {
-                None
-            }
+        data if !north && !south && !east && !west {
+            Some((if powered { 0x1 } else { 0x0 })
+                 | (if attached { 0x4 } else { 0x0 })
+                 | (if disarmed { 0x8 } else { 0x0 }))
+        } else {
+            None
         },
         material material::NON_SOLID,
         model { ("minecraft", "tripwire") },
@@ -2651,14 +2319,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -2672,14 +2342,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -2693,14 +2365,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -2713,15 +2387,15 @@ define_blocks! {
         props {
             conditional: bool = [false, true],
             facing: Direction = [
+                Direction::Up,
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::East
             ],
         },
-        data command_block_data(conditional, facing),
+        data Some(facing.index() | (if conditional { 0x8 } else { 0x0 })),
         material material::SOLID,
         model { ("minecraft", "command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
@@ -2729,13 +2403,8 @@ define_blocks! {
     Beacon {
         props {},
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 15,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "beacon") },
     }
@@ -2756,18 +2425,19 @@ define_blocks! {
         model { ("minecraft", format!("{}_wall", variant.as_string())) },
         update_state (world, pos) => {
             let f = |block| match block {
-                Block::CobblestoneWall{..} => true,
+                Block::CobblestoneWall{..} |
+                Block::FenceGate{..} |
+                Block::SpruceFenceGate{..} |
+                Block::BirchFenceGate{..} |
+                Block::JungleFenceGate{..} |
+                Block::DarkOakFenceGate{..} |
+                Block::AcaciaFenceGate{..} => true,
                 _ => false,
             };
 
-            Block::CobblestoneWall {
-                up: can_connect(world, pos.shift(Direction::Up), &f),
-                north: can_connect(world, pos.shift(Direction::North), &f),
-                south: can_connect(world, pos.shift(Direction::South), &f),
-                east: can_connect(world, pos.shift(Direction::East), &f),
-                west: can_connect(world, pos.shift(Direction::West), &f),
-                variant: variant,
-            }
+            let up = can_connect(world, pos.shift(Direction::Up), &f);
+            let (north, south, west, east) = can_connect_sides(world, pos, &f);
+            Block::CobblestoneWall{up: up, north: north, south: south, west: west, east: east, variant: variant}
         },
         multipart (key, val) => match key {
             "up" => up == (val == "true"),
@@ -2834,28 +2504,24 @@ define_blocks! {
     WoodenButton {
         props {
             facing: Direction = [
-                Direction::North,
-                Direction::South,
+                Direction::Down,
                 Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::South,
+                Direction::North,
+                Direction::Up
             ],
             powered: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::Down => 0,
-                Direction::East => 1,
-                Direction::West => 2,
-                Direction::South => 3,
-                Direction::North => 4,
-                Direction::Up => 5,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if powered { 0x8 } else { 0x0 }))
-        },
+        data Some(match facing {
+            Direction::Down => 0,
+            Direction::East => 1,
+            Direction::West => 2,
+            Direction::South => 3,
+            Direction::North => 4,
+            Direction::Up => 5,
+            _ => unreachable!(),
+        } | (if powered { 0x8 } else { 0x0 })),
         material material::NON_SOLID,
         model { ("minecraft", "wooden_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
@@ -2864,26 +2530,15 @@ define_blocks! {
     Skull {
         props {
             facing: Direction = [
+                Direction::Up,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up
+                Direction::East
             ],
             nodrop: bool = [false, true],
         },
-        data if !nodrop {
-            Some(match facing {
-                Direction::Up => 1,
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::East => 4,
-                Direction::West => 5,
-                _ => unreachable!(),
-            })
-        } else {
-            None
-        },
+        data if !nodrop { Some(facing.index()) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "skull") },
         variant format!("facing={},nodrop={}", facing.as_string(), nodrop),
@@ -2907,35 +2562,22 @@ define_blocks! {
         props {
             damage: i32 = [0, 1, 2],
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
         },
-        data {
-            let data = match facing {
-                Direction::South => 0,
-                Direction::West => 1,
-                Direction::North => 2,
-                Direction::East => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if damage == 0 { 0x0 }
-                 else if damage == 1 { 0x4 }
-                 else if damage == 2 { 0x8 }
-                 else { 0x0 }))
-        },
+        data Some(facing.horizontal_index() | (match damage { 0 => 0x0, 1 => 0x4, 2 => 0x8, _ => unreachable!() })),
         material material::NON_SOLID,
         model { ("minecraft", "anvil") },
         variant format!("damage={},facing={}", damage, facing.as_string()),
-        collision match facing {
-            Direction::South | Direction::North => vec![Aabb3::new(
+        collision match facing.axis() {
+            Axis::Z => vec![Aabb3::new(
                 Point3::new(1.0/8.0, 0.0, 0.0),
                 Point3::new(7.0/8.0, 1.0, 1.0)
             )],
-            Direction::West | Direction::East => vec![Aabb3::new(
+            Axis::X => vec![Aabb3::new(
                 Point3::new(0.0, 0.0, 1.0/8.0),
                 Point3::new(1.0, 1.0, 7.0/8.0)
             )],
@@ -2947,19 +2589,11 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
         },
-        data {
-            Some(match facing {
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => 2,
-            })
-        },
+        data Some(facing.index()),
         material material::NON_SOLID,
         model { ("minecraft", "trapped_chest") },
         variant format!("facing={}", facing.as_string()),
@@ -2993,25 +2627,15 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             mode: ComparatorMode = [ComparatorMode::Compare, ComparatorMode::Subtract],
             powered: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::North => 0,
-                Direction::East => 1,
-                Direction::South => 2,
-                Direction::West => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data
-                 | (if mode == ComparatorMode::Subtract { 0x4 } else { 0x0 })
-                 | (if powered { 0x8 } else { 0x0 }))
-        },
+        data Some(facing.horizontal_index()
+                  | (if mode == ComparatorMode::Subtract { 0x4 } else { 0x0 })
+                  | (if powered { 0x8 } else { 0x0 })),
         material material::NON_SOLID,
         model { ("minecraft", "unpowered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
@@ -3025,25 +2649,15 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             mode: ComparatorMode = [ComparatorMode::Compare, ComparatorMode::Subtract],
             powered: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::North => 0,
-                Direction::East => 1,
-                Direction::South => 2,
-                Direction::West => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data
-                 | (if mode == ComparatorMode::Subtract { 0x4 } else { 0x0 })
-                 | (if powered { 0x8 } else { 0x0 }))
-        },
+        data Some(facing.horizontal_index()
+                  | (if mode == ComparatorMode::Subtract { 0x4 } else { 0x0 })
+                  | (if powered { 0x8 } else { 0x0 })),
         material material::NON_SOLID,
         model { ("minecraft", "powered_comparator") },
         variant format!("facing={},mode={},powered={}", facing.as_string(), mode.as_string(), powered),
@@ -3079,25 +2693,14 @@ define_blocks! {
         props {
             enabled: bool = [false, true],
             facing: Direction = [
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Down
+                Direction::East
             ],
         },
-        data {
-            let data = match facing {
-                Direction::Down => 0,
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if enabled { 0x8 } else { 0x0 }))
-        },
+        data Some(facing.index() | (if enabled { 0x8 } else { 0x0 })),
         material material::NON_SOLID,
         model { ("minecraft", "hopper") },
         variant format!("facing={}", facing.as_string()),
@@ -3121,27 +2724,23 @@ define_blocks! {
             QuartzVariant::PillarNorthSouth |
             QuartzVariant::PillarEastWest => "quartz_column",
         } ) },
-        variant match variant {
-            QuartzVariant::Normal |
-            QuartzVariant::Chiseled => "normal",
-            QuartzVariant::PillarVertical => "axis=y",
-            QuartzVariant::PillarNorthSouth => "axis=z",
-            QuartzVariant::PillarEastWest => "axis=x",
-        },
+        variant variant.as_string(),
     }
     QuartzStairs {
         props {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -3171,28 +2770,16 @@ define_blocks! {
     Dropper {
         props {
             facing: Direction = [
+                Direction::Up,
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::East
             ],
             triggered: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::Down => 0,
-                Direction::Up => 1,
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => unreachable!(),
-            };
-
-            Some(data | (if triggered { 0x8 } else { 0x0 }))
-        },
+        data Some(facing.index() | (if triggered { 0x8 } else { 0x0 })),
         material material::SOLID,
         model { ("minecraft", "dropper") },
         variant format!("facing={}", facing.as_string()),
@@ -3251,12 +2838,9 @@ define_blocks! {
         material material::TRANSPARENT,
         model { ("minecraft", format!("{}_stained_glass_pane", color.as_string()) ) },
         collision pane_collision(north, south, east, west),
-        update_state (world, pos) => Block::StainedGlassPane {
-            color: color,
-            north: can_connect(world, pos.shift(Direction::North), &can_connect_glasspane),
-            south: can_connect(world, pos.shift(Direction::South), &can_connect_glasspane),
-            east: can_connect(world, pos.shift(Direction::East), &can_connect_glasspane),
-            west: can_connect(world, pos.shift(Direction::West), &can_connect_glasspane),
+        update_state (world, pos) => {
+            let (north, south, west, east) = can_connect_sides(world, pos, &can_connect_glasspane);
+            Block::StainedGlassPane{color: color, north: north, south: south, west: west, east: east}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
@@ -3290,7 +2874,7 @@ define_blocks! {
                 TreeVariant::DarkOak
             ],
         },
-        data Some(variant.data() | (axis.data() << 2)),
+        data Some(variant.data() | (axis.index() << 2)),
         material material::SOLID,
         model { ("minecraft", format!("{}_log", variant.as_string()) ) },
         variant format!("axis={}", axis.as_string()),
@@ -3300,14 +2884,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -3321,14 +2907,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -3358,19 +2946,13 @@ define_blocks! {
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             open: bool = [false, true],
         },
-        data {
-            let data = match facing {
-                Direction::North => 0,
-                Direction::South => 1,
-                Direction::West => 2,
-                Direction::East => 3,
-                _ => unreachable!(),
-            };
-
-            Some(data
-                 | (if open { 0x4 } else { 0x0 })
-                 | (if half == BlockHalf::Top { 0x8 } else { 0x0 }))
-        },
+        data Some(match facing {
+            Direction::North => 0,
+            Direction::South => 1,
+            Direction::West => 2,
+            Direction::East => 3,
+            _ => unreachable!(),
+        } | (if open { 0x4 } else { 0x0 }) | (if half == BlockHalf::Top { 0x8 } else { 0x0 })),
         material material::NON_SOLID,
         model { ("minecraft", "iron_trapdoor") },
         variant format!("facing={},half={},open={}", facing.as_string(), half.as_string(), open),
@@ -3391,13 +2973,8 @@ define_blocks! {
     SeaLantern {
         props {},
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: true,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 15,
             emitted_light: 15,
+            ..material::SOLID
         },
         model { ("minecraft", "sea_lantern") },
     }
@@ -3405,12 +2982,7 @@ define_blocks! {
         props {
             axis: Axis = [Axis::X, Axis::Y, Axis::Z],
         },
-        data Some(match axis {
-            Axis::X => 0x4,
-            Axis::Y => 0x0,
-            Axis::Z => 0x8,
-            _ => 0x0,
-        }),
+        data Some(match axis { Axis::X => 0x4, Axis::Y => 0x0, Axis::Z => 0x8, _ => unreachable!() }),
         material material::SOLID,
         model { ("minecraft", "hay_block") },
         variant format!("axis={}", axis.as_string()),
@@ -3513,17 +3085,11 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
         },
-        data Some(match facing {
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => unreachable!(),
-             }),
+        data Some(facing.index()),
         material material::NON_SOLID,
         model { ("minecraft", "wall_banner") },
         variant format!("facing={}", facing.as_string()),
@@ -3558,14 +3124,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -3610,9 +3178,9 @@ define_blocks! {
     SpruceFenceGate {
         props {
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
             in_wall: bool = [false, true],
@@ -3628,9 +3196,9 @@ define_blocks! {
     BirchFenceGate {
         props {
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
             in_wall: bool = [false, true],
@@ -3646,9 +3214,9 @@ define_blocks! {
     JungleFenceGate {
         props {
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
             in_wall: bool = [false, true],
@@ -3664,9 +3232,9 @@ define_blocks! {
     DarkOakFenceGate {
         props {
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
             in_wall: bool = [false, true],
@@ -3682,9 +3250,9 @@ define_blocks! {
     AcaciaFenceGate {
         props {
             facing: Direction = [
+                Direction::North,
                 Direction::South,
                 Direction::West,
-                Direction::North,
                 Direction::East
             ],
             in_wall: bool = [false, true],
@@ -3701,24 +3269,22 @@ define_blocks! {
         props {
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
-        data if !north && !south && !east && !west { Some(0) } else { None },
+        data if !north && !south && !west && !east { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "spruce_fence") },
-        collision fence_collision(north, south, east, west),
-        update_state (world, pos) => Block::SpruceFence {
-            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
-            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
-            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
-            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
+        collision fence_collision(north, south, west, east),
+        update_state (world, pos) => {
+            let (north, south, west, east) = can_connect_sides(world, pos, &can_connect_fence);
+            Block::SpruceFence{north: north, south: south, west: west, east: east}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
@@ -3726,24 +3292,22 @@ define_blocks! {
         props {
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
-        data if !north && !south && !east && !west { Some(0) } else { None },
+        data if !north && !south && !west && !east { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "birch_fence") },
-        collision fence_collision(north, south, east, west),
-        update_state (world, pos) => Block::BirchFence {
-            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
-            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
-            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
-            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
+        collision fence_collision(north, south, west, east),
+        update_state (world, pos) => {
+            let (north, south, west, east) = can_connect_sides(world, pos, &can_connect_fence);
+            Block::BirchFence{north: north, south: south, west: west, east: east}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
@@ -3751,24 +3315,22 @@ define_blocks! {
         props {
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
-        data if !north && !south && !east && !west { Some(0) } else { None },
+        data if !north && !south && !west && !east { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "jungle_fence") },
-        collision fence_collision(north, south, east, west),
-        update_state (world, pos) => Block::JungleFence {
-            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
-            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
-            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
-            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
+        collision fence_collision(north, south, west, east),
+        update_state (world, pos) => {
+            let (north, south, west, east) = can_connect_sides(world, pos, &can_connect_fence);
+            Block::JungleFence{north: north, south: south, west: west, east: east}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
@@ -3776,24 +3338,22 @@ define_blocks! {
         props {
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
-        data if !north && !south && !east && !west { Some(0) } else { None },
+        data if !north && !south && !west && !east { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "dark_oak_fence") },
-        collision fence_collision(north, south, east, west),
-        update_state (world, pos) => Block::DarkOakFence {
-            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
-            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
-            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
-            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
+        collision fence_collision(north, south, west, east),
+        update_state (world, pos) => {
+            let (north, south, west, east) = can_connect_sides(world, pos, &can_connect_fence);
+            Block::DarkOakFence{north: north, south: south, east: east, west: west}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
@@ -3801,24 +3361,22 @@ define_blocks! {
         props {
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
         data if !north && !south && !east && !west { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "acacia_fence") },
-        collision fence_collision(north, south, east, west),
-        update_state (world, pos) => Block::AcaciaFence {
-            north: can_connect(world, pos.shift(Direction::North), &can_connect_fence),
-            south: can_connect(world, pos.shift(Direction::South), &can_connect_fence),
-            east: can_connect(world, pos.shift(Direction::East), &can_connect_fence),
-            west: can_connect(world, pos.shift(Direction::West), &can_connect_fence),
+        collision fence_collision(north, south, west, east),
+        update_state (world, pos) => {
+            let (north, south, west, east) = can_connect_sides(world, pos, &can_connect_fence);
+            Block::AcaciaFence{north: north, south: south, east: east, west: west}
         },
         multipart (key, val) => match key {
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
-            "east" => east == (val == "true"),
             "west" => west == (val == "true"),
+            "east" => east == (val == "true"),
             _ => false,
         },
     }
@@ -3827,8 +3385,8 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: DoorHalf = [DoorHalf::Upper, DoorHalf::Lower],
             hinge: Side = [Side::Left, Side::Right],
@@ -3850,8 +3408,8 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: DoorHalf = [DoorHalf::Upper, DoorHalf::Lower],
             hinge: Side = [Side::Left, Side::Right],
@@ -3873,8 +3431,8 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: DoorHalf = [DoorHalf::Upper, DoorHalf::Lower],
             hinge: Side = [Side::Left, Side::Right],
@@ -3896,8 +3454,8 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: DoorHalf = [DoorHalf::Upper, DoorHalf::Lower],
             hinge: Side = [Side::Left, Side::Right],
@@ -3919,8 +3477,8 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: DoorHalf = [DoorHalf::Upper, DoorHalf::Lower],
             hinge: Side = [Side::Left, Side::Right],
@@ -3940,47 +3498,32 @@ define_blocks! {
     EndRod {
         props {
             facing: Direction = [
+                Direction::Up,
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::East
             ],
         },
-        data {
-            Some(match facing {
-                Direction::Down => 0,
-                Direction::Up => 1,
-                Direction::North => 2,
-                Direction::South => 3,
-                Direction::West => 4,
-                Direction::East => 5,
-                _ => unreachable!(),
-            })
-        },
+        data Some(facing.index()),
         material Material {
-            renderable: true,
-            never_cull: false,
-            should_cull_against: false,
-            force_shade: false,
-            transparent: false,
-            absorbed_light: 1,
             emitted_light: 14,
+            ..material::NON_SOLID
         },
         model { ("minecraft", "end_rod") },
         variant format!("facing={}", facing.as_string()),
         collision {
-            match facing {
-                Direction::Up | Direction::Down => vec![Aabb3::new(
+            match facing.axis() {
+                Axis::Y => vec![Aabb3::new(
                     Point3::new(3.0/8.0, 0.0, 3.0/8.0),
                     Point3::new(5.0/8.0, 1.0, 5.0/8.0))
                 ],
-                Direction::North | Direction::South => vec![Aabb3::new(
+                Axis::Z => vec![Aabb3::new(
                     Point3::new(3.0/8.0, 3.0/8.0, 0.0),
                     Point3::new(5.0/8.0, 5.0/8.0, 1.0))
                 ],
-                Direction::East | Direction::West => vec![Aabb3::new(
+                Axis::X => vec![Aabb3::new(
                     Point3::new(0.0, 3.0/8.0, 3.0/8.0),
                     Point3::new(1.0, 5.0/8.0, 5.0/8.0))
                 ],
@@ -3994,10 +3537,10 @@ define_blocks! {
             down: bool = [false, true],
             north: bool = [false, true],
             south: bool = [false, true],
-            east: bool = [false, true],
             west: bool = [false, true],
+            east: bool = [false, true],
         },
-        data if !north && !south && !east && !west && !up && !down { Some(0) } else { None },
+        data if !up && !down && !north && !south && !west && !east { Some(0) } else { None },
         material material::NON_SOLID,
         model { ("minecraft", "chorus_plant") },
         collision {
@@ -4051,20 +3594,20 @@ define_blocks! {
             collision
         },
         update_state (world, pos) => Block::ChorusPlant {
+            up: match world.get_block(pos.shift(Direction::Up)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            down: match world.get_block(pos.shift(Direction::Down)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} | Block::EndStone{..} => true, _ => false,},
             north: match world.get_block(pos.shift(Direction::North)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
             south: match world.get_block(pos.shift(Direction::South)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
             west: match world.get_block(pos.shift(Direction::West)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
             east: match world.get_block(pos.shift(Direction::East)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            up: match world.get_block(pos.shift(Direction::Up)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            down: match world.get_block(pos.shift(Direction::Down)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} | Block::EndStone{..} => true, _ => false,},
         },
         multipart (key, val) => match key {
+            "up" => up == (val == "true"),
+            "down" => down == (val == "true"),
             "north" => north == (val == "true"),
             "south" => south == (val == "true"),
             "east" => east == (val == "true"),
             "west" => west == (val == "true"),
-            "up" => up == (val == "true"),
-            "down" => down == (val == "true"),
             _ => false,
         },
     }
@@ -4086,12 +3629,7 @@ define_blocks! {
         props {
             axis: Axis = [Axis::X, Axis::Y, Axis::Z],
         },
-        data Some(match axis {
-            Axis::X => 0x4,
-            Axis::Y => 0x0,
-            Axis::Z => 0x8,
-            _ => 0x0,
-        }),
+        data Some(match axis { Axis::X => 0x4, Axis::Y => 0x0, Axis::Z => 0x8, _ => unreachable!() }),
         material material::SOLID,
         model { ("minecraft", "purpur_pillar") },
         variant format!("axis={}", axis.as_string()),
@@ -4101,14 +3639,16 @@ define_blocks! {
             facing: Direction = [
                 Direction::North,
                 Direction::South,
-                Direction::East,
-                Direction::West
+                Direction::West,
+                Direction::East
             ],
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             shape: StairShape = [
                 StairShape::Straight,
-                StairShape::InnerLeft, StairShape::InnerRight,
-                StairShape::OuterLeft, StairShape::OuterRight
+                StairShape::InnerLeft,
+                StairShape::InnerRight,
+                StairShape::OuterLeft,
+                StairShape::OuterRight
             ],
         },
         data stair_data(facing, half, shape),
@@ -4129,8 +3669,7 @@ define_blocks! {
             half: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom],
             variant: StoneSlabVariant = [StoneSlabVariant::Purpur],
         },
-        data {
-            if half == BlockHalf::Top { Some(0x8) } else { Some(0x0) } },
+        data if half == BlockHalf::Top { Some(0x8) } else { Some(0) },
         material material::NON_SOLID,
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("half={},variant=default", half.as_string()),
@@ -4180,15 +3719,15 @@ define_blocks! {
         props {
             conditional: bool = [false, true],
             facing: Direction = [
+                Direction::Up,
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::East
             ],
         },
-        data command_block_data(conditional, facing),
+        data Some(facing.index() | (if conditional { 0x8 } else { 0x0 })),
         material material::SOLID,
         model { ("minecraft", "repeating_command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
@@ -4197,15 +3736,15 @@ define_blocks! {
         props {
             conditional: bool = [false, true],
             facing: Direction = [
+                Direction::Up,
+                Direction::Down,
                 Direction::North,
                 Direction::South,
-                Direction::East,
                 Direction::West,
-                Direction::Up,
-                Direction::Down
+                Direction::East
             ],
         },
-        data command_block_data(conditional, facing),
+        data Some(facing.index() | (if conditional { 0x8 } else { 0x0 })),
         material material::SOLID,
         model { ("minecraft", "chain_command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
@@ -4217,10 +3756,24 @@ define_blocks! {
     }
     Missing {
         props {},
-        data { None::<usize> },
+        data None::<usize>,
         material material::SOLID,
         model { ("steven", "missing_block") },
     }
+}
+
+fn is_snowy<W: WorldAccess>(world: &W, pos: Position) -> bool {
+    match world.get_block(pos.shift(Direction::Up)) {
+        Block::Snow{..} | Block::SnowLayer{..} => true,
+        _ => false,
+    }
+}
+
+fn can_connect_sides<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f: &F) -> (bool, bool, bool, bool) {
+    (can_connect(world, pos.shift(Direction::North), f),
+     can_connect(world, pos.shift(Direction::South), f),
+     can_connect(world, pos.shift(Direction::West), f),
+     can_connect(world, pos.shift(Direction::East), f))
 }
 
 fn can_connect<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f: &F) -> bool {
@@ -4279,36 +3832,24 @@ fn can_connect_redstone<W: WorldAccess>(world: &W, pos: Position, dir: Direction
 }
 
 fn fence_gate_data(facing: Direction, in_wall: bool, open: bool, powered: bool) -> Option<usize> {
-    if in_wall || powered {
-        return None;
-    }
+    if in_wall || powered { return None; }
 
-    let data = match facing {
-        Direction::South => 0,
-        Direction::West => 1,
-        Direction::North => 2,
-        Direction::East => 3,
-        _ => unreachable!(),
-    };
-
-    Some(data | (if open { 0x4 } else { 0x0 }))
+    Some(facing.horizontal_index() | (if open { 0x4 } else { 0x0 }))
 }
 
 fn fence_gate_collision(facing: Direction, in_wall: bool, open: bool) -> Vec<Aabb3<f64>> {
-    if open {
-        return vec![];
-    }
+    if open { return vec![]; }
 
     let (min_x, min_y, min_z, max_x, max_y, max_z) = if in_wall {
-        match facing {
-            Direction::North | Direction::South => (0.0, 0.0, 3.0/8.0, 1.0, 13.0/16.0, 5.0/8.0),
-            Direction::West | Direction::East => (3.0/8.0, 0.0, 0.0, 5.0/8.0, 13.0/16.0, 1.0),
+        match facing.axis() {
+            Axis::Z => (0.0, 0.0, 3.0/8.0, 1.0, 13.0/16.0, 5.0/8.0),
+            Axis::X => (3.0/8.0, 0.0, 0.0, 5.0/8.0, 13.0/16.0, 1.0),
             _ => unreachable!(),
         }
     } else {
-        match facing {
-            Direction::North | Direction::South => (0.0, 0.0, 3.0/8.0, 1.0, 1.0, 5.0/8.0),
-            Direction::West | Direction::East => (3.0/8.0, 0.0, 0.0, 5.0/8.0, 1.0, 1.0),
+        match facing.axis() {
+            Axis::Z => (0.0, 0.0, 3.0/8.0, 1.0, 1.0, 5.0/8.0),
+            Axis::X => (3.0/8.0, 0.0, 0.0, 5.0/8.0, 1.0, 1.0),
             _ => unreachable!(),
         }
     };
@@ -4333,15 +3874,7 @@ fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered
         },
         DoorHalf::Lower => {
             if hinge == Side::Left && !powered {
-                let data = match facing {
-                    Direction::East => 0,
-                    Direction::South => 1,
-                    Direction::West => 2,
-                    Direction::North => 3,
-                    _ => unreachable!(),
-                };
-
-                Some(data | (if open { 0x4 } else { 0x0 }))
+                Some(facing.clockwise().horizontal_index() | (if open { 0x4 } else { 0x0 }))
             } else {
                 None
             }
@@ -4350,11 +3883,7 @@ fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered
 }
 
 fn update_door_state<W: WorldAccess>(world: &W, pos: Position, ohalf: DoorHalf, ofacing: Direction, ohinge: Side, oopen: bool, opowered: bool) -> (Direction, Side, bool, bool) {
-    let oy = if ohalf == DoorHalf::Upper {
-        -1
-    } else {
-        1
-    };
+    let oy = if ohalf == DoorHalf::Upper { -1 } else { 1 };
 
     match world.get_block(pos + (0, oy, 0)) {
         Block::WoodenDoor{half, facing, hinge, open, powered} |
@@ -4379,28 +3908,12 @@ fn update_door_state<W: WorldAccess>(world: &W, pos: Position, ohalf: DoorHalf, 
 }
 
 fn update_double_plant_state<W: WorldAccess>(world: &W, pos: Position, ohalf: BlockHalf, ovariant: DoublePlantVariant) -> (BlockHalf, DoublePlantVariant) {
-    if ohalf != BlockHalf::Upper {
-        return (ohalf, ovariant);
-    }
+    if ohalf != BlockHalf::Upper { return (ohalf, ovariant); }
 
     match world.get_block(pos.shift(Direction::Down)) {
         Block::DoublePlant{variant, ..} => (ohalf, variant),
         _ => (ohalf, ovariant),
     }
-}
-
-fn command_block_data(conditional: bool, facing: Direction) -> Option<usize> {
-    let data = match facing {
-        Direction::Down => 0,
-        Direction::Up => 1,
-        Direction::North => 2,
-        Direction::South => 3,
-        Direction::West => 4,
-        Direction::East => 5,
-        _ => unreachable!(),
-    };
-
-    Some(data | (if conditional { 0x8 } else { 0x0 }))
 }
 
 fn piston_collision(extended: bool, facing: Direction) -> Vec<Aabb3<f64>> {
@@ -4429,26 +3942,26 @@ fn door_collision(facing: Direction, hinge: Side, open: bool) -> Vec<Aabb3<f64>>
         if hinge == Side::Left {
             match facing {
                 Direction::North => (1.0 - (3.0 / 16.0), 0.0, 0.0, 1.0, 1.0, 1.0),
-                Direction::East => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
                 Direction::South => (0.0, 0.0, 0.0, 3.0 / 16.0, 1.0, 1.0),
                 Direction::West => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
+                Direction::East => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
                 _ => unreachable!(),
             }
         } else {
             match facing {
                 Direction::North => (0.0, 0.0, 0.0, 3.0/16.0, 1.0, 1.0),
-                Direction::East => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
                 Direction::South => (1.0 - (3.0 / 16.0), 0.0, 0.0, 1.0, 1.0, 1.0),
                 Direction::West => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
+                Direction::East => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
                 _ => unreachable!(),
             }
         }
     } else {
         match facing {
             Direction::North => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
-            Direction::East => (0.0, 0.0, 0.0, 3.0 / 16.0, 1.0, 1.0),
             Direction::South => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
             Direction::West => (1.0 - (3.0 / 16.0), 0.0, 0.0, 1.0, 1.0, 1.0),
+            Direction::East => (0.0, 0.0, 0.0, 3.0 / 16.0, 1.0, 1.0),
             _ => unreachable!(),
         }
     };
@@ -4482,7 +3995,7 @@ fn trapdoor_collision(facing: Direction, half: BlockHalf, open: bool) -> Vec<Aab
     ]
 }
 
-fn fence_collision(north: bool, south: bool, east: bool, west: bool) -> Vec<Aabb3<f64>> {
+fn fence_collision(north: bool, south: bool, west: bool, east: bool) -> Vec<Aabb3<f64>> {
     let mut collision = vec![Aabb3::new(
         Point3::new(3.0/8.0, 0.0, 3.0/8.0),
         Point3::new(5.0/8.0, 1.5, 5.0/8.0))
@@ -4601,19 +4114,9 @@ fn update_stair_shape<W: WorldAccess>(world: &W, pos: Position, facing: Directio
 }
 
 fn stair_data(facing: Direction, half: BlockHalf, shape: StairShape) -> Option<usize> {
-    if shape != StairShape::Straight {
-        return None;
-    }
+    if shape != StairShape::Straight { return None; }
 
-    let data = match facing {
-        Direction::East => 0,
-        Direction::West => 1,
-        Direction::South => 2,
-        Direction::North => 3,
-        _ => unreachable!(),
-    };
-
-    Some(data | (if half == BlockHalf::Top { 0x4 } else { 0x0 }))
+    Some((5 - facing.index()) | (if half == BlockHalf::Top { 0x4 } else { 0x0 }))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -4754,11 +4257,10 @@ pub enum QuartzVariant {
 impl QuartzVariant {
     pub fn as_string(&self) -> &'static str {
         match *self {
-            QuartzVariant::Normal => "default",
-            QuartzVariant::Chiseled => "chiseled",
-            QuartzVariant::PillarVertical => "lines_x",
-            QuartzVariant::PillarNorthSouth => "lines_y",
-            QuartzVariant::PillarEastWest => "lines_z",
+            QuartzVariant::Normal | QuartzVariant::Chiseled => "normal",
+            QuartzVariant::PillarVertical => "axis=y",
+            QuartzVariant::PillarNorthSouth => "axis=z",
+            QuartzVariant::PillarEastWest => "axis=x",
         }
     }
 
@@ -5371,34 +4873,6 @@ impl Rotation {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum Axis {
-    Y,
-    Z,
-    X,
-    None
-}
-
-impl Axis {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
-            Axis::X => "x",
-            Axis::Y => "y",
-            Axis::Z => "z",
-            Axis::None => "none",
-        }
-    }
-
-    fn data(&self) -> usize {
-        match *self {
-            Axis::Y => 0,
-            Axis::Z => 2,
-            Axis::X => 1,
-            Axis::None => 3,
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum StairShape {
     Straight,
     InnerLeft,
@@ -5478,6 +4952,14 @@ impl TallGrassVariant {
             TallGrassVariant::Fern => "fern",
         }
     }
+
+    fn data(&self) -> usize {
+        match *self {
+            TallGrassVariant::DeadBush => 0,
+            TallGrassVariant::TallGrass => 1,
+            TallGrassVariant::Fern => 2,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -5530,7 +5012,6 @@ pub enum FlowerPotVariant {
     Fern,
     AcaciaSapling,
     DarkOak,
-    // Not included in the data value:
     BlueOrchid,
     Allium,
     AzureBluet,
