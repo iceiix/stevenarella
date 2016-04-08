@@ -36,6 +36,7 @@ use shared::{Axis, Position};
 use format;
 
 mod sun;
+pub mod plugin_messages;
 
 pub struct Server {
     username: String,
@@ -519,6 +520,11 @@ impl Server {
 
         self.entity_map.insert(join.entity_id, player);
         self.player = Some(player);
+
+        // Let the server know who we are
+        self.write_packet(plugin_messages::Brand {
+            brand: "Steven".into(),
+        }.as_message());
     }
 
     fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
