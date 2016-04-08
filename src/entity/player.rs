@@ -25,10 +25,8 @@ use shared::Position as BPosition;
 use format;
 
 pub fn add_systems(m: &mut ecs::Manager) {
-    // Not actually rendering related but the faster
-    // we can handle input the better.
     let sys = MovementHandler::new(m);
-    m.add_render_system(sys);
+    m.add_system(sys);
     let sys = PlayerRenderer::new(m);
     m.add_render_system(sys);
 }
@@ -36,6 +34,7 @@ pub fn add_systems(m: &mut ecs::Manager) {
 pub fn create_local(m: &mut ecs::Manager) -> ecs::Entity {
     let entity = m.create_entity();
     m.add_component_direct(entity, Position::new(0.0, 0.0, 0.0));
+    m.add_component_direct(entity, TargetPosition::new(0.0, 0.0, 0.0));
     m.add_component_direct(entity, Rotation::new(0.0, 0.0));
     m.add_component_direct(entity, Velocity::new(0.0, 0.0, 0.0));
     m.add_component_direct(entity, Gamemode::Survival);
@@ -491,7 +490,7 @@ struct MovementHandler {
     movement: ecs::Key<PlayerMovement>,
     gravity: ecs::Key<Gravity>,
     gamemode: ecs::Key<Gamemode>,
-    position: ecs::Key<Position>,
+    position: ecs::Key<TargetPosition>,
     velocity: ecs::Key<Velocity>,
     game_info: ecs::Key<GameInfo>,
     bounds: ecs::Key<Bounds>,
@@ -531,8 +530,6 @@ impl ecs::System for MovementHandler {
     }
 
     fn update(&mut self, m: &mut ecs::Manager, world: &mut world::World, _: &mut render::Renderer) {
-        let world_entity = m.get_world();
-        let delta = m.get_component(world_entity, self.game_info).unwrap().delta;
         for e in m.find(&self.filter) {
             let movement = m.get_component_mut(e, self.movement).unwrap();
             if movement.flying && m.get_component(e, self.gravity).is_some() {
@@ -550,55 +547,54 @@ impl ecs::System for MovementHandler {
 
             let player_bounds = m.get_component(e, self.bounds).unwrap().bounds;
 
-            let prev_position = position.last_position;
+            let mut last_position = position.position;
 
             if world.is_chunk_loaded((position.position.x as i32) >> 4, (position.position.z as i32) >> 4) {
                 let (forward, yaw) = movement.calculate_movement(rotation.yaw);
-                let mut speed = 4.317 / 60.0;
+                let mut speed = 0.21585;
                 if movement.is_key_pressed(Keycode::LShift) {
-                    speed = 5.612 / 60.0;
+                    speed = 0.2806;
                 }
                 if movement.flying {
                     speed *= 2.5;
 
                     if movement.is_key_pressed(Keycode::Space) {
-                        position.position.y += speed * delta;
+                        position.position.y += speed;
                     }
                     if movement.is_key_pressed(Keycode::LCtrl) {
-                        position.position.y -= speed * delta;
+                        position.position.y -= speed;
                     }
                 } else if gravity.as_ref().map_or(false, |v| v.on_ground) {
-                    if movement.is_key_pressed(Keycode::Space) {
-                        velocity.velocity.y = 0.15;
-                    } else {
-                        velocity.velocity.y = 0.0;
+                    if movement.is_key_pressed(Keycode::Space) && velocity.velocity.y.abs() < 0.001 {
+                        velocity.velocity.y = 0.42;
                     }
                 } else {
-                    velocity.velocity.y -= 0.01 * delta;
-                    if velocity.velocity.y < -0.3 {
-                        velocity.velocity.y = -0.3;
+                    velocity.velocity.y -= 0.08;
+                    if velocity.velocity.y < -3.92 {
+                        velocity.velocity.y = -3.92;
                     }
                 }
-                position.position.x += forward * yaw.cos() * delta * speed;
-                position.position.z -= forward * yaw.sin() * delta * speed;
-                position.position.y += velocity.velocity.y * delta;
+                velocity.velocity.y *= 0.98;
+                position.position.x += forward * yaw.cos() * speed;
+                position.position.z -= forward * yaw.sin() * speed;
+                position.position.y += velocity.velocity.y;
 
                 if !gamemode.noclip() {
                     let mut target = position.position;
-                    position.position.y = position.last_position.y;
-                    position.position.z = position.last_position.z;
+                    position.position.y = last_position.y;
+                    position.position.z = last_position.z;
 
                     // We handle each axis separately to allow for a sliding
                     // effect when pushing up against walls.
 
-                    let (bounds, xhit) = check_collisions(world, position, player_bounds);
+                    let (bounds, xhit) = check_collisions(world, position, &last_position, player_bounds);
                     position.position.x = bounds.min.x + 0.3;
-                    position.last_position.x = position.position.x;
+                    last_position.x = position.position.x;
 
                     position.position.z = target.z;
-                    let (bounds, zhit) = check_collisions(world, position, player_bounds);
+                    let (bounds, zhit) = check_collisions(world, position, &last_position, player_bounds);
                     position.position.z = bounds.min.z + 0.3;
-                    position.last_position.z = position.position.z;
+                    last_position.z = position.position.z;
 
                     // Half block jumps
                     // Minecraft lets you 'jump' up 0.5 blocks
@@ -613,7 +609,7 @@ impl ecs::System for MovementHandler {
                         position.position.z = target.z;
                         for offset in 1 .. 9 {
                             let mini = player_bounds.add_v(cgmath::Vector3::new(0.0, offset as f64 / 16.0, 0.0));
-                            let (_, hit) = check_collisions(world, position, mini);
+                            let (_, hit) = check_collisions(world, position, &last_position, mini);
                             if !hit {
                                 target.y += offset as f64 / 16.0;
                                 ox = target.x;
@@ -626,20 +622,20 @@ impl ecs::System for MovementHandler {
                     }
 
                     position.position.y = target.y;
-                    let (bounds, yhit) = check_collisions(world, position, player_bounds);
+                    let (bounds, yhit) = check_collisions(world, position, &last_position, player_bounds);
                     position.position.y = bounds.min.y;
-                    position.last_position.y = position.position.y;
+                    last_position.y = position.position.y;
                     if yhit {
                         velocity.velocity.y = 0.0;
                     }
 
                     if let Some(gravity) = gravity {
                         let ground = Aabb3::new(
-                            Point3::new(-0.3, -0.05, -0.3),
+                            Point3::new(-0.3, -0.005, -0.3),
                             Point3::new(0.3, 0.0, 0.3)
                         );
                         let prev = gravity.on_ground;
-                        let (_, hit) = check_collisions(world, position, ground);
+                        let (_, hit) = check_collisions(world, position, &last_position, ground);
                         gravity.on_ground = hit;
                         if !prev && gravity.on_ground {
                             movement.did_touch_ground = true;
@@ -647,17 +643,15 @@ impl ecs::System for MovementHandler {
                     }
                 }
             }
-
-            position.moved = position.position != prev_position;
         }
     }
 }
 
 
-fn check_collisions(world: &world::World, position: &mut Position, bounds: Aabb3<f64>) -> (Aabb3<f64>, bool) {
+fn check_collisions(world: &world::World, position: &mut TargetPosition, last_position: &Vector3<f64>, bounds: Aabb3<f64>) -> (Aabb3<f64>, bool) {
     let mut bounds = bounds.add_v(position.position);
 
-    let dir = position.position - position.last_position;
+    let dir = position.position - last_position;
 
     let min_x = (bounds.min.x - 1.0) as i32;
     let min_y = (bounds.min.y - 1.0) as i32;

@@ -62,6 +62,7 @@ pub struct Server {
     gravity: ecs::Key<entity::Gravity>,
     position: ecs::Key<entity::Position>,
     target_position: ecs::Key<entity::TargetPosition>,
+    velocity: ecs::Key<entity::Velocity>,
     gamemode: ecs::Key<Gamemode>,
     pub rotation: ecs::Key<entity::Rotation>,
     target_rotation: ecs::Key<entity::TargetRotation>,
@@ -292,6 +293,7 @@ impl Server {
             gravity: entities.get_key(),
             position: entities.get_key(),
             target_position: entities.get_key(),
+            velocity: entities.get_key(),
             gamemode: entities.get_key(),
             rotation: entities.get_key(),
             target_rotation: entities.get_key(),
@@ -458,7 +460,7 @@ impl Server {
         if let Some(player) = self.player {
             let movement = self.entities.get_component_mut(player, self.player_movement).unwrap();
             let on_ground = self.entities.get_component(player, self.gravity).map_or(false, |v| v.on_ground);
-            let position = self.entities.get_component(player, self.position).unwrap();
+            let position = self.entities.get_component(player, self.target_position).unwrap();
             let rotation = self.entities.get_component(player, self.rotation).unwrap();
 
             // Force the server to know when touched the ground
@@ -651,8 +653,9 @@ impl Server {
     fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {
         use std::f64::consts::PI;
         if let Some(player) = self.player {
-            let position = self.entities.get_component_mut(player, self.position).unwrap();
+            let position = self.entities.get_component_mut(player, self.target_position).unwrap();
             let rotation = self.entities.get_component_mut(player, self.rotation).unwrap();
+            let velocity = self.entities.get_component_mut(player, self.velocity).unwrap();
 
             position.position.x = calculate_relative_teleport(TeleportFlag::RelX, teleport.flags, position.position.x, teleport.x);
             position.position.y = calculate_relative_teleport(TeleportFlag::RelY, teleport.flags, position.position.y, teleport.y);
@@ -665,6 +668,16 @@ impl Server {
                 (-rotation.pitch) * (180.0 / PI) + 180.0,
                 teleport.pitch as f64
             ) - 180.0) * (PI / 180.0));
+
+            if (teleport.flags & (TeleportFlag::RelX as u8)) == 0 {
+                velocity.velocity.x = 0.0;
+            }
+            if (teleport.flags & (TeleportFlag::RelY as u8)) == 0 {
+                velocity.velocity.y = 0.0;
+            }
+            if (teleport.flags & (TeleportFlag::RelZ as u8)) == 0 {
+                velocity.velocity.z = 0.0;
+            }
 
             self.write_packet(packet::play::serverbound::TeleportConfirm {
                 teleport_id: teleport.teleport_id,
