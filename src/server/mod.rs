@@ -655,8 +655,8 @@ impl Server {
             position.position.x = calculate_relative_teleport(TeleportFlag::RelX, teleport.flags, position.position.x, teleport.x);
             position.position.y = calculate_relative_teleport(TeleportFlag::RelY, teleport.flags, position.position.y, teleport.y);
             position.position.z = calculate_relative_teleport(TeleportFlag::RelZ, teleport.flags, position.position.z, teleport.z);
-            rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, teleport.flags, rotation.yaw, teleport.yaw as f64);
-            rotation.pitch = calculate_relative_teleport(TeleportFlag::RelPitch, teleport.flags, rotation.pitch, teleport.pitch as f64);
+            rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, teleport.flags, rotation.yaw, -teleport.yaw as f64);
+            rotation.pitch = calculate_relative_teleport(TeleportFlag::RelPitch, teleport.flags, rotation.pitch, -teleport.pitch as f64);
 
             self.write_packet(packet::play::serverbound::TeleportConfirm {
                 teleport_id: teleport.teleport_id,
