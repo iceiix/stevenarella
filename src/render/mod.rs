@@ -844,7 +844,10 @@ impl TextureManager {
         use std::path::Path;
         let client = hyper::Client::new();
         loop {
-            let hash = recv.recv().unwrap();
+            let hash = match recv.recv() {
+                Ok(val) => val,
+                Err(_) => return, // Most likely shutting down
+            };
             let path = format!("skin-cache/{}/{}.png", &hash[..2], hash);
             let cache_path = Path::new(&path);
             fs::create_dir_all(cache_path.parent().unwrap()).unwrap();
@@ -865,7 +868,7 @@ impl TextureManager {
             let mut img = match image::load_from_memory(&buf) {
                 Ok(val) => val,
                 Err(_) => {
-                    reply.send((hash, None)).unwrap();
+                    let _ = reply.send((hash, None));
                     continue;
                 }
             };
@@ -897,7 +900,7 @@ impl TextureManager {
                     }
                 }
             }
-            reply.send((hash, Some(img))).unwrap();
+            let _ = reply.send((hash, Some(img)));
         }
     }
 
