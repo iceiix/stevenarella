@@ -315,16 +315,16 @@ impl ecs::System for PlayerRenderer {
         let mut head_verts = vec![];
         if player_model.has_head {
             model::append_box(&mut head_verts, -4.0/16.0, 0.0, -4.0/16.0, 8.0/16.0, 8.0/16.0, 8.0/16.0, [
-                srel!(8.0, 0.0, 8.0, 8.0), // Up
                 srel!(16.0, 0.0, 8.0, 8.0), // Down
+                srel!(8.0, 0.0, 8.0, 8.0), // Up
                 srel!(8.0, 8.0, 8.0, 8.0), // North
                 srel!(24.0, 8.0, 8.0, 8.0), // South
                 srel!(16.0, 8.0, 8.0, 8.0), // West
                 srel!(0.0, 8.0, 8.0, 8.0), // East
             ]);
             model::append_box(&mut head_verts, -4.2/16.0, -0.2, -4.2/16.0, 8.4/16.0, 8.4/16.0, 8.4/16.0, [
-                srel!((8.0 + 32.0), 0.0, 8.0, 8.0), // Up
                 srel!((16.0 + 32.0), 0.0, 8.0, 8.0), // Down
+                srel!((8.0 + 32.0), 0.0, 8.0, 8.0), // Up
                 srel!((8.0 + 32.0), 8.0, 8.0, 8.0), // North
                 srel!((24.0 + 32.0), 8.0, 8.0, 8.0), // South
                 srel!((16.0 + 32.0), 8.0, 8.0, 8.0), // West
@@ -335,16 +335,16 @@ impl ecs::System for PlayerRenderer {
         // TODO: Cape
         let mut body_verts = vec![];
         model::append_box(&mut body_verts, -4.0/16.0, -6.0/16.0, -2.0/16.0, 8.0/16.0, 12.0/16.0, 4.0/16.0, [
-            srel!(20.0, 16.0, 8.0, 4.0), // Up
             srel!(28.0, 16.0, 8.0, 4.0), // Down
+            srel!(20.0, 16.0, 8.0, 4.0), // Up
             srel!(20.0, 20.0, 8.0, 12.0), // North
             srel!(32.0, 20.0, 8.0, 12.0), // South
             srel!(16.0, 20.0, 4.0, 12.0), // West
             srel!(28.0, 20.0, 4.0, 12.0), // East
         ]);
         model::append_box(&mut body_verts, -4.2/16.0, -6.2/16.0, -2.2/16.0, 8.4/16.0, 12.4/16.0, 4.4/16.0, [
-            srel!(20.0, 16.0 + 16.0, 8.0, 4.0), // Up
             srel!(28.0, 16.0 + 16.0, 8.0, 4.0), // Down
+            srel!(20.0, 16.0 + 16.0, 8.0, 4.0), // Up
             srel!(20.0, 20.0 + 16.0, 8.0, 12.0), // North
             srel!(32.0, 20.0 + 16.0, 8.0, 12.0), // South
             srel!(16.0, 20.0 + 16.0, 4.0, 12.0), // West
@@ -361,8 +361,8 @@ impl ecs::System for PlayerRenderer {
         ].into_iter().enumerate() {
             let (ox, oy) = (offsets[0], offsets[1]);
             model::append_box(&mut part_verts[i], -2.0/16.0, -12.0/16.0, -2.0/16.0, 4.0/16.0, 12.0/16.0, 4.0/16.0, [
-                srel!(ox + 4.0, oy + 0.0, 4.0, 4.0), // Up
                 srel!(ox + 8.0, oy + 0.0, 4.0, 4.0), // Down
+                srel!(ox + 4.0, oy + 0.0, 4.0, 4.0), // Up
                 srel!(ox + 4.0, oy + 4.0, 4.0, 12.0), // North
                 srel!(ox + 12.0, oy + 4.0, 4.0, 12.0), // South
                 srel!(ox + 0.0, oy + 4.0, 4.0, 12.0), // West
@@ -370,8 +370,8 @@ impl ecs::System for PlayerRenderer {
             ]);
             let (ox, oy) = (offsets[2], offsets[3]);
             model::append_box(&mut part_verts[i], -2.2/16.0, -12.2/16.0, -2.2/16.0, 4.4/16.0, 12.4/16.0, 4.4/16.0, [
-                srel!(ox + 4.0, oy + 0.0, 4.0, 4.0), // Up
                 srel!(ox + 8.0, oy + 0.0, 4.0, 4.0), // Down
+                srel!(ox + 4.0, oy + 0.0, 4.0, 4.0), // Up
                 srel!(ox + 4.0, oy + 4.0, 4.0, 12.0), // North
                 srel!(ox + 12.0, oy + 4.0, 4.0, 12.0), // South
                 srel!(ox + 0.0, oy + 4.0, 4.0, 12.0), // West

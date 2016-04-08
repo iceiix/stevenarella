@@ -120,8 +120,8 @@ impl ecs::System for SignRenderer {
         let mut verts = vec![];
         // Backboard
         model::append_box(&mut verts, -0.5, -4.0/16.0, -0.5/16.0, 1.0, 8.0/16.0, 1.0/16.0, [
-            rel!(2.0, 0.0, 24.0, 2.0), // Up
             rel!(26.0, 0.0, 24.0, 2.0), // Down
+            rel!(2.0, 0.0, 24.0, 2.0), // Up
             rel!(2.0, 2.0, 24.0, 12.0), // North
             rel!(26.0, 2.0, 24.0, 12.0), // South
             rel!(0.0, 2.0, 2.0, 12.0), // West
@@ -129,8 +129,8 @@ impl ecs::System for SignRenderer {
         ]);
         if info.has_stand {
             model::append_box(&mut verts, -0.5/16.0, -0.25-9.0/16.0, -0.5/16.0, 1.0/16.0, 9.0/16.0, 1.0/16.0, [
-                rel!(2.0, 14.0, 2.0, 2.0), // Up
                 rel!(4.0, 14.0, 2.0, 2.0), // Down
+                rel!(2.0, 14.0, 2.0, 2.0), // Up
                 rel!(2.0, 16.0, 2.0, 12.0), // North
                 rel!(6.0, 16.0, 2.0, 12.0), // South
                 rel!(0.0, 16.0, 2.0, 12.0), // West
