@@ -258,10 +258,14 @@ impl Manager {
 
     /// Deallocates all entities/components excluding the world entity
     pub fn remove_all_entities(&mut self, world: &mut world::World, renderer: &mut render::Renderer) {
-        for e in &mut self.entities[1..] {
+        for (id, e) in self.entities[1..].iter_mut().enumerate() {
             if let Some(set) = e.0.as_mut() {
                 set.components = BSet::new(self.components.len());
                 set.removed = true;
+                self.changed_entity_components.insert(Entity{
+                    id: id + 1,
+                    generation: e.1,
+                });
             }
         }
         self.process_entity_changes(world, renderer);
