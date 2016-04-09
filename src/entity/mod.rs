@@ -53,12 +53,14 @@ impl Position {
 #[derive(Debug)]
 pub struct TargetPosition {
     pub position: Vector3<f64>,
+    pub lerp_amount: f64,
 }
 
 impl TargetPosition {
     pub fn new(x: f64, y: f64, z: f64) -> TargetPosition {
         TargetPosition {
             position: Vector3::new(x, y, z),
+            lerp_amount: 0.2,
         }
     }
 

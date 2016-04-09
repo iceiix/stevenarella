@@ -34,7 +34,9 @@ pub fn add_systems(m: &mut ecs::Manager) {
 pub fn create_local(m: &mut ecs::Manager) -> ecs::Entity {
     let entity = m.create_entity();
     m.add_component_direct(entity, Position::new(0.0, 0.0, 0.0));
-    m.add_component_direct(entity, TargetPosition::new(0.0, 0.0, 0.0));
+    let mut tpos = TargetPosition::new(0.0, 0.0, 0.0);
+    tpos.lerp_amount = 1.0 / 3.0;
+    m.add_component_direct(entity, tpos);
     m.add_component_direct(entity, Rotation::new(0.0, 0.0));
     m.add_component_direct(entity, Velocity::new(0.0, 0.0, 0.0));
     m.add_component_direct(entity, Gamemode::Survival);

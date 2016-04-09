@@ -156,8 +156,8 @@ impl ecs::System for LerpPosition {
             let pos = m.get_component_mut(e, self.position).unwrap();
             let target_pos = m.get_component(e, self.target_position).unwrap();
 
-            pos.position = pos.position + (target_pos.position - pos.position) * delta * 0.2;
-            if (pos.position - target_pos.position).length2() < 0.01 {
+            pos.position = pos.position + (target_pos.position - pos.position) * delta * target_pos.lerp_amount;
+            if (pos.position - target_pos.position).length2() < 0.001 {
                 pos.position = target_pos.position;
             }
         }
