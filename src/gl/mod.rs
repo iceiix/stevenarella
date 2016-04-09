@@ -484,16 +484,26 @@ impl Program {
         }
     }
 
-    pub fn uniform_location(&self, name: &str) -> Uniform {
-        Uniform(unsafe {
+    pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
+        let u = unsafe {
             gl::GetUniformLocation(self.0, ffi::CString::new(name).unwrap().as_ptr())
-        })
+        };
+        if u != -1 {
+            Some(Uniform(u))
+        } else {
+            None
+        }
     }
 
-    pub fn attribute_location(&self, name: &str) -> Attribute {
-        Attribute(unsafe {
+    pub fn attribute_location(&self, name: &str) -> Option<Attribute> {
+        let a = unsafe {
             gl::GetAttribLocation(self.0, ffi::CString::new(name).unwrap().as_ptr())
-        })
+        };
+        if a != -1 {
+            Some(Attribute(a))
+        } else {
+            None
+        }
     }
 }
 
@@ -547,6 +557,7 @@ impl Shader {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Uniform(i32);
 
 impl Uniform {
@@ -607,6 +618,7 @@ impl Uniform {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Attribute(i32);
 
 impl Attribute {

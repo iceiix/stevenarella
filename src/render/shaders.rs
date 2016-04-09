@@ -56,12 +56,18 @@ macro_rules! init_shader {
             frag = $frag:expr, $(#$fdef:ident)*
             attribute = {
                 $(
-                    $field:ident => $glname:expr,
+                    required $field:ident => $glname:expr,
+                )*
+                $(
+                    optional $ofield:ident => $oglname:expr,
                 )*
             },
             uniform = {
                 $(
-                    $ufield:ident => $uglname:expr,
+                    required $ufield:ident => $uglname:expr,
+                )*
+                $(
+                    optional $oufield:ident => $ouglname:expr,
                 )*
             },
         }
@@ -71,10 +77,16 @@ macro_rules! init_shader {
             program: gl::Program,
             $(
                 $field: gl::Attribute,
-            )+
+            )*
+            $(
+                $ofield: Option<gl::Attribute>,
+            )*
             $(
                 $ufield: gl::Uniform,
-            )+
+            )*
+            $(
+                $oufield: Option<gl::Uniform>,
+            )*
         }
 
         impl $name {
@@ -90,11 +102,17 @@ macro_rules! init_shader {
                 let shader = shaders::create_program(&v, &f);
                 $name {
                     $(
-                        $field: shader.attribute_location($glname),
-                    )+
+                        $field: shader.attribute_location($glname).unwrap(),
+                    )*
                     $(
-                        $ufield: shader.uniform_location($uglname),
-                    )+
+                        $ofield: shader.attribute_location($oglname),
+                    )*
+                    $(
+                        $ufield: shader.uniform_location($uglname).unwrap(),
+                    )*
+                    $(
+                        $oufield: shader.uniform_location($ouglname),
+                    )*
                     program: shader,
                 }
             }

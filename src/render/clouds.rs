@@ -93,17 +93,17 @@ impl Clouds {
         program.link();
         program.use_program();
 
-        let a_position = program.attribute_location("aPosition");
-        let u_perspective_matrix = program.uniform_location("perspectiveMatrix");
-        let u_camera_matrix = program.uniform_location("cameraMatrix");
-        let u_light_level = program.uniform_location("lightLevel");
-        let u_sky_offset = program.uniform_location("skyOffset");
-        let u_offset = program.uniform_location("offset");
-        let u_texture_info = program.uniform_location("textureInfo");
-        let u_atlas = program.uniform_location("atlas");
-        let u_textures = program.uniform_location("textures");
-        let u_cloud_map = program.uniform_location("cloudMap");
-        let u_cloud_offset = program.uniform_location("cloudOffset");
+        let a_position = program.attribute_location("aPosition").unwrap();
+        let u_perspective_matrix = program.uniform_location("perspectiveMatrix").unwrap();
+        let u_camera_matrix = program.uniform_location("cameraMatrix").unwrap();
+        let u_light_level = program.uniform_location("lightLevel").unwrap();
+        let u_sky_offset = program.uniform_location("skyOffset").unwrap();
+        let u_offset = program.uniform_location("offset").unwrap();
+        let u_texture_info = program.uniform_location("textureInfo").unwrap();
+        let u_atlas = program.uniform_location("atlas").unwrap();
+        let u_textures = program.uniform_location("textures").unwrap();
+        let u_cloud_map = program.uniform_location("cloudMap").unwrap();
+        let u_cloud_offset = program.uniform_location("cloudOffset").unwrap();
 
         let array = gl::VertexArray::new();
         array.bind();

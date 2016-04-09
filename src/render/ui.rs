@@ -56,14 +56,14 @@ init_shader! {
         vert = "ui_vertex",
         frag = "ui_frag",
         attribute = {
-            position => "aPosition",
-            texture_info => "aTextureInfo",
-            texture_offset => "aTextureOffset",
-            color => "aColor",
+            required position => "aPosition",
+            required texture_info => "aTextureInfo",
+            required texture_offset => "aTextureOffset",
+            required color => "aColor",
         },
         uniform = {
-            texture => "textures",
-            screensize => "screenSize",
+            required texture => "textures",
+            required screensize => "screenSize",
         },
     }
 }

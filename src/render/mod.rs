@@ -115,19 +115,19 @@ init_shader! {
         vert = "chunk_vertex",
         frag = "chunk_frag",
         attribute = {
-            position => "aPosition",
-            texture_info => "aTextureInfo",
-            texture_offset => "aTextureOffset",
-            color => "aColor",
-            lighting => "aLighting",
+            required position => "aPosition",
+            required texture_info => "aTextureInfo",
+            required texture_offset => "aTextureOffset",
+            required color => "aColor",
+            required lighting => "aLighting",
         },
         uniform = {
-            perspective_matrix => "perspectiveMatrix",
-            camera_matrix => "cameraMatrix",
-            offset => "offset",
-            texture => "textures",
-            light_level => "lightLevel",
-            sky_offset => "skyOffset",
+            required perspective_matrix => "perspectiveMatrix",
+            required camera_matrix => "cameraMatrix",
+            required offset => "offset",
+            required texture => "textures",
+            required light_level => "lightLevel",
+            required sky_offset => "skyOffset",
         },
     }
 }
@@ -137,19 +137,19 @@ init_shader! {
         vert = "chunk_vertex",
         frag = "chunk_frag", #alpha
         attribute = {
-            position => "aPosition",
-            texture_info => "aTextureInfo",
-            texture_offset => "aTextureOffset",
-            color => "aColor",
-            lighting => "aLighting",
+            required position => "aPosition",
+            required texture_info => "aTextureInfo",
+            required texture_offset => "aTextureOffset",
+            required color => "aColor",
+            required lighting => "aLighting",
         },
         uniform = {
-            perspective_matrix => "perspectiveMatrix",
-            camera_matrix => "cameraMatrix",
-            offset => "offset",
-            texture => "textures",
-            light_level => "lightLevel",
-            sky_offset => "skyOffset",
+            required perspective_matrix => "perspectiveMatrix",
+            required camera_matrix => "cameraMatrix",
+            required offset => "offset",
+            required texture => "textures",
+            required light_level => "lightLevel",
+            required sky_offset => "skyOffset",
         },
     }
 }
@@ -669,13 +669,13 @@ init_shader! {
         vert = "trans_vertex",
         frag = "trans_frag",
         attribute = {
-            position => "aPosition",
+            required position => "aPosition",
         },
         uniform = {
-            accum => "taccum",
-            revealage => "trevealage",
-            color => "tcolor",
-            samples => "samples",
+            required accum => "taccum",
+            required revealage => "trevealage",
+            required color => "tcolor",
+            required samples => "samples",
         },
     }
 }

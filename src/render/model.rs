@@ -79,16 +79,16 @@ impl Manager {
         let mut model = {
             let collection = &mut self.collections[ckey.0];
             collection.shader.program.use_program();
-            collection.shader.position.enable();
-            collection.shader.texture_info.enable();
-            collection.shader.texture_offset.enable();
-            collection.shader.color.enable();
-            collection.shader.id.enable();
-            collection.shader.position.vertex_pointer(3, gl::FLOAT, false, 36, 0);
-            collection.shader.texture_info.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 36, 12);
-            collection.shader.texture_offset.vertex_pointer_int(3, gl::SHORT, 36, 20);
-            collection.shader.color.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 36, 28);
-            collection.shader.id.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32);
+            collection.shader.position.map(|v| v.enable());
+            collection.shader.texture_info.map(|v| v.enable());
+            collection.shader.texture_offset.map(|v| v.enable());
+            collection.shader.color.map(|v| v.enable());
+            collection.shader.id.map(|v| v.enable());
+            collection.shader.position.map(|v| v.vertex_pointer(3, gl::FLOAT, false, 36, 0));
+            collection.shader.texture_info.map(|v| v.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 36, 12));
+            collection.shader.texture_offset.map(|v| v.vertex_pointer_int(3, gl::SHORT, 36, 20));
+            collection.shader.color.map(|v| v.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 36, 28));
+            collection.shader.id.map(|v| v.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32));
 
             let mut model = Model {
                 // For culling only
@@ -215,11 +215,11 @@ impl Manager {
         gl::enable(gl::BLEND);
         for collection in &self.collections {
             collection.shader.program.use_program();
-            collection.shader.perspective_matrix.set_matrix4(perspective_matrix);
-            collection.shader.camera_matrix.set_matrix4(camera_matrix);
-            collection.shader.texture.set_int(0);
-            collection.shader.sky_offset.set_float(sky_offset);
-            collection.shader.light_level.set_float(light_level);
+            collection.shader.perspective_matrix.map(|v| v.set_matrix4(perspective_matrix));
+            collection.shader.camera_matrix.map(|v| v.set_matrix4(camera_matrix));
+            collection.shader.texture.map(|v| v.set_int(0));
+            collection.shader.sky_offset.map(|v| v.set_float(sky_offset));
+            collection.shader.light_level.map(|v| v.set_float(light_level));
             gl::blend_func(collection.blend_s, collection.blend_d);
 
             for model in collection.models.values() {
@@ -230,18 +230,18 @@ impl Manager {
                     continue;
                 }
                 model.array.bind();
-                collection.shader.lighting.set_float2(model.block_light, model.sky_light);
+                collection.shader.lighting.map(|v| v.set_float2(model.block_light, model.sky_light));
                 if model.counts.len() > 1 {
                     let mut offsets = model.offsets.clone();
                     for offset in &mut offsets {
                         *offset *= m;
                     }
-                    collection.shader.model_matrix.set_matrix4_multi(&model.matrix);
-                    collection.shader.color_mul.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len());
+                    collection.shader.model_matrix.map(|v| v.set_matrix4_multi(&model.matrix));
+                    collection.shader.color_mul.map(|v| v.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len()));
                     gl::multi_draw_elements(gl::TRIANGLES, &model.counts, self.index_type, &offsets);
                 } else {
-                    collection.shader.model_matrix.set_matrix4_multi(&model.matrix);
-                    collection.shader.color_mul.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len());
+                    collection.shader.model_matrix.map(|v| v.set_matrix4_multi(&model.matrix));
+                    collection.shader.color_mul.map(|v| v.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len()));
                     gl::draw_elements(gl::TRIANGLES, model.counts[0], self.index_type, model.offsets[0] * m);
                 }
             }
@@ -303,21 +303,21 @@ init_shader! {
         vert = "model_vertex",
         frag = "model_frag",
         attribute = {
-            position => "aPosition",
-            texture_info => "aTextureInfo",
-            texture_offset => "aTextureOffset",
-            color => "aColor",
-            id => "id",
+            optional position => "aPosition",
+            optional texture_info => "aTextureInfo",
+            optional texture_offset => "aTextureOffset",
+            optional color => "aColor",
+            optional id => "id",
         },
         uniform = {
-            perspective_matrix => "perspectiveMatrix",
-            camera_matrix => "cameraMatrix",
-            model_matrix => "modelMatrix[]",
-            texture => "textures",
-            light_level => "lightLevel",
-            sky_offset => "skyOffset",
-            lighting => "lighting",
-            color_mul => "colorMul[]",
+            optional perspective_matrix => "perspectiveMatrix",
+            optional camera_matrix => "cameraMatrix",
+            optional model_matrix => "modelMatrix[]",
+            optional texture => "textures",
+            optional light_level => "lightLevel",
+            optional sky_offset => "skyOffset",
+            optional lighting => "lighting",
+            optional color_mul => "colorMul[]",
         },
     }
 }
