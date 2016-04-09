@@ -48,6 +48,7 @@ pub mod resources;
 pub mod render;
 pub mod ui;
 pub mod screen;
+pub mod settings;
 #[macro_use]
 pub mod console;
 pub mod server;
@@ -154,6 +155,7 @@ fn main() {
         let mut con = con.lock().unwrap();
         con.register(CL_BRAND);
         auth::register_vars(&mut con);
+        settings::register_vars(&mut con);
         con.load_config();
         con.save_config();
     }
@@ -297,7 +299,7 @@ fn handle_window_event(window: &sdl2::video::Window,
         Event::MouseButtonUp{mouse_btn: Mouse::Left, x, y, ..} => {
             let (width, height) = window.size();
 
-            if game.server.is_connected() && !game.focused {
+            if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
                 game.focused = true;
                 if !mouse.relative_mouse_mode() {
                     mouse.set_relative_mouse_mode(true);
@@ -318,6 +320,11 @@ fn handle_window_event(window: &sdl2::video::Window,
             if game.focused {
                 mouse.set_relative_mouse_mode(false);
                 game.focused = false;
+                game.screen_sys.replace_screen(Box::new(screen::SettingsMenu::new(game.console.clone(), true)));
+            } else if game.screen_sys.is_current_closable() {
+                mouse.set_relative_mouse_mode(true);
+                game.focused = true;
+                game.screen_sys.pop_screen();
             }
         }
         Event::KeyDown{keycode: Some(Keycode::Backquote), ..} => {
@@ -325,14 +332,20 @@ fn handle_window_event(window: &sdl2::video::Window,
         }
         Event::KeyDown{keycode: Some(key), ..} => {
             if game.focused {
-                game.server.key_press(true, key);
+                let console = game.console.lock().unwrap();
+                if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &console) {
+                    game.server.key_press(true, steven_key);
+                }
             } else {
                 ui_container.key_press(game, key, true);
             }
         }
         Event::KeyUp{keycode: Some(key), ..} => {
             if game.focused {
-                game.server.key_press(false, key);
+                let console = game.console.lock().unwrap();
+                if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &console) {
+                    game.server.key_press(false, steven_key);
+                }
             } else {
                 ui_container.key_press(game, key, false);
             }

@@ -177,4 +177,8 @@ impl super::Screen for EditServerEntry {
         elements.logo.tick(renderer, ui_container);
         None
     }
+
+    fn is_closable(&self) -> bool {
+        true
+    }
 }

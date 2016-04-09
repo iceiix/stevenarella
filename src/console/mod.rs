@@ -38,6 +38,42 @@ pub struct CVar<T: Sized + Any + 'static> {
     pub default: &'static Fn() -> T,
 }
 
+impl Var for CVar<i64> {
+    fn serialize(&self, val: &Box<Any>) -> String {
+        val.downcast_ref::<i64>().unwrap().to_string()
+    }
+
+    fn deserialize(&self, input: &str) -> Box<Any> {
+        Box::new(input.parse::<i64>().unwrap())
+    }
+
+    fn description(&self) -> &'static str {
+        self.description
+    }
+
+    fn can_serialize(&self) -> bool {
+        self.serializable
+    }
+}
+
+impl Var for CVar<bool> {
+    fn serialize(&self, val: &Box<Any>) -> String {
+        val.downcast_ref::<bool>().unwrap().to_string()
+    }
+
+    fn deserialize(&self, input: &str) -> Box<Any> {
+        Box::new(input.parse::<bool>().unwrap())
+    }
+
+    fn description(&self) -> &'static str {
+        self.description
+    }
+
+    fn can_serialize(&self) -> bool {
+        self.serializable
+    }
+}
+
 impl Var for CVar<String> {
     fn serialize(&self, val: &Box<Any>) -> String {
         format!("\"{}\"", val.downcast_ref::<String>().unwrap())

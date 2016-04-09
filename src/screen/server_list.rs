@@ -387,7 +387,9 @@ impl super::Screen for ServerList {
         cog.set_parent(&re);
         cog.set_v_attach(ui::VAttach::Middle);
         cog.set_h_attach(ui::HAttach::Center);
-        super::button_action(ui_container, re.clone(), None, |_, _| {});
+        super::button_action(ui_container, re.clone(), None, | game, _ | {
+            game.screen_sys.add_screen(Box::new(super::SettingsMenu::new(game.console.clone(), false)));
+        });
         elements.add(re);
         elements.add(ui_container.add(cog));
 

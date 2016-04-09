@@ -25,6 +25,7 @@ use types::hash::FNVHash;
 use resources;
 use console;
 use render;
+use settings::Stevenkey;
 use auth;
 use ecs;
 use entity;
@@ -72,7 +73,6 @@ pub struct Server {
     entity_map: HashMap<i32, ecs::Entity, BuildHasherDefault<FNVHash>>,
     players: HashMap<protocol::UUID, PlayerInfo, BuildHasherDefault<FNVHash>>,
 
-    pressed_keys: HashMap<Keycode, bool, BuildHasherDefault<FNVHash>>,
     tick_timer: f64,
     entity_tick_timer: f64,
 
@@ -285,8 +285,6 @@ impl Server {
             resources: resources,
             console: console,
 
-            pressed_keys: HashMap::with_hasher(BuildHasherDefault::default()),
-
             // Entity accessors
             game_info: game_info,
             player_movement: entities.get_key(),
@@ -307,6 +305,14 @@ impl Server {
             tick_timer: 0.0,
             entity_tick_timer: 0.0,
             sun_model: None,
+        }
+    }
+
+    pub fn disconnect(&mut self) {
+        self.conn = None;
+        self.disconnect_reason = None;
+        if let Some(player) = self.player.take() {
+            self.entities.remove_entity(player);
         }
     }
 
@@ -487,17 +493,12 @@ impl Server {
         }
     }
 
-    pub fn key_press(&mut self, down: bool, key: Keycode) {
-        self.pressed_keys.insert(key, down);
+    pub fn key_press(&mut self, down: bool, key: Stevenkey) {
         if let Some(player) = self.player {
             if let Some(movement) = self.entities.get_component_mut(player, self.player_movement) {
                 movement.pressed_keys.insert(key, down);
             }
         }
-    }
-
-    fn is_key_pressed(&self, key: Keycode) -> bool {
-        self.pressed_keys.get(&key).map_or(false, |v| *v)
     }
 
     pub fn write_packet<T: protocol::PacketType>(&mut self, p: T) {

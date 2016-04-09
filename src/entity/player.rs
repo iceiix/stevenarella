@@ -20,7 +20,7 @@ use cgmath::{self, Point3, Vector3, Matrix4, Decomposed, Rotation3, Rad, Angle, 
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use types::hash::FNVHash;
-use sdl2::keyboard::Keycode;
+use settings::Stevenkey;
 use shared::Position as BPosition;
 use format;
 
@@ -441,7 +441,7 @@ impl ecs::System for PlayerRenderer {
 pub struct PlayerMovement {
     pub flying: bool,
     pub did_touch_ground: bool,
-    pub pressed_keys: HashMap<Keycode, bool, BuildHasherDefault<FNVHash>>,
+    pub pressed_keys: HashMap<Stevenkey, bool, BuildHasherDefault<FNVHash>>,
 }
 
 impl PlayerMovement {
@@ -457,23 +457,23 @@ impl PlayerMovement {
         use std::f64::consts::PI;
         let mut forward = 0.0f64;
         let mut yaw = player_yaw - (PI/2.0);
-        if self.is_key_pressed(Keycode::W) || self.is_key_pressed(Keycode::S) {
+        if self.is_key_pressed(Stevenkey::Forward) || self.is_key_pressed(Stevenkey::Backward) {
             forward = 1.0;
-            if self.is_key_pressed(Keycode::S) {
+            if self.is_key_pressed(Stevenkey::Backward) {
                 yaw += PI;
             }
         }
         let mut change = 0.0;
-        if self.is_key_pressed(Keycode::A) {
+        if self.is_key_pressed(Stevenkey::Left) {
             change = (PI / 2.0) / (forward.abs() + 1.0);
         }
-        if self.is_key_pressed(Keycode::D) {
+        if self.is_key_pressed(Stevenkey::Right) {
             change = -(PI / 2.0) / (forward.abs() + 1.0);
         }
-        if self.is_key_pressed(Keycode::A) || self.is_key_pressed(Keycode::D) {
+        if self.is_key_pressed(Stevenkey::Left) || self.is_key_pressed(Stevenkey::Right) {
             forward = 1.0;
         }
-        if self.is_key_pressed(Keycode::S) {
+        if self.is_key_pressed(Stevenkey::Backward) {
             yaw -= change;
         } else {
             yaw += change;
@@ -482,7 +482,7 @@ impl PlayerMovement {
         (forward, yaw)
     }
 
-    fn is_key_pressed(&self, key: Keycode) -> bool {
+    fn is_key_pressed(&self, key: Stevenkey) -> bool {
         self.pressed_keys.get(&key).map_or(false, |v| *v)
     }
 }
@@ -554,20 +554,20 @@ impl ecs::System for MovementHandler {
             if world.is_chunk_loaded((position.position.x as i32) >> 4, (position.position.z as i32) >> 4) {
                 let (forward, yaw) = movement.calculate_movement(rotation.yaw);
                 let mut speed = 0.21585;
-                if movement.is_key_pressed(Keycode::LShift) {
+                if movement.is_key_pressed(Stevenkey::Sprint) {
                     speed = 0.2806;
                 }
                 if movement.flying {
                     speed *= 2.5;
 
-                    if movement.is_key_pressed(Keycode::Space) {
+                    if movement.is_key_pressed(Stevenkey::Jump) {
                         position.position.y += speed;
                     }
-                    if movement.is_key_pressed(Keycode::LCtrl) {
+                    if movement.is_key_pressed(Stevenkey::Sneak) {
                         position.position.y -= speed;
                     }
                 } else if gravity.as_ref().map_or(false, |v| v.on_ground) {
-                    if movement.is_key_pressed(Keycode::Space) && velocity.velocity.y.abs() < 0.001 {
+                    if movement.is_key_pressed(Stevenkey::Jump) && velocity.velocity.y.abs() < 0.001 {
                         velocity.velocity.y = 0.42;
                     }
                 } else {
