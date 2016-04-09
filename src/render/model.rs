@@ -88,7 +88,7 @@ impl Manager {
             collection.shader.texture_info.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 36, 12);
             collection.shader.texture_offset.vertex_pointer_int(3, gl::SHORT, 36, 20);
             collection.shader.color.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 36, 28);
-            collection.shader.id.vertex_pointer_int(4, gl::UNSIGNED_BYTE, 36, 32);
+            collection.shader.id.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32);
 
             let mut model = Model {
                 // For culling only
