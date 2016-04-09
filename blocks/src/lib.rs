@@ -415,7 +415,7 @@ define_blocks! {
                 TreeVariant::Acacia,
                 TreeVariant::DarkOak
             ],
-            stage: i32 = [0, 1],
+            stage: u8 = [0, 1],
         },
         data Some(variant.plank_data() | ((stage as usize) << 3)),
         material material::NON_SOLID,
@@ -430,7 +430,7 @@ define_blocks! {
     }
     FlowingWater {
         props {
-            level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            level: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
         material Material {
@@ -442,7 +442,7 @@ define_blocks! {
     }
     Water {
         props {
-            level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            level: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
         material Material {
@@ -454,7 +454,7 @@ define_blocks! {
     }
     FlowingLava {
         props {
-            level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            level: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
         material Material {
@@ -467,7 +467,7 @@ define_blocks! {
     }
     Lava {
         props {
-            level: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            level: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(level as usize),
         material Material {
@@ -954,7 +954,7 @@ define_blocks! {
     }
     Fire {
         props {
-            age: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            age: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
             up: bool = [false, true],
             north: bool = [false, true],
             south: bool = [false, true],
@@ -1024,7 +1024,7 @@ define_blocks! {
             south: RedstoneSide = [RedstoneSide::None, RedstoneSide::Side, RedstoneSide::Up],
             west: RedstoneSide = [RedstoneSide::None, RedstoneSide::Side, RedstoneSide::Up],
             east: RedstoneSide = [RedstoneSide::None, RedstoneSide::Side, RedstoneSide::Up],
-            power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            power: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data {
             if north == RedstoneSide::None && south == RedstoneSide::None
@@ -1070,7 +1070,7 @@ define_blocks! {
     }
     Wheat {
         props {
-            age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
+            age: u8 = [0, 1, 2, 3, 4, 5, 6, 7],
         },
         data Some(age as usize),
         material material::NON_SOLID,
@@ -1080,7 +1080,7 @@ define_blocks! {
     }
     Farmland {
         props {
-            moisture: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
+            moisture: u8 = [0, 1, 2, 3, 4, 5, 6, 7],
         },
         data Some(moisture as usize),
         material material::NON_SOLID,
@@ -1401,7 +1401,7 @@ define_blocks! {
     }
     SnowLayer {
         props {
-            layers: i32 = [1, 2, 3, 4, 5, 6, 7, 8],
+            layers: u8 = [1, 2, 3, 4, 5, 6, 7, 8],
         },
         data Some(layers as usize - 1),
         material material::NON_SOLID,
@@ -1427,7 +1427,7 @@ define_blocks! {
     }
     Cactus {
         props {
-            age: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            age: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(age as usize),
         material material::NON_SOLID,
@@ -1444,7 +1444,7 @@ define_blocks! {
     }
     Reeds {
         props {
-            age: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            age: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(age as usize),
         material material::NON_SOLID,
@@ -1553,7 +1553,7 @@ define_blocks! {
     }
     Cake {
         props {
-            bites: i32 = [0, 1, 2, 3, 4, 5, 6],
+            bites: u8 = [0, 1, 2, 3, 4, 5, 6],
         },
         data Some(bites as usize),
         material material::NON_SOLID,
@@ -1566,7 +1566,7 @@ define_blocks! {
     }
     RepeaterUnpowered {
         props {
-            delay: i32 = [1, 2, 3, 4],
+            delay: u8 = [1, 2, 3, 4],
             facing: Direction = [
                 Direction::North,
                 Direction::South,
@@ -1586,7 +1586,7 @@ define_blocks! {
     }
     RepeaterPowered {
         props {
-            delay: i32 = [1, 2, 3, 4],
+            delay: u8 = [1, 2, 3, 4],
             facing: Direction = [
                 Direction::North,
                 Direction::South,
@@ -1784,7 +1784,7 @@ define_blocks! {
     }
     PumpkinStem {
         props {
-            age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
+            age: u8 = [0, 1, 2, 3, 4, 5, 6, 7],
             facing: Direction = [
                 Direction::Up,
                 Direction::North,
@@ -1820,7 +1820,7 @@ define_blocks! {
     }
     MelonStem {
         props {
-            age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
+            age: u8 = [0, 1, 2, 3, 4, 5, 6, 7],
             facing: Direction = [
                 Direction::Up,
                 Direction::North,
@@ -2024,7 +2024,7 @@ define_blocks! {
     }
     NetherWart {
         props {
-            age: i32 = [0, 1, 2, 3],
+            age: u8 = [0, 1, 2, 3],
         },
         data Some(age as usize),
         material material::NON_SOLID,
@@ -2064,7 +2064,7 @@ define_blocks! {
     }
     Cauldron {
         props {
-            level: i32 = [0, 1, 2, 3],
+            level: u8 = [0, 1, 2, 3],
         },
         data Some(level as usize),
         material material::NON_SOLID,
@@ -2188,7 +2188,7 @@ define_blocks! {
     }
     Cocoa {
         props {
-            age: i32 = [0, 1, 2],
+            age: u8 = [0, 1, 2],
             facing: Direction = [
                 Direction::North,
                 Direction::South,
@@ -2475,7 +2475,7 @@ define_blocks! {
                 FlowerPotVariant::Oxeye,
                 FlowerPotVariant::Dandelion
             ],
-            legacy_data: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            legacy_data: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data if contents == FlowerPotVariant::Empty { Some(legacy_data as usize) } else { None },
         material material::NON_SOLID,
@@ -2483,7 +2483,7 @@ define_blocks! {
     }
     Carrots {
         props {
-            age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
+            age: u8 = [0, 1, 2, 3, 4, 5, 6, 7],
         },
         data Some(age as usize),
         material material::NON_SOLID,
@@ -2493,7 +2493,7 @@ define_blocks! {
     }
     Potatoes {
         props {
-            age: i32 = [0, 1, 2, 3, 4, 5, 6, 7],
+            age: u8 = [0, 1, 2, 3, 4, 5, 6, 7],
         },
         data Some(age as usize),
         material material::NON_SOLID,
@@ -2560,7 +2560,7 @@ define_blocks! {
     }
     Anvil {
         props {
-            damage: i32 = [0, 1, 2],
+            damage: u8 = [0, 1, 2],
             facing: Direction = [
                 Direction::North,
                 Direction::South,
@@ -2604,7 +2604,7 @@ define_blocks! {
     }
     LightWeightedPressurePlate {
         props {
-            power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            power: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(power as usize),
         material material::NON_SOLID,
@@ -2614,7 +2614,7 @@ define_blocks! {
     }
     HeavyWeightedPressurePlate {
         props {
-            power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            power: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(power as usize),
         material material::NON_SOLID,
@@ -2668,7 +2668,7 @@ define_blocks! {
     }
     DaylightDetector {
         props {
-            power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            power: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(power as usize),
         material material::NON_SOLID,
@@ -3096,7 +3096,7 @@ define_blocks! {
     }
     DaylightDetectorInverted {
         props {
-            power: i32 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            power: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data Some(power as usize),
         material material::NON_SOLID,
@@ -3613,7 +3613,7 @@ define_blocks! {
     }
     ChorusFlower {
         props {
-            age: i32 = [0, 1, 2, 3, 4, 5],
+            age: u8 = [0, 1, 2, 3, 4, 5],
         },
         data Some(age as usize),
         material material::NON_SOLID,
@@ -3692,7 +3692,7 @@ define_blocks! {
     }
     Beetroots {
         props {
-            age: i32 = [0, 1, 2, 3],
+            age: u8 = [0, 1, 2, 3],
         },
         data Some(age as usize),
         material material::NON_SOLID,

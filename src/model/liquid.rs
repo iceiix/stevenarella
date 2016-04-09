@@ -127,14 +127,14 @@ fn average_liquid_level(
 
 fn get_water_level(snapshot: &world::Snapshot, x: i32, y: i32, z: i32) -> Option<i32> {
     match snapshot.get_block(x, y, z) {
-        block::Block::Water{level} | block::Block::FlowingWater{level} => Some(level),
+        block::Block::Water{level} | block::Block::FlowingWater{level} => Some(level as i32),
         _ => None,
     }
 }
 
 fn get_lava_level(snapshot: &world::Snapshot, x: i32, y: i32, z: i32) -> Option<i32> {
     match snapshot.get_block(x, y, z) {
-        block::Block::Lava{level} | block::Block::FlowingLava{level} => Some(level),
+        block::Block::Lava{level} | block::Block::FlowingLava{level} => Some(level as i32),
         _ => None,
     }
 }
