@@ -107,17 +107,12 @@ impl Manager {
                 buffer_size: 0,
                 count: 0,
 
-                counts: Vec::with_capacity(parts.len()),
-                offsets: Vec::with_capacity(parts.len()),
-
                 verts: vec![],
             };
 
             for (i, part) in parts.into_iter().enumerate() {
                 model.matrix.push(Matrix4::identity());
                 model.colors.push([1.0, 1.0, 1.0, 1.0]);
-                model.counts.push(((part.len() / 4) * 6) as i32);
-                model.offsets.push((model.verts.len() / 4) * 6);
                 for mut pp in part {
                     pp.id = i as u8;
                     model.verts.push(pp);
@@ -127,11 +122,11 @@ impl Manager {
         };
 
         Self::rebuild_model(&mut model);
-        if self.max_index < model.count {
-            let (data, ty) = super::generate_element_buffer(model.count);
+        if self.max_index < model.count as usize {
+            let (data, ty) = super::generate_element_buffer(model.count as usize);
             self.index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
             self.index_buffer.set_data(gl::ELEMENT_ARRAY_BUFFER, &data, gl::DYNAMIC_DRAW);
-            self.max_index = model.count;
+            self.max_index = model.count as usize;
             self.index_type = ty;
         }
 
@@ -150,7 +145,7 @@ impl Manager {
 
     fn rebuild_model(model: &mut Model) {
         model.array.bind();
-        model.count = (model.verts.len() / 4) * 6;
+        model.count = ((model.verts.len() / 4) * 6) as i32;
 
         let mut buffer = Vec::with_capacity(36 * model.verts.len());
         for vert in &model.verts {
@@ -206,12 +201,6 @@ impl Manager {
     }
 
     pub fn draw(&mut self, frustum: &Frustum<f32>, perspective_matrix: &Matrix4<f32>, camera_matrix: &Matrix4<f32>, light_level: f32, sky_offset: f32) {
-        let m = if self.index_type == gl::UNSIGNED_SHORT {
-            2
-        } else {
-            4
-        };
-
         gl::enable(gl::BLEND);
         for collection in &self.collections {
             collection.shader.program.use_program();
@@ -231,19 +220,9 @@ impl Manager {
                 }
                 model.array.bind();
                 collection.shader.lighting.map(|v| v.set_float2(model.block_light, model.sky_light));
-                if model.counts.len() > 1 {
-                    let mut offsets = model.offsets.clone();
-                    for offset in &mut offsets {
-                        *offset *= m;
-                    }
-                    collection.shader.model_matrix.map(|v| v.set_matrix4_multi(&model.matrix));
-                    collection.shader.color_mul.map(|v| v.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len()));
-                    gl::multi_draw_elements(gl::TRIANGLES, &model.counts, self.index_type, &offsets);
-                } else {
-                    collection.shader.model_matrix.map(|v| v.set_matrix4_multi(&model.matrix));
-                    collection.shader.color_mul.map(|v| v.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len()));
-                    gl::draw_elements(gl::TRIANGLES, model.counts[0], self.index_type, model.offsets[0] * m);
-                }
+                collection.shader.model_matrix.map(|v| v.set_matrix4_multi(&model.matrix));
+                collection.shader.color_mul.map(|v| v.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len()));
+                gl::draw_elements(gl::TRIANGLES, model.count, self.index_type, 0);
             }
         }
         gl::disable(gl::BLEND);
@@ -275,10 +254,7 @@ pub struct Model {
     array: gl::VertexArray,
     buffer: gl::Buffer,
     buffer_size: usize,
-    count: usize,
-
-    counts: Vec<i32>,
-    offsets: Vec<usize>,
+    count: i32,
 
     pub verts: Vec<Vertex>,
 }
