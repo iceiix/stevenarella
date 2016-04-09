@@ -45,6 +45,7 @@ pub struct Server {
     conn: Option<protocol::Conn>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub disconnect_reason: Option<format::Component>,
+    just_disconnected: bool,
 
     pub world: world::World,
     pub entities: ecs::Manager,
@@ -274,6 +275,7 @@ impl Server {
             conn: conn,
             read_queue: read_queue,
             disconnect_reason: None,
+            just_disconnected: false,
 
             world: world::World::new(),
             world_age: 0,
@@ -308,12 +310,13 @@ impl Server {
         }
     }
 
-    pub fn disconnect(&mut self) {
+    pub fn disconnect(&mut self, reason: Option<format::Component>) {
         self.conn = None;
-        self.disconnect_reason = None;
+        self.disconnect_reason = reason;
         if let Some(player) = self.player.take() {
             self.entities.remove_entity(player);
         }
+        self.just_disconnected = true;
     }
 
     pub fn is_connected(&self) -> bool {
@@ -404,13 +407,16 @@ impl Server {
             }
         }
 
-        self.entity_tick_timer += delta;
-        while self.entity_tick_timer >= 3.0 && self.is_connected() {
-            self.entities.tick(&mut self.world, renderer);
-            self.entity_tick_timer -= 3.0;
-        }
+        if self.is_connected() || self.just_disconnected { // Allow an extra tick when disconnected to clean up
+            self.just_disconnected = false;
+            self.entity_tick_timer += delta;
+            while self.entity_tick_timer >= 3.0 {
+                self.entities.tick(&mut self.world, renderer);
+                self.entity_tick_timer -= 3.0;
+            }
 
-        self.entities.render_tick(&mut self.world, renderer);
+            self.entities.render_tick(&mut self.world, renderer);
+        }
     }
 
     pub fn remove(&mut self, renderer: &mut render::Renderer) {
@@ -543,11 +549,7 @@ impl Server {
     }
 
     fn on_disconnect(&mut self, disconnect: packet::play::clientbound::Disconnect) {
-        self.conn = None;
-        self.disconnect_reason = Some(disconnect.reason);
-        if let Some(player) = self.player.take() {
-            self.entities.remove_entity(player);
-        }
+        self.disconnect(Some(disconnect.reason));
     }
 
     fn on_time_update(&mut self, time_update: packet::play::clientbound::TimeUpdate) {

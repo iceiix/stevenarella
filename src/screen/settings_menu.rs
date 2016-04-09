@@ -107,7 +107,7 @@ impl super::Screen for SettingsMenu {
         if self.show_disconnect_button {
             let (mut btn_exit_game, mut txt_exit_game) = new_centered_button("Disconnect", renderer, ui_container, 100.0, ui::VAttach::Bottom);
             super::button_action(ui_container, btn_exit_game.clone(), Some(txt_exit_game.clone()), move | game, _ | {
-                game.server.disconnect();
+                game.server.disconnect(None);
                 game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
             });
             elements.add(btn_exit_game);
@@ -261,7 +261,7 @@ impl super::Screen for AudioSettingsMenu {
         });
         elements.add(btn_done);
         elements.add(txt_done);
-        
+
         self.elements = Some(UIElement {
             elements: elements
         });
