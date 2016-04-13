@@ -74,7 +74,7 @@ macro_rules! define_blocks {
                     )*
                 },
                 $(data $datafunc:expr,)*
-                material $mat:expr,
+                $(material $mat:expr,)*
                 model $model:expr,
                 $(variant $variant:expr,)*
                 $(tint $tint:expr,)*
@@ -179,14 +179,15 @@ macro_rules! define_blocks {
                 VANILLA_ID_MAP.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
             }
 
-            #[allow(unused_variables)]
+            #[allow(unused_variables, unreachable_code)]
             pub fn get_material(&self) -> Material {
                 match *self {
                     $(
                         Block::$name {
                             $($fname,)*
                         } => {
-                            $mat
+                            $(return $mat;)*
+                            material::SOLID
                         }
                     )+
                 }
@@ -346,7 +347,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", variant.as_string() ) },
     }
     Grass {
@@ -354,7 +354,6 @@ define_blocks! {
             snowy: bool = [false, true],
         },
         data { if snowy { None } else { Some(0) } },
-        material material::SOLID,
         model { ("minecraft", "grass") },
         variant format!("snowy={}", snowy),
         tint TintType::Grass,
@@ -370,7 +369,6 @@ define_blocks! {
             ],
         },
         data if !snowy { Some(variant.data()) } else { None },
-        material material::SOLID,
         model { ("minecraft", variant.as_string()) },
         variant {
             if variant == DirtVariant::Podzol {
@@ -387,7 +385,6 @@ define_blocks! {
     }
     Cobblestone {
         props {},
-        material material::SOLID,
         model { ("minecraft", "cobblestone") },
     }
     Planks {
@@ -402,7 +399,6 @@ define_blocks! {
             ],
         },
         data Some(variant.plank_data()),
-        material material::SOLID,
         model { ("minecraft", format!("{}_planks", variant.as_string()) ) },
     }
     Sapling {
@@ -425,7 +421,6 @@ define_blocks! {
     }
     Bedrock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "bedrock") },
     }
     FlowingWater {
@@ -483,27 +478,22 @@ define_blocks! {
             red: bool = [false, true],
         },
         data Some(if red { 1 } else { 0 }),
-        material material::SOLID,
         model { ("minecraft", if red { "red_sand" } else { "sand" } ) },
     }
     Gravel {
         props {},
-        material material::SOLID,
         model { ("minecraft", "gravel") },
     }
     GoldOre {
         props {},
-        material material::SOLID,
         model { ("minecraft", "gold_ore") },
     }
     IronOre {
         props {},
-        material material::SOLID,
         model { ("minecraft", "iron_ore") },
     }
     CoalOre {
         props {},
-        material material::SOLID,
         model { ("minecraft", "coal_ore") },
     }
     Log {
@@ -517,7 +507,6 @@ define_blocks! {
             axis: Axis = [Axis::Y, Axis::Z, Axis::X, Axis::None],
         },
         data Some(variant.data() | (axis.index() << 2)),
-        material material::SOLID,
         model { ("minecraft", format!("{}_log", variant.as_string()) ) },
         variant format!("axis={}", axis.as_string()),
     }
@@ -544,7 +533,6 @@ define_blocks! {
             wet: bool = [false, true],
         },
         data Some(if wet { 1 } else { 0 }),
-        material material::SOLID,
         model { ("minecraft", "sponge") },
         variant format!("wet={}", wet),
     }
@@ -555,12 +543,10 @@ define_blocks! {
     }
     LapisOre {
         props {},
-        material material::SOLID,
         model { ("minecraft", "lapis_ore") },
     }
     LapisBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "lapis_block") },
     }
     Dispenser {
@@ -576,7 +562,6 @@ define_blocks! {
             triggered: bool = [false, true],
         },
         data Some(facing.index() | (if triggered { 0x8 } else { 0x0 })),
-        material material::SOLID,
         model { ("minecraft", "dispenser") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -589,12 +574,10 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", variant.as_string() ) },
     }
     NoteBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "noteblock") },
     }
     Bed {
@@ -776,7 +759,6 @@ define_blocks! {
             ],
         },
         data Some(color.data()),
-        material material::SOLID,
         model { ("minecraft", format!("{}_wool", color.as_string()) ) },
     }
     PistonExtension {
@@ -826,12 +808,10 @@ define_blocks! {
     }
     GoldBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "gold_block") },
     }
     IronBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "iron_block") },
     }
     DoubleStoneSlab {
@@ -862,7 +842,6 @@ define_blocks! {
 
             Some(data)
         },
-        material material::SOLID,
         model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
         variant if seamless { "all" } else { "normal" },
     }
@@ -898,7 +877,6 @@ define_blocks! {
     }
     BrickBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "brick_block") },
     }
     TNT {
@@ -906,22 +884,18 @@ define_blocks! {
             explode: bool = [false, true],
         },
         data Some(if explode { 1 } else { 0 }),
-        material material::SOLID,
         model { ("minecraft", "tnt") },
     }
     BookShelf {
         props {},
-        material material::SOLID,
         model { ("minecraft", "bookshelf") },
     }
     MossyCobblestone {
         props {},
-        material material::SOLID,
         model { ("minecraft", "mossy_cobblestone") },
     }
     Obsidian {
         props {},
-        material material::SOLID,
         model { ("minecraft", "obsidian") },
     }
     Torch {
@@ -1055,17 +1029,14 @@ define_blocks! {
     }
     DiamondOre {
         props {},
-        material material::SOLID,
         model { ("minecraft", "diamond_ore") },
     }
     DiamondBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "diamond_block") },
     }
     CraftingTable {
         props {},
-        material material::SOLID,
         model { ("minecraft", "crafting_table") },
     }
     Wheat {
@@ -1101,7 +1072,6 @@ define_blocks! {
             ],
         },
         data Some(facing.index()),
-        material material::SOLID,
         model { ("minecraft", "furnace") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -1309,7 +1279,6 @@ define_blocks! {
     }
     RedstoneOre {
         props {},
-        material material::SOLID,
         model { ("minecraft", "redstone_ore") },
     }
     RedstoneOreLit {
@@ -1422,7 +1391,6 @@ define_blocks! {
     }
     Snow {
         props {},
-        material material::SOLID,
         model { ("minecraft", "snow") },
     }
     Cactus {
@@ -1439,7 +1407,6 @@ define_blocks! {
     }
     Clay {
         props {},
-        material material::SOLID,
         model { ("minecraft", "clay") },
     }
     Reeds {
@@ -1457,7 +1424,6 @@ define_blocks! {
             has_record: bool = [false, true],
         },
         data Some(if has_record { 1 } else { 0 }),
-        material material::SOLID,
         model { ("minecraft", "jukebox") },
     }
     Fence {
@@ -1494,13 +1460,11 @@ define_blocks! {
             without_face: bool = [false, true],
         },
         data Some(facing.horizontal_index() | (if without_face { 0x4 } else { 0x0 })),
-        material material::SOLID,
         model { ("minecraft", "pumpkin") },
         variant format!("facing={}", facing.as_string()),
     }
     Netherrack {
         props {},
-        material material::SOLID,
         model { ("minecraft", "netherrack") },
     }
     SoulSand {
@@ -1664,7 +1628,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", format!("{}_monster_egg", variant.as_string())) },
     }
     StoneBrick {
@@ -1677,7 +1640,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", variant.as_string() ) },
     }
     BrownMushroomBlock {
@@ -1699,7 +1661,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", "brown_mushroom_block") },
         variant format!("variant={}", variant.as_string()),
     }
@@ -1722,7 +1683,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", "red_mushroom_block") },
         variant format!("variant={}", variant.as_string()),
     }
@@ -1779,7 +1739,6 @@ define_blocks! {
     }
     MelonBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "melon_block") },
     }
     PumpkinStem {
@@ -1962,7 +1921,6 @@ define_blocks! {
     }
     NetherBrick {
         props {},
-        material material::SOLID,
         model { ("minecraft", "nether_brick") },
     }
     NetherBrickFence {
@@ -2115,7 +2073,6 @@ define_blocks! {
     }
     EndStone {
         props {},
-        material material::SOLID,
         model { ("minecraft", "end_stone") },
     }
     DragonEgg {
@@ -2132,7 +2089,6 @@ define_blocks! {
     }
     RedstoneLamp {
         props {},
-        material material::SOLID,
         model { ("minecraft", "redstone_lamp") },
     }
     RedstoneLampLit {
@@ -2155,7 +2111,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
     }
     WoodenSlab {
@@ -2311,7 +2266,6 @@ define_blocks! {
     }
     EmeraldBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "emerald_block") },
     }
     SpruceStairs {
@@ -2396,7 +2350,6 @@ define_blocks! {
             ],
         },
         data Some(facing.index() | (if conditional { 0x8 } else { 0x0 })),
-        material material::SOLID,
         model { ("minecraft", "command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
     }
@@ -2681,12 +2634,10 @@ define_blocks! {
     }
     RedstoneBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "redstone_block") },
     }
     QuartzOre {
         props {},
-        material material::SOLID,
         model { ("minecraft", "quartz_ore") },
     }
     Hopper {
@@ -2716,7 +2667,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", match variant {
             QuartzVariant::Normal => "quartz_block",
             QuartzVariant::Chiseled => "chiseled_quartz_block",
@@ -2780,7 +2730,6 @@ define_blocks! {
             triggered: bool = [false, true],
         },
         data Some(facing.index() | (if triggered { 0x8 } else { 0x0 })),
-        material material::SOLID,
         model { ("minecraft", "dropper") },
         variant format!("facing={}", facing.as_string()),
     }
@@ -2806,7 +2755,6 @@ define_blocks! {
             ],
         },
         data Some(color.data()),
-        material material::SOLID,
         model { ("minecraft", format!("{}_stained_hardened_clay", color.as_string()) ) },
     }
     StainedGlassPane {
@@ -2875,7 +2823,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data() | (axis.index() << 2)),
-        material material::SOLID,
         model { ("minecraft", format!("{}_log", variant.as_string()) ) },
         variant format!("axis={}", axis.as_string()),
     }
@@ -2967,7 +2914,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", variant.as_string() ) },
     }
     SeaLantern {
@@ -2983,7 +2929,6 @@ define_blocks! {
             axis: Axis = [Axis::X, Axis::Y, Axis::Z],
         },
         data Some(match axis { Axis::X => 0x4, Axis::Y => 0x0, Axis::Z => 0x8, _ => unreachable!() }),
-        material material::SOLID,
         model { ("minecraft", "hay_block") },
         variant format!("axis={}", axis.as_string()),
     }
@@ -3018,17 +2963,14 @@ define_blocks! {
     }
     HardenedClay {
         props {},
-        material material::SOLID,
         model { ("minecraft", "hardened_clay") },
     }
     CoalBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "coal_block") },
     }
     PackedIce {
         props {},
-        material material::SOLID,
         model { ("minecraft", "packed_ice") },
     }
     DoublePlant {
@@ -3116,7 +3058,6 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        material material::SOLID,
         model { ("minecraft", variant.as_string()) },
     }
     RedSandstoneStairs {
@@ -3622,7 +3563,6 @@ define_blocks! {
     }
     PurpurBlock {
         props {},
-        material material::SOLID,
         model { ("minecraft", "purpur_block") },
     }
     PurpurPillar {
@@ -3630,7 +3570,6 @@ define_blocks! {
             axis: Axis = [Axis::X, Axis::Y, Axis::Z],
         },
         data Some(match axis { Axis::X => 0x4, Axis::Y => 0x0, Axis::Z => 0x8, _ => unreachable!() }),
-        material material::SOLID,
         model { ("minecraft", "purpur_pillar") },
         variant format!("axis={}", axis.as_string()),
     }
@@ -3661,7 +3600,6 @@ define_blocks! {
         props {
             variant: StoneSlabVariant = [StoneSlabVariant::Purpur],
         },
-        material material::SOLID,
         model { ("minecraft", format!("{}_double_slab", variant.as_string()) ) },
     }
     PurpurSlab {
@@ -3687,7 +3625,6 @@ define_blocks! {
     }
     EndBricks {
         props {},
-        material material::SOLID,
         model { ("minecraft", "end_bricks") },
     }
     Beetroots {
@@ -3728,7 +3665,6 @@ define_blocks! {
             ],
         },
         data Some(facing.index() | (if conditional { 0x8 } else { 0x0 })),
-        material material::SOLID,
         model { ("minecraft", "repeating_command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
     }
@@ -3745,19 +3681,16 @@ define_blocks! {
             ],
         },
         data Some(facing.index() | (if conditional { 0x8 } else { 0x0 })),
-        material material::SOLID,
         model { ("minecraft", "chain_command_block") },
         variant format!("conditional={},facing={}", conditional, facing.as_string()),
     }
     FrostedIce {
         props {},
-        material material::SOLID,
         model { ("minecraft", "frosted_ice") },
     }
     Missing {
         props {},
         data None::<usize>,
-        material material::SOLID,
         model { ("steven", "missing_block") },
     }
 }
