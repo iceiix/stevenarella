@@ -1,6 +1,6 @@
 # Steven (Rust)
 
-A Minecraft client coded in Rust. Ported from [steven-go](https://github.com/Thinkofname/steven).
+A Minecraft client coded in Rust. Ported from [steven-go](https://github.com/Thinkofname/steven-go).
 Don't expect it to go anywhere, just doing this for fun.
 
 ## Images
