@@ -323,7 +323,7 @@ impl ecs::System for PlayerRenderer {
                 srel!(16.0, 8.0, 8.0, 8.0), // West
                 srel!(0.0, 8.0, 8.0, 8.0), // East
             ]);
-            model::append_box(&mut head_verts, -4.2/16.0, -0.2, -4.2/16.0, 8.4/16.0, 8.4/16.0, 8.4/16.0, [
+            model::append_box(&mut head_verts, -4.2/16.0, -0.2/16.0, -4.2/16.0, 8.4/16.0, 8.4/16.0, 8.4/16.0, [
                 srel!((16.0 + 32.0), 0.0, 8.0, 8.0), // Down
                 srel!((8.0 + 32.0), 0.0, 8.0, 8.0), // Up
                 srel!((8.0 + 32.0), 8.0, 8.0, 8.0), // North
@@ -355,10 +355,10 @@ impl ecs::System for PlayerRenderer {
         let mut part_verts = vec![vec![]; 4];
 
         for (i, offsets) in [
-            [16.0, 48.0, 0.0, 48.0],
-            [0.0, 16.0, 0.0, 32.0],
-            [40.0, 16.0, 40.0, 32.0],
-            [32.0, 48.0, 48.0, 48.0],
+            [16.0, 48.0, 0.0, 48.0], // Left left
+            [0.0, 16.0, 0.0, 32.0], // Right Leg
+            [32.0, 48.0, 48.0, 48.0], // Left arm
+            [40.0, 16.0, 40.0, 32.0], // Right arm
         ].into_iter().enumerate() {
             let (ox, oy) = (offsets[0], offsets[1]);
             model::append_box(&mut part_verts[i], -2.0/16.0, -12.0/16.0, -2.0/16.0, 4.0/16.0, 12.0/16.0, 4.0/16.0, [
@@ -366,8 +366,8 @@ impl ecs::System for PlayerRenderer {
                 srel!(ox + 4.0, oy + 0.0, 4.0, 4.0), // Up
                 srel!(ox + 4.0, oy + 4.0, 4.0, 12.0), // North
                 srel!(ox + 12.0, oy + 4.0, 4.0, 12.0), // South
-                srel!(ox + 0.0, oy + 4.0, 4.0, 12.0), // West
-                srel!(ox + 8.0, oy + 4.0, 4.0, 12.0), // East
+                srel!(ox + 8.0, oy + 4.0, 4.0, 12.0), // West
+                srel!(ox + 0.0, oy + 4.0, 4.0, 12.0), // East
             ]);
             let (ox, oy) = (offsets[2], offsets[3]);
             model::append_box(&mut part_verts[i], -2.2/16.0, -12.2/16.0, -2.2/16.0, 4.4/16.0, 12.4/16.0, 4.4/16.0, [
@@ -375,8 +375,8 @@ impl ecs::System for PlayerRenderer {
                 srel!(ox + 4.0, oy + 0.0, 4.0, 4.0), // Up
                 srel!(ox + 4.0, oy + 4.0, 4.0, 12.0), // North
                 srel!(ox + 12.0, oy + 4.0, 4.0, 12.0), // South
-                srel!(ox + 0.0, oy + 4.0, 4.0, 12.0), // West
-                srel!(ox + 8.0, oy + 4.0, 4.0, 12.0), // East
+                srel!(ox + 8.0, oy + 4.0, 4.0, 12.0), // West
+                srel!(ox + 0.0, oy + 4.0, 4.0, 12.0), // East
             ]);
         }
 

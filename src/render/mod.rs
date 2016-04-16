@@ -877,8 +877,21 @@ impl TextureManager {
                 // Needs changing to the new format
                 let mut new = image::DynamicImage::new_rgba8(64, 64);
                 new.copy_from(&img, 0, 0);
-                new.copy_from(&img.sub_image(0, 16, 16, 16), 16, 48);
-                new.copy_from(&img.sub_image(40, 16, 16, 16), 32, 48);
+                for xx in 0 .. 4 {
+                    for yy in 0 .. 16 {
+                        for section in 0 .. 4 {
+                            let os = match section {
+                                0 => 2,
+                                1 => 1,
+                                2 => 0,
+                                3 => 3,
+                                _ => unreachable!(),
+                            };
+                            new.put_pixel(16 + (3 - xx) + section * 4, 48 + yy, img.get_pixel(xx + os * 4, 16 + yy));
+                            new.put_pixel(32 + (3 - xx) + section * 4, 48 + yy, img.get_pixel(xx + 40 + os * 4, 16 + yy));
+                        }
+                    }
+                }
                 img = new;
             }
             // Block transparent pixels in blacklisted areas
