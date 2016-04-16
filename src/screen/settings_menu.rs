@@ -68,36 +68,36 @@ impl super::Screen for SettingsMenu {
 
         // From top and down
         let (btn_audio_settings, txt_audio_settings) = new_submenu_button("Audio settings...", renderer, ui_container, -160.0, -50.0);
-        super::button_action(ui_container, btn_audio_settings.clone(), Some(txt_audio_settings.clone()), move | game, _ | {
+        super::button_action(ui_container, btn_audio_settings.clone(), Some(txt_audio_settings.clone()), move |game, _| {
             game.screen_sys.add_screen(Box::new(AudioSettingsMenu::new(game.console.clone())));
         });
         elements.add(btn_audio_settings);
         elements.add(txt_audio_settings);
 
         let (btn_video_settings, txt_video_settings) = new_submenu_button("Video settings...", renderer, ui_container, 160.0, -50.0);
-        super::button_action(ui_container, btn_video_settings.clone(), Some(txt_video_settings.clone()), move | game, _ | {
+        super::button_action(ui_container, btn_video_settings.clone(), Some(txt_video_settings.clone()), move |game, _| {
             game.screen_sys.add_screen(Box::new(VideoSettingsMenu::new(game.console.clone())));
         });
         elements.add(btn_video_settings);
         elements.add(txt_video_settings);
 
         let (btn_controls_settings, txt_controls_settings) = new_submenu_button("Controls...", renderer, ui_container, 160.0, 0.0);
-        super::button_action(ui_container, btn_controls_settings.clone(), Some(txt_controls_settings.clone()), move | game, _ | {
+        super::button_action(ui_container, btn_controls_settings.clone(), Some(txt_controls_settings.clone()), move |_, _| {
             // TODO: Implement this...
         });
         elements.add(btn_controls_settings);
         elements.add(txt_controls_settings);
 
         let (btn_locale_settings, txt_locale_settings) = new_submenu_button("Language...", renderer, ui_container, -160.0, 0.0);
-        super::button_action(ui_container, btn_locale_settings.clone(), Some(txt_locale_settings.clone()), move | game, _ | {
+        super::button_action(ui_container, btn_locale_settings.clone(), Some(txt_locale_settings.clone()), move |_, _| {
             // TODO: Implement this...
         });
         elements.add(btn_locale_settings);
         elements.add(txt_locale_settings);
 
         // Center bottom items
-        let (mut btn_back_to_game, mut txt_back_to_game) = new_centered_button("Done", renderer, ui_container, 50.0, ui::VAttach::Bottom);
-        super::button_action(ui_container, btn_back_to_game.clone(), Some(txt_back_to_game.clone()), move | game, _ | {
+        let (btn_back_to_game, txt_back_to_game) = new_centered_button("Done", renderer, ui_container, 50.0, ui::VAttach::Bottom);
+        super::button_action(ui_container, btn_back_to_game.clone(), Some(txt_back_to_game.clone()), move |game, _| {
             game.screen_sys.pop_screen();
             game.focused = true;
         });
@@ -105,8 +105,8 @@ impl super::Screen for SettingsMenu {
         elements.add(txt_back_to_game);
 
         if self.show_disconnect_button {
-            let (mut btn_exit_game, mut txt_exit_game) = new_centered_button("Disconnect", renderer, ui_container, 100.0, ui::VAttach::Bottom);
-            super::button_action(ui_container, btn_exit_game.clone(), Some(txt_exit_game.clone()), move | game, _ | {
+            let (btn_exit_game, txt_exit_game) = new_centered_button("Disconnect", renderer, ui_container, 100.0, ui::VAttach::Bottom);
+            super::button_action(ui_container, btn_exit_game.clone(), Some(txt_exit_game.clone()), move |game, _| {
                 game.server.disconnect(None);
                 game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
             });
@@ -119,7 +119,7 @@ impl super::Screen for SettingsMenu {
         });
 
     }
-    fn on_deactive(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         {
             let elements = self.elements.as_mut().unwrap();
             elements.elements.remove_all(ui_container);
@@ -128,12 +128,12 @@ impl super::Screen for SettingsMenu {
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(&mut self, _delta: f64, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
         None
     }
 
     // Events
-    fn on_scroll(&mut self, x: f64, y: f64) {
+    fn on_scroll(&mut self, _x: f64, _y: f64) {
 
     }
 
@@ -145,7 +145,6 @@ impl super::Screen for SettingsMenu {
 pub struct VideoSettingsMenu {
     console: Arc<Mutex<console::Console>>,
     elements: Option<UIElement>,
-    fps_bounds: Vec<i64>
 }
 
 impl VideoSettingsMenu {
@@ -153,7 +152,6 @@ impl VideoSettingsMenu {
         VideoSettingsMenu {
             console: console,
             elements: None,
-            fps_bounds: vec!(60, 120, 144, -1)
         }
     }
 }
@@ -194,7 +192,7 @@ impl super::Screen for VideoSettingsMenu {
         elements.add(btn_fps_cap);
         elements.add(txt_fps_cap);
 
-        let (mut btn_done, mut txt_done) = new_centered_button("Done", renderer, ui_container, 50.0, ui::VAttach::Bottom);
+        let (btn_done, txt_done) = new_centered_button("Done", renderer, ui_container, 50.0, ui::VAttach::Bottom);
         super::button_action(ui_container, btn_done.clone(), Some(txt_done.clone()), move | game, _ | {
             game.screen_sys.pop_screen();
         });
@@ -205,7 +203,7 @@ impl super::Screen for VideoSettingsMenu {
         });
 
     }
-    fn on_deactive(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         {
             let elements = self.elements.as_mut().unwrap();
             elements.elements.remove_all(ui_container);
@@ -214,12 +212,12 @@ impl super::Screen for VideoSettingsMenu {
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(&mut self, _delta: f64, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
         None
     }
 
     // Events
-    fn on_scroll(&mut self, x: f64, y: f64) {
+    fn on_scroll(&mut self, _x: f64, _y: f64) {
 
     }
 
@@ -251,11 +249,11 @@ impl super::Screen for AudioSettingsMenu {
             (console.get(settings::CL_MASTER_VOLUME).clone())
         };
 
-        let (mut btn_master_volume, mut txt_master_volume) = new_centered_button(master_volume.to_string().as_ref(), renderer, ui_container, -150.0, ui::VAttach::Middle);
+        let (btn_master_volume, txt_master_volume) = new_centered_button(master_volume.to_string().as_ref(), renderer, ui_container, -150.0, ui::VAttach::Middle);
         elements.add(btn_master_volume);
         elements.add(txt_master_volume);
 
-        let (mut btn_done, mut txt_done) = new_centered_button("Done", renderer, ui_container, 50.0, ui::VAttach::Bottom);
+        let (btn_done, txt_done) = new_centered_button("Done", renderer, ui_container, 50.0, ui::VAttach::Bottom);
         super::button_action(ui_container, btn_done.clone(), Some(txt_done.clone()), move | game, _ | {
             game.screen_sys.pop_screen();
         });
@@ -267,7 +265,7 @@ impl super::Screen for AudioSettingsMenu {
         });
 
     }
-    fn on_deactive(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         {
             let elements = self.elements.as_mut().unwrap();
             elements.elements.remove_all(ui_container);
@@ -276,12 +274,12 @@ impl super::Screen for AudioSettingsMenu {
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(&mut self, _delta: f64, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
         None
     }
 
     // Events
-    fn on_scroll(&mut self, x: f64, y: f64) {
+    fn on_scroll(&mut self, _x: f64, _y: f64) {
 
     }
 

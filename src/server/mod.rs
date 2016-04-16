@@ -31,7 +31,6 @@ use ecs;
 use entity;
 use cgmath;
 use collision::Aabb;
-use sdl2::keyboard::Keycode;
 use types::Gamemode;
 use shared::{Axis, Position};
 use format;
