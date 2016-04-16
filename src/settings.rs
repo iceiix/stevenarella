@@ -27,7 +27,7 @@ pub const R_VSYNC: console::CVar<bool> = console::CVar {
     description: "Toggle to enable/disable vsync",
     mutable: true,
     serializable: true,
-    default: &|| true,
+    default: &|| false,
 };
 
 pub const CL_MASTER_VOLUME: console::CVar<i64> = console::CVar {
