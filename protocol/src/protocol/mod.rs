@@ -234,7 +234,7 @@ impl Serializable for () {
     fn read_from<R: io::Read>(_: &mut R) -> Result<(), Error> {
         Result::Ok(())
     }
-    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+    fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
         Result::Ok(())
     }
 }
