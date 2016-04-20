@@ -14,14 +14,18 @@ pub struct BlockStorage {
 
 impl BlockStorage {
     pub fn new(size: usize) -> BlockStorage {
+        Self::new_default(size, block::Air{})
+    }
+
+    pub fn new_default(size: usize, def: block::Block) -> BlockStorage {
         let mut storage = BlockStorage {
             blocks: bit::Map::new(size, 4),
             block_map: vec![
-                (block::Air{}, 0xFFFFFFFF)
+                (def, size as u32)
             ],
             rev_block_map: HashMap::with_hasher(BuildHasherDefault::default()),
         };
-        storage.rev_block_map.insert(block::Air{}, 0);
+        storage.rev_block_map.insert(def, 0);
         storage
     }
 

@@ -473,7 +473,7 @@ impl World {
     pub fn capture_snapshot(&self, x: i32, y: i32, z: i32, w: i32, h: i32, d: i32) -> Snapshot {
         use std::cmp::{min, max};
         let mut snapshot = Snapshot {
-            blocks: vec![0; (w * h * d) as usize],
+            blocks: storage::BlockStorage::new_default((w * h * d) as usize, block::Missing{}),
             block_light: nibble::Array::new((w * h * d) as usize),
             sky_light: nibble::Array::new((w * h * d) as usize),
             biomes: vec![0; (w * d) as usize],
@@ -483,7 +483,6 @@ impl World {
         };
         for i in 0 .. (w * h * d) as usize {
             snapshot.sky_light.set(i, 0xF);
-            snapshot.blocks[i] = block::Missing{}.get_steven_id() as u16;
         }
 
         let cx1 = x >> 4;
@@ -672,7 +671,7 @@ impl block::WorldAccess for World {
 }
 
 pub struct Snapshot {
-    blocks: Vec<u16>,
+    blocks: storage::BlockStorage,
     block_light: nibble::Array,
     sky_light: nibble::Array,
     biomes: Vec<u8>,
@@ -694,12 +693,12 @@ impl Snapshot {
     }
 
     pub fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
-        block::Block::by_steven_id(self.blocks[self.index(x, y, z)] as usize)
+        self.blocks.get(self.index(x, y, z))
     }
 
     pub fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) {
         let idx = self.index(x, y, z);
-        self.blocks[idx] = b.get_steven_id() as u16;
+        self.blocks.set(idx, b);
     }
 
     pub fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {
