@@ -30,6 +30,7 @@ use entity::block_entity;
 use format;
 
 pub mod biome;
+mod storage;
 
 pub struct World {
     chunks: HashMap<CPos, Chunk, BuildHasherDefault<FNVHash>>,
@@ -589,8 +590,7 @@ impl World {
                 section.dirty = true;
 
                 let mut bit_size = try!(data.read_u8());
-                section.block_map.clear();
-                section.rev_block_map.clear();
+                section.blocks.clear();
                 if bit_size == 0 {
                     bit_size = 13;
                 } else {
@@ -598,35 +598,19 @@ impl World {
                     for i in 0 .. count {
                         let id = try!(VarInt::read_from(&mut data)).0;
                         let bl = block::Block::by_vanilla_id(id as usize);
-                        section.block_map.push((bl, 0));
-                        section.rev_block_map.insert(bl, i as usize);
+                        section.blocks.force_mapping(i as usize, bl);
                     }
                 }
 
                 let bits = try!(LenPrefixed::<VarInt, u64>::read_from(&mut data)).data;
                 let m = bit::Map::from_raw(bits, bit_size as usize);
 
-                section.blocks = m;
+                section.blocks.use_raw(m);
+
+                // Spawn block entities
                 for bi in 0 .. 4096 {
-                    let bl_id = section.blocks.get(bi);
-                    if bit_size == 13 {
-                        if section.block_map.get(bl_id)
-                                .map(|v| v.1)
-                                .unwrap_or(0) == 0 {
-                            if bl_id >= section.block_map.len() {
-                                section.block_map.resize(bl_id + 1, (block::Air{}, 0xFFFFF)); // Impossible to reach this value normally
-                            }
-                            let bl = block::Block::by_vanilla_id(bl_id as usize);
-                            section.block_map[bl_id] = (bl, 0);
-                            section.rev_block_map.insert(bl, bl_id);
-                        }
-                    }
-                    let bmap = section.block_map.get_mut(bl_id).unwrap();
-                    if bmap.1 == 0xFFFFF {
-                        bmap.1 = 0;
-                    }
-                    bmap.1 += 1;
-                    if block_entity::BlockEntityType::get_block_entity(bmap.0).is_some() {
+                    let b = section.blocks.get(bi);
+                    if block_entity::BlockEntityType::get_block_entity(b).is_some() {
                         let pos = Position::new(
                             (bi & 0xF) as i32,
                             (bi >> 8) as i32,
@@ -636,12 +620,6 @@ impl World {
                             self.block_entity_actions.push_back(BlockEntityAction::Remove(pos))
                         }
                         self.block_entity_actions.push_back(BlockEntityAction::Create(pos))
-                    }
-                }
-
-                for entry in &section.block_map {
-                    if entry.1 == 0xFFFFF {
-                        section.rev_block_map.remove(&entry.0);
                     }
                 }
 
@@ -933,9 +911,7 @@ pub struct Section {
 
     y: u8,
 
-    blocks: bit::Map,
-    block_map: Vec<(block::Block, u32)>,
-    rev_block_map: HashMap<block::Block, usize, BuildHasherDefault<FNVHash>>,
+    blocks: storage::BlockStorage,
 
     block_light: nibble::Array,
     sky_light: nibble::Array,
@@ -951,11 +927,7 @@ impl Section {
             render_buffer: render::ChunkBuffer::new(),
             y: y,
 
-            blocks: bit::Map::new(4096, 4),
-            block_map: vec![
-                (block::Air{}, 0xFFFFFFFF)
-            ],
-            rev_block_map: HashMap::with_hasher(BuildHasherDefault::default()),
+            blocks: storage::BlockStorage::new(4096),
 
             block_light: nibble::Array::new(16 * 16 * 16),
             sky_light: nibble::Array::new(16 * 16 * 16),
@@ -968,61 +940,22 @@ impl Section {
                 section.sky_light.set(i, 0xF);
             }
         }
-        section.rev_block_map.insert(block::Air{}, 0);
         section
     }
 
     fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
-        let idx = self.blocks.get(((y << 8) | (z << 4) | x) as usize);
-        self.block_map[idx].0
+        self.blocks.get(((y << 8) | (z << 4) | x) as usize)
     }
 
     fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) -> bool {
-        use std::collections::hash_map::Entry;
-        let old = self.get_block(x, y, z);
-        if old == b {
-            return false;
-        }
-        // Clean up old block
-        {
-            let idx = self.rev_block_map[&old];
-            let info = &mut self.block_map[idx];
-            info.1 -= 1;
-            if info.1 == 0 { // None left of this type
-                self.rev_block_map.remove(&old);
-            }
-        }
-
-        if let Entry::Vacant(entry) = self.rev_block_map.entry(b) {
-            let mut found = false;
-            let id = entry.insert(self.block_map.len());
-            for (i, ref mut info) in self.block_map.iter_mut().enumerate() {
-                if info.1 == 0 {
-                    info.0 = b;
-                    *id = i;
-                    found = true;
-                    break;
-                }
-            }
-            if !found {
-                if self.block_map.len() >= 1 << self.blocks.bit_size {
-                    let new_size = self.blocks.bit_size + 1;
-                    self.blocks = self.blocks.resize(new_size);
-                }
-                self.block_map.push((b, 0));
-            }
-        }
-
-        {
-            let idx = self.rev_block_map[&b];
-            let info = &mut self.block_map[idx];
-            info.1 += 1;
-            self.blocks.set(((y << 8) | (z << 4) | x) as usize, idx);
+        if self.blocks.set(((y << 8) | (z << 4) | x) as usize, b) {
             self.dirty = true;
+            self.set_sky_light(x, y, z, 0);
+            self.set_block_light(x, y, z, 0);
+            true
+        } else {
+            false
         }
-        self.set_sky_light(x, y, z, 0);
-        self.set_block_light(x, y, z, 0);
-        true
     }
 
     fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {
