@@ -333,6 +333,14 @@ impl Server {
             self.sun_model = Some(sun::SunModel::new(renderer));
         }
 
+        // Copy to camera
+        if let Some(player) = self.player {
+            let position = self.entities.get_component(player, self.position).unwrap();
+            let rotation = self.entities.get_component(player, self.rotation).unwrap();
+            renderer.camera.pos = cgmath::Point::from_vec(position.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
+            renderer.camera.yaw = rotation.yaw;
+            renderer.camera.pitch = rotation.pitch;
+        }
         self.entity_tick(renderer, delta);
 
         self.tick_timer += delta;
@@ -348,15 +356,6 @@ impl Server {
         }
 
         self.world.tick(&mut self.entities);
-
-        // Copy to camera
-        if let Some(player) = self.player {
-            let position = self.entities.get_component(player, self.position).unwrap();
-            let rotation = self.entities.get_component(player, self.rotation).unwrap();
-            renderer.camera.pos = cgmath::Point::from_vec(position.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
-            renderer.camera.yaw = rotation.yaw;
-            renderer.camera.pitch = rotation.pitch;
-        }
     }
 
     fn entity_tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
