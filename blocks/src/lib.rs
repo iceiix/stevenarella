@@ -96,67 +96,8 @@ macro_rules! define_blocks {
         mod internal_ids {
             create_ids!(usize, $($name),+);
         }
-        mod internal_sizes {
-            $(
-                #[allow(non_upper_case_globals)]
-                pub const $name : usize = $(($(1 + consume_token!($val) + )+ 0) *  )* 1;
-            )+
-        }
-        mod internal_offsets {
-            use super::internal_sizes;
-            offsets!($($name),+);
-        }
-        mod internal_offset_max {
-            use super::internal_sizes;
-            use super::internal_offsets;
-            $(
-                #[allow(non_upper_case_globals)]
-                pub const $name: usize = internal_offsets::$name + internal_sizes::$name - 1;
-            )+
-        }
 
         impl Block {
-            #[allow(unused_variables, unused_mut, unused_assignments)]
-            pub fn get_steven_id(&self) -> usize {
-                match *self {
-                    $(
-                        Block::$name {
-                            $($fname,)*
-                        } => {
-                            let mut offset = internal_offsets::$name;
-                            let mut mul = 1;
-                            $(
-                                offset += [$($val),+].into_iter().position(|v| *v == $fname).unwrap() * mul;
-                                mul *= $(1 + consume_token!($val) + )+ 0;
-                            )*
-                            offset
-                        },
-                    )+
-                }
-            }
-
-            #[allow(unused_variables, unused_assignments)]
-            pub fn by_steven_id(id: usize) -> Block {
-                match id {
-                    $(
-                        mut data @ internal_offsets::$name ... internal_offset_max::$name=> {
-                            data -= internal_offsets::$name;
-                            $(
-                                let vals = [$($val),+];
-                                let $fname = vals[data % vals.len()];
-                                data /= vals.len();
-                            )*
-                            Block::$name {
-                                $(
-                                    $fname: $fname,
-                                )*
-                            }
-                        },
-                    )*
-                    _ => Block::Missing {}
-                }
-            }
-
             #[allow(unused_variables, unreachable_code)]
             pub fn get_vanilla_id(&self) -> Option<usize> {
                 match *self {
@@ -293,25 +234,114 @@ macro_rules! define_blocks {
         lazy_static! {
             static ref VANILLA_ID_MAP: Vec<Option<Block>> = {
                 let mut blocks = vec![];
-                for i in 0 .. internal_offsets::Missing {
-                    let block = Block::by_steven_id(i);
-                    if let Some(id) = block.get_vanilla_id() {
-                        if blocks.len() <= id {
-                            blocks.resize(id + 1, None);
-                        }
-                        if blocks[id].is_none() {
-                            blocks[id] = Some(block);
-                        } else {
-                            panic!(
-                                "Tried to register {:#?} to {}:{} but {:#?} was already registered",
-                                block,
-                                id >> 4,
-                                id & 0xF,
-                                blocks[id]
-                            );
+                $({
+                    #[allow(non_camel_case_types, dead_code)]
+                    struct CombinationIter<$($fname),*> {
+                        first: bool,
+                        finished: bool,
+                        state: CombinationIterState<$($fname),*>,
+                        orig: CombinationIterOrig<$($fname),*>,
+                        current: CombinationIterCurrent,
+                    }
+                    #[allow(non_camel_case_types)]
+                    struct CombinationIterState<$($fname),*> {
+                        $($fname: $fname,)*
+                    }
+                    #[allow(non_camel_case_types)]
+                    struct CombinationIterOrig<$($fname),*> {
+                        $($fname: $fname,)*
+                    }
+                    #[allow(non_camel_case_types)]
+                    struct CombinationIterCurrent {
+                        $($fname: $ftype,)*
+                    }
+
+                    #[allow(non_camel_case_types)]
+                    impl <$($fname : Iterator<Item=$ftype> + Clone),*> Iterator for CombinationIter<$($fname),*> {
+                        type Item = Block;
+
+                        #[allow(unused_mut, unused_variables, unreachable_code, unused_assignments)]
+                        fn next(&mut self) -> Option<Self::Item> {
+                            if self.finished {
+                                return None;
+                            }
+                            if self.first {
+                                self.first = false;
+                                return Some(Block::$name {
+                                    $(
+                                        $fname: self.current.$fname,
+                                    )*
+                                });
+                            }
+                            let mut has_value = false;
+                            loop {
+                                $(
+                                    if let Some(val) = self.state.$fname.next() {
+                                        self.current.$fname = val;
+                                        has_value = true;
+                                        break;
+                                    }
+                                    self.state.$fname = self.orig.$fname.clone();
+                                    self.current.$fname = self.state.$fname.next().unwrap();
+                                )*
+                                self.finished = true;
+                                return None;
+                            }
+                            if has_value {
+                                Some(Block::$name {
+                                    $(
+                                        $fname: self.current.$fname,
+                                    )*
+                                })
+                            } else {
+                                None
+                            }
                         }
                     }
-                }
+                    #[allow(non_camel_case_types)]
+                    impl <$($fname : Iterator<Item=$ftype> + Clone),*> CombinationIter<$($fname),*> {
+                        fn new($(mut $fname:$fname),*) -> CombinationIter<$($fname),*> {
+                            CombinationIter {
+                                finished: false,
+                                first: true,
+                                orig: CombinationIterOrig {
+                                    $($fname: $fname.clone(),)*
+                                },
+                                current: CombinationIterCurrent {
+                                    $($fname: $fname.next().unwrap(),)*
+                                },
+                                state: CombinationIterState {
+                                    $($fname: $fname,)*
+                                }
+                            }
+                        }
+                    }
+                    let iter = CombinationIter::new(
+                        $({
+                            let vals = vec![$($val),+];
+                            vals.into_iter()
+                        }),*
+                    );
+                    for block in iter {
+                        if let Some(id) = block.get_vanilla_id() {
+                            if blocks.len() <= id {
+                                blocks.resize(id + 1, None);
+                            }
+                            if blocks[id].is_none() {
+                                blocks[id] = Some(block);
+                            } else {
+                                panic!(
+                                    "Tried to register {:#?} to {}:{} but {:#?} was already registered",
+                                    block,
+                                    id >> 4,
+                                    id & 0xF,
+                                    blocks[id]
+                                );
+                            }
+                        }
+                    }
+                })+
+
                 blocks
             };
         }
