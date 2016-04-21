@@ -5,8 +5,8 @@ Don't expect it to go anywhere, just doing this for fun.
 
 ## Images
 
+![Steven on Hypixel](https://i.imgur.com/PM5fLuu.png)
 ![Steven](https://i.imgur.com/RRspOQF.png)
-![Steven on Hypixel](https://i.imgur.com/YMioc6J.png)
 
 
 In action: http://gfycat.com/NeedyElaborateGypsymoth
