@@ -1,7 +1,7 @@
 
 use world;
 use world::block;
-use shared::Position;
+use shared::{Position, Direction};
 use cgmath;
 use render;
 use render::model;
@@ -105,17 +105,36 @@ impl Info {
     }
 }
 
-pub fn test_block(world: &world::World, pos: Position, s: cgmath::Vector3<f64>, d: cgmath::Vector3<f64>) -> (bool, Option<(Position, block::Block)>) {
+pub fn test_block(world: &world::World, pos: Position, s: cgmath::Vector3<f64>, d: cgmath::Vector3<f64>) -> (bool, Option<(Position, block::Block, Direction, cgmath::Vector3<f64>)>) {
     let block = world.get_block(pos);
+    let posf = cgmath::Vector3::new(pos.x as f64, pos.y as f64, pos.z as f64);
     for bound in block.get_collision_boxes() {
-        let bound = bound.add_v(cgmath::Vector3::new(pos.x as f64, pos.y as f64, pos.z as f64));
+        let bound = bound.add_v(posf);
         if let Some(hit) = intersects_line(bound, s, d) {
-            // TODO: Face/cursor
-            let _ = hit;
-            return (true, Some((pos, block)));
+            let cursor = hit - posf;
+            let face = find_face(bound, hit);
+            return (true, Some((pos, block, face, cursor)));
         }
     }
     (false, None)
+}
+
+fn find_face(bound: collision::Aabb3<f64>, hit: cgmath::Vector3<f64>) -> Direction {
+    if (bound.min.x - hit.x).abs() < 0.01 {
+        Direction::West
+    } else if (bound.max.x - hit.x).abs() < 0.01 {
+        Direction::East
+    } else if (bound.min.y - hit.y).abs() < 0.01 {
+        Direction::Down
+    } else if (bound.max.y - hit.y).abs() < 0.01 {
+        Direction::Up
+    } else if (bound.min.z - hit.z).abs() < 0.01 {
+        Direction::North
+    } else if (bound.max.z - hit.z).abs() < 0.01 {
+        Direction::South
+    } else {
+        Direction::Up
+    }
 }
 
 fn intersects_line(bound: collision::Aabb3<f64>, origin: cgmath::Vector3<f64>, dir: cgmath::Vector3<f64>) -> Option<cgmath::Vector3<f64>> {

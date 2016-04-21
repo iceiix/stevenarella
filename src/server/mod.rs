@@ -348,7 +348,7 @@ impl Server {
 
         self.world.tick(&mut self.entities);
 
-        if let Some((pos, bl)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast(), target::test_block) {
+        if let Some((pos, bl, _, _)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast(), target::test_block) {
             self.target_info.update(renderer, pos, bl);
         } else {
             self.target_info.clear(renderer);
@@ -498,6 +498,30 @@ impl Server {
         if let Some(player) = self.player {
             if let Some(movement) = self.entities.get_component_mut(player, self.player_movement) {
                 movement.pressed_keys.insert(key, down);
+            }
+        }
+    }
+
+    pub fn on_right_click(&mut self, renderer: &mut render::Renderer) {
+        use shared::Direction;
+        if self.player.is_some() {
+            if let Some((pos, _, face, at)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast(), target::test_block) {
+                self.write_packet(packet::play::serverbound::PlayerBlockPlacement {
+                    location: pos,
+                    face: protocol::VarInt(match face {
+                        Direction::Down => 0,
+                        Direction::Up => 1,
+                        Direction::North => 2,
+                        Direction::South => 3,
+                        Direction::West => 4,
+                        Direction::East => 5,
+                        _ => unreachable!(),
+                    }),
+                    hand: protocol::VarInt(0),
+                    cursor_x: (at.x * 16.0) as u8,
+                    cursor_y: (at.y * 16.0) as u8,
+                    cursor_z: (at.z * 16.0) as u8,
+                });
             }
         }
     }

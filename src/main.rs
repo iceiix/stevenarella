@@ -339,6 +339,11 @@ fn handle_window_event(window: &sdl2::video::Window,
                 ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
             }
         }
+        Event::MouseButtonDown{mouse_btn: Mouse::Right, ..} => {
+            if game.focused {
+                game.server.on_right_click(&mut game.renderer);
+            }
+        }
         Event::MouseWheel{x, y, ..} => {
             game.screen_sys.on_scroll(x as f64, y as f64);
         }
