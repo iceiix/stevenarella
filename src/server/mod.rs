@@ -348,8 +348,12 @@ impl Server {
 
         self.world.tick(&mut self.entities);
 
-        if let Some((pos, bl, _, _)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast(), target::test_block) {
-            self.target_info.update(renderer, pos, bl);
+        if self.player.is_some() {
+            if let Some((pos, bl, _, _)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast(), target::test_block) {
+                self.target_info.update(renderer, pos, bl);
+            } else {
+                self.target_info.clear(renderer);
+            }
         } else {
             self.target_info.clear(renderer);
         }
@@ -419,6 +423,7 @@ impl Server {
         if let Some(mut sun_model) = self.sun_model.take() {
             sun_model.remove(renderer);
         }
+        self.target_info.clear(renderer);
     }
 
     fn update_time(&mut self, renderer: &mut render::Renderer, delta: f64) {
