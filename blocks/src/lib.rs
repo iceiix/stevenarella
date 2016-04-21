@@ -1009,6 +1009,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "oak_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::OakStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     Chest {
@@ -1229,6 +1230,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "stone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::StoneStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     WallSign {
@@ -1918,6 +1920,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::BrickStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     StoneBrickStairs {
@@ -1941,6 +1944,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "stone_brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::StoneBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     Mycelium {
@@ -2022,6 +2026,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "nether_brick_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::NetherBrickStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     NetherWart {
@@ -2229,6 +2234,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "sandstone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::SandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     EmeraldOre {
@@ -2345,6 +2351,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "spruce_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::SpruceStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     BirchStairs {
@@ -2368,6 +2375,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "birch_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::BirchStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     JungleStairs {
@@ -2391,6 +2399,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "jungle_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::JungleStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     CommandBlock {
@@ -2755,6 +2764,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "quartz_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::QuartzStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     ActivatorRail {
@@ -2905,6 +2915,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "acacia_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::AcaciaStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     DarkOakStairs {
@@ -2928,6 +2939,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "dark_oak_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::DarkOakStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     Slime {
@@ -3139,6 +3151,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "red_sandstone_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::RedSandstoneStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     DoubleStoneSlab2 {
@@ -3672,6 +3685,7 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "purpur_stairs") },
         variant format!("facing={},half={},shape={}", facing.as_string(), half.as_string(), shape.as_string()),
+        collision stair_collision(facing, shape, half),
         update_state (world, pos) => Block::PurpurStairs{facing: facing, half: half, shape: update_stair_shape(world, pos, facing)},
     }
     PurpurDoubleSlab {
@@ -4182,6 +4196,77 @@ fn stair_data(facing: Direction, half: BlockHalf, shape: StairShape) -> Option<u
     if shape != StairShape::Straight { return None; }
 
     Some((5 - facing.index()) | (if half == BlockHalf::Top { 0x4 } else { 0x0 }))
+}
+
+fn stair_collision(facing: Direction, shape: StairShape, half: BlockHalf) -> Vec<Aabb3<f64>> {
+    use std::f64::consts::PI;
+    let mut bounds = match shape {
+        StairShape::Straight => vec![
+            Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0)),
+            Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 1.0, 0.5)),
+        ],
+        StairShape::InnerLeft => vec![
+            Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0)),
+            Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 1.0, 0.5)),
+            Aabb3::new(Point3::new(0.0, 0.5, 0.5), Point3::new(0.5, 1.0, 1.0)),
+        ],
+        StairShape::InnerRight => vec![
+            Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0)),
+            Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(1.0, 1.0, 0.5)),
+            Aabb3::new(Point3::new(0.5, 0.5, 0.5), Point3::new(1.0, 1.0, 1.0)),
+        ],
+        StairShape::OuterLeft => vec![
+            Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0)),
+            Aabb3::new(Point3::new(0.0, 0.5, 0.0), Point3::new(0.5, 1.0, 0.5)),
+        ],
+        StairShape::OuterRight => vec![
+            Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.5, 1.0)),
+            Aabb3::new(Point3::new(0.5, 0.5, 0.0), Point3::new(1.0, 1.0, 0.5)),
+        ],
+    };
+    let mut angle = match facing {
+        Direction::North => 0.0,
+        Direction::East => PI * 0.5,
+        Direction::South => PI,
+        Direction::West => PI * 1.5,
+        _ => 0.0,
+    };
+
+    if half == BlockHalf::Top {
+        angle -= PI;
+    }
+
+    let c = angle.cos();
+    let s = angle.sin();
+
+    for bound in &mut bounds {
+        let x = bound.min.x - 0.5;
+        let z = bound.min.z - 0.5;
+        bound.min.x = 0.5 + (x*c - z*s);
+        bound.min.z = 0.5 + (z*c + x*s);
+        let x = bound.max.x - 0.5;
+        let z = bound.max.z - 0.5;
+        bound.max.x = 0.5 + (x*c - z*s);
+        bound.max.z = 0.5 + (z*c + x*s);
+
+        if half == BlockHalf::Top {
+            let c = PI.cos();
+            let s = PI.sin();
+            let z = bound.min.z - 0.5;
+            let y = bound.min.y - 0.5;
+            bound.min.z = 0.5 + (z*c - y*s);
+            bound.min.y = 0.5 + (y*c + z*s);
+            let z = bound.max.z - 0.5;
+            let y = bound.max.y - 0.5;
+            bound.max.z = 0.5 + (z*c - y*s);
+            bound.max.y = 0.5 + (y*c + z*s);
+
+            bound.min.x = 1.0 - bound.min.x;
+            bound.max.x = 1.0 - bound.max.x;
+        }
+    }
+
+    bounds
 }
 
 fn slab_collision(half: BlockHalf) -> Vec<Aabb3<f64>> {
