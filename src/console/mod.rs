@@ -136,7 +136,6 @@ impl Vars {
     pub fn set<T: Sized + Any>(&self, var: CVar<T>, val: T)
         where CVar<T>: Var
     {
-        // self.var_values.insert(var.name, Box::new(val));
         *self.var_values.get(var.name).unwrap().borrow_mut() = Box::new(val);
         self.save_config();
     }
