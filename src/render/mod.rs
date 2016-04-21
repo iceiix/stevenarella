@@ -848,73 +848,93 @@ impl TextureManager {
                 Ok(val) => val,
                 Err(_) => return, // Most likely shutting down
             };
-            let path = format!("skin-cache/{}/{}.png", &hash[..2], hash);
-            let cache_path = Path::new(&path);
-            fs::create_dir_all(cache_path.parent().unwrap()).unwrap();
-            let mut buf = vec![];
-            if fs::metadata(cache_path).is_ok() {
-                // We have a cached image
-                let mut file = fs::File::open(cache_path).unwrap();
-                file.read_to_end(&mut buf).unwrap();
-            } else {
-                // Need to download it
-                let url = format!("http://textures.minecraft.net/texture/{}", hash);
-                let mut res = client.get(&url).send().unwrap();
-                res.read_to_end(&mut buf).unwrap();
-                // Save to cache
-                let mut file = fs::File::create(cache_path).unwrap();
-                file.write_all(&buf).unwrap();
-            }
-            let mut img = match image::load_from_memory(&buf) {
-                Ok(val) => val,
-                Err(_) => {
+            match Self::obtain_skin(&client, &hash) {
+                Ok(img) => {
+                    let _ = reply.send((hash, Some(img)));
+                },
+                Err(err) => {
+                    error!("Failed to get skin {:?}: {}", hash, err);
                     let _ = reply.send((hash, None));
-                    continue;
+                },
+            }
+        }
+    }
+
+    fn obtain_skin(client: &::hyper::Client, hash: &str) -> Result<image::DynamicImage, ::std::io::Error> {
+        use std::io::Read;
+        use std::fs;
+        use std::path::Path;
+        use std::io::{Error, ErrorKind};
+        let path = format!("skin-cache/{}/{}.png", &hash[..2], hash);
+        let cache_path = Path::new(&path);
+        try!(fs::create_dir_all(cache_path.parent().unwrap()));
+        let mut buf = vec![];
+        if fs::metadata(cache_path).is_ok() {
+            // We have a cached image
+            let mut file = try!(fs::File::open(cache_path));
+            try!(file.read_to_end(&mut buf));
+        } else {
+            // Need to download it
+            let url = format!("http://textures.minecraft.net/texture/{}", hash);
+            let mut res = match client.get(&url).send() {
+                Ok(val) => val,
+                Err(err) => {
+                    return Err(Error::new(ErrorKind::ConnectionAborted, err));
                 }
             };
-            let (_, height) = img.dimensions();
-            if height == 32 {
-                // Needs changing to the new format
-                let mut new = image::DynamicImage::new_rgba8(64, 64);
-                new.copy_from(&img, 0, 0);
-                for xx in 0 .. 4 {
-                    for yy in 0 .. 16 {
-                        for section in 0 .. 4 {
-                            let os = match section {
-                                0 => 2,
-                                1 => 1,
-                                2 => 0,
-                                3 => 3,
-                                _ => unreachable!(),
-                            };
-                            new.put_pixel(16 + (3 - xx) + section * 4, 48 + yy, img.get_pixel(xx + os * 4, 16 + yy));
-                            new.put_pixel(32 + (3 - xx) + section * 4, 48 + yy, img.get_pixel(xx + 40 + os * 4, 16 + yy));
-                        }
-                    }
-                }
-                img = new;
-            }
-            // Block transparent pixels in blacklisted areas
-            let blacklist = [
-                // X, Y, W, H
-                (0, 0, 32, 16),
-                (16, 16, 24, 16),
-                (0, 16, 16, 16),
-                (16, 48, 16, 16),
-                (32, 48, 16, 16),
-                (40, 16, 16, 16),
-            ];
-            for bl in blacklist.into_iter() {
-                for x in bl.0 .. (bl.0 + bl.2) {
-                    for y in bl.1 .. (bl.1 + bl.3) {
-                        let mut col = img.get_pixel(x, y);
-                        col.data[3] = 255;
-                        img.put_pixel(x, y, col);
-                    }
-                }
-            }
-            let _ = reply.send((hash, Some(img)));
+            try!(res.read_to_end(&mut buf));
+            // Save to cache
+            let mut file = try!(fs::File::create(cache_path));
+            try!(file.write_all(&buf));
         }
+        let mut img = match image::load_from_memory(&buf) {
+            Ok(val) => val,
+            Err(err) => {
+                return Err(Error::new(ErrorKind::InvalidData, err));
+            }
+        };
+        let (_, height) = img.dimensions();
+        if height == 32 {
+            // Needs changing to the new format
+            let mut new = image::DynamicImage::new_rgba8(64, 64);
+            new.copy_from(&img, 0, 0);
+            for xx in 0 .. 4 {
+                for yy in 0 .. 16 {
+                    for section in 0 .. 4 {
+                        let os = match section {
+                            0 => 2,
+                            1 => 1,
+                            2 => 0,
+                            3 => 3,
+                            _ => unreachable!(),
+                        };
+                        new.put_pixel(16 + (3 - xx) + section * 4, 48 + yy, img.get_pixel(xx + os * 4, 16 + yy));
+                        new.put_pixel(32 + (3 - xx) + section * 4, 48 + yy, img.get_pixel(xx + 40 + os * 4, 16 + yy));
+                    }
+                }
+            }
+            img = new;
+        }
+        // Block transparent pixels in blacklisted areas
+        let blacklist = [
+            // X, Y, W, H
+            (0, 0, 32, 16),
+            (16, 16, 24, 16),
+            (0, 16, 16, 16),
+            (16, 48, 16, 16),
+            (32, 48, 16, 16),
+            (40, 16, 16, 16),
+        ];
+        for bl in blacklist.into_iter() {
+            for x in bl.0 .. (bl.0 + bl.2) {
+                for y in bl.1 .. (bl.1 + bl.3) {
+                    let mut col = img.get_pixel(x, y);
+                    col.data[3] = 255;
+                    img.put_pixel(x, y, col);
+                }
+            }
+        }
+        Ok(img)
     }
 
     fn update_textures(&mut self, version: usize) {
