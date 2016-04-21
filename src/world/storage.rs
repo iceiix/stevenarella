@@ -40,13 +40,16 @@ impl BlockStorage {
         if old == b {
             return false;
         }
-        // Clean up old block
+        // Clean up the old block
         {
-            let idx = self.rev_block_map[&old];
-            let info = &mut self.block_map[idx];
-            info.1 -= 1;
-            if info.1 == 0 { // None left of this type
-                self.rev_block_map.remove(&old);
+            // BUG: This lookup should never fail but sometimes will
+            // due to an issue with loading chunks from the server.
+            if let Some(idx) = self.rev_block_map.get(&old).cloned() {
+                let info = &mut self.block_map[idx];
+                info.1 -= 1;
+                if info.1 == 0 { // None left of this type
+                    self.rev_block_map.remove(&old);
+                }
             }
         }
 
