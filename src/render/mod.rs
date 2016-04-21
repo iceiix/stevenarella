@@ -839,9 +839,6 @@ impl TextureManager {
 
     fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
         use hyper;
-        use std::io::Read;
-        use std::fs;
-        use std::path::Path;
         let client = hyper::Client::new();
         loop {
             let hash = match recv.recv() {

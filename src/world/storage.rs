@@ -42,14 +42,11 @@ impl BlockStorage {
         }
         // Clean up the old block
         {
-            // BUG: This lookup should never fail but sometimes will
-            // due to an issue with loading chunks from the server.
-            if let Some(idx) = self.rev_block_map.get(&old).cloned() {
-                let info = &mut self.block_map[idx];
-                info.1 -= 1;
-                if info.1 == 0 { // None left of this type
-                    self.rev_block_map.remove(&old);
-                }
+            let idx = *self.rev_block_map.get(&old).unwrap();
+            let info = &mut self.block_map[idx];
+            info.1 -= 1;
+            if info.1 == 0 { // None left of this type
+                self.rev_block_map.remove(&old);
             }
         }
 
@@ -80,71 +77,5 @@ impl BlockStorage {
             self.blocks.set(idx, b_idx);
         }
         true
-    }
-
-    // Quick chunk loading support helpers
-
-    pub fn clear(&mut self) {
-        self.block_map.clear();
-        self.rev_block_map.clear();
-    }
-
-    pub fn force_mapping(&mut self, idx: usize, b: block::Block) {
-        if self.block_map.len() < idx {
-            self.block_map[idx] = (b, 0);
-        } else if self.block_map.len() == idx {
-            self.block_map.push((b, 0));
-        } else {
-            panic!("Out of bounds force mapping")
-        }
-        self.rev_block_map.insert(b, idx);
-    }
-
-    pub fn use_raw(&mut self, data: bit::Map) {
-        self.blocks = data;
-        // Recount blocks
-        for bi in 0 .. 4096 {
-            let mut bl_id = self.blocks.get(bi);
-            if self.blocks.bit_size == 13 { // Global palette
-                if self.block_map.get(bl_id)
-                        .map(|v| v.1)
-                        .unwrap_or(0) == 0 {
-                    if bl_id >= self.block_map.len() {
-                        self.block_map.resize(bl_id + 1, (block::Air{}, 0xFFFFF)); // Impossible to reach this value normally
-                    }
-                    let bl = block::Block::by_vanilla_id(bl_id as usize);
-                    self.block_map[bl_id] = (bl, 0);
-                    self.rev_block_map.insert(bl, bl_id);
-                }
-            }
-            {
-                // Sometimes we can have two mappings for the same block
-                // (either due to a server bug or unimplemented blocks
-                // in steven). This attempts to repair this by replacing
-                // duplicate mappings with the last one.
-                let bmap = self.block_map.get_mut(bl_id).unwrap();
-                let rev = *self.rev_block_map.get(&bmap.0).unwrap();
-                if rev != bl_id {
-                    bl_id = rev;
-                    self.blocks.set(bi, bl_id);
-                }
-            }
-            let mut bmap = self.block_map.get_mut(bl_id).unwrap();
-            if bmap.1 == 0xFFFFF {
-                bmap.1 = 0;
-            }
-            bmap.1 += 1;
-        }
-        self.gc_entries();
-    }
-
-    fn gc_entries(&mut self) {
-        for entry in &mut self.block_map {
-            if entry.1 == 0xFFFFF {
-                println!("GC'd block");
-                self.rev_block_map.remove(&entry.0);
-                entry.1 = 0;
-            }
-        }
     }
 }

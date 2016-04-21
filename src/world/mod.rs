@@ -589,7 +589,7 @@ impl World {
                 section.dirty = true;
 
                 let mut bit_size = try!(data.read_u8());
-                section.blocks.clear();
+                let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> = HashMap::with_hasher(BuildHasherDefault::default());
                 if bit_size == 0 {
                     bit_size = 13;
                 } else {
@@ -597,17 +597,17 @@ impl World {
                     for i in 0 .. count {
                         let id = try!(VarInt::read_from(&mut data)).0;
                         let bl = block::Block::by_vanilla_id(id as usize);
-                        section.blocks.force_mapping(i as usize, bl);
+                        mappings.insert(i as usize, bl);
                     }
                 }
 
                 let bits = try!(LenPrefixed::<VarInt, u64>::read_from(&mut data)).data;
                 let m = bit::Map::from_raw(bits, bit_size as usize);
 
-                section.blocks.use_raw(m);
-
-                // Spawn block entities
                 for bi in 0 .. 4096 {
+                    let id = m.get(bi);
+                    section.blocks.set(bi, mappings.get(&id).cloned().unwrap_or(block::Block::by_vanilla_id(id)));
+                    // Spawn block entities
                     let b = section.blocks.get(bi);
                     if block_entity::BlockEntityType::get_block_entity(b).is_some() {
                         let pos = Position::new(
