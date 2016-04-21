@@ -27,7 +27,7 @@ use render;
 use settings::Stevenkey;
 use ecs;
 use entity;
-use cgmath;
+use cgmath::{self, Point};
 use collision::Aabb;
 use types::Gamemode;
 use shared::{Axis, Position};
@@ -35,6 +35,7 @@ use format;
 
 mod sun;
 pub mod plugin_messages;
+pub mod target;
 
 pub struct Server {
     username: String,
@@ -74,6 +75,7 @@ pub struct Server {
     entity_tick_timer: f64,
 
     sun_model: Option<sun::SunModel>,
+    target_info: target::Info,
 }
 
 pub struct PlayerInfo {
@@ -293,6 +295,8 @@ impl Server {
             tick_timer: 0.0,
             entity_tick_timer: 0.0,
             sun_model: None,
+
+            target_info: target::Info::new(),
         }
     }
 
@@ -343,6 +347,12 @@ impl Server {
         }
 
         self.world.tick(&mut self.entities);
+
+        if let Some((pos, bl)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast(), target::test_block) {
+            self.target_info.update(renderer, pos, bl);
+        } else {
+            self.target_info.clear(renderer);
+        }
     }
 
     fn entity_tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
