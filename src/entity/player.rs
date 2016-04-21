@@ -667,11 +667,13 @@ fn check_collisions(world: &world::World, position: &mut TargetPosition, last_po
         for z in min_z .. max_z {
             for x in min_x .. max_x {
                 let block = world.get_block(BPosition::new(x, y, z));
-                for bb in block.get_collision_boxes() {
-                    let bb = bb.add_v(cgmath::Vector3::new(x as f64, y as f64, z as f64));
-                    if bb.collides(&bounds) {
-                        bounds = bounds.move_out_of(bb, dir);
-                        hit = true;
+                if block.get_material().collidable {
+                    for bb in block.get_collision_boxes() {
+                        let bb = bb.add_v(cgmath::Vector3::new(x as f64, y as f64, z as f64));
+                        if bb.collides(&bounds) {
+                            bounds = bounds.move_out_of(bb, dir);
+                            hit = true;
+                        }
                     }
                 }
             }

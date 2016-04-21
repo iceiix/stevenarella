@@ -359,7 +359,10 @@ pub enum TintType {
 define_blocks! {
     Air {
         props {},
-        material material::INVISIBLE,
+        material material::Material {
+            collidable: false,
+            .. material::INVISIBLE
+        },
         model { ("minecraft", "air") },
         collision vec![],
     }
@@ -1395,7 +1398,6 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "stone_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
-        collision vec![],
     }
     SnowLayer {
         props {
@@ -2535,7 +2537,6 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", "wooden_button") },
         variant format!("facing={},powered={}", facing.as_string(), powered),
-        collision vec![],
     }
     Skull {
         props {

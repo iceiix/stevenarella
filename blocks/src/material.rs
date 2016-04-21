@@ -7,6 +7,7 @@ pub struct Material {
     pub transparent: bool,
     pub absorbed_light: u8,
     pub emitted_light: u8,
+    pub collidable: bool,
 }
 
 pub const INVISIBLE: Material = Material {
@@ -17,6 +18,7 @@ pub const INVISIBLE: Material = Material {
     transparent: false,
     absorbed_light: 0, // Special because of sky light
     emitted_light: 0,
+    collidable: true,
 };
 
 pub const SOLID: Material = Material {
@@ -27,6 +29,7 @@ pub const SOLID: Material = Material {
     transparent: false,
     absorbed_light: 15,
     emitted_light: 0,
+    collidable: true,
 };
 
 pub const NON_SOLID: Material = Material {
