@@ -59,19 +59,19 @@ pub const CL_KEYBIND_SNEAK: console::CVar<i64> = create_keybind!(LShift, "cl_key
 pub const CL_KEYBIND_SPRINT: console::CVar<i64> = create_keybind!(LCtrl, "cl_keybind_sprint", "Keybinding for sprinting");
 pub const CL_KEYBIND_JUMP: console::CVar<i64> = create_keybind!(Space, "cl_keybind_jump", "Keybinding for jumping");
 
-pub fn register_vars(console: &mut console::Console) {
-    console.register(R_MAX_FPS);
-    console.register(R_FOV);
-    console.register(R_VSYNC);
-    console.register(CL_MASTER_VOLUME);
-    console.register(CL_KEYBIND_FORWARD);
-    console.register(CL_KEYBIND_BACKWARD);
-    console.register(CL_KEYBIND_LEFT);
-    console.register(CL_KEYBIND_RIGHT);
-    console.register(CL_KEYBIND_OPEN_INV);
-    console.register(CL_KEYBIND_SNEAK);
-    console.register(CL_KEYBIND_SPRINT);
-    console.register(CL_KEYBIND_JUMP);
+pub fn register_vars(vars: &mut console::Vars) {
+    vars.register(R_MAX_FPS);
+    vars.register(R_FOV);
+    vars.register(R_VSYNC);
+    vars.register(CL_MASTER_VOLUME);
+    vars.register(CL_KEYBIND_FORWARD);
+    vars.register(CL_KEYBIND_BACKWARD);
+    vars.register(CL_KEYBIND_LEFT);
+    vars.register(CL_KEYBIND_RIGHT);
+    vars.register(CL_KEYBIND_OPEN_INV);
+    vars.register(CL_KEYBIND_SNEAK);
+    vars.register(CL_KEYBIND_SPRINT);
+    vars.register(CL_KEYBIND_JUMP);
 }
 
 #[derive(Hash, PartialEq, Eq)]
@@ -93,9 +93,9 @@ impl Stevenkey {
             Stevenkey::Sprint, Stevenkey::Jump)
     }
 
-    pub fn get_by_keycode(keycode: Keycode, console: &console::Console) -> Option<Stevenkey> {
+    pub fn get_by_keycode(keycode: Keycode, vars: &console::Vars) -> Option<Stevenkey> {
         for steven_key in Stevenkey::values() {
-            if keycode as i64 == *console.get(steven_key.get_cvar()) {
+            if keycode as i64 == *vars.get(steven_key.get_cvar()) {
                 return Some(steven_key)
             }
         }

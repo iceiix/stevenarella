@@ -16,17 +16,15 @@ use protocol::{self, mojang, packet};
 use world;
 use world::block;
 use rand::{self, Rng};
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, RwLock};
 use std::sync::mpsc;
 use std::thread;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use types::hash::FNVHash;
 use resources;
-use console;
 use render;
 use settings::Stevenkey;
-use auth;
 use ecs;
 use entity;
 use cgmath;
@@ -54,7 +52,6 @@ pub struct Server {
     tick_time: bool,
 
     resources: Arc<RwLock<resources::Manager>>,
-    console: Arc<Mutex<console::Console>>,
     version: usize,
 
     // Entity accessors
@@ -104,19 +101,10 @@ macro_rules! handle_packet {
 
 impl Server {
 
-    pub fn connect(resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>, address: &str) -> Result<Server, protocol::Error> {
+    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str) -> Result<Server, protocol::Error> {
         use openssl::crypto::pkey;
         use openssl::crypto::rand::rand_bytes;
         let mut conn = try!(protocol::Conn::new(address));
-
-        let profile = {
-            let console = console.lock().unwrap();
-            mojang::Profile {
-                username: console.get(auth::CL_USERNAME).clone(),
-                id: console.get(auth::CL_UUID).clone(),
-                access_token: console.get(auth::AUTH_TOKEN).clone(),
-            }
-        };
 
         let host = conn.host.clone();
         let port = conn.port;
@@ -149,7 +137,7 @@ impl Server {
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
-                    return Ok(Server::new(val.username, protocol::UUID::from_str(&val.uuid), resources, console, Some(write), Some(rx)));
+                    return Ok(Server::new(val.username, protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
                 }
                 protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
                 val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
@@ -199,7 +187,7 @@ impl Server {
 
         let rx = Self::spawn_reader(read);
 
-        Ok(Server::new(username, protocol::UUID::from_str(&uuid), resources, console, Some(write), Some(rx)))
+        Ok(Server::new(username, protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
     }
 
     fn spawn_reader(mut read: protocol::Conn) -> mpsc::Receiver<Result<packet::Packet, protocol::Error>> {
@@ -219,8 +207,8 @@ impl Server {
         rx
     }
 
-    pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>) -> Server {
-        let mut server = Server::new("dummy".to_owned(), protocol::UUID::default(), resources, console, None, None);
+    pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>) -> Server {
+        let mut server = Server::new("dummy".to_owned(), protocol::UUID::default(), resources, None, None);
         let mut rng = rand::thread_rng();
         for x in -7*16 .. 7*16 {
             for z in -7*16 .. 7*16 {
@@ -257,7 +245,7 @@ impl Server {
 
     fn new(
         username: String, uuid: protocol::UUID,
-        resources: Arc<RwLock<resources::Manager>>, console: Arc<Mutex<console::Console>>,
+        resources: Arc<RwLock<resources::Manager>>,
         conn: Option<protocol::Conn>, read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>
     ) -> Server {
         let mut entities = ecs::Manager::new();
@@ -284,7 +272,6 @@ impl Server {
 
             version: version,
             resources: resources,
-            console: console,
 
             // Entity accessors
             game_info: game_info,

@@ -3,7 +3,7 @@ use render;
 use ui;
 use settings;
 
-use std::sync::{Arc, Mutex};
+use std::rc::Rc;
 
 pub fn new_submenu_button(text: &str, renderer: &mut render::Renderer, ui_container: &mut ui::Container, x: f64, y: f64) -> (ui::ElementRef<ui::Button>, ui::ElementRef<ui::Text>) {
     let (mut btn, mut txt) = super::new_button_text(renderer, text, x, y, 300.0, 40.0);
@@ -47,15 +47,15 @@ pub struct UIElements {
 }
 
 pub struct SettingsMenu {
-    console: Arc<Mutex<console::Console>>,
+    vars: Rc<console::Vars>,
     elements: Option<UIElements>,
     show_disconnect_button: bool
 }
 
 impl SettingsMenu {
-    pub fn new(console: Arc<Mutex<console::Console>>, show_disconnect_button: bool) -> SettingsMenu {
+    pub fn new(vars: Rc<console::Vars>, show_disconnect_button: bool) -> SettingsMenu {
         SettingsMenu {
-            console: console,
+            vars: vars,
             elements: None,
             show_disconnect_button: show_disconnect_button
         }
@@ -78,14 +78,14 @@ impl super::Screen for SettingsMenu {
         // From top and down
         let (btn_audio_settings, txt_audio_settings) = new_submenu_button("Audio settings...", renderer, ui_container, -160.0, -50.0);
         super::button_action(ui_container, btn_audio_settings.clone(), Some(txt_audio_settings.clone()), move |game, _| {
-            game.screen_sys.add_screen(Box::new(AudioSettingsMenu::new(game.console.clone())));
+            game.screen_sys.add_screen(Box::new(AudioSettingsMenu::new(game.vars.clone())));
         });
         elements.add(btn_audio_settings);
         elements.add(txt_audio_settings);
 
         let (btn_video_settings, txt_video_settings) = new_submenu_button("Video settings...", renderer, ui_container, 160.0, -50.0);
         super::button_action(ui_container, btn_video_settings.clone(), Some(txt_video_settings.clone()), move |game, _| {
-            game.screen_sys.add_screen(Box::new(VideoSettingsMenu::new(game.console.clone())));
+            game.screen_sys.add_screen(Box::new(VideoSettingsMenu::new(game.vars.clone())));
         });
         elements.add(btn_video_settings);
         elements.add(txt_video_settings);
@@ -166,14 +166,14 @@ impl super::Screen for SettingsMenu {
 }
 
 pub struct VideoSettingsMenu {
-    console: Arc<Mutex<console::Console>>,
+    vars: Rc<console::Vars>,
     elements: Option<UIElements>,
 }
 
 impl VideoSettingsMenu {
-    pub fn new(console: Arc<Mutex<console::Console>>) -> VideoSettingsMenu {
+    pub fn new(vars: Rc<console::Vars>) -> VideoSettingsMenu {
         VideoSettingsMenu {
-            console: console,
+            vars: vars,
             elements: None,
         }
     }
@@ -193,14 +193,9 @@ impl super::Screen for VideoSettingsMenu {
         let background = elements.add(ui_container.add(background));
 
         // Load defaults
-        let (r_max_fps, r_fov, r_vsync) = {
-            let console = self.console.lock().unwrap();
-            (
-                console.get(settings::R_MAX_FPS).clone(),
-                console.get(settings::R_FOV).clone(),
-                console.get(settings::R_VSYNC).clone()
-            )
-        };
+        let r_max_fps = *self.vars.get(settings::R_MAX_FPS);
+        let r_fov = *self.vars.get(settings::R_FOV);
+        let r_vsync = *self.vars.get(settings::R_VSYNC);
 
         // Setting buttons
         // TODO: Slider
@@ -211,11 +206,10 @@ impl super::Screen for VideoSettingsMenu {
         let (btn_vsync, txt_vsync) = new_submenu_button(get_bool_str!("VSync: {}", r_vsync, "Enabled", "Disabled"), renderer, ui_container, -160.0, 0.0);
         elements.add(txt_vsync.clone());
         super::button_action(ui_container, btn_vsync.clone(), Some(txt_vsync.clone()), move | game, ui_container | {
-            let mut console = game.console.lock().unwrap();
-            let r_vsync = !console.get(settings::R_VSYNC);
+            let r_vsync = !*game.vars.get(settings::R_VSYNC);
             let txt_vsync = ui_container.get_mut(&txt_vsync);
             txt_vsync.set_text(&game.renderer, get_bool_str!("VSync: {}", r_vsync, "Enabled", "Disabled"));
-            console.set(settings::R_VSYNC, r_vsync);
+            game.vars.set(settings::R_VSYNC, r_vsync);
         });
         elements.add(btn_vsync);
 
@@ -273,14 +267,14 @@ impl super::Screen for VideoSettingsMenu {
 }
 
 pub struct AudioSettingsMenu {
-    console: Arc<Mutex<console::Console>>,
+    vars: Rc<console::Vars>,
     elements: Option<UIElements>
 }
 
 impl AudioSettingsMenu {
-    pub fn new(console: Arc<Mutex<console::Console>>) -> AudioSettingsMenu {
+    pub fn new(vars: Rc<console::Vars>) -> AudioSettingsMenu {
         AudioSettingsMenu {
-            console: console,
+            vars: vars,
             elements: None
         }
     }
@@ -299,12 +293,9 @@ impl super::Screen for AudioSettingsMenu {
         background.set_a(100);
         let background = elements.add(ui_container.add(background));
 
-        let master_volume = {
-            let console = self.console.lock().unwrap();
-            (console.get(settings::CL_MASTER_VOLUME).clone())
-        };
+        let master_volume = *self.vars.get(settings::CL_MASTER_VOLUME);
 
-        let (btn_master_volume, txt_master_volume) = new_centered_button(master_volume.to_string().as_ref(), renderer, ui_container, -150.0, ui::VAttach::Middle);
+        let (btn_master_volume, txt_master_volume) = new_centered_button(&master_volume.to_string(), renderer, ui_container, -150.0, ui::VAttach::Middle);
         elements.add(btn_master_volume);
         elements.add(txt_master_volume);
 

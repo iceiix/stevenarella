@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::{Arc, Mutex};
-
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::mpsc;
@@ -30,7 +28,7 @@ use auth;
 
 pub struct Login {
     elements: Option<UIElements>,
-    console: Arc<Mutex<console::Console>>,
+    vars: Rc<console::Vars>,
 }
 
 struct UIElements {
@@ -51,8 +49,8 @@ struct UIElements {
 
 
 impl Login {
-    pub fn new(console: Arc<Mutex<console::Console>>) -> Login {
-        Login { elements: None, console: console }
+    pub fn new(vars: Rc<console::Vars>) -> Login {
+        Login { elements: None, vars: vars }
     }
 }
 
@@ -126,11 +124,10 @@ impl super::Screen for Login {
         warn.set_h_attach(ui::HAttach::Right);
         elements.add(ui_container.add(warn));
 
-        let console = self.console.lock().unwrap();
         let profile = mojang::Profile {
-            username: console.get(auth::CL_USERNAME).clone(),
-            id: console.get(auth::CL_UUID).clone(),
-            access_token: console.get(auth::AUTH_TOKEN).clone(),
+            username: self.vars.get(auth::CL_USERNAME).clone(),
+            id: self.vars.get(auth::CL_UUID).clone(),
+            access_token: self.vars.get(auth::AUTH_TOKEN).clone(),
         };
         let refresh = profile.is_complete();
         try_login.set(refresh);
@@ -178,13 +175,12 @@ impl super::Screen for Login {
                 let txt = ui_container.get_mut(&elements.login_btn_text);
                 txt.set_text(renderer, "Logging in...");
             }
-            let mut console = self.console.lock().unwrap();
-            let mut client_token = console.get(auth::AUTH_CLIENT_TOKEN).clone();
+            let mut client_token = self.vars.get(auth::AUTH_CLIENT_TOKEN).clone();
             if client_token.is_empty() {
                 client_token = rand::thread_rng().gen_ascii_chars().take(20).collect::<String>();
-                console.set(auth::AUTH_CLIENT_TOKEN, client_token);
+                self.vars.set(auth::AUTH_CLIENT_TOKEN, client_token);
             }
-            let client_token = console.get(auth::AUTH_CLIENT_TOKEN).clone();
+            let client_token = self.vars.get(auth::AUTH_CLIENT_TOKEN).clone();
             let username = {
                 let txt = ui_container.get(&elements.username_txt);
                 txt.get_input()
@@ -217,10 +213,9 @@ impl super::Screen for Login {
                 }
                 match res {
                     Ok(val) => {
-                        let mut console = self.console.lock().unwrap();
-                        console.set(auth::CL_USERNAME, val.username.clone());
-                        console.set(auth::CL_UUID, val.id.clone());
-                        console.set(auth::AUTH_TOKEN, val.access_token.clone());
+                        self.vars.set(auth::CL_USERNAME, val.username.clone());
+                        self.vars.set(auth::CL_UUID, val.id.clone());
+                        self.vars.set(auth::AUTH_TOKEN, val.access_token.clone());
                         elements.profile = val;
                         return Some(Box::new(super::ServerList::new(None)));
                     },

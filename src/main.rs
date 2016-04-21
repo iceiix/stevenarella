@@ -59,9 +59,11 @@ pub mod model;
 pub mod entity;
 
 use std::sync::{Arc, RwLock, Mutex};
+use std::rc::Rc;
 use std::marker::PhantomData;
 use std::thread;
 use std::sync::mpsc;
+use protocol::mojang;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -78,6 +80,7 @@ pub struct Game {
     screen_sys: screen::ScreenSystem,
     resource_manager: Arc<RwLock<resources::Manager>>,
     console: Arc<Mutex<console::Console>>,
+    vars: Rc<console::Vars>,
     should_close: bool,
 
     server: server::Server,
@@ -93,9 +96,13 @@ impl Game {
         self.connect_reply = Some(rx);
         let address = address.to_owned();
         let resources = self.resource_manager.clone();
-        let console = self.console.clone();
+        let profile = mojang::Profile {
+            username: self.vars.get(auth::CL_USERNAME).clone(),
+            id: self.vars.get(auth::CL_UUID).clone(),
+            access_token: self.vars.get(auth::AUTH_TOKEN).clone(),
+        };
         thread::spawn(move || {
-            tx.send(server::Server::connect(resources, console, &address)).unwrap();
+            tx.send(server::Server::connect(resources, profile, &address)).unwrap();
         });
     }
 
@@ -151,14 +158,15 @@ impl Game {
 
 fn main() {
     let con = Arc::new(Mutex::new(console::Console::new()));
-    let mut vsync = {
-        let mut con = con.lock().unwrap();
-        con.register(CL_BRAND);
-        auth::register_vars(&mut con);
-        settings::register_vars(&mut con);
-        con.load_config();
-        con.save_config();
-        *con.get(settings::R_VSYNC)
+    let (vars, mut vsync) = {
+        let mut vars = console::Vars::new();
+        vars.register(CL_BRAND);
+        auth::register_vars(&mut vars);
+        settings::register_vars(&mut vars);
+        vars.load_config();
+        vars.save_config();
+        let vsync = *vars.get(settings::R_VSYNC);
+        (Rc::new(vars), vsync)
     };
 
     let proxy = console::ConsoleProxy::new(con.clone());
@@ -204,16 +212,17 @@ fn main() {
     let frame_time = (time::Duration::seconds(1).num_nanoseconds().unwrap() as f64) / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
-    screen_sys.add_screen(Box::new(screen::Login::new(con.clone())));
+    screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
 
     let textures = renderer.get_textures();
     let mut game = Game {
-        server: server::Server::dummy_server(resource_manager.clone(), con.clone()),
+        server: server::Server::dummy_server(resource_manager.clone()),
         focused: false,
         renderer: renderer,
         screen_sys: screen_sys,
         resource_manager: resource_manager.clone(),
         console: con,
+        vars: vars,
         should_close: false,
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
@@ -234,15 +243,13 @@ fn main() {
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
         let (width, height) = window.drawable_size();
 
-        let fps_cap = {
-            let console = game.console.lock().unwrap();
-            let vsync_changed = *console.get(settings::R_VSYNC);
-            if vsync != vsync_changed {
-                vsync = vsync_changed;
-                sdl_video.gl_set_swap_interval(if vsync { 1 } else { 0 });
-            }
-            *console.get(settings::R_MAX_FPS)
-        };
+
+        let vsync_changed = *game.vars.get(settings::R_VSYNC);
+        if vsync != vsync_changed {
+            vsync = vsync_changed;
+            sdl_video.gl_set_swap_interval(if vsync { 1 } else { 0 });
+        }
+        let fps_cap = *game.vars.get(settings::R_MAX_FPS);
 
         game.tick(delta);
         game.server.tick(&mut game.renderer, delta);
@@ -339,7 +346,7 @@ fn handle_window_event(window: &sdl2::video::Window,
             if game.focused {
                 mouse.set_relative_mouse_mode(false);
                 game.focused = false;
-                game.screen_sys.replace_screen(Box::new(screen::SettingsMenu::new(game.console.clone(), true)));
+                game.screen_sys.replace_screen(Box::new(screen::SettingsMenu::new(game.vars.clone(), true)));
             } else if game.screen_sys.is_current_closable() {
                 mouse.set_relative_mouse_mode(true);
                 game.focused = true;
@@ -351,8 +358,7 @@ fn handle_window_event(window: &sdl2::video::Window,
         }
         Event::KeyDown{keycode: Some(key), ..} => {
             if game.focused {
-                let console = game.console.lock().unwrap();
-                if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &console) {
+                if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &game.vars) {
                     game.server.key_press(true, steven_key);
                 }
             } else {
@@ -361,8 +367,7 @@ fn handle_window_event(window: &sdl2::video::Window,
         }
         Event::KeyUp{keycode: Some(key), ..} => {
             if game.focused {
-                let console = game.console.lock().unwrap();
-                if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &console) {
+                if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &game.vars) {
                     game.server.key_press(false, steven_key);
                 }
             } else {

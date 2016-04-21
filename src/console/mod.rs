@@ -15,6 +15,7 @@
 use std::marker::PhantomData;
 use std::collections::HashMap;
 use std::any::Any;
+use std::cell::{RefCell, Ref};
 use std::sync::{Arc, Mutex};
 use std::fs;
 use std::io::{BufWriter, Write, BufRead, BufReader};
@@ -98,32 +99,18 @@ pub trait Var {
     fn can_serialize(&self) -> bool;
 }
 
-pub struct Console {
+pub struct Vars {
     names: HashMap<String, &'static str>,
     vars: HashMap<&'static str, Box<Var>>,
-    var_values: HashMap<&'static str, Box<Any>>,
-
-    history: Vec<Component>,
-
-    collection: ui::Collection,
-    active: bool,
-    position: f64,
+    var_values: HashMap<&'static str, RefCell<Box<Any>>>,
 }
 
-unsafe impl Send for Console {}
-
-impl Console {
-    pub fn new() -> Console {
-        Console {
+impl Vars {
+    pub fn new() -> Vars {
+        Vars {
             names: HashMap::new(),
             vars: HashMap::new(),
             var_values: HashMap::new(),
-
-            history: vec![Component::Text(TextComponent::new("")); 200],
-
-            collection: ui::Collection::new(),
-            active: false,
-            position: -220.0,
         }
     }
 
@@ -134,22 +121,82 @@ impl Console {
             panic!("Key registered twice {}", var.name);
         }
         self.names.insert(var.name.to_owned(), var.name);
-        self.var_values.insert(var.name, Box::new((var.default)()));
+        self.var_values.insert(var.name, RefCell::new(Box::new((var.default)())));
         self.vars.insert(var.name, Box::new(var));
     }
 
-    pub fn get<T: Sized + Any>(&self, var: CVar<T>) -> &T
+    pub fn get<'a, T: Sized + Any>(&'a self, var: CVar<T>) -> Ref<'a, T>
         where CVar<T>: Var
     {
         // Should never fail
-        self.var_values.get(var.name).unwrap().downcast_ref::<T>().unwrap()
+        let var = self.var_values.get(var.name).unwrap().borrow();
+        Ref::map(var, |v| v.downcast_ref::<T>().unwrap())
     }
 
-    pub fn set<T: Sized + Any>(&mut self, var: CVar<T>, val: T)
+    pub fn set<T: Sized + Any>(&self, var: CVar<T>, val: T)
         where CVar<T>: Var
     {
-        self.var_values.insert(var.name, Box::new(val));
+        // self.var_values.insert(var.name, Box::new(val));
+        *self.var_values.get(var.name).unwrap().borrow_mut() = Box::new(val);
         self.save_config();
+    }
+
+    pub fn load_config(&mut self) {
+        if let Ok(file) = fs::File::open("conf.cfg") {
+            let reader = BufReader::new(file);
+            for line in reader.lines() {
+                let line = line.unwrap();
+                if line.starts_with('#') || line.is_empty() {
+                    continue;
+                }
+                let parts = line.splitn(2, ' ').map(|v| v.to_owned()).collect::<Vec<String>>();
+                let (name, arg) = (&parts[0], &parts[1]);
+                if let Some(var_name) = self.names.get(name) {
+                    let var = self.vars.get(var_name).unwrap();
+                    let val = var.deserialize(&arg);
+                    if var.can_serialize() {
+                        self.var_values.insert(var_name, RefCell::new(val));
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn save_config(&self) {
+        let mut file = BufWriter::new(fs::File::create("conf.cfg").unwrap());
+        for (name, var) in &self.vars {
+            if !var.can_serialize() {
+                continue;
+            }
+            for line in var.description().lines() {
+                write!(file, "# {}\n", line).unwrap();
+            }
+            write!(file,
+                   "{} {}\n\n",
+                   name,
+                   var.serialize(&self.var_values.get(name).unwrap().borrow()))
+                .unwrap();
+        }
+    }
+}
+
+pub struct Console {
+    history: Vec<Component>,
+
+    collection: ui::Collection,
+    active: bool,
+    position: f64,
+}
+
+impl Console {
+    pub fn new() -> Console {
+        Console {
+            history: vec![Component::Text(TextComponent::new("")); 200],
+
+            collection: ui::Collection::new(),
+            active: false,
+            position: -220.0,
+        }
     }
 
     pub fn is_active(&self) -> bool {
@@ -188,20 +235,12 @@ impl Console {
             ui::Mode::Unscaled(scale) => 854.0 / scale,
         };
 
-        let mut background =
-            ui::Image::new(render::Renderer::get_texture(renderer.get_textures_ref(),
-                                                         "steven:solid"),
-                           0.0,
-                           self.position,
-                           w,
-                           220.0,
-                           0.0,
-                           0.0,
-                           1.0,
-                           1.0,
-                           0,
-                           0,
-                           0);
+        let mut background = ui::Image::new(
+            render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid"),
+            0.0, self.position, w, 220.0,
+            0.0, 0.0, 1.0, 1.0,
+            0, 0, 0
+        );
         background.set_a(180);
         let background = self.collection.add(ui_container.add(background));
 
@@ -211,11 +250,12 @@ impl Console {
             if offset >= 210.0 {
                 break;
             }
-            let mut fmt = ui::Formatted::with_width_limit(renderer,
-                                                          line.clone(),
-                                                          5.0,
-                                                          5.0 + offset,
-                                                          w - 1.0);
+            let mut fmt = ui::Formatted::with_width_limit(
+                renderer,
+                line.clone(),
+                5.0, 5.0 + offset,
+                w - 1.0
+            );
             fmt.set_parent(&background);
             fmt.set_v_attach(ui::VAttach::Bottom);
             offset += fmt.get_height();
@@ -223,46 +263,6 @@ impl Console {
         }
         for fmt in lines {
             self.collection.add(fmt);
-        }
-    }
-
-    pub fn load_config(&mut self) {
-        if let Ok(file) = fs::File::open("conf.cfg") {
-            let reader = BufReader::new(file);
-            for line in reader.lines() {
-                let line = line.unwrap();
-                if line.starts_with('#') || line.is_empty() {
-                    continue;
-                }
-                let parts = line.splitn(2, ' ').map(|v| v.to_owned()).collect::<Vec<String>>();
-                let (name, arg) = (&parts[0], &parts[1]);
-                if let Some(var_name) = self.names.get(name) {
-                    let var = self.vars.get(var_name).unwrap();
-                    let val = var.deserialize(&arg);
-                    if var.can_serialize() {
-                        self.var_values.insert(var_name, val);
-                    }
-                } else {
-                    println!("Missing prop");
-                }
-            }
-        }
-    }
-
-    pub fn save_config(&self) {
-        let mut file = BufWriter::new(fs::File::create("conf.cfg").unwrap());
-        for (name, var) in &self.vars {
-            if !var.can_serialize() {
-                continue;
-            }
-            for line in var.description().lines() {
-                write!(file, "# {}\n", line).unwrap();
-            }
-            write!(file,
-                   "{} {}\n\n",
-                   name,
-                   var.serialize(self.var_values.get(name).unwrap()))
-                .unwrap();
         }
     }
 

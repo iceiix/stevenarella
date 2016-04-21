@@ -55,9 +55,9 @@ Used to identify this client vs others."#,
     default: &|| "".to_owned(),
 };
 
-pub fn register_vars(console: &mut console::Console) {
-    console.register(CL_USERNAME);
-    console.register(CL_UUID);
-    console.register(AUTH_TOKEN);
-    console.register(AUTH_CLIENT_TOKEN);
+pub fn register_vars(vars: &mut console::Vars) {
+    vars.register(CL_USERNAME);
+    vars.register(CL_UUID);
+    vars.register(AUTH_TOKEN);
+    vars.register(AUTH_CLIENT_TOKEN);
 }
