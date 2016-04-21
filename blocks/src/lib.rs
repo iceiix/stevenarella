@@ -3962,38 +3962,37 @@ fn update_door_state<W: WorldAccess>(world: &W, pos: Position, ohalf: DoorHalf, 
 }
 
 fn door_collision(facing: Direction, hinge: Side, open: bool) -> Vec<Aabb3<f64>> {
-    let (min_x, min_y, min_z, max_x, max_y, max_z) = if open {
-        if hinge == Side::Left {
-            match facing {
-                Direction::North => (1.0 - (3.0 / 16.0), 0.0, 0.0, 1.0, 1.0, 1.0),
-                Direction::South => (0.0, 0.0, 0.0, 3.0 / 16.0, 1.0, 1.0),
-                Direction::West => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
-                Direction::East => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
-                _ => unreachable!(),
-            }
-        } else {
-            match facing {
-                Direction::North => (0.0, 0.0, 0.0, 3.0/16.0, 1.0, 1.0),
-                Direction::South => (1.0 - (3.0 / 16.0), 0.0, 0.0, 1.0, 1.0, 1.0),
-                Direction::West => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
-                Direction::East => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
-                _ => unreachable!(),
-            }
-        }
-    } else {
-        match facing {
-            Direction::North => (0.0, 0.0, 1.0 - (3.0 / 16.0), 1.0, 1.0, 1.0),
-            Direction::South => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
-            Direction::West => (1.0 - (3.0 / 16.0), 0.0, 0.0, 1.0, 1.0, 1.0),
-            Direction::East => (0.0, 0.0, 0.0, 3.0 / 16.0, 1.0, 1.0),
-            _ => unreachable!(),
-        }
+    use std::f64::consts::PI;
+    let mut bounds = Aabb3::new(
+        Point3::new(0.0, 0.0, 0.0),
+        Point3::new(1.0, 1.0, 3.0 / 16.0)
+    );
+    let mut angle = match facing {
+        Direction::South => 0.0,
+        Direction::West => PI * 0.5,
+        Direction::North => PI,
+        Direction::East => PI * 1.5,
+        _ => 0.0,
     };
+    angle += if open {
+        PI * 0.5
+    } else {
+        0.0
+    } * match hinge { Side::Left => 1.0, Side::Right => -1.0 };
 
-    vec![Aabb3::new(
-        Point3::new(min_x, min_y, min_z),
-        Point3::new(max_x, max_y, max_z))
-    ]
+    let c = angle.cos();
+    let s = angle.sin();
+
+    let x = bounds.min.x - 0.5;
+    let z = bounds.min.z - 0.5;
+    bounds.min.x = 0.5 + (x*c - z*s);
+    bounds.min.z = 0.5 + (z*c + x*s);
+    let x = bounds.max.x - 0.5;
+    let z = bounds.max.z - 0.5;
+    bounds.max.x = 0.5 + (x*c - z*s);
+    bounds.max.z = 0.5 + (z*c + x*s);
+
+    vec![bounds]
 }
 
 fn update_repeater_state<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> bool {
