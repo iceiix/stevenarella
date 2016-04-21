@@ -31,7 +31,7 @@ impl BlockStorage {
 
     pub fn get(&self, idx: usize) -> block::Block {
         let idx = self.blocks.get(idx);
-        self.block_map.get(idx).map_or(block::Missing{}, |v| v.0)
+        self.block_map[idx].0
     }
 
     pub fn set(&mut self, idx: usize, b: block::Block) -> bool {
@@ -101,7 +101,7 @@ impl BlockStorage {
         self.blocks = data;
         // Recount blocks
         for bi in 0 .. 4096 {
-            let bl_id = self.blocks.get(bi);
+            let mut bl_id = self.blocks.get(bi);
             if self.blocks.bit_size == 13 { // Global palette
                 if self.block_map.get(bl_id)
                         .map(|v| v.1)
@@ -114,7 +114,19 @@ impl BlockStorage {
                     self.rev_block_map.insert(bl, bl_id);
                 }
             }
-            let bmap = self.block_map.get_mut(bl_id).unwrap();
+            {
+                // Sometimes we can have two mappings for the same block
+                // (either due to a server bug or unimplemented blocks
+                // in steven). This attempts to repair this by replacing
+                // duplicate mappings with the last one.
+                let bmap = self.block_map.get_mut(bl_id).unwrap();
+                let rev = *self.rev_block_map.get(&bmap.0).unwrap();
+                if rev != bl_id {
+                    bl_id = rev;
+                    self.blocks.set(bi, bl_id);
+                }
+            }
+            let mut bmap = self.block_map.get_mut(bl_id).unwrap();
             if bmap.1 == 0xFFFFF {
                 bmap.1 = 0;
             }
