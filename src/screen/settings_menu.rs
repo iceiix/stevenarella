@@ -41,14 +41,14 @@ macro_rules! get_matched_str {
     )
 }
 
-pub struct UIElement {
-    elements: ui::Collection
-    // TODO: Add background of some sort
+pub struct UIElements {
+    elements: ui::Collection,
+    background: ui::ElementRef<ui::Image>,
 }
 
 pub struct SettingsMenu {
     console: Arc<Mutex<console::Console>>,
-    elements: Option<UIElement>,
+    elements: Option<UIElements>,
     show_disconnect_button: bool
 }
 
@@ -65,6 +65,15 @@ impl SettingsMenu {
 impl super::Screen for SettingsMenu {
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         let mut elements = ui::Collection::new();
+
+        let mut background = ui::Image::new(
+            render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid"),
+            0.0, 0.0, 854.0, 480.0,
+            0.0, 0.0, 1.0, 1.0,
+            0, 0, 0
+        );
+        background.set_a(100);
+        let background = elements.add(ui_container.add(background));
 
         // From top and down
         let (btn_audio_settings, txt_audio_settings) = new_submenu_button("Audio settings...", renderer, ui_container, -160.0, -50.0);
@@ -114,8 +123,9 @@ impl super::Screen for SettingsMenu {
             elements.add(txt_exit_game);
         }
 
-        self.elements = Some(UIElement {
-            elements: elements
+        self.elements = Some(UIElements {
+            elements: elements,
+            background: background,
         });
 
     }
@@ -128,7 +138,20 @@ impl super::Screen for SettingsMenu {
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, _delta: f64, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+        let elements = self.elements.as_mut().unwrap();
+        {
+            let mode = ui_container.mode;
+            let background = ui_container.get_mut(&elements.background);
+            background.set_width(match mode {
+                ui::Mode::Unscaled(scale) => 854.0 / scale,
+                ui::Mode::Scaled => renderer.width as f64,
+            });
+            background.set_height(match mode {
+                ui::Mode::Unscaled(scale) => 480.0 / scale,
+                ui::Mode::Scaled => renderer.height as f64,
+            });
+        }
         None
     }
 
@@ -144,7 +167,7 @@ impl super::Screen for SettingsMenu {
 
 pub struct VideoSettingsMenu {
     console: Arc<Mutex<console::Console>>,
-    elements: Option<UIElement>,
+    elements: Option<UIElements>,
 }
 
 impl VideoSettingsMenu {
@@ -159,6 +182,15 @@ impl VideoSettingsMenu {
 impl super::Screen for VideoSettingsMenu {
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         let mut elements = ui::Collection::new();
+
+        let mut background = ui::Image::new(
+            render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid"),
+            0.0, 0.0, 854.0, 480.0,
+            0.0, 0.0, 1.0, 1.0,
+            0, 0, 0
+        );
+        background.set_a(100);
+        let background = elements.add(ui_container.add(background));
 
         // Load defaults
         let (r_max_fps, r_fov, r_vsync) = {
@@ -198,8 +230,9 @@ impl super::Screen for VideoSettingsMenu {
         });
         elements.add(btn_done);
         elements.add(txt_done);
-        self.elements = Some(UIElement {
-            elements: elements
+        self.elements = Some(UIElements {
+            elements: elements,
+            background: background,
         });
 
     }
@@ -212,7 +245,20 @@ impl super::Screen for VideoSettingsMenu {
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, _delta: f64, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+        let elements = self.elements.as_mut().unwrap();
+        {
+            let mode = ui_container.mode;
+            let background = ui_container.get_mut(&elements.background);
+            background.set_width(match mode {
+                ui::Mode::Unscaled(scale) => 854.0 / scale,
+                ui::Mode::Scaled => renderer.width as f64,
+            });
+            background.set_height(match mode {
+                ui::Mode::Unscaled(scale) => 480.0 / scale,
+                ui::Mode::Scaled => renderer.height as f64,
+            });
+        }
         None
     }
 
@@ -228,7 +274,7 @@ impl super::Screen for VideoSettingsMenu {
 
 pub struct AudioSettingsMenu {
     console: Arc<Mutex<console::Console>>,
-    elements: Option<UIElement>
+    elements: Option<UIElements>
 }
 
 impl AudioSettingsMenu {
@@ -243,6 +289,15 @@ impl AudioSettingsMenu {
 impl super::Screen for AudioSettingsMenu {
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         let mut elements = ui::Collection::new();
+
+        let mut background = ui::Image::new(
+            render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid"),
+            0.0, 0.0, 854.0, 480.0,
+            0.0, 0.0, 1.0, 1.0,
+            0, 0, 0
+        );
+        background.set_a(100);
+        let background = elements.add(ui_container.add(background));
 
         let master_volume = {
             let console = self.console.lock().unwrap();
@@ -260,8 +315,9 @@ impl super::Screen for AudioSettingsMenu {
         elements.add(btn_done);
         elements.add(txt_done);
 
-        self.elements = Some(UIElement {
-            elements: elements
+        self.elements = Some(UIElements {
+            elements: elements,
+            background: background,
         });
 
     }
@@ -274,7 +330,20 @@ impl super::Screen for AudioSettingsMenu {
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, _delta: f64, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+        let elements = self.elements.as_mut().unwrap();
+        {
+            let mode = ui_container.mode;
+            let background = ui_container.get_mut(&elements.background);
+            background.set_width(match mode {
+                ui::Mode::Unscaled(scale) => 854.0 / scale,
+                ui::Mode::Scaled => renderer.width as f64,
+            });
+            background.set_height(match mode {
+                ui::Mode::Unscaled(scale) => 480.0 / scale,
+                ui::Mode::Scaled => renderer.height as f64,
+            });
+        }
         None
     }
 

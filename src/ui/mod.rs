@@ -193,6 +193,7 @@ element_impl!(
     Button
 );
 
+#[derive(Clone, Copy, PartialEq)]
 pub enum Mode {
     Scaled,
     Unscaled(f64),
@@ -290,6 +291,7 @@ const SCREEN: Region = Region {
 
 pub struct Container {
     pub mode: Mode,
+    last_mode: Mode,
     elements: HashMap<ElementRefInner, Element>,
     // We need the order
     elements_list: Vec<ElementRefInner>,
@@ -305,6 +307,7 @@ impl Container {
     pub fn new() -> Container {
         Container {
             mode: Mode::Scaled,
+            last_mode: Mode::Scaled,
             elements: HashMap::new(),
             elements_list: Vec::new(),
             version: 0xFFFF,
@@ -356,11 +359,12 @@ impl Container {
         };
 
         if self.last_sw != sw || self.last_sh != sh || self.last_width != width ||
-           self.last_height != height || self.version != renderer.ui.version {
+           self.last_height != height || self.version != renderer.ui.version || self.last_mode != self.mode {
             self.last_sw = sw;
             self.last_sh = sh;
             self.last_width = width;
             self.last_height = height;
+            self.last_mode = self.mode;
             for (_, e) in &mut self.elements {
                 e.set_dirty(true);
                 if self.version != renderer.ui.version {

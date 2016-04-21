@@ -79,8 +79,8 @@ pub struct Renderer {
 
     trans: Option<TransInfo>,
 
-    last_width: u32,
-    last_height: u32,
+    pub width: u32,
+    pub height: u32,
 
     // Light renderering
     pub light_level: f32,
@@ -217,8 +217,8 @@ impl Renderer {
             element_buffer_size: 0,
             element_buffer_type: gl::UNSIGNED_BYTE,
 
-            last_width: 0,
-            last_height: 0,
+            width: 0,
+            height: 0,
 
             camera: Camera {
                 pos: cgmath::Point3::new(0.0, 0.0, 0.0),
@@ -255,9 +255,9 @@ impl Renderer {
             }
         }
 
-        if self.last_height != height || self.last_width != width {
-            self.last_width = width;
-            self.last_height = height;
+        if self.height != height || self.width != width {
+            self.width = width;
+            self.height = height;
             gl::viewport(0, 0, width as i32, height as i32);
 
             self.perspective_matrix = cgmath::Matrix4::from(
