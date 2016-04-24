@@ -17,6 +17,7 @@
 #![feature(rc_would_unwrap)]
 
 extern crate sdl2;
+extern crate zip;
 extern crate image;
 extern crate time;
 extern crate byteorder;
@@ -179,10 +180,8 @@ fn main() {
 
     info!("Starting steven");
 
-    let resource_manager = Arc::new(RwLock::new(resources::Manager::new()));
-    {
-        resource_manager.write().unwrap().tick();
-    }
+    let (res, mut resui) = resources::Manager::new();
+    let resource_manager = Arc::new(RwLock::new(res));
 
     let sdl = sdl2::init().unwrap();
     let sdl_video = sdl.video().unwrap();
@@ -232,17 +231,18 @@ fn main() {
 
     let mut events = sdl.event_pump().unwrap();
     while !game.should_close {
-        let version = {
-            let mut res = game.resource_manager.write().unwrap();
-            res.tick();
-            res.version()
-        };
 
         let now = time::now();
         let diff = now - last_frame;
         last_frame = now;
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
         let (width, height) = window.drawable_size();
+
+        let version = {
+            let mut res = game.resource_manager.write().unwrap();
+            res.tick(&mut resui, &mut ui_container, delta);
+            res.version()
+        };
 
         let vsync_changed = *game.vars.get(settings::R_VSYNC);
         if vsync != vsync_changed {

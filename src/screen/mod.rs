@@ -26,12 +26,11 @@ pub use self::settings_menu::{SettingsMenu, VideoSettingsMenu, AudioSettingsMenu
 use render;
 use ui;
 
-#[allow(unused_variables)]
 pub trait Screen {
     // Called once
-    fn init(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn init(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
     }
-    fn deinit(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn deinit(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
     }
 
     // May be called multiple times
@@ -45,7 +44,7 @@ pub trait Screen {
             ui_container: &mut ui::Container) -> Option<Box<Screen>>;
 
     // Events
-    fn on_scroll(&mut self, x: f64, y: f64) {
+    fn on_scroll(&mut self, _x: f64, _y: f64) {
     }
 
     fn is_closable(&self) -> bool {
