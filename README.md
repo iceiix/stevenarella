@@ -1,4 +1,5 @@
 # Steven (Rust)
+[![Build Status](https://travis-ci.org/Thinkofname/steven.svg?branch=master)](https://travis-ci.org/Thinkofname/steven)
 
 A Minecraft client coded in Rust. Ported from [steven-go](https://github.com/Thinkofname/steven-go).
 Don't expect it to go anywhere, just doing this for fun.
@@ -35,7 +36,3 @@ The Visual Studio 2015 Redistributable is required to run these builds.
 Just running steven via a double click (Windows) or `./steven` (everything else)
 will bring up a login screen followed by a server list which you can select a server
 from.
-
-### Via the Offical Minecraft launcher
-
-Currently not supported (yet)
