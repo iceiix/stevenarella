@@ -387,6 +387,7 @@ impl super::Screen for ServerList {
                 .size(width.max(renderer.ui.size_of_string("Disconnected")) + 4.0, height + 4.0 + 16.0)
                 .colour((0, 0, 0, 100))
                 .alignment(ui::VAttach::Top, ui::HAttach::Center)
+                .draw_index(10)
                 .create(ui_container);
             ui::TextBuilder::new()
                 .text("Disconnected")
