@@ -1,24 +1,45 @@
 
+use image::Rgba;
+
 #[derive(Clone, Copy)]
 pub struct Biome {
     pub id: usize,
     pub temperature: f64,
     pub moisture: f64,
-    pub color_index: usize,
 }
 
 impl Biome {
-    const fn new(id: usize, t: f64, m: f64) -> Biome{
+    const fn new(id: usize, t: f64, m: f64) -> Biome {
         Biome {
             id: id,
             temperature: t,
             moisture: m*t,
-            color_index: (((1.0 - t) * 255.0) as usize) | ((((1.0 - (m*t)) * 255.0) as usize) << 8),
         }
     }
 
     pub fn by_id(id: usize) -> Biome {
         *BY_ID.get(id).unwrap_or(&INVALID)
+    }
+
+    pub fn get_color_index(self) -> usize {
+        let t = self.temperature.min(1.0).max(0.0);
+        let m = self.moisture.min(1.0).max(0.0);
+        (((1.0 - t) * 255.0) as usize) | ((((1.0 - (m*t)) * 255.0) as usize) << 8)
+    }
+
+    pub fn process_color(self, col: Rgba<u8>) -> Rgba<u8> {
+        if self.id == ROOFED_FOREST.id || self.id == ROOFED_FOREST_MOUNTAINS.id {
+            Rgba {
+                data: [
+                    ((col.data[0] as u32 + 0x28) / 2) as u8,
+                    ((col.data[1] as u32 + 0x34) / 2) as u8,
+                    ((col.data[2] as u32 + 0x0A) / 2) as u8,
+                    255
+                ]
+            }
+        } else {
+            col
+        }
     }
 }
 

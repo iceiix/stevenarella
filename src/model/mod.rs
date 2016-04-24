@@ -926,13 +926,15 @@ fn calculate_biome(snapshot: &world::Snapshot, x: i32, z: i32, img: &image::Dyna
     for xx in -1 .. 2 {
         for zz in -1 .. 2 {
             let bi = snapshot.get_biome(x+xx, z+zz);
-            let ix = bi.color_index & 0xFF;
-            let iy = bi.color_index >> 8;
+            let color_index = bi.get_color_index();
+            let ix = color_index & 0xFF;
+            let iy = color_index >> 8;
 
             let ix = min(max(ix, 0), 255);
             let iy = min(max(iy, 0), 255);
 
             let col = img.get_pixel(ix as u32, iy as u32);
+            let col = bi.process_color(col);
             r += col.data[0] as u32;
             g += col.data[1] as u32;
             b += col.data[2] as u32;
