@@ -40,22 +40,27 @@ pub struct ServerList {
 
 struct UIElements {
     logo: ui::logo::Logo,
-    elements: ui::Collection,
     servers: Vec<Server>,
+
+    _add_btn: ui::ButtonRef,
+    _refresh_btn: ui::ButtonRef,
+    _options_btn: ui::ButtonRef,
+    _disclaimer: ui::TextRef,
+
+    _disconnected: Option<ui::ImageRef>,
 }
 
 struct Server {
-    collection: ui::Collection,
-    back: ui::ElementRef<ui::Image>,
+    back: ui::ImageRef,
     offset: f64,
     y: f64,
 
-    motd: ui::ElementRef<ui::Formatted>,
-    ping: ui::ElementRef<ui::Image>,
-    players: ui::ElementRef<ui::Text>,
-    version: ui::ElementRef<ui::Formatted>,
+    motd: ui::FormattedRef,
+    ping: ui::ImageRef,
+    players: ui::TextRef,
+    version: ui::FormattedRef,
 
-    icon: ui::ElementRef<ui::Image>,
+    icon: ui::ImageRef,
     icon_texture: Option<String>,
 
     done_ping: bool,
@@ -98,10 +103,9 @@ impl ServerList {
         let elements = self.elements.as_mut().unwrap();
         *self.needs_reload.borrow_mut() = false;
         {
-            // Clean up previous list entries and icons.
+            // Clean up previous list icons.
             let mut tex = renderer.get_textures_ref().write().unwrap();
             for server in &mut elements.servers {
-                server.collection.remove_all(ui_container);
                 if let Some(ref icon) = server.icon_texture {
                     tex.remove_dynamic(&icon);
                 }
@@ -117,161 +121,139 @@ impl ServerList {
         let servers = servers_info.find("servers").unwrap().as_array().unwrap();
         let mut offset = 0.0;
 
-        // Default icon whilst we ping the servers or if the server doesn't provide one
-        let default_icon = render::Renderer::get_texture(renderer.get_textures_ref(),
-                                                         "misc/unknown_server");
-        // General gui icons
-        let icons = render::Renderer::get_texture(renderer.get_textures_ref(), "gui/icons");
-
         for (index, svr) in servers.iter().enumerate() {
             let name = svr.find("name").unwrap().as_string().unwrap().to_owned();
             let address = svr.find("address").unwrap().as_string().unwrap().to_owned();
 
-            let solid = render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid");
-
             // Everything is attached to this
-            let mut back = ui::Image::new(solid,
-                                          0.0,
-                                          offset * 100.0,
-                                          700.0,
-                                          100.0,
-                                          0.0,
-                                          0.0,
-                                          1.0,
-                                          1.0,
-                                          0,
-                                          0,
-                                          0);
-            back.set_a(100);
-            back.set_v_attach(ui::VAttach::Middle);
-            back.set_h_attach(ui::HAttach::Center);
+            let back = ui::ImageBuilder::new()
+                .texture("steven:solid")
+                .position(0.0, offset * 100.0)
+                .size(700.0, 100.0)
+                .colour((0, 0, 0, 100))
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .create(ui_container);
 
             let (send, recv) = mpsc::channel::<PingInfo>();
+            // Make whole entry interactable
+            {
+                let mut backr = back.borrow_mut();
+                let address = address.clone();
+                backr.add_hover_func(move |this, over, _| {
+                    this.colour.3 = if over {
+                        200
+                    } else {
+                        100
+                    };
+                    false
+                });
+                backr.add_click_func(move |_, game| {
+                    game.screen_sys.replace_screen(Box::new(super::connecting::Connecting::new(&address)));
+                    game.connect_to(&address);
+                    true
+                });
+            }
+
+            // Server name
+            ui::TextBuilder::new()
+                .text(name.clone())
+                .position(100.0, 5.0)
+                .attach(&mut *back.borrow_mut());
+
+            // Server icon
+            let icon = ui::ImageBuilder::new()
+                .texture("misc/unknown_server")
+                .position(5.0, 5.0)
+                .size(90.0, 90.0)
+                .attach(&mut *back.borrow_mut());
+
+
+            // Ping indicator
+            let ping = ui::ImageBuilder::new()
+                .texture("gui/icons")
+                .position(5.0, 5.0)
+                .size(20.0, 16.0)
+                .texture_coords((0.0, 56.0 / 256.0, 10.0 / 256.0, 8.0 / 256.0))
+                .alignment(ui::VAttach::Top, ui::HAttach::Right)
+                .attach(&mut *back.borrow_mut());
+
+            // Player count
+            let players = ui::TextBuilder::new()
+                .text("???")
+                .position(30.0, 5.0)
+                .alignment(ui::VAttach::Top, ui::HAttach::Right)
+                .attach(&mut *back.borrow_mut());
+
+            // Server's message of the day
+            let motd = ui::FormattedBuilder::new()
+                .text(Component::Text(TextComponent::new("Connecting...")))
+                .position(100.0, 23.0)
+                .max_width(700.0 - (90.0 + 10.0 + 5.0))
+                .attach(&mut *back.borrow_mut());
+
+            // Version information
+            let version = ui::FormattedBuilder::new()
+                .text(Component::Text(TextComponent::new("")))
+                .position(100.0, 5.0)
+                .max_width(700.0 - (90.0 + 10.0 + 5.0))
+                .alignment(ui::VAttach::Bottom, ui::HAttach::Left)
+                .attach(&mut *back.borrow_mut());
+
+            // Delete entry button
+            let delete_entry = ui::ButtonBuilder::new()
+                .position(0.0, 0.0)
+                .size(25.0, 25.0)
+                .alignment(ui::VAttach::Bottom, ui::HAttach::Right)
+                .attach(&mut *back.borrow_mut());
+            {
+                let mut btn = delete_entry.borrow_mut();
+                let txt = ui::TextBuilder::new()
+                    .text("X")
+                    .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                    .attach(&mut *btn);
+                btn.add_text(txt);
+            }
+
+            // Edit entry button
+            let edit_entry = ui::ButtonBuilder::new()
+                .position(25.0, 0.0)
+                .size(25.0, 25.0)
+                .alignment(ui::VAttach::Bottom, ui::HAttach::Right)
+                .attach(&mut *back.borrow_mut());
+            {
+                let mut btn = edit_entry.borrow_mut();
+                let txt = ui::TextBuilder::new()
+                    .text("E")
+                    .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                    .attach(&mut *btn);
+                btn.add_text(txt);
+                let index = index;
+                let sname = name.clone();
+                let saddr = address.clone();
+                btn.add_click_func(move |_, game| {
+                    game.screen_sys.replace_screen(Box::new(super::edit_server::EditServerEntry::new(
+                        Some((index, sname.clone(), saddr.clone()))
+                    )));
+                    true
+                })
+            }
+
             let mut server = Server {
-                collection: ui::Collection::new(),
-                back: ui_container.add(back),
+                back: back,
                 offset: offset,
                 y: 0.0,
                 done_ping: false,
                 recv: recv,
 
-                motd: Default::default(),
-                ping: Default::default(),
-                players: Default::default(),
-                version: Default::default(),
+                motd: motd,
+                ping: ping,
+                players: players,
+                version: version,
 
-                icon: Default::default(),
+                icon: icon,
                 icon_texture: None,
             };
-            server.collection.add(server.back.clone());
             server.update_position();
-            // Make whole entry interactable
-            {
-                let back = ui_container.get_mut(&server.back);
-                let back_ref = server.back.clone();
-                let address = address.clone();
-                back.add_hover_func(move |over, _, ui_container| {
-                    let back = ui_container.get_mut(&back_ref);
-                    back.set_a(if over {
-                        200
-                    } else {
-                        100
-                    });
-                });
-
-                back.add_click_func(move |game, _| {
-                    game.screen_sys.replace_screen(Box::new(super::connecting::Connecting::new(&address)));
-                    game.connect_to(&address);
-                });
-            }
-
-            // Server name
-            let mut text = ui::Text::new(renderer, &name, 100.0, 5.0, 255, 255, 255);
-            text.set_parent(&server.back);
-            server.collection.add(ui_container.add(text));
-
-            // Server icon
-            let mut icon = ui::Image::new(
-                default_icon.clone(),
-                 5.0, 5.0, 90.0, 90.0,
-                 0.0, 0.0, 1.0, 1.0,
-                 255, 255, 255
-             );
-            icon.set_parent(&server.back);
-            server.icon = server.collection.add(ui_container.add(icon));
-
-            // Ping indicator
-            let mut ping = ui::Image::new(
-                icons.clone(),
-                5.0, 5.0, 20.0, 16.0,
-                0.0, 56.0 / 256.0, 10.0 / 256.0, 8.0 / 256.0,
-                255, 255, 255
-            );
-            ping.set_h_attach(ui::HAttach::Right);
-            ping.set_parent(&server.back);
-            server.ping = server.collection.add(ui_container.add(ping));
-
-            // Player count
-            let mut players = ui::Text::new(renderer, "???", 30.0, 5.0, 255, 255, 255);
-            players.set_h_attach(ui::HAttach::Right);
-            players.set_parent(&server.back);
-            server.players = server.collection.add(ui_container.add(players));
-
-            // Server's message of the day
-            let mut motd =
-                ui::Formatted::with_width_limit(renderer,
-                                                Component::Text(TextComponent::new("Connecting.\
-                                                                                    ..")),
-                                                100.0,
-                                                23.0,
-                                                700.0 - (90.0 + 10.0 + 5.0));
-            motd.set_parent(&server.back);
-            server.motd = server.collection.add(ui_container.add(motd));
-
-            // Version information
-            let mut version =
-                ui::Formatted::with_width_limit(renderer,
-                                                Component::Text(TextComponent::new("")),
-                                                100.0,
-                                                5.0,
-                                                700.0 - (90.0 + 10.0 + 5.0));
-            version.set_v_attach(ui::VAttach::Bottom);
-            version.set_parent(&server.back);
-            server.version = server.collection.add(ui_container.add(version));
-
-            // Delete entry button
-            let (mut del, mut txt) = super::new_button_text(renderer, "X", 0.0, 0.0, 25.0, 25.0);
-            del.set_v_attach(ui::VAttach::Bottom);
-            del.set_h_attach(ui::HAttach::Right);
-            del.set_parent(&server.back);
-            let re = ui_container.add(del);
-            txt.set_parent(&re);
-            let tre = ui_container.add(txt);
-            super::button_action(ui_container, re.clone(), Some(tre.clone()), |_,_| {}); // TOOO: delete entry
-            server.collection.add(re);
-            server.collection.add(tre);
-
-            // Edit entry button
-            let (mut edit, mut txt) = super::new_button_text(renderer, "E", 25.0, 0.0, 25.0, 25.0);
-            edit.set_v_attach(ui::VAttach::Bottom);
-            edit.set_h_attach(ui::HAttach::Right);
-            edit.set_parent(&server.back);
-            let re = ui_container.add(edit);
-            txt.set_parent(&re);
-            let tre = ui_container.add(txt);
-            let index = index;
-            let sname = name.clone();
-            let saddr = address.clone();
-            super::button_action(ui_container, re.clone(), Some(tre.clone()), move |game,_|{
-                let sname = sname.clone();
-                let saddr = saddr.clone();
-                game.screen_sys.replace_screen(Box::new(super::edit_server::EditServerEntry::new(
-                    Some((index, sname, saddr))
-                )));
-            });
-            server.collection.add(re);
-            server.collection.add(tre);
-
             elements.servers.push(server);
             offset += 1.0;
 
@@ -304,7 +286,7 @@ impl ServerList {
                         let e = format!("{}", err);
                         let mut msg = TextComponent::new(&e);
                         msg.modifier.color = Some(format::Color::Red);
-                        drop(send.send(PingInfo {
+                        let _ = send.send(PingInfo {
                             motd: Component::Text(msg),
                             ping: time::Duration::seconds(99999),
                             exists: false,
@@ -313,7 +295,7 @@ impl ServerList {
                             protocol_version: 0,
                             protocol_name: "".to_owned(),
                             favicon: None,
-                        }));
+                        });
                     }
                 }
             });
@@ -323,140 +305,129 @@ impl ServerList {
 
 impl super::Screen for ServerList {
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        let logo = ui::logo::Logo::new(renderer.resources.clone(), renderer, ui_container);
-        let mut elements = ui::Collection::new();
+        let logo = ui::logo::Logo::new(renderer.resources.clone(), ui_container);
 
         // Refresh the server list
-        let (mut refresh, mut txt) = super::new_button_text(renderer,
-                                                            "Refresh",
-                                                            300.0,
-                                                            -50.0 - 15.0,
-                                                            100.0,
-                                                            30.0);
-        refresh.set_v_attach(ui::VAttach::Middle);
-        refresh.set_h_attach(ui::HAttach::Center);
-        let re = ui_container.add(refresh);
-        txt.set_parent(&re);
-        let tre = ui_container.add(txt);
-        let nr = self.needs_reload.clone();
-        super::button_action(ui_container,
-                             re.clone(),
-                             Some(tre.clone()),
-                             move |_, _| {
-                                 *nr.borrow_mut() = true;
-                             });
-        elements.add(re);
-        elements.add(tre);
+        let refresh = ui::ButtonBuilder::new()
+            .position(300.0, -50.0 - 15.0)
+            .size(100.0, 30.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .draw_index(2)
+            .create(ui_container);
+        {
+            let mut refresh = refresh.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Refresh")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *refresh);
+            refresh.add_text(txt);
+            let nr = self.needs_reload.clone();
+            refresh.add_click_func(move |_, _| {
+                *nr.borrow_mut() = true;
+                true
+            })
+        }
 
         // Add a new server to the list
-        let (mut add, mut txt) = super::new_button_text(
-            renderer, "Add",
-            200.0, -50.0 - 15.0, 100.0, 30.0
-        );
-        add.set_v_attach(ui::VAttach::Middle);
-        add.set_h_attach(ui::HAttach::Center);
-        let re = ui_container.add(add);
-        txt.set_parent(&re);
-        let tre = ui_container.add(txt);
-        super::button_action(ui_container, re.clone(), Some(tre.clone()), |game, _|{
-            game.screen_sys.replace_screen(Box::new(super::edit_server::EditServerEntry::new(
-                None
-            )));
-        });
-        elements.add(re);
-        elements.add(tre);
+        let add = ui::ButtonBuilder::new()
+            .position(200.0, -50.0 - 15.0)
+            .size(100.0, 30.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .draw_index(2)
+            .create(ui_container);
+        {
+            let mut add = add.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Add")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *add);
+            add.add_text(txt);
+            add.add_click_func(move |_, game| {
+                game.screen_sys.replace_screen(Box::new(super::edit_server::EditServerEntry::new(
+                    None
+                )));
+                true
+            })
+        }
 
         // Options menu
-        let mut options = ui::Button::new(5.0, 25.0, 40.0, 40.0);
-        options.set_v_attach(ui::VAttach::Bottom);
-        options.set_h_attach(ui::HAttach::Right);
-        let re = ui_container.add(options);
-        let mut cog = ui::Image::new(render::Renderer::get_texture(renderer.get_textures_ref(),
-                                                                   "steven:gui/cog"),
-                                     0.0,
-                                     0.0,
-                                     40.0,
-                                     40.0,
-                                     0.0,
-                                     0.0,
-                                     1.0,
-                                     1.0,
-                                     255,
-                                     255,
-                                     255);
-        cog.set_parent(&re);
-        cog.set_v_attach(ui::VAttach::Middle);
-        cog.set_h_attach(ui::HAttach::Center);
-        super::button_action(ui_container, re.clone(), None, | game, _ | {
-            game.screen_sys.add_screen(Box::new(super::SettingsMenu::new(game.vars.clone(), false)));
-        });
-        elements.add(re);
-        elements.add(ui_container.add(cog));
+        let options = ui::ButtonBuilder::new()
+            .position(5.0, 25.0)
+            .size(40.0, 40.0)
+            .alignment(ui::VAttach::Bottom, ui::HAttach::Right)
+            .create(ui_container);
+        {
+            let mut options = options.borrow_mut();
+            ui::ImageBuilder::new()
+                .texture("steven:gui/cog")
+                .position(0.0, 0.0)
+                .size(40.0, 40.0)
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *options);
+            options.add_click_func(|_, game| {
+                game.screen_sys.add_screen(Box::new(super::SettingsMenu::new(game.vars.clone(), false)));
+                true
+            });
+        }
 
         // Disclaimer
-        let mut warn = ui::Text::new(renderer,
-                                     "Not affiliated with Mojang/Minecraft",
-                                     5.0,
-                                     5.0,
-                                     255,
-                                     200,
-                                     200);
-        warn.set_v_attach(ui::VAttach::Bottom);
-        warn.set_h_attach(ui::HAttach::Right);
-        elements.add(ui_container.add(warn));
+        let disclaimer = ui::TextBuilder::new()
+            .text("Not affiliated with Mojang/Minecraft")
+            .position(5.0, 5.0)
+            .colour((255, 200, 200, 255))
+            .alignment(ui::VAttach::Bottom, ui::HAttach::Right)
+            .create(ui_container);
 
         // If we are kicked from a server display the reason
-        if let Some(ref disconnect_reason) = self.disconnect_reason {
-            let mut dis_msg = ui::Text::new(renderer, "Disconnected", 0.0, 32.0, 255, 0, 0);
-            dis_msg.set_h_attach(ui::HAttach::Center);
-            let mut dis = ui::Formatted::with_width_limit(renderer,
-                                                          disconnect_reason.clone(),
-                                                          0.0,
-                                                          48.0,
-                                                          600.0);
-            dis.set_h_attach(ui::HAttach::Center);
-            let mut back =
-                ui::Image::new(render::Renderer::get_texture(renderer.get_textures_ref(),
-                                                             "steven:solid"),
-                               0.0,
-                               30.0,
-                               dis.get_width().max(dis_msg.get_width()) + 4.0,
-                               dis.get_height() + 4.0 + 16.0,
-                               0.0,
-                               0.0,
-                               1.0,
-                               1.0,
-                               0,
-                               0,
-                               0);
-            back.set_a(100);
-            back.set_h_attach(ui::HAttach::Center);
-            elements.add(ui_container.add(back));
-            elements.add(ui_container.add(dis));
-            elements.add(ui_container.add(dis_msg));
-        }
+        let disconnected = if let Some(ref disconnect_reason) = self.disconnect_reason {
+            let (width, height) = ui::Formatted::compute_size(renderer, disconnect_reason, 600.0);
+            let background = ui::ImageBuilder::new()
+                .texture("steven:solid")
+                .position(0.0, 3.0)
+                .size(width.max(renderer.ui.size_of_string("Disconnected")) + 4.0, height + 4.0 + 16.0)
+                .colour((0, 0, 0, 100))
+                .alignment(ui::VAttach::Top, ui::HAttach::Center)
+                .create(ui_container);
+            ui::TextBuilder::new()
+                .text("Disconnected")
+                .position(0.0, 2.0)
+                .colour((255, 0, 0, 255))
+                .alignment(ui::VAttach::Top, ui::HAttach::Center)
+                .attach(&mut *background.borrow_mut());
+            ui::FormattedBuilder::new()
+                .text(disconnect_reason.clone())
+                .position(0.0, 18.0)
+                .max_width(600.0)
+                .alignment(ui::VAttach::Top, ui::HAttach::Center)
+                .attach(&mut *background.borrow_mut());
+            Some(background)
+        } else {
+            None
+        };
 
         self.elements = Some(UIElements {
             logo: logo,
-            elements: elements,
             servers: Vec::new(),
+
+            _add_btn: add,
+            _refresh_btn: refresh,
+            _options_btn: options,
+            _disclaimer: disclaimer,
+
+            _disconnected: disconnected,
         });
         self.reload_server_list(renderer, ui_container);
     }
-    fn on_deactive(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn on_deactive(&mut self, renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         // Clean up
         {
             let elements = self.elements.as_mut().unwrap();
-            elements.logo.remove(ui_container);
-            elements.elements.remove_all(ui_container);
             let mut tex = renderer.get_textures_ref().write().unwrap();
             for server in &mut elements.servers {
                 if let Some(ref icon) = server.icon_texture {
                     tex.remove_dynamic(&icon);
                 }
-                server.collection.remove_all(ui_container);
             }
-            elements.servers.clear();
         }
         self.elements = None
     }
@@ -470,18 +441,18 @@ impl super::Screen for ServerList {
         }
         let elements = self.elements.as_mut().unwrap();
 
-        elements.logo.tick(renderer, ui_container);
+        elements.logo.tick(renderer);
 
         for s in &mut elements.servers {
             // Animate the entries
             {
-                let back = ui_container.get_mut(&s.back);
-                let dy = s.y - back.get_y();
+                let mut back = s.back.borrow_mut();
+                let dy = s.y - back.y;
                 if dy * dy > 1.0 {
-                    let y = back.get_y();
-                    back.set_y(y + delta * dy * 0.1);
+                    let y = back.y;
+                    back.y = y + delta * dy * 0.1;
                 } else {
-                    back.set_y(s.y);
+                    back.y = s.y;
                 }
             }
 
@@ -491,45 +462,36 @@ impl super::Screen for ServerList {
                 match s.recv.try_recv() {
                     Ok(res) => {
                         s.done_ping = true;
-                        {
-                            let motd = ui_container.get_mut(&s.motd);
-                            motd.set_component(renderer, res.motd);
-                        }
-                        {
-                            let ping = ui_container.get_mut(&s.ping);
-                            // Selects the icon for the given ping range
-                            let y = match res.ping.num_milliseconds() {
-                                _x @ 0 ... 75 => 16.0 / 256.0,
-                                _x @ 76 ... 150 => 24.0 / 256.0,
-                                _x @ 151 ... 225 => 32.0 / 256.0,
-                                _x @ 226 ... 350 => 40.0 / 256.0,
-                                _x @ 351 ... 999 => 48.0 / 256.0,
-                                _ => 56.0 / 256.0,
-                            };
-                            ping.set_t_y(y);
-                        }
+                        s.motd.borrow_mut().set_text(res.motd);
+                        // Selects the icon for the given ping range
+                        let y = match res.ping.num_milliseconds() {
+                            _x @ 0 ... 75 => 16.0 / 256.0,
+                            _x @ 76 ... 150 => 24.0 / 256.0,
+                            _x @ 151 ... 225 => 32.0 / 256.0,
+                            _x @ 226 ... 350 => 40.0 / 256.0,
+                            _x @ 351 ... 999 => 48.0 / 256.0,
+                            _ => 56.0 / 256.0,
+                        };
+                        s.ping.borrow_mut().texture_coords.1 = y;
                         if res.exists {
                             {
-                                let players = ui_container.get_mut(&s.players);
+                                let mut players = s.players.borrow_mut();
                                 let txt = if res.protocol_version == protocol::SUPPORTED_PROTOCOL {
-                                    players.set_g(255);
-                                    players.set_b(255);
+                                    players.colour.1 = 255;
+                                    players.colour.2 = 255;
                                     format!("{}/{}", res.online, res.max)
                                 } else {
-                                    players.set_g(85);
-                                    players.set_b(85);
+                                    players.colour.1 = 85;
+                                    players.colour.2 = 85;
                                     format!("Out of date {}/{}", res.online, res.max)
                                 };
-                                players.set_text(renderer, &txt);
+                                players.text = txt;
                             }
-                            {
-                                let version = ui_container.get_mut(&s.version);
-                                let mut txt = TextComponent::new(&res.protocol_name);
-                                txt.modifier.color = Some(format::Color::Yellow);
-                                let mut msg = Component::Text(txt);
-                                format::convert_legacy(&mut msg);
-                                version.set_component(renderer, msg);
-                            }
+                            let mut txt = TextComponent::new(&res.protocol_name);
+                            txt.modifier.color = Some(format::Color::Yellow);
+                            let mut msg = Component::Text(txt);
+                            format::convert_legacy(&mut msg);
+                            s.version.borrow_mut().set_text(msg);
                         }
                         if let Some(favicon) = res.favicon {
                             let name: String = rand::thread_rng()
@@ -541,16 +503,14 @@ impl super::Screen for ServerList {
                             let icon_tex = tex.write()
                                               .unwrap()
                                               .put_dynamic(&name, favicon);
-                            let icon = ui_container.get_mut(&s.icon);
-                            icon.set_texture(icon_tex);
+                            s.icon.borrow_mut().texture = icon_tex.name;
                         }
                     }
                     Err(mpsc::TryRecvError::Disconnected) => {
                         s.done_ping = true;
-                        let motd = ui_container.get_mut(&s.motd);
                         let mut txt = TextComponent::new("Channel dropped");
                         txt.modifier.color = Some(format::Color::Red);
-                        motd.set_component(renderer, Component::Text(txt));
+                        s.motd.borrow_mut().set_text(Component::Text(txt));
                     }
                     _ => {}
                 }

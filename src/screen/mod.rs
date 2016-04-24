@@ -15,11 +15,12 @@
 mod server_list;
 pub use self::server_list::*;
 mod login;
-pub mod settings_menu;
-
 pub use self::login::*;
+
 pub mod connecting;
 pub mod edit_server;
+
+pub mod settings_menu;
 pub use self::settings_menu::{SettingsMenu, VideoSettingsMenu, AudioSettingsMenu};
 
 use render;
@@ -147,41 +148,4 @@ impl ScreenSystem {
         let current = self.screens.last_mut().unwrap();
         current.screen.on_scroll(x, y);
     }
-}
-
-pub fn new_button_text(renderer: &mut render::Renderer,
-                       val: &str,
-                       x: f64,
-                       y: f64,
-                       w: f64,
-                       h: f64)
-                       -> (ui::Button, ui::Text) {
-    let btn = ui::Button::new(x, y, w, h);
-    let mut text = ui::Text::new(renderer, val, 0.0, 0.0, 255, 255, 255);
-    text.set_v_attach(ui::VAttach::Middle);
-    text.set_h_attach(ui::HAttach::Center);
-    (btn, text)
-}
-
-pub fn button_action<F: Fn(&mut ::Game, &mut ui::Container) + 'static>(ui_container: &mut ui::Container,
-                     btn: ui::ElementRef<ui::Button>,
-                     txt: Option<ui::ElementRef<ui::Text>>,
-                     click: F) {
-    let button = ui_container.get_mut(&btn);
-    button.add_hover_func(move |over, _, ui_container| {
-        let disabled = {
-            let button = ui_container.get_mut(&btn);
-            button.is_disabled()
-        };
-        let txt = txt.clone();
-        if let Some(txt) = txt {
-            let text = ui_container.get_mut(&txt);
-            text.set_b(if over && !disabled {
-                160
-            } else {
-                255
-            });
-        }
-    });
-    button.add_click_func(click);
 }

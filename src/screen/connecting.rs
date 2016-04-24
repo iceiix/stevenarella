@@ -14,7 +14,6 @@
 
 use ui;
 use render;
-use format::{self, Component, TextComponent};
 
 pub struct Connecting {
     elements: Option<UIElements>,
@@ -23,7 +22,9 @@ pub struct Connecting {
 
 struct UIElements {
     logo: ui::logo::Logo,
-    elements: ui::Collection,
+    _connect_msg: ui::TextRef,
+    _msg: ui::TextRef,
+    _disclaimer: ui::TextRef,
 }
 
 
@@ -38,63 +39,48 @@ impl Connecting {
 
 impl super::Screen for Connecting {
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        let logo = ui::logo::Logo::new(renderer.resources.clone(), renderer, ui_container);
-        let mut elements = ui::Collection::new();
+        let logo = ui::logo::Logo::new(renderer.resources.clone(), ui_container);
 
-        let mut connect_msg = ui::Formatted::new(
-            renderer,
-            Component::Text(TextComponent::new("Connecting to")),
-            0.0, -16.0
-        );
-        connect_msg.set_v_attach(ui::VAttach::Middle);
-        connect_msg.set_h_attach(ui::HAttach::Center);
-        elements.add(ui_container.add(connect_msg));
+        let connect_msg = ui::TextBuilder::new()
+            .text("Connecting to")
+            .position(0.0, -16.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
 
-        let mut msg = TextComponent::new(&self.target);
-        msg.modifier.color = Some(format::Color::Yellow);
-        let mut server_msg = ui::Formatted::new(
-            renderer,
-            Component::Text(msg),
-            0.0, 16.0
-        );
-        server_msg.set_v_attach(ui::VAttach::Middle);
-        server_msg.set_h_attach(ui::HAttach::Center);
-        elements.add(ui_container.add(server_msg));
+        let msg = ui::TextBuilder::new()
+            .text(self.target.clone())
+            .position(0.0, 16.0)
+            .colour((255, 255, 85, 255))
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
 
         // Disclaimer
-        let mut warn = ui::Text::new(renderer,
-                                     "Not affiliated with Mojang/Minecraft",
-                                     5.0,
-                                     5.0,
-                                     255,
-                                     200,
-                                     200);
-        warn.set_v_attach(ui::VAttach::Bottom);
-        warn.set_h_attach(ui::HAttach::Right);
-        elements.add(ui_container.add(warn));
+        let disclaimer = ui::TextBuilder::new()
+            .text("Not affiliated with Mojang/Minecraft")
+            .position(5.0, 5.0)
+            .colour((255, 200, 200, 255))
+            .alignment(ui::VAttach::Bottom, ui::HAttach::Right)
+            .create(ui_container);
 
         self.elements = Some(UIElements {
             logo: logo,
-            elements: elements,
+            _disclaimer: disclaimer,
+            _msg: msg,
+            _connect_msg: connect_msg,
         });
     }
-    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         // Clean up
-        {
-            let elements = self.elements.as_mut().unwrap();
-            elements.logo.remove(ui_container);
-            elements.elements.remove_all(ui_container);
-        }
         self.elements = None
     }
 
     fn tick(&mut self,
             _delta: f64,
             renderer: &mut render::Renderer,
-            ui_container: &mut ui::Container) -> Option<Box<super::Screen>>{
+            _ui_container: &mut ui::Container) -> Option<Box<super::Screen>>{
         let elements = self.elements.as_mut().unwrap();
 
-        elements.logo.tick(renderer, ui_container);
+        elements.logo.tick(renderer);
         None
     }
 }

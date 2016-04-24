@@ -181,18 +181,25 @@ impl Vars {
 
 pub struct Console {
     history: Vec<Component>,
+    dirty: bool,
 
-    collection: ui::Collection,
+    elements: Option<ConsoleElements>,
     active: bool,
     position: f64,
+}
+
+struct ConsoleElements {
+    background: ui::ImageRef,
+    lines: Vec<ui::FormattedRef>,
 }
 
 impl Console {
     pub fn new() -> Console {
         Console {
             history: vec![Component::Text(TextComponent::new("")); 200],
+            dirty: false,
 
-            collection: ui::Collection::new(),
+            elements: None,
             active: false,
             position: -220.0,
         }
@@ -208,14 +215,11 @@ impl Console {
 
     pub fn tick(&mut self,
                 ui_container: &mut ui::Container,
-                renderer: &mut render::Renderer,
+                renderer: &render::Renderer,
                 delta: f64,
                 width: f64) {
-        // To make sure the console is always on top it constant removes and readds itself.
-        // Its hacky but the console should never appear for normal users so its not really
-        // a major issue.
-        self.collection.remove_all(ui_container);
         if !self.active && self.position <= -220.0 {
+            self.elements = None;
             return;
         }
         if self.active {
@@ -229,39 +233,48 @@ impl Console {
         } else {
             self.position = -220.0;
         }
+
         let w = match ui_container.mode {
             ui::Mode::Scaled => width,
             ui::Mode::Unscaled(scale) => 854.0 / scale,
         };
-
-        let mut background = ui::Image::new(
-            render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid"),
-            0.0, self.position, w, 220.0,
-            0.0, 0.0, 1.0, 1.0,
-            0, 0, 0
-        );
-        background.set_a(180);
-        let background = self.collection.add(ui_container.add(background));
-
-        let mut lines = Vec::new();
-        let mut offset = 0.0;
-        for line in self.history.iter().rev() {
-            if offset >= 210.0 {
-                break;
-            }
-            let mut fmt = ui::Formatted::with_width_limit(
-                renderer,
-                line.clone(),
-                5.0, 5.0 + offset,
-                w - 1.0
-            );
-            fmt.set_parent(&background);
-            fmt.set_v_attach(ui::VAttach::Bottom);
-            offset += fmt.get_height();
-            lines.push(ui_container.add(fmt));
+        if self.elements.is_none() {
+            let background = ui::ImageBuilder::new()
+                .texture("steven:solid")
+                .position(0.0, self.position)
+                .size(w, 220.0)
+                .colour((0, 0, 0, 180))
+                .draw_index(500)
+                .create(ui_container);
+            self.elements = Some(ConsoleElements {
+                background: background,
+                lines: vec![],
+            });
+            self.dirty = true;
         }
-        for fmt in lines {
-            self.collection.add(fmt);
+        let elements = self.elements.as_mut().unwrap();
+        let mut background = elements.background.borrow_mut();
+        background.y = self.position;
+        background.width = w;
+
+        if self.dirty {
+            self.dirty = false;
+            elements.lines.clear();
+
+            let mut offset = 0.0;
+            for line in self.history.iter().rev() {
+                if offset >= 210.0 {
+                    break;
+                }
+                let (_, height) = ui::Formatted::compute_size(renderer, line, w - 10.0);
+                elements.lines.push(ui::FormattedBuilder::new()
+                    .text(line.clone())
+                    .position(5.0, 5.0 + offset)
+                    .max_width(w - 10.0)
+                    .alignment(ui::VAttach::Bottom, ui::HAttach::Left)
+                    .create(&mut *background));
+                offset += height;
+            }
         }
     }
 
@@ -314,6 +327,7 @@ impl Console {
             Component::Text(TextComponent::new(&format!("{}", record.args())))
         ]);
         self.history.push(Component::Text(msg));
+        self.dirty = true;
     }
 }
 

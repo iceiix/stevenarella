@@ -14,6 +14,7 @@
 
 #![recursion_limit="300"]
 #![feature(const_fn)]
+#![feature(rc_would_unwrap)]
 
 extern crate sdl2;
 extern crate image;
@@ -243,7 +244,6 @@ fn main() {
         let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
         let (width, height) = window.drawable_size();
 
-
         let vsync_changed = *game.vars.get(settings::R_VSYNC);
         if vsync != vsync_changed {
             vsync = vsync_changed;
@@ -262,7 +262,7 @@ fn main() {
         game.console
             .lock()
             .unwrap()
-            .tick(&mut ui_container, &mut game.renderer, delta, width as f64);
+            .tick(&mut ui_container, &game.renderer, delta, width as f64);
         ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
         game.renderer.tick(&mut game.server.world, delta, width, height);
 

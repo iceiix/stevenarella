@@ -33,13 +33,13 @@ pub struct Login {
 
 struct UIElements {
     logo: ui::logo::Logo,
-    elements: ui::Collection,
 
-    login_btn: ui::ElementRef<ui::Button>,
-    login_btn_text: ui::ElementRef<ui::Text>,
-    login_error: ui::ElementRef<ui::Text>,
-    username_txt: ui::ElementRef<ui::TextBox>,
-    password_txt: ui::ElementRef<ui::TextBox>,
+    login_btn: ui::ButtonRef,
+    login_btn_text: ui::TextRef,
+    login_error: ui::TextRef,
+    username_txt: ui::TextBoxRef,
+    password_txt: ui::TextBoxRef,
+    _disclaimer: ui::TextRef,
     try_login: Rc<Cell<bool>>,
     refresh: bool,
     login_res: Option<mpsc::Receiver<Result<mojang::Profile, protocol::Error>>>,
@@ -56,73 +56,76 @@ impl Login {
 
 impl super::Screen for Login {
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        let logo = ui::logo::Logo::new(renderer.resources.clone(), renderer, ui_container);
-        let mut elements = ui::Collection::new();
+        let logo = ui::logo::Logo::new(renderer.resources.clone(), ui_container);
 
         let try_login = Rc::new(Cell::new(false));
 
         // Login
-        let (mut login, mut txt) = super::new_button_text(renderer, "Login", 0.0, 100.0, 400.0, 40.0);
-        login.set_v_attach(ui::VAttach::Middle);
-        login.set_h_attach(ui::HAttach::Center);
-        let re = ui_container.add(login);
-        txt.set_parent(&re);
-        let tre = ui_container.add(txt);
-        let tl = try_login.clone();
-        super::button_action(ui_container,
-                             re.clone(),
-                             Some(tre.clone()),
-                             move |_, _| {
-            tl.set(true);
-        });
-        let login_btn = elements.add(re);
-        let login_btn_text = elements.add(tre);
+        let login_btn = ui::ButtonBuilder::new()
+            .position(0.0, 100.0)
+            .size(400.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        let login_btn_text = ui::TextBuilder::new()
+            .text("Login")
+            .position(0.0, 0.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .attach(&mut *login_btn.borrow_mut());
+        {
+            let mut btn = login_btn.borrow_mut();
+            btn.add_text(login_btn_text.clone());
+            let tl = try_login.clone();
+            btn.add_click_func(move |_, _| {
+                tl.set(true);
+                true
+            });
+        }
+
 
         // Login Error
-        let mut login_error = ui::Text::new(renderer, "", 0.0, 150.0, 255, 50, 50);
-        login_error.set_v_attach(ui::VAttach::Middle);
-        login_error.set_h_attach(ui::HAttach::Center);
-        let login_error = elements.add(ui_container.add(login_error));
+        let login_error = ui::TextBuilder::new()
+            .text("")
+            .position(0.0, 150.0)
+            .colour((255, 50, 50, 255))
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
 
         // Username
-        let mut username = ui::TextBox::new(renderer, "", 0.0, -20.0, 400.0, 40.0);
-        username.set_v_attach(ui::VAttach::Middle);
-        username.set_h_attach(ui::HAttach::Center);
-        username.add_submit_func(|_, ui| {
-            ui.cycle_focus();
-        });
-        let ure = ui_container.add(username);
-        let mut username_label = ui::Text::new(renderer, "Username/Email:", 0.0, -18.0, 255, 255, 255);
-        username_label.set_parent(&ure);
-        let username_txt = elements.add(ure);
-        elements.add(ui_container.add(username_label));
+        let username_txt = ui::TextBoxBuilder::new()
+            .position(0.0, -20.0)
+            .size(400.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        ui::TextBox::make_focusable(&username_txt, ui_container);
+        ui::TextBuilder::new()
+            .text("Username/Email:")
+            .position(0.0, -18.0)
+            .attach(&mut *username_txt.borrow_mut());
 
         // Password
-        let mut password = ui::TextBox::new(renderer, "", 0.0, 40.0, 400.0, 40.0);
-        password.set_v_attach(ui::VAttach::Middle);
-        password.set_h_attach(ui::HAttach::Center);
-        password.set_password(true);
+        let password_txt = ui::TextBoxBuilder::new()
+            .position(0.0, 40.0)
+            .size(400.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .password(true)
+            .create(ui_container);
+        ui::TextBox::make_focusable(&password_txt, ui_container);
+        ui::TextBuilder::new()
+            .text("Password:")
+            .position(0.0, -18.0)
+            .attach(&mut *password_txt.borrow_mut());
         let tl = try_login.clone();
-        password.add_submit_func(move |_, _| {
+        password_txt.borrow_mut().add_submit_func(move |_, _| {
             tl.set(true);
         });
-        let pre = ui_container.add(password);
-        let mut password_label = ui::Text::new(renderer, "Password:", 0.0, -18.0, 255, 255, 255);
-        password_label.set_parent(&pre);
-        let password_txt = elements.add(pre);
-        elements.add(ui_container.add(password_label));
 
         // Disclaimer
-        let mut warn = ui::Text::new(renderer,
-                                     "Not affiliated with Mojang/Minecraft",
-                                     5.0,
-                                     5.0,
-                                     255,
-                                     200,
-                                     200);
-        warn.set_v_attach(ui::VAttach::Bottom);
-        warn.set_h_attach(ui::HAttach::Right);
-        elements.add(ui_container.add(warn));
+        let disclaimer = ui::TextBuilder::new()
+            .text("Not affiliated with Mojang/Minecraft")
+            .position(5.0, 5.0)
+            .colour((255, 200, 200, 255))
+            .alignment(ui::VAttach::Bottom, ui::HAttach::Right)
+            .create(ui_container);
 
         let profile = mojang::Profile {
             username: self.vars.get(auth::CL_USERNAME).clone(),
@@ -134,7 +137,6 @@ impl super::Screen for Login {
 
         self.elements = Some(UIElements {
             logo: logo,
-            elements: elements,
             profile: profile,
             login_btn: login_btn,
             login_btn_text: login_btn_text,
@@ -143,52 +145,37 @@ impl super::Screen for Login {
             refresh: refresh,
             login_res: None,
 
+            _disclaimer: disclaimer,
+
             username_txt: username_txt,
             password_txt: password_txt,
         });
     }
-    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         // Clean up
-        {
-            let elements = self.elements.as_mut().unwrap();
-            elements.logo.remove(ui_container);
-            elements.elements.remove_all(ui_container);
-        }
         self.elements = None
     }
 
     fn tick(&mut self,
             _delta: f64,
             renderer: &mut render::Renderer,
-            ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+            _ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
 
         if elements.try_login.get() && elements.login_res.is_none() {
             elements.try_login.set(false);
             let (tx, rx) = mpsc::channel();
             elements.login_res = Some(rx);
-            {
-                let btn = ui_container.get_mut(&elements.login_btn);
-                btn.set_disabled(true);
-            }
-            {
-                let txt = ui_container.get_mut(&elements.login_btn_text);
-                txt.set_text(renderer, "Logging in...");
-            }
+            elements.login_btn.borrow_mut().disabled = true;
+            elements.login_btn_text.borrow_mut().text = "Logging in...".into();
             let mut client_token = self.vars.get(auth::AUTH_CLIENT_TOKEN).clone();
             if client_token.is_empty() {
                 client_token = rand::thread_rng().gen_ascii_chars().take(20).collect::<String>();
                 self.vars.set(auth::AUTH_CLIENT_TOKEN, client_token);
             }
             let client_token = self.vars.get(auth::AUTH_CLIENT_TOKEN).clone();
-            let username = {
-                let txt = ui_container.get(&elements.username_txt);
-                txt.get_input()
-            };
-            let password = {
-                let txt = ui_container.get(&elements.password_txt);
-                txt.get_input()
-            };
+            let username = elements.username_txt.borrow().input.clone();
+            let password = elements.password_txt.borrow().input.clone();
             let refresh = elements.refresh;
             let profile = elements.profile.clone();
             thread::spawn(move || {
@@ -203,14 +190,8 @@ impl super::Screen for Login {
         if let Some(rx) = elements.login_res.as_ref() {
             if let Ok(res) = rx.try_recv() {
                 done = true;
-                {
-                    let btn = ui_container.get_mut(&elements.login_btn);
-                    btn.set_disabled(false);
-                }
-                {
-                    let txt = ui_container.get_mut(&elements.login_btn_text);
-                    txt.set_text(renderer, "Login");
-                }
+                elements.login_btn.borrow_mut().disabled = false;
+                elements.login_btn_text.borrow_mut().text = "Login".into();
                 match res {
                     Ok(val) => {
                         self.vars.set(auth::CL_USERNAME, val.username.clone());
@@ -220,8 +201,7 @@ impl super::Screen for Login {
                         return Some(Box::new(super::ServerList::new(None)));
                     },
                     Err(err) => {
-                        let login_error = ui_container.get_mut(&elements.login_error);
-                        login_error.set_text(renderer, &format!("{}", err));
+                        elements.login_error.borrow_mut().text = format!("{}", err);
                     },
                 }
             }
@@ -230,7 +210,7 @@ impl super::Screen for Login {
             elements.login_res = None;
         }
 
-        elements.logo.tick(renderer, ui_container);
+        elements.logo.tick(renderer);
         None
     }
 }

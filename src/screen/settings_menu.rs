@@ -5,49 +5,13 @@ use settings;
 
 use std::rc::Rc;
 
-pub fn new_submenu_button(text: &str, renderer: &mut render::Renderer, ui_container: &mut ui::Container, x: f64, y: f64) -> (ui::ElementRef<ui::Button>, ui::ElementRef<ui::Text>) {
-    let (mut btn, mut txt) = super::new_button_text(renderer, text, x, y, 300.0, 40.0);
-    btn.set_v_attach(ui::VAttach::Middle);
-    btn.set_h_attach(ui::HAttach::Center);
-    let ui_btn = ui_container.add(btn);
-    txt.set_parent(&ui_btn);
-    (ui_btn, ui_container.add(txt))
-}
-
-pub fn new_centered_button(text: &str, renderer: &mut render::Renderer, ui_container: &mut ui::Container, y: f64, vertical_attach: ui::VAttach) -> (ui::ElementRef<ui::Button>, ui::ElementRef<ui::Text>) {
-    let (mut btn, mut txt) = super::new_button_text(renderer, text, 0.0, y, 400.0, 40.0);
-    btn.set_v_attach(vertical_attach);
-    btn.set_h_attach(ui::HAttach::Center);
-    let ui_btn = ui_container.add(btn);
-    txt.set_parent(&ui_btn);
-    (ui_btn, ui_container.add(txt))
-}
-
-macro_rules! get_bool_str {
-    ($fmt:expr, $val:expr, $val_true:expr, $val_false:expr) => (format!($fmt, if $val {
-        $val_true
-    } else {
-        $val_false
-    }).as_ref());
-    ($fmt:expr, $val:expr) => (get_bool_string!($fmt, $val, "true", "false"));
-}
-
-macro_rules! get_matched_str {
-    ($fmt:expr, $val:expr, $($to_match:expr => $result:expr),*) => (
-        format!($fmt, match $val {
-            $($to_match => $result.to_owned(), )*
-            _ => $val.to_string(),
-        }).as_ref()
-    )
-}
-
 pub struct UIElements {
-    elements: ui::Collection,
-    background: ui::ElementRef<ui::Image>,
+    background: ui::ImageRef,
+    _buttons: Vec<ui::ButtonRef>,
 }
 
 pub struct SettingsMenu {
-    vars: Rc<console::Vars>,
+    _vars: Rc<console::Vars>,
     elements: Option<UIElements>,
     show_disconnect_button: bool
 }
@@ -55,7 +19,7 @@ pub struct SettingsMenu {
 impl SettingsMenu {
     pub fn new(vars: Rc<console::Vars>, show_disconnect_button: bool) -> SettingsMenu {
         SettingsMenu {
-            vars: vars,
+            _vars: vars,
             elements: None,
             show_disconnect_button: show_disconnect_button
         }
@@ -63,77 +27,135 @@ impl SettingsMenu {
 }
 
 impl super::Screen for SettingsMenu {
-    fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        let mut elements = ui::Collection::new();
+    fn on_active(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+        let background = ui::ImageBuilder::new()
+            .texture("steven:solid")
+            .position(0.0, 0.0)
+            .size(854.0, 480.0)
+            .colour((0, 0, 0, 100))
+            .create(ui_container);
 
-        let mut background = ui::Image::new(
-            render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid"),
-            0.0, 0.0, 854.0, 480.0,
-            0.0, 0.0, 1.0, 1.0,
-            0, 0, 0
-        );
-        background.set_a(100);
-        let background = elements.add(ui_container.add(background));
+        let mut buttons = vec![];
 
         // From top and down
-        let (btn_audio_settings, txt_audio_settings) = new_submenu_button("Audio settings...", renderer, ui_container, -160.0, -50.0);
-        super::button_action(ui_container, btn_audio_settings.clone(), Some(txt_audio_settings.clone()), move |game, _| {
-            game.screen_sys.add_screen(Box::new(AudioSettingsMenu::new(game.vars.clone())));
-        });
-        elements.add(btn_audio_settings);
-        elements.add(txt_audio_settings);
+        let audio_settings = ui::ButtonBuilder::new()
+            .position(-160.0, -50.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut audio_settings = audio_settings.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Audio settings...")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *audio_settings);
+            audio_settings.add_text(txt);
+            audio_settings.add_click_func(|_, game| {
+                game.screen_sys.add_screen(Box::new(AudioSettingsMenu::new(game.vars.clone())));
+                true
+            });
+        }
+        buttons.push(audio_settings);
 
-        let (btn_video_settings, txt_video_settings) = new_submenu_button("Video settings...", renderer, ui_container, 160.0, -50.0);
-        super::button_action(ui_container, btn_video_settings.clone(), Some(txt_video_settings.clone()), move |game, _| {
-            game.screen_sys.add_screen(Box::new(VideoSettingsMenu::new(game.vars.clone())));
-        });
-        elements.add(btn_video_settings);
-        elements.add(txt_video_settings);
+        let video_settings = ui::ButtonBuilder::new()
+            .position(160.0, -50.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut video_settings = video_settings.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Video settings...")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *video_settings);
+            video_settings.add_text(txt);
+            video_settings.add_click_func(|_, game| {
+                game.screen_sys.add_screen(Box::new(VideoSettingsMenu::new(game.vars.clone())));
+                true
+            });
+        }
+        buttons.push(video_settings);
 
-        let (btn_controls_settings, txt_controls_settings) = new_submenu_button("Controls...", renderer, ui_container, 160.0, 0.0);
-        super::button_action(ui_container, btn_controls_settings.clone(), Some(txt_controls_settings.clone()), move |_, _| {
-            // TODO: Implement this...
-        });
-        elements.add(btn_controls_settings);
-        elements.add(txt_controls_settings);
+        let controls_settings = ui::ButtonBuilder::new()
+            .position(160.0, 0.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut controls_settings = controls_settings.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Controls...")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *controls_settings);
+            controls_settings.add_text(txt);
+        }
+        buttons.push(controls_settings);
 
-        let (btn_locale_settings, txt_locale_settings) = new_submenu_button("Language...", renderer, ui_container, -160.0, 0.0);
-        super::button_action(ui_container, btn_locale_settings.clone(), Some(txt_locale_settings.clone()), move |_, _| {
-            // TODO: Implement this...
-        });
-        elements.add(btn_locale_settings);
-        elements.add(txt_locale_settings);
+        let lang_settings = ui::ButtonBuilder::new()
+            .position(-160.0, 0.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut lang_settings = lang_settings.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Language...")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *lang_settings);
+            lang_settings.add_text(txt);
+        }
+        buttons.push(lang_settings);
 
         // Center bottom items
-        let (btn_back_to_game, txt_back_to_game) = new_centered_button("Done", renderer, ui_container, 50.0, ui::VAttach::Bottom);
-        super::button_action(ui_container, btn_back_to_game.clone(), Some(txt_back_to_game.clone()), move |game, _| {
-            game.screen_sys.pop_screen();
-            game.focused = true;
-        });
-        elements.add(btn_back_to_game);
-        elements.add(txt_back_to_game);
+        let done_button = ui::ButtonBuilder::new()
+            .position(0.0, 50.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Bottom, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut done_button = done_button.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Done")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *done_button);
+            done_button.add_text(txt);
+            done_button.add_click_func(|_, game| {
+                game.screen_sys.pop_screen();
+                game.focused = true;
+                true
+            });
+        }
+        buttons.push(done_button);
 
         if self.show_disconnect_button {
-            let (btn_exit_game, txt_exit_game) = new_centered_button("Disconnect", renderer, ui_container, 100.0, ui::VAttach::Bottom);
-            super::button_action(ui_container, btn_exit_game.clone(), Some(txt_exit_game.clone()), move |game, _| {
-                game.server.disconnect(None);
-                game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
-            });
-            elements.add(btn_exit_game);
-            elements.add(txt_exit_game);
+            let disconnect_button = ui::ButtonBuilder::new()
+                .position(0.0, 100.0)
+                .size(300.0, 40.0)
+                .alignment(ui::VAttach::Bottom, ui::HAttach::Center)
+                .create(ui_container);
+            {
+                let mut disconnect_button = disconnect_button.borrow_mut();
+                let txt = ui::TextBuilder::new()
+                    .text("Disconnect")
+                    .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                    .attach(&mut *disconnect_button);
+                disconnect_button.add_text(txt);
+                disconnect_button.add_click_func(|_, game| {
+                    game.server.disconnect(None);
+                    game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
+                    true
+                });
+            }
+            buttons.push(disconnect_button);
         }
 
         self.elements = Some(UIElements {
-            elements: elements,
             background: background,
+            _buttons: buttons,
         });
 
     }
-    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        {
-            let elements = self.elements.as_mut().unwrap();
-            elements.elements.remove_all(ui_container);
-        }
+    fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         self.elements = None;
     }
 
@@ -142,15 +164,15 @@ impl super::Screen for SettingsMenu {
         let elements = self.elements.as_mut().unwrap();
         {
             let mode = ui_container.mode;
-            let background = ui_container.get_mut(&elements.background);
-            background.set_width(match mode {
+            let mut background = elements.background.borrow_mut();
+            background.width = match mode {
                 ui::Mode::Unscaled(scale) => 854.0 / scale,
                 ui::Mode::Scaled => renderer.width as f64,
-            });
-            background.set_height(match mode {
+            };
+            background.height = match mode {
                 ui::Mode::Unscaled(scale) => 480.0 / scale,
                 ui::Mode::Scaled => renderer.height as f64,
-            });
+            };
         }
         None
     }
@@ -180,17 +202,15 @@ impl VideoSettingsMenu {
 }
 
 impl super::Screen for VideoSettingsMenu {
-    fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        let mut elements = ui::Collection::new();
+    fn on_active(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+        let background = ui::ImageBuilder::new()
+            .texture("steven:solid")
+            .position(0.0, 0.0)
+            .size(854.0, 480.0)
+            .colour((0, 0, 0, 100))
+            .create(ui_container);
 
-        let mut background = ui::Image::new(
-            render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid"),
-            0.0, 0.0, 854.0, 480.0,
-            0.0, 0.0, 1.0, 1.0,
-            0, 0, 0
-        );
-        background.set_a(100);
-        let background = elements.add(ui_container.add(background));
+        let mut buttons = vec![];
 
         // Load defaults
         let r_max_fps = *self.vars.get(settings::R_MAX_FPS);
@@ -199,42 +219,92 @@ impl super::Screen for VideoSettingsMenu {
 
         // Setting buttons
         // TODO: Slider
-        let (btn_fov, txt_fov) = new_submenu_button(get_matched_str!("FOV: {}", r_fov, 90 => "Normal", 110 => "Quake pro"), renderer, ui_container, -160.0, -50.0);
-        elements.add(btn_fov);
-        elements.add(txt_fov);
+        let fov_setting = ui::ButtonBuilder::new()
+            .position(160.0, -50.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut fov_setting = fov_setting.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text(format!("FOV: {}", match r_fov {
+                    90 => "Normal".into(),
+                    110 => "Quake pro".into(),
+                    val => val.to_string(),
+                }))
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *fov_setting);
+            fov_setting.add_text(txt);
+        }
+        buttons.push(fov_setting);
 
-        let (btn_vsync, txt_vsync) = new_submenu_button(get_bool_str!("VSync: {}", r_vsync, "Enabled", "Disabled"), renderer, ui_container, -160.0, 0.0);
-        elements.add(txt_vsync.clone());
-        super::button_action(ui_container, btn_vsync.clone(), Some(txt_vsync.clone()), move | game, ui_container | {
-            let r_vsync = !*game.vars.get(settings::R_VSYNC);
-            let txt_vsync = ui_container.get_mut(&txt_vsync);
-            txt_vsync.set_text(&game.renderer, get_bool_str!("VSync: {}", r_vsync, "Enabled", "Disabled"));
-            game.vars.set(settings::R_VSYNC, r_vsync);
-        });
-        elements.add(btn_vsync);
+        let vsync_setting = ui::ButtonBuilder::new()
+            .position(-160.0, 0.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut vsync_setting = vsync_setting.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text(format!("VSync: {}", if r_vsync { "Enabled" } else { "Disabled" }))
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *vsync_setting);
+            let txt_vsync = txt.clone();
+            vsync_setting.add_text(txt);
+            vsync_setting.add_click_func(move |_, game| {
+                let r_vsync = !*game.vars.get(settings::R_VSYNC);
+                txt_vsync.borrow_mut().text = format!("VSync: {}", if r_vsync { "Enabled" } else { "Disabled" });
+                game.vars.set(settings::R_VSYNC, r_vsync);
+                true
+            });
+        }
+        buttons.push(vsync_setting);
 
         // TODO: Slider
-        let (btn_fps_cap, txt_fps_cap) = new_submenu_button(get_matched_str!("FPS cap: {}", r_max_fps, 0 => "Unlimited", 15 => "Potato"), renderer, ui_container, 160.0, 0.0);
-        elements.add(btn_fps_cap);
-        elements.add(txt_fps_cap);
+        let fps_setting = ui::ButtonBuilder::new()
+            .position(160.0, 0.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut fps_setting = fps_setting.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text(format!("FPS cap: {}", match r_max_fps {
+                    0 => "Unlimited".into(),
+                    val => val.to_string(),
+                }))
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *fps_setting);
+            fps_setting.add_text(txt);
+        }
+        buttons.push(fps_setting);
 
-        let (btn_done, txt_done) = new_centered_button("Done", renderer, ui_container, 50.0, ui::VAttach::Bottom);
-        super::button_action(ui_container, btn_done.clone(), Some(txt_done.clone()), move | game, _ | {
-            game.screen_sys.pop_screen();
-        });
-        elements.add(btn_done);
-        elements.add(txt_done);
+        let done_button = ui::ButtonBuilder::new()
+            .position(0.0, 50.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Bottom, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut done_button = done_button.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Done")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *done_button);
+            done_button.add_text(txt);
+            done_button.add_click_func(|_, game| {
+                game.screen_sys.pop_screen();
+                game.focused = true;
+                true
+            });
+        }
+        buttons.push(done_button);
         self.elements = Some(UIElements {
-            elements: elements,
             background: background,
+            _buttons: buttons,
         });
 
     }
-    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        {
-            let elements = self.elements.as_mut().unwrap();
-            elements.elements.remove_all(ui_container);
-        }
+    fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         self.elements = None;
     }
 
@@ -243,15 +313,15 @@ impl super::Screen for VideoSettingsMenu {
         let elements = self.elements.as_mut().unwrap();
         {
             let mode = ui_container.mode;
-            let background = ui_container.get_mut(&elements.background);
-            background.set_width(match mode {
+            let mut background = elements.background.borrow_mut();
+            background.width = match mode {
                 ui::Mode::Unscaled(scale) => 854.0 / scale,
                 ui::Mode::Scaled => renderer.width as f64,
-            });
-            background.set_height(match mode {
+            };
+            background.height = match mode {
                 ui::Mode::Unscaled(scale) => 480.0 / scale,
                 ui::Mode::Scaled => renderer.height as f64,
-            });
+            };
         }
         None
     }
@@ -267,56 +337,59 @@ impl super::Screen for VideoSettingsMenu {
 }
 
 pub struct AudioSettingsMenu {
-    vars: Rc<console::Vars>,
+    _vars: Rc<console::Vars>,
     elements: Option<UIElements>
 }
 
 impl AudioSettingsMenu {
     pub fn new(vars: Rc<console::Vars>) -> AudioSettingsMenu {
         AudioSettingsMenu {
-            vars: vars,
+            _vars: vars,
             elements: None
         }
     }
 }
 
 impl super::Screen for AudioSettingsMenu {
-    fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        let mut elements = ui::Collection::new();
+    fn on_active(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+        let background = ui::ImageBuilder::new()
+            .texture("steven:solid")
+            .position(0.0, 0.0)
+            .size(854.0, 480.0)
+            .colour((0, 0, 0, 100))
+            .create(ui_container);
 
-        let mut background = ui::Image::new(
-            render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid"),
-            0.0, 0.0, 854.0, 480.0,
-            0.0, 0.0, 1.0, 1.0,
-            0, 0, 0
-        );
-        background.set_a(100);
-        let background = elements.add(ui_container.add(background));
+        let mut buttons = vec![];
 
-        let master_volume = *self.vars.get(settings::CL_MASTER_VOLUME);
+        // TODO
 
-        let (btn_master_volume, txt_master_volume) = new_centered_button(&master_volume.to_string(), renderer, ui_container, -150.0, ui::VAttach::Middle);
-        elements.add(btn_master_volume);
-        elements.add(txt_master_volume);
-
-        let (btn_done, txt_done) = new_centered_button("Done", renderer, ui_container, 50.0, ui::VAttach::Bottom);
-        super::button_action(ui_container, btn_done.clone(), Some(txt_done.clone()), move | game, _ | {
-            game.screen_sys.pop_screen();
-        });
-        elements.add(btn_done);
-        elements.add(txt_done);
+        let done_button = ui::ButtonBuilder::new()
+            .position(0.0, 50.0)
+            .size(300.0, 40.0)
+            .alignment(ui::VAttach::Bottom, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut done_button = done_button.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Done")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *done_button);
+            done_button.add_text(txt);
+            done_button.add_click_func(|_, game| {
+                game.screen_sys.pop_screen();
+                game.focused = true;
+                true
+            });
+        }
+        buttons.push(done_button);
 
         self.elements = Some(UIElements {
-            elements: elements,
             background: background,
+            _buttons: buttons,
         });
 
     }
-    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        {
-            let elements = self.elements.as_mut().unwrap();
-            elements.elements.remove_all(ui_container);
-        }
+    fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         self.elements = None;
     }
 
@@ -325,15 +398,15 @@ impl super::Screen for AudioSettingsMenu {
         let elements = self.elements.as_mut().unwrap();
         {
             let mode = ui_container.mode;
-            let background = ui_container.get_mut(&elements.background);
-            background.set_width(match mode {
+            let mut background = elements.background.borrow_mut();
+            background.width = match mode {
                 ui::Mode::Unscaled(scale) => 854.0 / scale,
                 ui::Mode::Scaled => renderer.width as f64,
-            });
-            background.set_height(match mode {
+            };
+            background.height = match mode {
                 ui::Mode::Unscaled(scale) => 480.0 / scale,
                 ui::Mode::Scaled => renderer.height as f64,
-            });
+            };
         }
         None
     }

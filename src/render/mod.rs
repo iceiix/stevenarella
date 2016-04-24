@@ -1200,13 +1200,14 @@ impl TextureManager {
                 height: height,
             };
             self.pending_uploads.push((tex.atlas, rect, data));
-            let t = tex.relative(0.0, 0.0, (width as f32) / (tex.width as f32), (height as f32) / (tex.height as f32));
+            let mut t = tex.relative(0.0, 0.0, (width as f32) / (tex.width as f32), (height as f32) / (tex.height as f32));
             let old_name = mem::replace(&mut tex.name, format!("steven-dynamic:{}", name));
             self.dynamic_textures.insert(name.to_owned(), (tex.clone(), img));
             // We need to rename the texture itself so that get_texture calls
             // work with the new name
             let mut old = self.textures.remove(&old_name).unwrap();
             old.name = format!("steven-dynamic:{}", name);
+            t.name = old.name.clone();
             self.textures.insert(format!("steven-dynamic:{}", name), old);
             t
         } else {
@@ -1239,7 +1240,7 @@ struct AnimationFrame {
 
 #[derive(Clone, Debug)]
 pub struct Texture {
-    name: String,
+    pub name: String,
     version: usize,
     pub atlas: i32,
     x: usize,

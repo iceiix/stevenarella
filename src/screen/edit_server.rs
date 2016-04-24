@@ -27,7 +27,11 @@ pub struct EditServerEntry {
 
 struct UIElements {
     logo: ui::logo::Logo,
-    elements: ui::Collection,
+
+    _name: ui::TextBoxRef,
+    _address: ui::TextBoxRef,
+    _done: ui::ButtonRef,
+    _cancel: ui::ButtonRef,
 }
 
 impl EditServerEntry {
@@ -77,104 +81,99 @@ impl EditServerEntry {
 
 impl super::Screen for EditServerEntry {
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
-        let logo = ui::logo::Logo::new(renderer.resources.clone(), renderer, ui_container);
-        let mut elements = ui::Collection::new();
+        let logo = ui::logo::Logo::new(renderer.resources.clone(), ui_container);
 
         // Name
-        let mut server_name = ui::TextBox::new(
-            renderer, self.entry_info.as_ref().map_or("", |v| &v.1),
-            0.0, -20.0, 400.0, 40.0
-        );
-        server_name.set_v_attach(ui::VAttach::Middle);
-        server_name.set_h_attach(ui::HAttach::Center);
-        server_name.add_submit_func(|_, ui| {
-            ui.cycle_focus();
-        });
-        let ure = ui_container.add(server_name);
-        let mut server_name_label = ui::Text::new(renderer, "Name:", 0.0, -18.0, 255, 255, 255);
-        server_name_label.set_parent(&ure);
-        let server_name_txt = elements.add(ure);
-        elements.add(ui_container.add(server_name_label));
+        let server_name = ui::TextBoxBuilder::new()
+            .input(self.entry_info.as_ref().map_or("", |v| &v.1))
+            .position(0.0, -20.0)
+            .size(400.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        ui::TextBuilder::new()
+            .text("Name:")
+            .position(0.0, -18.0)
+            .attach(&mut *server_name.borrow_mut());
 
-        // Name
-        let mut server_address = ui::TextBox::new(
-            renderer, self.entry_info.as_ref().map_or("", |v| &v.2),
-            0.0, 40.0, 400.0, 40.0
-        );
-        server_address.set_v_attach(ui::VAttach::Middle);
-        server_address.set_h_attach(ui::HAttach::Center);
-        server_address.add_submit_func(|_, ui| {
-            ui.cycle_focus();
-        });
-        let ure = ui_container.add(server_address);
-        let mut server_address_label = ui::Text::new(renderer, "Address:", 0.0, -18.0, 255, 255, 255);
-        server_address_label.set_parent(&ure);
-        let server_address_txt = elements.add(ure);
-        elements.add(ui_container.add(server_address_label));
+        // Address
+        let server_address = ui::TextBoxBuilder::new()
+            .input(self.entry_info.as_ref().map_or("", |v| &v.2))
+            .position(0.0, 40.0)
+            .size(400.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        ui::TextBuilder::new()
+            .text("Address")
+            .position(0.0, -18.0)
+            .attach(&mut *server_address.borrow_mut());
 
         // Done
-        let (mut done, mut txt) = super::new_button_text(
-            renderer, "Done",
-            110.0, 100.0, 200.0, 40.0
-        );
-        done.set_v_attach(ui::VAttach::Middle);
-        done.set_h_attach(ui::HAttach::Center);
-        let re = ui_container.add(done);
-        txt.set_parent(&re);
-        let tre = ui_container.add(txt);
-
-        let index = self.entry_info.as_ref().map(|v| v.0);
-        super::button_action(ui_container, re.clone(), Some(tre.clone()), move |game, uic| {
-            Self::save_servers(
-                index,
-                &uic.get(&server_name_txt).get_input(),
-                &uic.get(&server_address_txt).get_input()
-            );
-            game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
-        });
-        elements.add(re);
-        elements.add(tre);
+        let done = ui::ButtonBuilder::new()
+            .position(110.0, 100.0)
+            .size(200.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut done = done.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Done")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *done);
+            done.add_text(txt);
+            let index = self.entry_info.as_ref().map(|v| v.0);
+            let server_name = server_name.clone();
+            let server_address = server_address.clone();
+            done.add_click_func(move |_, game| {
+                Self::save_servers(
+                    index,
+                    &server_name.borrow().input,
+                    &server_address.borrow().input,
+                );
+                game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
+                true
+            });
+        }
 
         // Cancel
-        let (mut cancel, mut txt) = super::new_button_text(
-            renderer, "Cancel",
-            -110.0, 100.0, 200.0, 40.0
-        );
-        cancel.set_v_attach(ui::VAttach::Middle);
-        cancel.set_h_attach(ui::HAttach::Center);
-        let re = ui_container.add(cancel);
-        txt.set_parent(&re);
-        let tre = ui_container.add(txt);
-        super::button_action(ui_container, re.clone(), Some(tre.clone()), |game, _| {
-            game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
-        });
-        elements.add(re);
-        elements.add(tre);
-
+        let cancel = ui::ButtonBuilder::new()
+            .position(-110.0, 100.0)
+            .size(200.0, 40.0)
+            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+            .create(ui_container);
+        {
+            let mut cancel = cancel.borrow_mut();
+            let txt = ui::TextBuilder::new()
+                .text("Cancel")
+                .alignment(ui::VAttach::Middle, ui::HAttach::Center)
+                .attach(&mut *cancel);
+            cancel.add_text(txt);
+            cancel.add_click_func(|_, game| {
+                game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
+                true
+            });
+        }
 
         self.elements = Some(UIElements {
             logo: logo,
-            elements: elements,
+            _name: server_name,
+            _address: server_address,
+            _done: done,
+            _cancel: cancel,
         });
     }
 
-    fn on_deactive(&mut self, _renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
+    fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         // Clean up
-        {
-            let elements = self.elements.as_mut().unwrap();
-            elements.logo.remove(ui_container);
-            elements.elements.remove_all(ui_container);
-        }
         self.elements = None
     }
 
     fn tick(&mut self,
             _delta: f64,
             renderer: &mut render::Renderer,
-            ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+            _ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
 
         let elements = self.elements.as_mut().unwrap();
-        elements.logo.tick(renderer, ui_container);
+        elements.logo.tick(renderer);
         None
     }
 

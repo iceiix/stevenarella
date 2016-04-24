@@ -494,7 +494,6 @@ struct MovementHandler {
     gamemode: ecs::Key<Gamemode>,
     position: ecs::Key<TargetPosition>,
     velocity: ecs::Key<Velocity>,
-    game_info: ecs::Key<GameInfo>,
     bounds: ecs::Key<Bounds>,
     rotation: ecs::Key<Rotation>,
 }
@@ -518,7 +517,6 @@ impl MovementHandler {
             gamemode: m.get_key(),
             position: position,
             velocity: velocity,
-            game_info: m.get_key(),
             bounds: bounds,
             rotation: rotation,
         }
