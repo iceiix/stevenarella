@@ -20,14 +20,20 @@ use std::io;
 use std::fs;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
+use serde_json;
 
 use hyper;
 use zip;
 
+use types::hash::FNVHash;
 use ui;
 
 const RESOURCES_VERSION: &'static str = "1.9.2";
 const VANILLA_CLIENT_URL: &'static str = "https://launcher.mojang.com/mc/game/1.9.2/client/19106fd5e222dca0f2dde9f66db8384c9a7db957/client.jar";
+const ASSET_VERSION: &'static str = "1.9";
+const ASSET_INDEX_URL: &'static str = "https://launchermeta.mojang.com/mc-staging/assets/1.9/13f566a82f5a8a1b5a5552d968a93c2d9b86df66/1.9.json";
 
 pub trait Pack: Sync + Send {
     fn open(&self, name: &str) -> Option<Box<io::Read>>;
@@ -38,11 +44,13 @@ pub struct Manager {
     version: usize,
 
     vanilla_chan: Option<mpsc::Receiver<bool>>,
+    vanilla_assets_chan: Option<mpsc::Receiver<bool>>,
     vanilla_progress: Arc<Mutex<Progress>>,
 }
 
 pub struct ManagerUI {
     progress_ui: Vec<ProgressUI>,
+    num_tasks: isize,
 }
 
 struct ProgressUI {
@@ -75,13 +83,15 @@ impl Manager {
             packs: Vec::new(),
             version: 0,
             vanilla_chan: None,
+            vanilla_assets_chan: None,
             vanilla_progress: Arc::new(Mutex::new(Progress {
                 tasks: vec![],
             })),
         };
         m.add_pack(Box::new(InternalPack));
         m.download_vanilla();
-        (m, ManagerUI { progress_ui: vec!{} })
+        m.download_assets();
+        (m, ManagerUI { progress_ui: vec!{}, num_tasks: 0 })
     }
 
     /// Returns the 'version' of the manager. The version is
@@ -91,8 +101,8 @@ impl Manager {
     }
 
     pub fn open(&self, plugin: &str, name: &str) -> Option<Box<io::Read>> {
+        let path = format!("assets/{}/{}", plugin, name);
         for pack in self.packs.iter().rev() {
-            let path = format!("assets/{}/{}", plugin, name);
             if let Some(val) = pack.open(&path) {
                 return Some(val);
             }
@@ -102,8 +112,8 @@ impl Manager {
 
     pub fn open_all(&self, plugin: &str, name: &str) -> Vec<Box<io::Read>> {
         let mut ret = Vec::new();
+        let path = format!("assets/{}/{}", plugin, name);
         for pack in self.packs.iter().rev() {
-            let path = format!("assets/{}/{}", plugin, name);
             if let Some(val) = pack.open(&path) {
                 ret.push(val);
             }
@@ -112,6 +122,7 @@ impl Manager {
     }
 
     pub fn tick(&mut self, mui: &mut ManagerUI, ui_container: &mut ui::Container, delta: f64) {
+        let delta = delta.min(5.0);
         // Check to see if the download of vanilla has completed
         // (if it was started)
         let mut done = false;
@@ -124,6 +135,16 @@ impl Manager {
             self.vanilla_chan = None;
             self.load_vanilla();
         }
+        let mut done = false;
+        if let Some(ref recv) = self.vanilla_assets_chan {
+            if let Ok(_) = recv.try_recv() {
+                done = true;
+            }
+        }
+        if done {
+            self.vanilla_assets_chan = None;
+            self.load_assets();
+        }
 
         const UI_HEIGHT: f64 = 32.0;
 
@@ -134,20 +155,21 @@ impl Manager {
             if !mui.progress_ui.iter()
                 .filter(|v| v.task_file == task.task_file)
                 .any(|v| v.task_name == task.task_name) {
+                mui.num_tasks += 1;
                 // Add a ui element for it
                 let background = ui::ImageBuilder::new()
                     .texture("steven:solid")
                     .position(0.0, -UI_HEIGHT)
-                    .size(300.0, UI_HEIGHT)
+                    .size(350.0, UI_HEIGHT)
                     .colour((0, 0, 0, 100))
-                    .draw_index(100)
+                    .draw_index(0xFFFFFF - mui.num_tasks)
                     .alignment(ui::VAttach::Bottom, ui::HAttach::Left)
                     .create(ui_container);
 
                 ui::ImageBuilder::new()
                     .texture("steven:solid")
                     .position(0.0, 0.0)
-                    .size(300.0, 10.0)
+                    .size(350.0, 10.0)
                     .colour((0, 0, 0, 200))
                     .attach(&mut *background.borrow_mut());
                 ui::TextBuilder::new()
@@ -170,6 +192,7 @@ impl Manager {
                     .position(0.0, 0.0)
                     .size(0.0, 10.0)
                     .colour((0, 255, 0, 255))
+                    .draw_index(2)
                     .alignment(ui::VAttach::Bottom, ui::HAttach::Left)
                     .attach(&mut *background.borrow_mut());
 
@@ -185,6 +208,9 @@ impl Manager {
             }
         }
         for ui in &mut mui.progress_ui {
+            if ui.closing {
+                continue;
+            }
             let mut found = false;
             let mut prog = 1.0;
             for task in progress.tasks.iter()
@@ -193,7 +219,10 @@ impl Manager {
                 found = true;
                 prog = task.progress as f64 / task.total as f64;
             }
-            if !found {
+            let background = ui.background.borrow();
+            let bar = ui.progress_bar.borrow();
+            // Let the progress bar finish
+            if !found && (background.y - ui.position).abs() < 0.7 * delta && (bar.width - 350.0).abs() < 1.0 * delta {
                 ui.closing = true;
                 ui.position = -UI_HEIGHT;
             }
@@ -208,7 +237,6 @@ impl Manager {
             offset += UI_HEIGHT;
         }
         // Move elements
-        let delta = delta.min(5.0);
         for ui in &mut mui.progress_ui {
             let mut background = ui.background.borrow_mut();
             if (background.y - ui.position).abs() < 0.7 * delta {
@@ -217,7 +245,7 @@ impl Manager {
                 background.y += (ui.position - background.y).signum() * 0.7 * delta;
             }
             let mut bar = ui.progress_bar.borrow_mut();
-            let target_size = (300.0 * ui.progress).min(300.0);
+            let target_size = (350.0 * ui.progress).min(350.0);
             if (bar.width - target_size).abs() < 1.0 * delta {
                 bar.width = target_size;
             } else {
@@ -226,7 +254,7 @@ impl Manager {
         }
 
         // Clean up dead elements
-        mui.progress_ui.retain(|v| v.position >= -UI_HEIGHT && !v.closing);
+        mui.progress_ui.retain(|v| v.position >= -UI_HEIGHT || !v.closing);
     }
 
     fn add_pack(&mut self, pck: Box<Pack>) {
@@ -237,7 +265,81 @@ impl Manager {
     fn load_vanilla(&mut self) {
         let loc = format!("./resources-{}", RESOURCES_VERSION);
         let location = path::Path::new(&loc);
-        self.add_pack(Box::new(DirPack { root: location.to_path_buf() }))
+        self.packs.insert(1, Box::new(DirPack { root: location.to_path_buf() }));
+        self.version += 1;
+    }
+
+    fn load_assets(&mut self) {
+        self.packs.insert(1, Box::new(ObjectPack::new()));
+        self.version += 1;
+    }
+
+    fn download_assets(&mut self) {
+        let loc = format!("./index/{}.json", ASSET_VERSION);
+        let location = path::Path::new(&loc).to_owned();
+        let progress_info = self.vanilla_progress.clone();
+        let (send, recv) = mpsc::channel();
+        if fs::metadata(&location).is_ok(){
+            self.load_assets();
+        } else {
+            self.vanilla_assets_chan = Some(recv);
+        }
+        thread::spawn(move || {
+            let client = hyper::Client::new();
+            if fs::metadata(&location).is_err(){
+                fs::create_dir_all(location.parent().unwrap()).unwrap();
+                let res = client.get(ASSET_INDEX_URL)
+                                .send()
+                                .unwrap();
+
+                let length = *res.headers.get::<hyper::header::ContentLength>().unwrap();
+                Self::add_task(&progress_info, "Downloading Asset Index", &*location.to_string_lossy(), *length);
+                {
+                    let mut file = fs::File::create(format!("index-{}.tmp", ASSET_VERSION)).unwrap();
+                    let mut progress = ProgressRead {
+                        read: res,
+                        progress: &progress_info,
+                        task_name: "Downloading Asset Index".into(),
+                        task_file: location.to_string_lossy().into_owned(),
+                    };
+                    io::copy(&mut progress, &mut file).unwrap();
+                }
+                fs::rename(format!("index-{}.tmp", ASSET_VERSION), &location).unwrap();
+                send.send(true).unwrap();
+            }
+            let file = fs::File::open(&location).unwrap();
+            let index: serde_json::Value = serde_json::from_reader(&file).unwrap();
+            let root_location = path::Path::new("./objects/");
+            let objects = index.find("objects").and_then(|v| v.as_object()).unwrap();
+            Self::add_task(&progress_info, "Downloading Assets", "./objects", objects.len() as u64);
+            for (k, v) in objects {
+                let hash = v.find("hash").and_then(|v| v.as_string()).unwrap();
+                let hash_path = format!("{}/{}", &hash[..2], hash);
+                let location = root_location.join(&hash_path);
+                if fs::metadata(&location).is_err(){
+                    fs::create_dir_all(location.parent().unwrap()).unwrap();
+                    let res = client.get(&format!("http://resources.download.minecraft.net/{}", hash_path))
+                                    .send()
+                                    .unwrap();
+                    let length = v.find("size").and_then(|v| v.as_u64()).unwrap();
+                    Self::add_task(&progress_info, "Downloading Asset", k, length);
+                    let mut tmp_file = location.to_owned();
+                    tmp_file.set_file_name(format!("{}.tmp", hash));
+                    {
+                        let mut file = fs::File::create(&tmp_file).unwrap();
+                        let mut progress = ProgressRead {
+                            read: res,
+                            progress: &progress_info,
+                            task_name: "Downloading Asset".into(),
+                            task_file: k.to_owned(),
+                        };
+                        io::copy(&mut progress, &mut file).unwrap();
+                    }
+                    fs::rename(&tmp_file, &location).unwrap();
+                }
+                Self::add_task_progress(&progress_info, "Downloading Assets", "./objects", 1);
+            }
+        });
     }
 
     fn download_vanilla(&mut self) {
@@ -340,6 +442,47 @@ impl Pack for InternalPack {
         match internal::get_file(name) {
             Some(val) => Some(Box::new(io::Cursor::new(val))),
             None => None,
+        }
+    }
+}
+
+struct ObjectPack {
+    objects: HashMap<String, String, BuildHasherDefault<FNVHash>>,
+}
+
+impl ObjectPack {
+    fn new() -> ObjectPack {
+        let loc = format!("./index/{}.json", ASSET_VERSION);
+        let location = path::Path::new(&loc);
+        let file = fs::File::open(&location).unwrap();
+        let index: serde_json::Value = serde_json::from_reader(&file).unwrap();
+        let objects = index.find("objects").and_then(|v| v.as_object()).unwrap();
+        let mut hash_objs = HashMap::with_hasher(BuildHasherDefault::default());
+        for (k, v) in objects {
+            hash_objs.insert(k.clone(), v.find("hash").and_then(|v| v.as_string()).unwrap().to_owned());
+        }
+        ObjectPack {
+            objects: hash_objs,
+        }
+    }
+}
+
+impl Pack for ObjectPack {
+    fn open(&self, name: &str) -> Option<Box<io::Read>> {
+        if !name.starts_with("assets/") {
+            return None;
+        }
+        let name = &name["assets/".len()..];
+        if let Some(hash) = self.objects.get(name) {
+            let root_location = path::Path::new("./objects/");
+            let hash_path = format!("{}/{}", &hash[..2], hash);
+            let location = root_location.join(&hash_path);
+            match fs::File::open(location) {
+                Ok(val) => Some(Box::new(val)),
+                Err(_) => None,
+            }
+        } else {
+            None
         }
     }
 }
