@@ -960,7 +960,7 @@ impl TextureManager {
                 };
                 let new_tex = self.put_texture("steven-dynamic", n, width as u32, height as u32, data);
                 self.dynamic_textures.get_mut(n).unwrap().0 = new_tex;
-            } else {
+            } else if !self.textures.contains_key(name) {
                 self.load_texture(name);
             }
         }
