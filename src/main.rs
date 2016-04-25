@@ -66,6 +66,8 @@ use std::marker::PhantomData;
 use std::thread;
 use std::sync::mpsc;
 use protocol::mojang;
+use sdl2::Sdl;
+use sdl2::keyboard;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -90,6 +92,8 @@ pub struct Game {
     chunk_builder: chunk_builder::ChunkBuilder,
 
     connect_reply: Option<mpsc::Receiver<Result<server::Server, protocol::Error>>>,
+
+    sdl: Sdl,
 }
 
 impl Game {
@@ -226,10 +230,11 @@ fn main() {
         should_close: false,
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
+        sdl: sdl,
     };
     game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
 
-    let mut events = sdl.event_pump().unwrap();
+    let mut events = game.sdl.event_pump().unwrap();
     while !game.should_close {
 
         let now = time::now();
@@ -277,7 +282,7 @@ fn main() {
         window.gl_swap_window();
 
         for event in events.poll_iter() {
-            handle_window_event(&window, &mut game, &mut ui_container, event)
+            handle_window_event(&window, &mut game, &mut ui_container, event);
         }
     }
 }
@@ -361,22 +366,24 @@ fn handle_window_event(window: &sdl2::video::Window,
         Event::KeyDown{keycode: Some(Keycode::Backquote), ..} => {
             game.console.lock().unwrap().toggle();
         }
-        Event::KeyDown{keycode: Some(key), ..} => {
+        Event::KeyDown{keycode: Some(key), keymod, ..} => {
             if game.focused {
                 if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &game.vars) {
                     game.server.key_press(true, steven_key);
                 }
             } else {
-                ui_container.key_press(game, key, true);
+                let ctrl_pressed = keymod.intersects(keyboard::LCTRLMOD | keyboard::RCTRLMOD);
+                ui_container.key_press(game, key, true, ctrl_pressed);
             }
         }
-        Event::KeyUp{keycode: Some(key), ..} => {
+        Event::KeyUp{keycode: Some(key), keymod, ..} => {
             if game.focused {
                 if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &game.vars) {
                     game.server.key_press(false, steven_key);
                 }
             } else {
-                ui_container.key_press(game, key, false);
+                let ctrl_pressed = keymod.intersects(keyboard::LCTRLMOD | keyboard::RCTRLMOD);
+                ui_container.key_press(game, key, false, ctrl_pressed);
             }
         }
         Event::TextInput{text, ..} => {

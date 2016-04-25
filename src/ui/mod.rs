@@ -183,12 +183,12 @@ macro_rules! define_elements {
                 }
             }
 
-            fn key_press(&self, game: &mut ::Game, key: Keycode, down: bool) {
+            fn key_press(&self, game: &mut ::Game, key: Keycode, down: bool, ctrl_pressed: bool) {
                 match *self {
                     $(
                         Element::$name(ref inner) => {
                             let mut el = inner.borrow_mut();
-                            el.key_press(game, key, down);
+                            el.key_press(game, key, down, ctrl_pressed);
                         },
                     )*
                 }
@@ -395,7 +395,7 @@ impl Container {
         focusables[next_focus].set_focused(true);
     }
 
-    pub fn key_press(&mut self, game: &mut ::Game, key: Keycode, down: bool) {
+    pub fn key_press(&mut self, game: &mut ::Game, key: Keycode, down: bool, ctrl_pressed: bool) {
         if key == Keycode::Tab {
             if !down {
                 self.cycle_focus();
@@ -405,7 +405,7 @@ impl Container {
         for el in self.focusable_elements.iter()
             .flat_map(|v| v.upgrade()) {
             if el.is_focused() {
-                el.key_press(game, key, down);
+                el.key_press(game, key, down, ctrl_pressed);
             }
         }
     }
@@ -465,7 +465,7 @@ trait UIElement {
     fn get_size(&self) -> (f64, f64);
     fn is_dirty(&self) -> bool;
     fn post_init(_: Rc<RefCell<Self>>) {}
-    fn key_press(&mut self, _game: &mut ::Game, _key: Keycode, _down: bool) {}
+    fn key_press(&mut self, _game: &mut ::Game, _key: Keycode, _down: bool, _ctrl_pressed: bool) {}
     fn key_type(&mut self, _game: &mut ::Game, _c: char) {}
     fn tick(&mut self, renderer: &mut render::Renderer);
 }
@@ -1309,7 +1309,7 @@ impl TextBoxBuilder {
 }
 
 impl UIElement for TextBox {
-    fn key_press(&mut self, game: &mut ::Game, key: Keycode, down: bool) {
+    fn key_press(&mut self, game: &mut ::Game, key: Keycode, down: bool, ctrl_pressed: bool) {
         match (key, down) {
             (Keycode::Backspace, false) => {self.input.pop();},
             (Keycode::Return, false) => {
@@ -1320,6 +1320,15 @@ impl UIElement for TextBox {
                     (func)(self, game);
                 }
                 self.submit_funcs.append(&mut temp);
+            },
+            (Keycode::V, true) => {
+                if ctrl_pressed {
+                    let clipboard = game.sdl.video().unwrap().clipboard();
+                    if clipboard.has_clipboard_text() {
+                        let text = clipboard.clipboard_text().unwrap();
+                        self.input.push_str(&text);
+                    }
+                }
             },
             _ => {},
         }
