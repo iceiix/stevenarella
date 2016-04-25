@@ -540,7 +540,7 @@ impl Renderer {
         {
             let mut tex = self.textures.write().unwrap();
             while let Ok((hash, img)) = self.skin_reply.try_recv() {
-                    if let Some(img) = img {
+                if let Some(img) = img {
                     tex.update_skin(hash, img);
                 }
             }
@@ -1000,7 +1000,8 @@ impl TextureManager {
 
     fn update_skin(&mut self, hash: String, img: image::DynamicImage) {
         if !self.skins.contains_key(&hash) { return; }
-        let tex = self.get_texture(&format!("steven-dynamic:skin-{}", hash)).unwrap();
+        let name = format!("steven-dynamic:skin-{}", hash);
+        let tex = self.get_texture(&name).unwrap();
         let rect = atlas::Rect {
             x: tex.x,
             y: tex.y,
@@ -1009,6 +1010,7 @@ impl TextureManager {
         };
 
         self.pending_uploads.push((tex.atlas, rect, img.to_rgba().into_vec()));
+        self.dynamic_textures.get_mut(&format!("skin-{}", hash)).unwrap().1 = img;
     }
 
     fn get_texture(&self, name: &str) -> Option<Texture> {
