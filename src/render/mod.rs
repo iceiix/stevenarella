@@ -986,10 +986,13 @@ impl TextureManager {
         let res = self.resources.clone();
         // TODO: This shouldn't be hardcoded to steve but instead
         // have a way to select alex as a default.
-        let mut val = res.read().unwrap().open("minecraft", "textures/entity/steve.png").unwrap();
-        let mut data = Vec::new();
-        val.read_to_end(&mut data).unwrap();
-        let img = image::load_from_memory(&data).unwrap();
+        let img = if let Some(mut val) = res.read().unwrap().open("minecraft", "textures/entity/steve.png") {
+            let mut data = Vec::new();
+            val.read_to_end(&mut data).unwrap();
+            image::load_from_memory(&data).unwrap()
+        } else {
+            image::DynamicImage::new_rgba8(64, 64)
+        };
         self.put_dynamic(&format!("skin-{}", hash), img);
         self.skins.insert(hash.to_owned(), AtomicIsize::new(0));
         renderer.skin_request.send(hash.to_owned()).unwrap();
