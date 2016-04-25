@@ -90,6 +90,7 @@ impl super::Screen for EditServerEntry {
             .size(400.0, 40.0)
             .alignment(ui::VAttach::Middle, ui::HAttach::Center)
             .create(ui_container);
+        ui::TextBox::make_focusable(&server_name, ui_container);
         ui::TextBuilder::new()
             .text("Name:")
             .position(0.0, -18.0)
@@ -102,6 +103,7 @@ impl super::Screen for EditServerEntry {
             .size(400.0, 40.0)
             .alignment(ui::VAttach::Middle, ui::HAttach::Center)
             .create(ui_container);
+        ui::TextBox::make_focusable(&server_address, ui_container);
         ui::TextBuilder::new()
             .text("Address")
             .position(0.0, -18.0)
