@@ -381,7 +381,7 @@ impl Server {
                             TeleportPlayer => on_teleport,
                             TimeUpdate => on_time_update,
                             ChangeGameState => on_game_state_change,
-                            UpdateSign => on_sign_update,
+                            UpdateBlockEntity => on_block_entity_update,
                             PlayerInfo => on_player_info,
                             Disconnect => on_disconnect,
                             // Entities
@@ -712,19 +712,34 @@ impl Server {
         }
     }
 
-    fn on_sign_update(&mut self, mut update_sign: packet::play::clientbound::UpdateSign) {
-        use format;
-        format::convert_legacy(&mut update_sign.line1);
-        format::convert_legacy(&mut update_sign.line2);
-        format::convert_legacy(&mut update_sign.line3);
-        format::convert_legacy(&mut update_sign.line4);
-        self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
-            update_sign.location,
-            update_sign.line1,
-            update_sign.line2,
-            update_sign.line3,
-            update_sign.line4,
-        ));
+    fn on_block_entity_update(&mut self, block_update: packet::play::clientbound::UpdateBlockEntity) {
+        match block_update.nbt {
+            None => {
+                // NBT is null, so we need to remove the block entity
+                self.world.add_block_entity_action(world::BlockEntityAction::Remove(
+                    block_update.location,
+                ));
+            },
+            Some(nbt) => {
+                match block_update.action {
+                    9 => {
+                        use format;
+                        let line1 = format::Component::from_string(nbt.1.get("Text1").unwrap().as_string().unwrap());
+                        let line2 = format::Component::from_string(nbt.1.get("Text2").unwrap().as_string().unwrap());
+                        let line3 = format::Component::from_string(nbt.1.get("Text3").unwrap().as_string().unwrap());
+                        let line4 = format::Component::from_string(nbt.1.get("Text4").unwrap().as_string().unwrap());
+                        self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+                            block_update.location,
+                            line1,
+                            line2,
+                            line3,
+                            line4,
+                        ));
+                    },
+                    _ => {} // Ignore it
+                }
+            }
+        }
     }
 
     fn on_player_info(&mut self, player_info: packet::play::clientbound::PlayerInfo) {
@@ -817,6 +832,29 @@ impl Server {
             chunk_data.bitmask.0 as u16,
             chunk_data.data.data
         ).unwrap();
+        for optional_block_entity in chunk_data.block_entities.data {
+            match optional_block_entity {
+                Some(block_entity) => {
+                    let x = block_entity.1.get("x").unwrap().as_int().unwrap();
+                    let y = block_entity.1.get("y").unwrap().as_int().unwrap();
+                    let z = block_entity.1.get("z").unwrap().as_int().unwrap();
+                    let tile_id = block_entity.1.get("id").unwrap().as_string().unwrap();
+                    let action;
+                    match tile_id {
+                        // Fake a sign update
+                        "Sign" => action = 9,
+                        // Not something we care about, so break the loop
+                        _ => continue,
+                    }
+                    self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
+                        location: Position::new(x, y, z),
+                        action: action,
+                        nbt: Some(block_entity.clone()),
+                    });
+                },
+                None => {} // Ignore
+            }
+        }
     }
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {

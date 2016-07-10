@@ -22,6 +22,20 @@ pub enum Component {
 }
 
 impl Component {
+
+    pub fn from_string(str: &str) -> Self {
+        let mut component;
+        match serde_json::from_str::<serde_json::Value>(str) {
+            Ok(value) => component = Component::from_value(&value),
+            // Sometimes mojang sends a literal string, so we should interpret it literally
+            Err(_) => {
+                component = Component::Text(TextComponent::new(str));
+                convert_legacy(&mut component);
+            },
+        }
+        return component;
+    }
+
     pub fn from_value(v: &serde_json::Value) -> Self {
         let mut modifier = Modifier::from_value(v);
         if let Some(val) = v.as_string() {

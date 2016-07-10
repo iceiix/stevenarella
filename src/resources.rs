@@ -30,10 +30,10 @@ use zip;
 use types::hash::FNVHash;
 use ui;
 
-const RESOURCES_VERSION: &'static str = "1.9.2";
-const VANILLA_CLIENT_URL: &'static str = "https://launcher.mojang.com/mc/game/1.9.2/client/19106fd5e222dca0f2dde9f66db8384c9a7db957/client.jar";
-const ASSET_VERSION: &'static str = "1.9";
-const ASSET_INDEX_URL: &'static str = "https://launchermeta.mojang.com/mc-staging/assets/1.9/13f566a82f5a8a1b5a5552d968a93c2d9b86df66/1.9.json";
+const RESOURCES_VERSION: &'static str = "1.10.2";
+const VANILLA_CLIENT_URL: &'static str = "https://launcher.mojang.com/mc/game/1.10.2/client/dc8e75ac7274ff6af462b0dcec43c307de668e40/client.jar";
+const ASSET_VERSION: &'static str = "1.10.2";
+const ASSET_INDEX_URL: &'static str = "https://launchermeta.mojang.com/mc/assets/1.10/d3bfc4ffba1ea334c725dd91eaf4ecd402d641f7/1.10.json";
 
 pub trait Pack: Sync + Send {
     fn open(&self, name: &str) -> Option<Box<io::Read>>;

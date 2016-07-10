@@ -34,7 +34,7 @@ use flate2;
 use time;
 use shared::Position;
 
-pub const SUPPORTED_PROTOCOL: i32 = 109;
+pub const SUPPORTED_PROTOCOL: i32 = 210;
 
 
 /// Helper macro for defining packets
