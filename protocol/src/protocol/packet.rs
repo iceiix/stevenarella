@@ -196,7 +196,6 @@ state_packets!(
             /// ResourcePackStatus informs the server of the client's current progress
             /// in activating the requested resource pack
             packet ResourcePackStatus {
-                field hash: String =,
                 field result: VarInt =,
             }
             /// HeldItemChange is sent when the player changes the currently active
@@ -448,7 +447,7 @@ state_packets!(
                 field y: i32 =,
                 field z: i32 =,
                 field volume: f32 =,
-                field pitch: u8 =,
+                field pitch: f32 =,
             }
             /// Disconnect causes the client to disconnect displaying the passed reason.
             packet Disconnect {
@@ -499,6 +498,7 @@ state_packets!(
                 field new: bool =,
                 field bitmask: VarInt =,
                 field data: LenPrefixedBytes<VarInt> =,
+                field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =,
             }
             /// Effect plays a sound effect or particle at the target location with the
             /// volume (of sounds) being relative to the player's position unless
@@ -784,14 +784,6 @@ state_packets!(
                 field fade_stay: Option<i32> = when(|p: &Title| p.action.0 == 2),
                 field fade_out: Option<i32> = when(|p: &Title| p.action.0 == 2),
             }
-            /// UpdateSign sets or changes the text on a sign.
-            packet UpdateSign {
-                field location: Position =,
-                field line1: format::Component =,
-                field line2: format::Component =,
-                field line3: format::Component =,
-                field line4: format::Component =,
-            }
             /// SoundEffect plays the named sound at the target location.
             packet SoundEffect {
                 field name: VarInt =,
@@ -800,7 +792,7 @@ state_packets!(
                 field y: i32 =,
                 field z: i32 =,
                 field volume: f32 =,
-                field pitch: u8 =,
+                field pitch: f32 =,
             }
             /// PlayerListHeaderFooter updates the header/footer of the player list.
             packet PlayerListHeaderFooter {
