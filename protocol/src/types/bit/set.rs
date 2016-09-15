@@ -68,7 +68,7 @@ impl Set {
 
     pub fn or(&mut self, other: &Set) {
         for (a, b) in self.data.iter_mut().zip(&other.data) {
-            *a = (*a) | *b;
+            *a |= *b;
         }
     }
 }

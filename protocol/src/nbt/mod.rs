@@ -14,7 +14,7 @@
 
 use std::collections::HashMap;
 use std::io;
-use std::io::{Read, Write};
+use std::io::Read;
 
 use super::protocol::Serializable;
 use super::protocol;

@@ -33,7 +33,7 @@ impl Component {
                 convert_legacy(&mut component);
             },
         }
-        return component;
+        component
     }
 
     pub fn from_value(v: &serde_json::Value) -> Self {
