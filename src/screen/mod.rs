@@ -58,18 +58,14 @@ struct ScreenInfo {
     active: bool,
 }
 
+#[derive(Default)]
 pub struct ScreenSystem {
     screens: Vec<ScreenInfo>,
     remove_queue: Vec<ScreenInfo>,
 }
 
 impl ScreenSystem {
-    pub fn new() -> ScreenSystem {
-        ScreenSystem {
-            screens: Vec::new(),
-            remove_queue: Vec::new(),
-        }
-    }
+    pub fn new() -> ScreenSystem { Default::default() }
 
     pub fn add_screen(&mut self, screen: Box<Screen>) {
         self.screens.push(ScreenInfo {

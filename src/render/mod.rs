@@ -89,18 +89,14 @@ pub struct Renderer {
     skin_reply: mpsc::Receiver<(String, Option<image::DynamicImage>)>,
 }
 
+#[derive(Default)]
 pub struct ChunkBuffer {
     solid: Option<ChunkRenderInfo>,
     trans: Option<ChunkRenderInfo>,
 }
 
 impl ChunkBuffer {
-    pub fn new() -> ChunkBuffer {
-        ChunkBuffer {
-            solid: None,
-            trans: None,
-        }
-    }
+    pub fn new() -> ChunkBuffer { Default::default() }
 }
 
 struct ChunkRenderInfo {
@@ -156,7 +152,6 @@ init_shader! {
 
 impl Renderer {
     pub fn new(res: Arc<RwLock<resources::Manager>>) -> Renderer {
-        use cgmath::Matrix;
         let version = {
             res.read().unwrap().version()
         };

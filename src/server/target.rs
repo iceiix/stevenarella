@@ -237,7 +237,7 @@ pub fn trace_ray<F, R>(world: &world::World, max: f64, s: cgmath::Vector3<f64>, 
     let mut z = s.z.floor() as i32;
 
     loop {
-        let (hit, ret) = collide_func(&world, Position::new(x, y, z), s, d);
+        let (hit, ret) = collide_func(world, Position::new(x, y, z), s, d);
         if hit {
             return ret;
         }
@@ -253,18 +253,16 @@ pub fn trace_ray<F, R>(world: &world::World, max: f64, s: cgmath::Vector3<f64>, 
                 z += d.z.signum() as i32;
                 old
             }
+        } else if next_ny <= next_nz {
+            let old = next_ny;
+            next_ny = y_gen.next();
+            y += d.y.signum() as i32;
+            old
         } else {
-            if next_ny <= next_nz {
-                let old = next_ny;
-                next_ny = y_gen.next();
-                y += d.y.signum() as i32;
-                old
-            } else {
-                let old = next_nz;
-                next_nz = z_gen.next();
-                z += d.z.signum() as i32;
-                old
-            }
+            let old = next_nz;
+            next_nz = z_gen.next();
+            z += d.z.signum() as i32;
+            old
         };
         if next_n > max {
             break;

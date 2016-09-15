@@ -424,7 +424,7 @@ impl Manager {
             None => return None,
         };
         let set = match self.entities.get(entity.id).as_ref() {
-            Some(ref val) => if val.1 == entity.generation { &val.0 } else { return None },
+            Some(val) => if val.1 == entity.generation { &val.0 } else { return None },
             None => return None,
         };
         if !set.as_ref().map_or(false, |v| v.components.get(key.id)) {
@@ -448,7 +448,7 @@ impl Manager {
             None => return None,
         };
         let set = match self.entities.get(entity.id).as_ref() {
-            Some(ref val) => if val.1 == entity.generation { &val.0 } else { return None },
+            Some(val) => if val.1 == entity.generation { &val.0 } else { return None },
             None => return None,
         };
         if !set.as_ref().map_or(false, |v| v.components.get(key.id)) {

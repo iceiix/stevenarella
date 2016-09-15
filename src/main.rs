@@ -276,7 +276,7 @@ fn main() {
             let frame_time = time::now() - now;
             let sleep_interval = time::Duration::milliseconds(1000 / fps_cap);
             if frame_time < sleep_interval {
-                thread::sleep_ms((sleep_interval - frame_time).num_milliseconds() as u32);
+                thread::sleep((sleep_interval - frame_time).to_std().unwrap());
             }
         }
         window.gl_swap_window();

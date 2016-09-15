@@ -64,14 +64,14 @@ pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lav
                         (0.0, _) => ((16.0 / 8.0) * (bl as f32)) as i32,
                         (_, _) => ((16.0 / 8.0) * (br as f32)) as i32,
                     };
-					vert.y = (height as f32)/16.0 + (y as f32);
+                    vert.y = (height as f32)/16.0 + (y as f32);
                 }
 
                 vert.x += x as f32;
                 vert.z += z as f32;
 
                 let (bl, sl) = super::calculate_light(
-                    &snapshot,
+                    snapshot,
                     x, y, z,
                     vert.x as f64,
                     vert.y as f64,

@@ -99,6 +99,7 @@ pub trait Var {
     fn can_serialize(&self) -> bool;
 }
 
+#[derive(Default)]
 pub struct Vars {
     names: HashMap<String, &'static str>,
     vars: HashMap<&'static str, Box<Var>>,
@@ -106,13 +107,7 @@ pub struct Vars {
 }
 
 impl Vars {
-    pub fn new() -> Vars {
-        Vars {
-            names: HashMap::new(),
-            vars: HashMap::new(),
-            var_values: HashMap::new(),
-        }
-    }
+    pub fn new() -> Vars { Default::default() }
 
     pub fn register<T: Sized + Any>(&mut self, var: CVar<T>)
         where CVar<T>: Var
@@ -125,7 +120,7 @@ impl Vars {
         self.vars.insert(var.name, Box::new(var));
     }
 
-    pub fn get<'a, T: Sized + Any>(&'a self, var: CVar<T>) -> Ref<'a, T>
+    pub fn get<T: Sized + Any>(&self, var: CVar<T>) -> Ref<T>
         where CVar<T>: Var
     {
         // Should never fail
@@ -152,7 +147,7 @@ impl Vars {
                 let (name, arg) = (&parts[0], &parts[1]);
                 if let Some(var_name) = self.names.get(name) {
                     let var = self.vars.get(var_name).unwrap();
-                    let val = var.deserialize(&arg);
+                    let val = var.deserialize(arg);
                     if var.can_serialize() {
                         self.var_values.insert(var_name, RefCell::new(val));
                     }

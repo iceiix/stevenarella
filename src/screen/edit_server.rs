@@ -67,7 +67,7 @@ impl EditServerEntry {
                 .as_array_mut()
                 .unwrap();
             if let Some(index) = index {
-                *servers.iter_mut().nth(index).unwrap() = new_entry;
+                *servers.get_mut(index).unwrap() = new_entry;
             } else {
                 servers.push(new_entry);
             }

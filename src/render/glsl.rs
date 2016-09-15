@@ -14,14 +14,13 @@
 
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct Registry {
     shaders: HashMap<String, String>,
 }
 
 impl Registry {
-    pub fn new() -> Registry {
-        Registry { shaders: HashMap::new() }
-    }
+    pub fn new() -> Registry { Default::default() }
 
     pub fn register(&mut self, name: &str, source: &str) {
         if self.shaders.contains_key(name) {
@@ -52,10 +51,10 @@ impl Registry {
         for line in src.lines() {
             if line.starts_with("#include ") {
                 let inc = line["#include ".len()..].trim();
-                self.get_internal(out, &inc);
+                self.get_internal(out, inc);
                 continue;
             }
-            out.push_str(&line);
+            out.push_str(line);
             out.push_str("\n");
         }
     }

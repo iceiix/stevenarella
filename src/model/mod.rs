@@ -108,7 +108,7 @@ impl Factory {
                                 let ok = Self::eval_rules(block, &rule.rules);
                                 if ok {
                                     if res.is_some() {
-                                        res.as_mut().unwrap().join(&rule.apply.choose_model(rng));
+                                        res.as_mut().unwrap().join(rule.apply.choose_model(rng));
                                     } else {
                                         res = Some(rule.apply.choose_model(rng).clone());
                                     }
@@ -143,7 +143,7 @@ impl Factory {
                     }
                 },
                 Rule::Match(ref key, ref val) => {
-                    if !block.match_multipart(&key, &val) {
+                    if !block.match_multipart(key, val) {
                         return false;
                     }
                 }
@@ -261,10 +261,8 @@ impl Factory {
                     variants.models.push(self.process_model(mdl));
                 }
             }
-        } else {
-            if let Some(mdl) = self.parse_block_state_variant(plugin, v) {
-                variants.models.push(self.process_model(mdl));
-            }
+        } else if let Some(mdl) = self.parse_block_state_variant(plugin, v) {
+            variants.models.push(self.process_model(mdl));
         }
         variants
     }
@@ -589,8 +587,8 @@ impl Factory {
                                     v.z = z*c + x*s;
 
                                     if r.rescale {
-                                        v.x = v.x * ci;
-                                        v.z = v.z * ci;
+                                        v.x *= ci;
+                                        v.z *= ci;
                                     }
                                 },
                                 "x" => {
@@ -602,8 +600,8 @@ impl Factory {
                                     v.y = y*c + z*s;
 
                                     if r.rescale {
-                                        v.z = v.z * ci;
-                                        v.y = v.y * ci;
+                                        v.z *= ci;
+                                        v.y *= ci;
                                     }
                                 },
                                 "z" => {
@@ -615,8 +613,8 @@ impl Factory {
                                     v.y = y*c + x*s;
 
                                     if r.rescale {
-                                        v.x = v.x * ci;
-                                        v.y = v.y * ci;
+                                        v.x *= ci;
+                                        v.y *= ci;
                                     }
                                 },
                                 _ => {}
@@ -899,7 +897,7 @@ impl Model {
                 vert.b = cb;
 
                 let (bl, sl) = calculate_light(
-                    &snapshot,
+                    snapshot,
                     x, y, z,
                     vert.x as f64,
                     vert.y as f64,

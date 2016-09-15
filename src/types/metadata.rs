@@ -15,7 +15,6 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::io;
-use std::io::Write;
 use std::fmt;
 use protocol;
 use protocol::Serializable;

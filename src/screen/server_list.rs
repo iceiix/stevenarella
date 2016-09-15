@@ -107,7 +107,7 @@ impl ServerList {
             let mut tex = renderer.get_textures_ref().write().unwrap();
             for server in &mut elements.servers {
                 if let Some(ref icon) = server.icon_texture {
-                    tex.remove_dynamic(&icon);
+                    tex.remove_dynamic(icon);
                 }
             }
         }
@@ -426,7 +426,7 @@ impl super::Screen for ServerList {
             let mut tex = renderer.get_textures_ref().write().unwrap();
             for server in &mut elements.servers {
                 if let Some(ref icon) = server.icon_texture {
-                    tex.remove_dynamic(&icon);
+                    tex.remove_dynamic(icon);
                 }
             }
         }

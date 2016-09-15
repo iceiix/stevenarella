@@ -125,16 +125,13 @@ impl TargetRotation {
     }
 }
 
+#[derive(Default)]
 pub struct Gravity {
     pub on_ground: bool,
 }
 
 impl Gravity {
-    pub fn new() -> Gravity {
-        Gravity {
-            on_ground: false,
-        }
-    }
+    pub fn new() -> Gravity { Default::default() }
 }
 
 pub struct Bounds {
@@ -149,28 +146,21 @@ impl Bounds {
     }
 }
 
+#[derive(Default)]
 pub struct GameInfo {
     pub delta: f64,
 }
 
 impl GameInfo {
-    pub fn new() -> GameInfo {
-        GameInfo {
-            delta: 0.0,
-        }
-    }
+    pub fn new() -> GameInfo { Default::default() }
 }
 
+#[derive(Default)]
 pub struct Light {
     pub block_light: f32,
     pub sky_light: f32,
 }
 
 impl Light {
-    pub fn new() -> Light {
-        Light {
-            block_light: 0.0,
-            sky_light: 0.0,
-        }
-    }
+    pub fn new() -> Light { Default::default() }
 }

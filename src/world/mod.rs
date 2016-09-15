@@ -32,6 +32,7 @@ use format;
 pub mod biome;
 mod storage;
 
+#[derive(Default)]
 pub struct World {
     chunks: HashMap<CPos, Chunk, BuildHasherDefault<FNVHash>>,
 
@@ -76,14 +77,7 @@ struct LightUpdate {
 }
 
 impl World {
-    pub fn new() -> World {
-        World {
-            chunks: HashMap::with_hasher(BuildHasherDefault::default()),
-            render_list: vec![],
-            light_updates: VecDeque::new(),
-            block_entity_actions: VecDeque::new(),
-        }
-    }
+    pub fn new() -> World { Default::default() }
 
     pub fn is_chunk_loaded(&self, x: i32, z: i32) -> bool {
         self.chunks.contains_key(&CPos(x, z))
@@ -151,7 +145,7 @@ impl World {
 
     pub fn get_block(&self, pos: Position) -> block::Block {
         match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
-            Some(ref chunk) => chunk.get_block(pos.x & 0xF, pos.y, pos.z & 0xF),
+            Some(chunk) => chunk.get_block(pos.x & 0xF, pos.y, pos.z & 0xF),
             None => block::Missing{},
         }
     }
@@ -164,7 +158,7 @@ impl World {
 
     pub fn get_block_light(&self, pos: Position) -> u8 {
         match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
-            Some(ref chunk) => chunk.get_block_light(pos.x & 0xF, pos.y, pos.z & 0xF),
+            Some(chunk) => chunk.get_block_light(pos.x & 0xF, pos.y, pos.z & 0xF),
             None => 0,
         }
     }
@@ -177,7 +171,7 @@ impl World {
 
     pub fn get_sky_light(&self, pos: Position) -> u8 {
         match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
-            Some(ref chunk) => chunk.get_sky_light(pos.x & 0xF, pos.y, pos.z & 0xF),
+            Some(chunk) => chunk.get_sky_light(pos.x & 0xF, pos.y, pos.z & 0xF),
             None => 15,
         }
     }
@@ -861,9 +855,8 @@ impl Chunk {
                 .all(|v| v.is_none());
             self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
         }
-        match self.sections[s_idx].as_mut() {
-            Some(sec) => sec.set_block_light(x, y & 0xF, z, light),
-            None => {},
+        if let Some(sec) = self.sections[s_idx].as_mut() {
+            sec.set_block_light(x, y & 0xF, z, light)
         }
     }
 
@@ -893,9 +886,8 @@ impl Chunk {
                 .all(|v| v.is_none());
             self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
         }
-        match self.sections[s_idx as usize].as_mut() {
-            Some(sec) => sec.set_sky_light(x, y & 0xF, z, light),
-            None => {},
+        if let Some(sec) = self.sections[s_idx as usize].as_mut() {
+            sec.set_sky_light(x, y & 0xF, z, light)
         }
     }
 

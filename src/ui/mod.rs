@@ -237,7 +237,7 @@ macro_rules! define_elements {
                 match *self {
                     $(
                         WeakElement::$name(ref inner) => {
-                            inner.upgrade().map(|v| Element::$name(v))
+                            inner.upgrade().map(Element::$name)
                         },
                     )*
                 }
@@ -1021,7 +1021,7 @@ impl UIElement for Formatted {
                     offset: 0.0,
                     text: Vec::new(),
                     max_width: self.max_width,
-                    renderer: &renderer,
+                    renderer: renderer,
                 };
                 state.build(&self.text, format::Color::White);
                 self.text_elements = state.text;
@@ -1031,7 +1031,7 @@ impl UIElement for Formatted {
                 if self.needs_rebuild {
                     e.force_rebuild();
                 }
-                let r = Container::compute_draw_region(e, sw, sh, &r);
+                let r = Container::compute_draw_region(e, sw, sh, r);
                 let data = e.draw(renderer, &r, sw, sh, width, height, delta);
                 self.data.extend_from_slice(&data);
             }
@@ -1082,7 +1082,7 @@ impl Formatted {
             max_width: max_width,
             renderer: renderer,
         };
-        state.build(&text, format::Color::White);
+        state.build(text, format::Color::White);
         (state.width + 2.0, (state.lines + 1) as f64 * 18.0)
     }
 }
@@ -1105,8 +1105,8 @@ impl <'a> ElementHolder for FormatState<'a> {
 
 impl <'a> FormatState<'a> {
     fn build(&mut self, c: &format::Component, color: format::Color) {
-        match c {
-            &format::Component::Text(ref txt) => {
+        match *c {
+            format::Component::Text(ref txt) => {
                 let col = FormatState::get_color(&txt.modifier, color);
                 self.append_text(&txt.text, col);
                 let modi = &txt.modifier;

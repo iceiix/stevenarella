@@ -2,7 +2,6 @@
 use std::thread;
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
-use std::io::Write;
 use world;
 use world::block;
 use render;
@@ -138,9 +137,9 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
                     let block = snapshot.get_block(x, y, z);
                     let mat = block.get_material();
                     if !mat.renderable {
-						// Use one step of the rng so that
-						// if a block is placed in an empty
-						// location is variant doesn't change
+                        // Use one step of the rng so that
+                        // if a block is placed in an empty
+                        // location is variant doesn't change
                         rng.next_u32();
                         continue;
                     }
@@ -259,13 +258,11 @@ fn flood_fill(snapshot: &world::Snapshot, visited: &mut Set, x: i32, y: i32, z: 
     touched
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct CullInfo(u64);
 
 impl CullInfo {
-    pub fn new() -> CullInfo {
-        CullInfo(0)
-    }
+    pub fn new() -> CullInfo { Default::default() }
 
     pub fn all_vis() -> CullInfo {
         CullInfo(0xFFFFFFFFFFFFFFFF)

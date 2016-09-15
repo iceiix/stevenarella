@@ -497,7 +497,8 @@ impl Program {
 
     pub fn attribute_location(&self, name: &str) -> Option<Attribute> {
         let a = unsafe {
-            gl::GetAttribLocation(self.0, ffi::CString::new(name).unwrap().as_ptr())
+            let name_c = ffi::CString::new(name).unwrap();
+            gl::GetAttribLocation(self.0, name_c.as_ptr())
         };
         if a != -1 {
             Some(Attribute(a))
@@ -524,9 +525,10 @@ impl Shader {
 
     pub fn set_source(&self, src: &str) {
         unsafe {
+            let src_c = ffi::CString::new(src).unwrap();
             gl::ShaderSource(self.0,
                              1,
-                             &ffi::CString::new(src).unwrap().as_ptr(),
+                             &src_c.as_ptr(),
                              ptr::null());
         }
     }
@@ -611,7 +613,6 @@ impl Uniform {
     }
 
     pub fn set_matrix4_multi(&self, m: &[::cgmath::Matrix4<f32>]) {
-        use cgmath::Matrix;
         unsafe {
             gl::UniformMatrix4fv(self.0, m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
         }
@@ -889,7 +890,8 @@ pub fn draw_buffers(bufs: &[Attachment]) {
 
 pub fn bind_frag_data_location(p: &Program, cn: u32, name: &str) {
     unsafe {
-        gl::BindFragDataLocation(p.0, cn, ffi::CString::new(name).unwrap().as_ptr());
+        let name_c = ffi::CString::new(name).unwrap();
+        gl::BindFragDataLocation(p.0, cn, name_c.as_ptr());
     }
 }
 

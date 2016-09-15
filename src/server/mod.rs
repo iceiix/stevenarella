@@ -28,7 +28,6 @@ use settings::Stevenkey;
 use ecs;
 use entity;
 use cgmath::{self, Point};
-use collision::Aabb;
 use types::Gamemode;
 use shared::{Axis, Position};
 use format;
@@ -432,9 +431,9 @@ impl Server {
             self.world_time_target = (24000.0 + self.world_time_target) % 24000.0;
             let mut diff = self.world_time_target - self.world_time;
             if diff < -12000.0 {
-                diff = 24000.0 + diff
+                diff += 24000.0
             } else if diff > 12000.0 {
-                diff = diff - 24000.0
+                diff -= 24000.0
             }
             self.world_time += diff * (1.5 / 60.0) * delta;
             self.world_time = (24000.0 + self.world_time) % 24000.0;
@@ -721,22 +720,19 @@ impl Server {
                 ));
             },
             Some(nbt) => {
-                match block_update.action {
-                    9 => {
-                        use format;
-                        let line1 = format::Component::from_string(nbt.1.get("Text1").unwrap().as_string().unwrap());
-                        let line2 = format::Component::from_string(nbt.1.get("Text2").unwrap().as_string().unwrap());
-                        let line3 = format::Component::from_string(nbt.1.get("Text3").unwrap().as_string().unwrap());
-                        let line4 = format::Component::from_string(nbt.1.get("Text4").unwrap().as_string().unwrap());
-                        self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
-                            block_update.location,
-                            line1,
-                            line2,
-                            line3,
-                            line4,
-                        ));
-                    },
-                    _ => {} // Ignore it
+                if block_update.action == 9 {
+                    use format;
+                    let line1 = format::Component::from_string(nbt.1.get("Text1").unwrap().as_string().unwrap());
+                    let line2 = format::Component::from_string(nbt.1.get("Text2").unwrap().as_string().unwrap());
+                    let line3 = format::Component::from_string(nbt.1.get("Text3").unwrap().as_string().unwrap());
+                    let line4 = format::Component::from_string(nbt.1.get("Text4").unwrap().as_string().unwrap());
+                    self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+                        block_update.location,
+                        line1,
+                        line2,
+                        line3,
+                        line4,
+                    ));
                 }
             }
         }
@@ -833,26 +829,23 @@ impl Server {
             chunk_data.data.data
         ).unwrap();
         for optional_block_entity in chunk_data.block_entities.data {
-            match optional_block_entity {
-                Some(block_entity) => {
-                    let x = block_entity.1.get("x").unwrap().as_int().unwrap();
-                    let y = block_entity.1.get("y").unwrap().as_int().unwrap();
-                    let z = block_entity.1.get("z").unwrap().as_int().unwrap();
-                    let tile_id = block_entity.1.get("id").unwrap().as_string().unwrap();
-                    let action;
-                    match tile_id {
-                        // Fake a sign update
-                        "Sign" => action = 9,
-                        // Not something we care about, so break the loop
-                        _ => continue,
-                    }
-                    self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
-                        location: Position::new(x, y, z),
-                        action: action,
-                        nbt: Some(block_entity.clone()),
-                    });
-                },
-                None => {} // Ignore
+            if let Some(block_entity) = optional_block_entity {
+                let x = block_entity.1.get("x").unwrap().as_int().unwrap();
+                let y = block_entity.1.get("y").unwrap().as_int().unwrap();
+                let z = block_entity.1.get("z").unwrap().as_int().unwrap();
+                let tile_id = block_entity.1.get("id").unwrap().as_string().unwrap();
+                let action;
+                match tile_id {
+                    // Fake a sign update
+                    "Sign" => action = 9,
+                    // Not something we care about, so break the loop
+                    _ => continue,
+                }
+                self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
+                    location: Position::new(x, y, z),
+                    action: action,
+                    nbt: Some(block_entity.clone()),
+                });
             }
         }
     }

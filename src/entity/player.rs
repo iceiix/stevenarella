@@ -302,7 +302,7 @@ impl ecs::System for PlayerRenderer {
         player_model.dirty = false;
 
         let skin = if let Some(url) = player_model.skin_url.as_ref() {
-            renderer.get_skin(renderer.get_textures_ref(), &url)
+            renderer.get_skin(renderer.get_textures_ref(), url)
         } else {
             render::Renderer::get_texture(renderer.get_textures_ref(), "entity/steve")
         };
@@ -432,12 +432,13 @@ impl ecs::System for PlayerRenderer {
         if let Some(model) = player_model.model.take() {
             renderer.model.remove_model(model);
             if let Some(url) = player_model.skin_url.as_ref() {
-                renderer.get_textures_ref().read().unwrap().release_skin(&url);
+                renderer.get_textures_ref().read().unwrap().release_skin(url);
             }
         }
     }
 }
 
+#[derive(Default)]
 pub struct PlayerMovement {
     pub flying: bool,
     pub did_touch_ground: bool,
@@ -445,13 +446,7 @@ pub struct PlayerMovement {
 }
 
 impl PlayerMovement {
-    pub fn new() -> PlayerMovement {
-        PlayerMovement {
-            flying: false,
-            did_touch_ground: false,
-            pressed_keys: HashMap::with_hasher(BuildHasherDefault::default()),
-        }
-    }
+    pub fn new() -> PlayerMovement { Default::default() }
 
     fn calculate_movement(&self, player_yaw: f64) -> (f64, f64) {
         use std::f64::consts::PI;
@@ -463,13 +458,11 @@ impl PlayerMovement {
                 yaw += PI;
             }
         }
-        let mut change = 0.0;
-        if self.is_key_pressed(Stevenkey::Left) {
-            change = (PI / 2.0) / (forward.abs() + 1.0);
-        }
-        if self.is_key_pressed(Stevenkey::Right) {
-            change = -(PI / 2.0) / (forward.abs() + 1.0);
-        }
+        let change = if self.is_key_pressed(Stevenkey::Left) {
+            (PI / 2.0) / (forward.abs() + 1.0)
+        } else if self.is_key_pressed(Stevenkey::Right) {
+            -(PI / 2.0) / (forward.abs() + 1.0)
+        } else { 0.0 };
         if self.is_key_pressed(Stevenkey::Left) || self.is_key_pressed(Stevenkey::Right) {
             forward = 1.0;
         }
@@ -551,10 +544,9 @@ impl ecs::System for MovementHandler {
 
             if world.is_chunk_loaded((position.position.x as i32) >> 4, (position.position.z as i32) >> 4) {
                 let (forward, yaw) = movement.calculate_movement(rotation.yaw);
-                let mut speed = 0.21585;
-                if movement.is_key_pressed(Stevenkey::Sprint) {
-                    speed = 0.2806;
-                }
+                let mut speed = if movement.is_key_pressed(Stevenkey::Sprint) {
+                    0.2806
+                } else { 0.21585 };
                 if movement.flying {
                     speed *= 2.5;
 

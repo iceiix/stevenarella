@@ -186,7 +186,7 @@ impl Manager {
                     vert.texture = if vert.texture.version == version {
                         vert.texture.clone()
                     } else {
-                        let mut new = super::Renderer::get_texture(&textures, &vert.texture.name);
+                        let mut new = super::Renderer::get_texture(textures, &vert.texture.name);
                         new.rel_x = vert.texture.rel_x;
                         new.rel_y = vert.texture.rel_y;
                         new.rel_width = vert.texture.rel_width;
@@ -358,8 +358,8 @@ pub struct FormatState<'a> {
 
 impl <'a> FormatState<'a> {
     pub fn build(&mut self, c: &Component, color: format::Color) {
-        match c {
-            &format::Component::Text(ref txt) => {
+        match *c {
+            format::Component::Text(ref txt) => {
                 let col = FormatState::get_color(&txt.modifier, color);
                 self.append_text(&txt.text, col);
                 let modi = &txt.modifier;
