@@ -522,9 +522,9 @@ impl Server {
                         _ => unreachable!(),
                     }),
                     hand: protocol::VarInt(0),
-                    cursor_x: (at.x * 16.0) as u8,
-                    cursor_y: (at.y * 16.0) as u8,
-                    cursor_z: (at.z * 16.0) as u8,
+                    cursor_x: at.x as f32,
+                    cursor_y: at.y as f32,
+                    cursor_z: at.z as f32
                 });
             }
         }

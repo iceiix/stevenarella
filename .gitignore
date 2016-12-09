@@ -2,6 +2,10 @@ target/
 .rust/
 working/
 
+# IntelliJ
+.idea
+*.iml
+
 # Steven Data
 conf.cfg
 index

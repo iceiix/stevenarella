@@ -3,6 +3,12 @@ name = "steven"
 version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 
+[profile.dev]
+# Steven runs horrendously slow with no optimizations, and often freezes.
+# However, building with full -O3 optimizations takes too long for a debug build.
+# Use an -O1 optimization level strikes a good compromise between build and program performance.
+opt-level = 1
+
 [dependencies]
 sdl2 = "0.16.1"
 byteorder = "0.5.0"

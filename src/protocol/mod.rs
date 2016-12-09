@@ -34,7 +34,7 @@ use flate2;
 use time;
 use shared::Position;
 
-pub const SUPPORTED_PROTOCOL: i32 = 210;
+pub const SUPPORTED_PROTOCOL: i32 = 315;
 
 
 /// Helper macro for defining packets
@@ -200,7 +200,9 @@ impl <T> Serializable for Option<T> where T : Serializable {
 
 impl Serializable for String {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<String, Error> {
-        let len = try!(VarInt::read_from(buf)).0;
+        let len = VarInt::read_from(buf)?.0;
+        debug_assert!(len >= 0, "Negative string length: {}", len);
+        debug_assert!(len <= 65536, "String length too big: {}", len);
         let mut ret = String::new();
         try!(buf.take(len as u64).read_to_string(&mut ret));
         Result::Ok(ret)
