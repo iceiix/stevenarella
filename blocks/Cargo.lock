@@ -3,7 +3,7 @@ name = "steven_blocks"
 version = "0.0.1"
 dependencies = [
  "cgmath 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "collision 0.5.1 (git+https://github.com/csherratt/collision-rs?rev=f80825e)",
+ "collision 0.5.1 (git+https://github.com/TheUnnamedDude/collision-rs?rev=f80825e)",
  "lazy_static 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "steven_shared 0.0.1",
 ]
@@ -21,7 +21,7 @@ dependencies = [
 [[package]]
 name = "collision"
 version = "0.5.1"
-source = "git+https://github.com/csherratt/collision-rs?rev=f80825e#f80825eca687ff1053ff492e54fa782944c9cf6b"
+source = "git+https://github.com/TheUnnamedDude/collision-rs?rev=f80825e#f80825eca687ff1053ff492e54fa782944c9cf6b"
 dependencies = [
  "cgmath 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.31 (registry+https://github.com/rust-lang/crates.io-index)",

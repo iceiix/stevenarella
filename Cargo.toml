@@ -24,7 +24,7 @@ rustc-serialize = "0.3.18"
 log = "0.3.5"
 cgmath = "0.7.0"
 lazy_static = "0.1.15"
-collision = {git = "https://github.com/csherratt/collision-rs", rev = "f80825e"}
+collision = {git = "https://github.com/TheUnnamedDude/collision-rs", rev = "f80825e"}
 openssl = "0.7.8"
 # clippy = "*"
 
