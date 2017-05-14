@@ -80,7 +80,7 @@ macro_rules! define_elements {
             fn is_unused(&self) -> bool {
                 match *self {
                     $(
-                        Element::$name(ref inner) => Rc::would_unwrap(inner),
+                        Element::$name(ref inner) => Rc::strong_count(inner) == 1,
                     )*
                 }
             }
