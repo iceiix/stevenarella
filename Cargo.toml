@@ -10,7 +10,7 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 opt-level = 1
 
 [dependencies]
-sdl2 = "0.16.1"
+sdl2 = "0.30.0"
 byteorder = "0.5.0"
 hyper = "0.8.0"
 serde = "0.7.0"
