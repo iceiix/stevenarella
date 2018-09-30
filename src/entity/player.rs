@@ -198,7 +198,7 @@ impl ecs::System for PlayerRenderer {
                 };
                 let offset_matrix = Matrix4::from(Decomposed {
                     scale: 1.0,
-                    rot: Quaternion::from_angle_y(Rad::new((PI + rotation.yaw as f32))),
+                    rot: Quaternion::from_angle_y(Rad::new(PI + rotation.yaw as f32)),
                     disp: offset,
                 });
 

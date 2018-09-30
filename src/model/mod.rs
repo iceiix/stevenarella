@@ -958,8 +958,8 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
     let mut sky_light = 0u32;
     let mut count = 0;
 
-    let s_block_light = max(((s_block_light as i8) - 8), 0) as u8;
-    let s_sky_light = max(((s_sky_light as i8) - 8), 0) as u8;
+    let s_block_light = max((s_block_light as i8) - 8, 0) as u8;
+    let s_sky_light = max((s_sky_light as i8) - 8, 0) as u8;
 
     let dx = (ox as f64) * 0.6;
     let dy = (oy as f64) * 0.6;
