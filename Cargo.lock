@@ -21,7 +21,6 @@ dependencies = [
  "steven_gl 0.0.1",
  "steven_resources 0.1.0",
  "steven_shared 0.0.1",
- "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
  "zip 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

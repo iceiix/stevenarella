@@ -18,7 +18,7 @@
 extern crate sdl2;
 extern crate zip;
 extern crate image;
-extern crate time;
+use std::time::{Instant, Duration};
 extern crate byteorder;
 extern crate serde_json;
 extern crate openssl;
@@ -213,8 +213,8 @@ fn main() {
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
 
-    let mut last_frame = time::now();
-    let frame_time = (time::Duration::seconds(1).num_nanoseconds().unwrap() as f64) / 60.0;
+    let mut last_frame = Instant::now();
+    let frame_time = 1e9f64 / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
     screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
@@ -238,10 +238,10 @@ fn main() {
     let mut events = game.sdl.event_pump().unwrap();
     while !game.should_close {
 
-        let now = time::now();
-        let diff = now - last_frame;
+        let now = Instant::now();
+        let diff = now.duration_since(last_frame);
         last_frame = now;
-        let delta = (diff.num_nanoseconds().unwrap() as f64) / frame_time;
+        let delta = (diff.subsec_nanos() as f64) / frame_time;
         let (width, height) = window.drawable_size();
 
         let version = {
@@ -274,10 +274,10 @@ fn main() {
 
 
         if fps_cap > 0 && !vsync {
-            let frame_time = time::now() - now;
-            let sleep_interval = time::Duration::milliseconds(1000 / fps_cap);
+            let frame_time = now.elapsed();
+            let sleep_interval = Duration::from_millis(1000 / fps_cap as u64);
             if frame_time < sleep_interval {
-                thread::sleep((sleep_interval - frame_time).to_std().unwrap());
+                thread::sleep(sleep_interval - frame_time);
             }
         }
         window.gl_swap_window();
