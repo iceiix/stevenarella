@@ -794,7 +794,7 @@ impl Conn {
             let uncompressed_size = buf.len();
             let mut new = Vec::new();
             try!(VarInt(uncompressed_size as i32).write_to(&mut new));
-            let mut write = self.compression_write.as_mut().unwrap();
+            let write = self.compression_write.as_mut().unwrap();
             write.reset(io::Cursor::new(buf));
             try!(write.read_to_end(&mut new));
             buf = new;
@@ -824,7 +824,7 @@ impl Conn {
             if uncompressed_size != 0 {
                 let mut new = Vec::with_capacity(uncompressed_size as usize);
                 {
-                    let mut reader = self.compression_read.as_mut().unwrap();
+                    let reader = self.compression_read.as_mut().unwrap();
                     reader.reset(buf);
                     try!(reader.read_to_end(&mut new));
                 }
