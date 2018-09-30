@@ -30,7 +30,7 @@ use std::io::{Write, Read};
 use std::convert;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
-use flate2;
+use flate2::Compression;
 use std::time::{Instant, Duration};
 use shared::Position;
 
@@ -788,7 +788,7 @@ impl Conn {
         };
         if self.compression_threshold >= 0 && buf.len() as i32 > self.compression_threshold {
             if self.compression_write.is_none() {
-                self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), flate2::Compression::Default));
+                self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), Compression::default()));
             }
             extra = 0;
             let uncompressed_size = buf.len();
