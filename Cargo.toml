@@ -21,7 +21,7 @@ zip = "0.4.2"
 image = "0.7.0"
 rand = "0.3.14"
 rustc-serialize = "0.3.24"
-log = "0.3.5"
+log = "0.4.5"
 cgmath = "0.7.0"
 lazy_static = "0.1.15"
 collision = {git = "https://github.com/TheUnnamedDude/collision-rs", rev = "f80825e"}

@@ -273,21 +273,21 @@ impl Console {
         }
     }
 
-    fn log(&mut self, record: &log::LogRecord) {
+    fn log(&mut self, record: &log::Record) {
         for filtered in FILTERED_CRATES {
-            if record.location().module_path().starts_with(filtered) {
+            if record.module_path().unwrap_or("").starts_with(filtered) {
                 return;
             }
         }
 
-        let mut file = &record.location().file().replace("\\", "/")[..];
+        let mut file = &record.file().unwrap_or("").replace("\\", "/")[..];
         if let Some(pos) = file.rfind("src/") {
             file = &file[pos + 4..];
         }
 
         println!("[{}:{}][{}] {}",
                  file,
-                 record.location().line(),
+                 record.line().unwrap_or(0),
                  record.level(),
                  record.args());
         self.history.remove(0);
@@ -301,7 +301,7 @@ impl Console {
             },
             Component::Text(TextComponent::new(":")),
             {
-                let mut msg = TextComponent::new(&format!("{}", record.location().line()));
+                let mut msg = TextComponent::new(&format!("{}", record.line().unwrap_or(0)));
                 msg.modifier.color = Some(Color::Aqua);
                 Component::Text(msg)
             },
@@ -310,11 +310,11 @@ impl Console {
             {
                 let mut msg = TextComponent::new(&format!("{}", record.level()));
                 msg.modifier.color = Some(match record.level() {
-                    log::LogLevel::Debug => Color::Green,
-                    log::LogLevel::Error => Color::Red,
-                    log::LogLevel::Warn => Color::Yellow,
-                    log::LogLevel::Info => Color::Aqua,
-                    log::LogLevel::Trace => Color::Blue,
+                    log::Level::Debug => Color::Green,
+                    log::Level::Error => Color::Red,
+                    log::Level::Warn => Color::Yellow,
+                    log::Level::Info => Color::Aqua,
+                    log::Level::Trace => Color::Blue,
                 });
                 Component::Text(msg)
             },
@@ -337,14 +337,17 @@ impl ConsoleProxy {
 }
 
 impl log::Log for ConsoleProxy {
-    fn enabled(&self, metadata: &log::LogMetadata) -> bool {
-        metadata.level() <= log::LogLevel::Trace
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::Level::Trace
     }
 
-    fn log(&self, record: &log::LogRecord) {
+    fn log(&self, record: &log::Record) {
         if self.enabled(record.metadata()) {
             self.console.lock().unwrap().log(record);
         }
+    }
+
+    fn flush(&self) {
     }
 }
 
