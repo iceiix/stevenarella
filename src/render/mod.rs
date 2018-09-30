@@ -42,7 +42,7 @@ use std::sync::mpsc;
 const ATLAS_SIZE: usize = 1024;
 
 // TEMP
-const NUM_SAMPLES: i32 = 1;
+const NUM_SAMPLES: i32 = 2;
 
 pub struct Camera {
     pub pos: cgmath::Point3<f64>,
