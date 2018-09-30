@@ -8,7 +8,7 @@ extern crate lazy_static;
 extern crate steven_shared as shared;
 
 use shared::{Axis, Direction, Position};
-use collision::{Aabb, Aabb3};
+use collision::Aabb3;
 use cgmath::Point3;
 
 pub mod material;
@@ -42,25 +42,6 @@ macro_rules! create_ids {
         #[allow(non_upper_case_globals)]
         pub const $name: $t = 0;
     );
-}
-
-macro_rules! consume_token { ($i:tt) => (0) }
-
-macro_rules! offsets {
-    ($first:ident, $($other:ident),*) => (
-        #[allow(non_upper_case_globals)]
-        pub const $first: usize = 0;
-        offsets!(prev($first), $($other),*);
-    );
-    (prev($prev:ident), $first:ident, $($other:ident),*) => (
-        #[allow(non_upper_case_globals)]
-        pub const $first: usize = $prev + internal_sizes::$prev;
-        offsets!(prev($first), $($other),*);
-    );
-    (prev($prev:ident), $first:ident) => (
-        #[allow(non_upper_case_globals)]
-        pub const $first: usize = $prev + internal_sizes::$prev;
-    )
 }
 
 macro_rules! define_blocks {
