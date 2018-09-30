@@ -25,7 +25,7 @@ use format::{Component, TextComponent};
 use protocol;
 
 use serde_json;
-use time;
+use std::time::{Duration};
 use image;
 use rustc_serialize::base64::FromBase64;
 use rand;
@@ -69,7 +69,7 @@ struct Server {
 
 struct PingInfo {
     motd: format::Component,
-    ping: time::Duration,
+    ping: Duration,
     exists: bool,
     online: i32,
     max: i32,
@@ -288,7 +288,7 @@ impl ServerList {
                         msg.modifier.color = Some(format::Color::Red);
                         let _ = send.send(PingInfo {
                             motd: Component::Text(msg),
-                            ping: time::Duration::seconds(99999),
+                            ping: Duration::new(99999, 0),
                             exists: false,
                             online: 0,
                             max: 0,
@@ -465,7 +465,9 @@ impl super::Screen for ServerList {
                         s.done_ping = true;
                         s.motd.borrow_mut().set_text(res.motd);
                         // Selects the icon for the given ping range
-                        let y = match res.ping.num_milliseconds() {
+                        // TODO: switch to as_millis() experimental duration_as_u128 #50202 once available?
+                        let ping_ms = (res.ping.subsec_nanos() as f64)/1000000.0 + (res.ping.as_secs() as f64)*1000.0;
+                        let y = match ping_ms.round() as u64 {
                             _x @ 0 ... 75 => 16.0 / 256.0,
                             _x @ 76 ... 150 => 24.0 / 256.0,
                             _x @ 151 ... 225 => 32.0 / 256.0,
