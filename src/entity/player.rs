@@ -149,7 +149,7 @@ enum PlayerModelPart {
     ArmLeft = 4,
     ArmRight = 5,
     NameTag = 6,
-    Cape = 7,
+    //Cape = 7, // TODO
 }
 
 // TODO: Setup culling
