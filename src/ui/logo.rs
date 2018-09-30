@@ -4,7 +4,7 @@ use std::f64::consts;
 use ui;
 use render;
 use resources;
-use time;
+use std::time::{SystemTime, UNIX_EPOCH};
 use rand;
 use rand::Rng;
 
@@ -134,10 +134,10 @@ impl Logo {
     }
 
     pub fn tick(&mut self, renderer: &mut render::Renderer) {
-        let now = time::now().to_timespec();
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
 
         // Splash text
-        let text_index = (now.sec / 15) as isize % self.text_strings.len() as isize;
+        let text_index = (now.as_secs() / 15) as isize % self.text_strings.len() as isize;
         let mut text = self.text.borrow_mut();
         if self.text_index != text_index {
             self.text_index = text_index;
@@ -151,7 +151,7 @@ impl Logo {
             self.text_orig_x = text.x;
         }
 
-        let timer = now.nsec as f64 / 1000000000.0;
+        let timer = now.subsec_nanos() as f64 / 1000000000.0;
         let mut offset = timer / 0.5;
         if offset > 1.0 {
             offset = 2.0 - offset;
