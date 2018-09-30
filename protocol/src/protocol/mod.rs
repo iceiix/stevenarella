@@ -31,7 +31,7 @@ use std::convert;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2;
-use time;
+use std::time::{Instant, Duration};
 use shared::Position;
 
 pub const SUPPORTED_PROTOCOL: i32 = 315;
@@ -866,7 +866,7 @@ impl Conn {
         self.compression_threshold = threshold;
     }
 
-    pub fn do_status(mut self) -> Result<(Status, time::Duration), Error> {
+    pub fn do_status(mut self) -> Result<(Status, Duration), Error> {
         use serde_json::Value;
         use self::packet::status::serverbound::*;
         use self::packet::handshake::serverbound::Handshake;
@@ -889,7 +889,7 @@ impl Conn {
             return Err(Error::Err("Wrong packet".to_owned()));
         };
 
-        let start = time::now();
+        let start = Instant::now();
         try!(self.write_packet(StatusPing { ping: 42 }));
 
         if let Packet::StatusPong(_) = try!(self.read_packet()) {
@@ -897,7 +897,7 @@ impl Conn {
             return Err(Error::Err("Wrong packet".to_owned()));
         };
 
-        let ping = time::now() - start;
+        let ping = start.elapsed();
 
         let val: Value = match serde_json::from_str(&status) {
             Ok(val) => val,
