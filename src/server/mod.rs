@@ -37,7 +37,6 @@ pub mod plugin_messages;
 pub mod target;
 
 pub struct Server {
-    username: String,
     uuid: protocol::UUID,
     conn: Option<protocol::Conn>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
@@ -138,7 +137,7 @@ impl Server {
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
-                    return Ok(Server::new(val.username, protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
+                    return Ok(Server::new(protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
                 }
                 protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
                 val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
@@ -165,7 +164,6 @@ impl Server {
         read.enable_encyption(&shared, true);
         write.enable_encyption(&shared, false);
 
-        let username;
         let uuid;
         loop {
            match try!(read.read_packet()) {
@@ -175,7 +173,6 @@ impl Server {
                }
                protocol::packet::Packet::LoginSuccess(val) => {
                    debug!("Login: {} {}", val.username, val.uuid);
-                   username = val.username;
                    uuid = val.uuid;
                    read.state = protocol::State::Play;
                    write.state = protocol::State::Play;
@@ -188,7 +185,7 @@ impl Server {
 
         let rx = Self::spawn_reader(read);
 
-        Ok(Server::new(username, protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
+        Ok(Server::new(protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
     }
 
     fn spawn_reader(mut read: protocol::Conn) -> mpsc::Receiver<Result<packet::Packet, protocol::Error>> {
@@ -209,7 +206,7 @@ impl Server {
     }
 
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>) -> Server {
-        let mut server = Server::new("dummy".to_owned(), protocol::UUID::default(), resources, None, None);
+        let mut server = Server::new(protocol::UUID::default(), resources, None, None);
         let mut rng = rand::thread_rng();
         for x in -7*16 .. 7*16 {
             for z in -7*16 .. 7*16 {
@@ -245,7 +242,7 @@ impl Server {
     }
 
     fn new(
-        username: String, uuid: protocol::UUID,
+        uuid: protocol::UUID,
         resources: Arc<RwLock<resources::Manager>>,
         conn: Option<protocol::Conn>, read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>
     ) -> Server {
@@ -258,7 +255,6 @@ impl Server {
 
         let version = resources.read().unwrap().version();
         Server {
-            username: username,
             uuid: uuid,
             conn: conn,
             read_queue: read_queue,
