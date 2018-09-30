@@ -58,10 +58,10 @@ pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lav
                 if vert.y == 0.0 {
                     vert.y = y as f32;
                 } else {
-                    let height = match (vert.x, vert.z) {
-                        (0.0, 0.0) => ((16.0 / 8.0) * (tl as f32)) as i32,
-                        (_, 0.0) => ((16.0 / 8.0) * (tr as f32)) as i32,
-                        (0.0, _) => ((16.0 / 8.0) * (bl as f32)) as i32,
+                    let height = match (vert.x as i64, vert.z as i64) {
+                        (0, 0) => ((16.0 / 8.0) * (tl as f32)) as i32,
+                        (_, 0) => ((16.0 / 8.0) * (tr as f32)) as i32,
+                        (0, _) => ((16.0 / 8.0) * (bl as f32)) as i32,
                         (_, _) => ((16.0 / 8.0) * (br as f32)) as i32,
                     };
                     vert.y = (height as f32)/16.0 + (y as f32);
