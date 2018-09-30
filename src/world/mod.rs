@@ -188,15 +188,14 @@ impl World {
     }
 
     pub fn tick(&mut self, m: &mut ecs::Manager) {
-        use time;
-        let start = time::precise_time_ns();
+        use std::time::{Instant};
+        let start = Instant::now();
         let mut updates_performed = 0;
         while !self.light_updates.is_empty() {
             updates_performed += 1;
             self.do_light_update();
             if updates_performed & 0xFFF == 0 {
-                let now = time::precise_time_ns();
-                if (now - start) >= 5000000 { // 5 ms for light updates
+                if start.elapsed().subsec_nanos() >= 5000000 { // 5 ms for light updates
                     break;
                 }
             }
