@@ -350,16 +350,16 @@ pub struct UUID(u64, u64);
 
 impl UUID {
     pub fn from_str(s: &str) -> UUID {
-        use rustc_serialize::hex::FromHex;
+        use hex;
         // TODO: Panics aren't the best idea here
         if s.len() != 36 {
             panic!("Invalid UUID format");
         }
-        let mut parts = s[..8].from_hex().unwrap();
-        parts.extend_from_slice(&s[9..13].from_hex().unwrap());
-        parts.extend_from_slice(&s[14..18].from_hex().unwrap());
-        parts.extend_from_slice(&s[19..23].from_hex().unwrap());
-        parts.extend_from_slice(&s[24..36].from_hex().unwrap());
+        let mut parts = hex::decode(&s[..8]).unwrap();
+        parts.extend_from_slice(&hex::decode(&s[9..13]).unwrap());
+        parts.extend_from_slice(&hex::decode(&s[14..18]).unwrap());
+        parts.extend_from_slice(&hex::decode(&s[19..23]).unwrap());
+        parts.extend_from_slice(&hex::decode(&s[24..36]).unwrap());
         let mut high = 0u64;
         let mut low = 0u64;
         for i in 0 .. 8 {

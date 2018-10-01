@@ -26,7 +26,7 @@ extern crate sha1;
 extern crate hyper;
 extern crate flate2;
 extern crate rand;
-extern crate rustc_serialize;
+extern crate hex;
 extern crate base64;
 extern crate cgmath;
 #[macro_use]
