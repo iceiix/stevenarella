@@ -109,7 +109,7 @@ struct BuildReply {
 }
 
 fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
-    use rand::{self, Rng, SeedableRng};
+    use rand::{self, SeedableRng, Rng};
     loop {
         let BuildReq {
             snapshot,
@@ -122,10 +122,25 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
         };
 
         let mut rng = rand::XorShiftRng::from_seed([
-            position.0 as u32,
-            position.1 as u32,
-            position.2 as u32,
-            (position.0 as u32 ^ position.2 as u32) | 1,
+            ((position.0 as u32) & 0xff) as u8,
+            (((position.0 as u32) >> 8) & 0xff) as u8,
+            (((position.0 as u32) >> 16) & 0xff) as u8,
+            ((position.0 as u32) >> 24) as u8,
+
+            ((position.1 as u32) & 0xff) as u8,
+            (((position.1 as u32) >> 8) & 0xff) as u8,
+            (((position.1 as u32) >> 16) & 0xff) as u8,
+            ((position.1 as u32) >> 24) as u8,
+
+            ((position.2 as u32) & 0xff) as u8,
+            (((position.2 as u32) >> 8) & 0xff) as u8,
+            (((position.2 as u32) >> 16) & 0xff) as u8,
+            ((position.2 as u32) >> 24) as u8,
+
+            (((position.0 as u32 ^ position.2 as u32) | 1) & 0xff) as u8,
+            ((((position.0 as u32 ^ position.2 as u32) | 1) >> 8) & 0xff) as u8,
+            ((((position.0 as u32 ^ position.2 as u32) | 1) >> 16) & 0xff) as u8,
+            (((position.0 as u32 ^ position.2 as u32) | 1) >> 24) as u8,
         ]);
 
         let mut solid_count = 0;
@@ -140,7 +155,7 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
                         // Use one step of the rng so that
                         // if a block is placed in an empty
                         // location is variant doesn't change
-                        rng.next_u32();
+                        let _: u32 = rng.gen();
                         continue;
                     }
 

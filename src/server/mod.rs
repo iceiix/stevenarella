@@ -216,7 +216,7 @@ impl Server {
                 }
                 server.world.set_block(Position::new(x, h, z), block::Grass{ snowy: false });
 
-                if x*x + z*z > 16*16 && rng.gen_weighted_bool(80) {
+                if x*x + z*z > 16*16 && rng.gen_bool(1.0 / 80.0) {
                     for i in 0 .. 5 {
                         server.world.set_block(Position::new(x, h + 1 + i, z), block::Log{ axis: Axis::Y, variant: block::TreeVariant::Oak });
                     }

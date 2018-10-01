@@ -170,7 +170,10 @@ impl super::Screen for Login {
             elements.login_btn_text.borrow_mut().text = "Logging in...".into();
             let mut client_token = self.vars.get(auth::AUTH_CLIENT_TOKEN).clone();
             if client_token.is_empty() {
-                client_token = rand::thread_rng().gen_ascii_chars().take(20).collect::<String>();
+                client_token = std::iter::repeat(()).map(|()| rand::thread_rng()
+                               .sample(&rand::distributions::Alphanumeric))
+                               .take(20)
+                               .collect();
                 self.vars.set(auth::AUTH_CLIENT_TOKEN, client_token);
             }
             let client_token = self.vars.get(auth::AUTH_CLIENT_TOKEN).clone();

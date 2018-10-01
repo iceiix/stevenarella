@@ -496,10 +496,10 @@ impl super::Screen for ServerList {
                             s.version.borrow_mut().set_text(msg);
                         }
                         if let Some(favicon) = res.favicon {
-                            let name: String = rand::thread_rng()
-                                                   .gen_ascii_chars()
-                                                   .take(30)
-                                                   .collect();
+                            let name: String = std::iter::repeat(()).map(|()| rand::thread_rng()
+                                               .sample(&rand::distributions::Alphanumeric))
+                                               .take(30)
+                                               .collect();
                             let tex = renderer.get_textures_ref();
                             s.icon_texture = Some(name.clone());
                             let icon_tex = tex.write()

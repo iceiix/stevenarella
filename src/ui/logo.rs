@@ -101,7 +101,7 @@ impl Logo {
                     text_strings.push(line.to_owned().replace("\r", ""));
                 }
             }
-            let mut r: rand::XorShiftRng = rand::SeedableRng::from_seed([45, 64, 32, 12]);
+            let mut r: rand::XorShiftRng = rand::SeedableRng::from_seed([45, 0, 0, 0, 64, 0, 0, 0, 32, 0, 0, 0, 12, 0, 0, 0]);
             r.shuffle(&mut text_strings[..]);
         }
 
