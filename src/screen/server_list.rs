@@ -27,7 +27,7 @@ use protocol;
 use serde_json;
 use std::time::{Duration};
 use image;
-use rustc_serialize::base64::FromBase64;
+use base64;
 use rand;
 use rand::Rng;
 
@@ -264,9 +264,8 @@ impl ServerList {
                         let mut desc = res.0.description;
                         format::convert_legacy(&mut desc);
                         let favicon = if let Some(icon) = res.0.favicon {
-                            let data = icon["data:image/png;base64,".len()..]
-                                           .from_base64()
-                                           .unwrap();
+                            let data_base64 = &icon["data:image/png;base64,".len()..];
+                            let data = base64::decode_config(data_base64, base64::MIME).unwrap();
                             Some(image::load_from_memory(&data).unwrap())
                         } else {
                             None

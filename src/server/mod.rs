@@ -736,7 +736,7 @@ impl Server {
 
     fn on_player_info(&mut self, player_info: packet::play::clientbound::PlayerInfo) {
         use protocol::packet::PlayerDetail::*;
-        use rustc_serialize::base64::FromBase64;
+        use base64;
         use serde_json;
         for detail in player_info.inner.players {
             match detail {
@@ -765,7 +765,8 @@ impl Server {
                         // authlib. We could download authlib on startup and extract
                         // the key but this seems like overkill compared to just
                         // whitelisting Mojang's texture servers instead.
-                        let skin_blob = match prop.value.from_base64() {
+                        let skin_blob_result = &base64::decode_config(&prop.value, base64::MIME);
+                        let skin_blob = match skin_blob_result {
                             Ok(val) => val,
                             Err(err) => {
                                 error!("Failed to decode skin blob, {:?}", err);
