@@ -21,7 +21,7 @@ use render::glsl;
 use render::shaders;
 use byteorder::{WriteBytesExt, NativeEndian};
 use image;
-use image::GenericImage;
+use image::GenericImageView;
 
 const UI_WIDTH: f64 = 854.0;
 const UI_HEIGHT: f64 = 480.0;

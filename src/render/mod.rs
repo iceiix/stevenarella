@@ -26,7 +26,7 @@ use std::io::Write;
 use resources;
 use gl;
 use image;
-use image::GenericImage;
+use image::{GenericImage, GenericImageView};
 use byteorder::{WriteBytesExt, NativeEndian};
 use serde_json;
 use cgmath::{self, Vector, Point, SquareMatrix};

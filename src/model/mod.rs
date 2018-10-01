@@ -17,7 +17,7 @@ use std::hash::BuildHasherDefault;
 use types::hash::FNVHash;
 
 use rand::Rng;
-use image::{self, GenericImage};
+use image::GenericImageView;
 
 pub struct Factory {
     resources: Arc<RwLock<resources::Manager>>,
