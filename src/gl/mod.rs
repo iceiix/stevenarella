@@ -819,29 +819,30 @@ pub const DEPTH_ATTACHMENT: Attachment = gl::DEPTH_ATTACHMENT;
 
 pub struct Framebuffer(u32);
 
-unsafe fn check_framebuffer_status() {
-    let status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
-    let s =
-    match status {
-        gl::FRAMEBUFFER_UNDEFINED => "GL_FRAMEBUFFER_UNDEFINED",
-        gl::FRAMEBUFFER_INCOMPLETE_ATTACHMENT => "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT",
-        gl::FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT => "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT",
-        gl::FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER => "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER",
-        gl::FRAMEBUFFER_INCOMPLETE_READ_BUFFER => "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER",
-        gl::FRAMEBUFFER_UNSUPPORTED => "GL_FRAMEBUFFER_UNSUPPORTED",
-        gl::FRAMEBUFFER_INCOMPLETE_MULTISAMPLE => "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE",
-        gl::FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS => "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS",
+pub fn check_framebuffer_status() {
+    unsafe {
+        let status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
+        let s =
+        match status {
+            gl::FRAMEBUFFER_UNDEFINED => "GL_FRAMEBUFFER_UNDEFINED",
+            gl::FRAMEBUFFER_INCOMPLETE_ATTACHMENT => "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT",
+            gl::FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT => "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT",
+            gl::FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER => "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER",
+            gl::FRAMEBUFFER_INCOMPLETE_READ_BUFFER => "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER",
+            gl::FRAMEBUFFER_UNSUPPORTED => "GL_FRAMEBUFFER_UNSUPPORTED",
+            gl::FRAMEBUFFER_INCOMPLETE_MULTISAMPLE => "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE",
+            gl::FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS => "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS",
 
-        gl::FRAMEBUFFER_COMPLETE => "GL_FRAMEBUFFER_COMPLETE",
-        //gl::FRAMEBUFFER_INCOMPLETE_DIMENSIONS => "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS",
-        _ => "unknown"
-    };
+            gl::FRAMEBUFFER_COMPLETE => "GL_FRAMEBUFFER_COMPLETE",
+            //gl::FRAMEBUFFER_INCOMPLETE_DIMENSIONS => "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS",
+            _ => "unknown"
+        };
 
-    if status != gl::FRAMEBUFFER_COMPLETE {
-        println!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
-        //panic!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
+        if status != gl::FRAMEBUFFER_COMPLETE {
+            println!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
+            //panic!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
+        }
     }
-
 }
 
 impl Framebuffer {
@@ -856,21 +857,18 @@ impl Framebuffer {
     pub fn bind(&self) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER, self.0);
-            check_framebuffer_status();
         }
     }
 
     pub fn bind_read(&self) {
         unsafe {
             gl::BindFramebuffer(gl::READ_FRAMEBUFFER, self.0);
-            check_framebuffer_status();
         }
     }
 
     pub fn bind_draw(&self) {
         unsafe {
             gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, self.0);
-            check_framebuffer_status();
         }
     }
 

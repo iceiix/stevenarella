@@ -705,7 +705,7 @@ impl TransInfo {
         gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
         gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
         gl::draw_buffers(&[gl::COLOR_ATTACHMENT_0, gl::COLOR_ATTACHMENT_1]);
-
+        gl::check_framebuffer_status();
 
         let main = gl::Framebuffer::new();
         main.bind();
@@ -719,6 +719,7 @@ impl TransInfo {
         fb_depth.bind(gl::TEXTURE_2D_MULTISAMPLE);
         fb_depth.image_2d_sample(gl::TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, width, height, gl::DEPTH_COMPONENT24, false);
         main.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D_MULTISAMPLE, &fb_depth, 0);
+        gl::check_framebuffer_status();
 
         gl::unbind_framebuffer();
 
