@@ -365,6 +365,7 @@ impl Renderer {
             }
         }
 
+        gl::check_framebuffer_status();
         gl::unbind_framebuffer();
         gl::disable(gl::DEPTH_TEST);
         gl::clear(gl::ClearFlags::Color);
@@ -704,8 +705,8 @@ impl TransInfo {
         chunk_shader.program.use_program();
         gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
         gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
-        gl::draw_buffers(&[gl::COLOR_ATTACHMENT_0, gl::COLOR_ATTACHMENT_1]);
         gl::check_framebuffer_status();
+        gl::draw_buffers(&[gl::COLOR_ATTACHMENT_0, gl::COLOR_ATTACHMENT_1]);
 
         let main = gl::Framebuffer::new();
         main.bind();
