@@ -840,7 +840,7 @@ pub fn check_framebuffer_status() {
 
         if status != gl::FRAMEBUFFER_COMPLETE {
             println!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
-            //panic!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
+            panic!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
         }
     }
 }
