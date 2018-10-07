@@ -855,6 +855,19 @@ pub fn check_framebuffer_status() {
     }
 }
 
+pub fn check_gl_error() {
+    unsafe {
+        loop {
+            let err = gl::GetError();
+            if err == gl::NO_ERROR {
+                break
+            }
+
+            println!("glGetError = {}", err);
+        }
+    }
+}
+
 impl Framebuffer {
     pub fn new() -> Framebuffer {
         let mut fb = Framebuffer(0);

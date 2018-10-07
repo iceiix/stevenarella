@@ -379,6 +379,8 @@ impl Renderer {
 
         self.ui.tick(width, height);
 
+        gl::check_gl_error();
+
         self.frame_id = self.frame_id.wrapping_add(1);
     }
 
