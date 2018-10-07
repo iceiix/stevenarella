@@ -370,8 +370,18 @@ impl Texture {
                     format: TextureFormat,
                     fixed: bool) {
         unsafe {
+            let result: &mut [i32] = &mut [0; 1];
+            gl::GetIntegerv(gl::MAX_SAMPLES, &mut result[0]);
+            let use_samples =
+                if samples > result[0] {
+                    println!("glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}", samples, result[0]);
+                    result[0]
+                } else {
+                    samples
+                };
+
             gl::TexImage2DMultisample(target,
-                           samples,
+                           use_samples,
                            format,
                            width as i32,
                            height as i32,
