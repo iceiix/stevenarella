@@ -906,29 +906,29 @@ impl Conn {
 
         let invalid_status = || Error::Err("Invalid status".to_owned());
 
-        let version = try!(val.find("version").ok_or(invalid_status()));
-        let players = try!(val.find("players").ok_or(invalid_status()));
+        let version = try!(val.get("version").ok_or(invalid_status()));
+        let players = try!(val.get("players").ok_or(invalid_status()));
 
         Ok((Status {
             version: StatusVersion {
-                name: try!(version.find("name").and_then(Value::as_string).ok_or(invalid_status()))
+                name: try!(version.get("name").and_then(Value::as_str).ok_or(invalid_status()))
                           .to_owned(),
-                protocol: try!(version.find("protocol")
+                protocol: try!(version.get("protocol")
                                       .and_then(Value::as_i64)
                                       .ok_or(invalid_status())) as i32,
             },
             players: StatusPlayers {
-                max: try!(players.find("max")
+                max: try!(players.get("max")
                                  .and_then(Value::as_i64)
                                  .ok_or(invalid_status())) as i32,
-                online: try!(players.find("online")
+                online: try!(players.get("online")
                                     .and_then(Value::as_i64)
                                     .ok_or(invalid_status())) as i32,
                 sample: Vec::new(), /* TODO */
             },
-            description: format::Component::from_value(try!(val.find("description")
+            description: format::Component::from_value(try!(val.get("description")
                                                                .ok_or(invalid_status()))),
-            favicon: val.find("favicon").and_then(Value::as_string).map(|v| v.to_owned()),
+            favicon: val.get("favicon").and_then(Value::as_str).map(|v| v.to_owned()),
         },
             ping))
     }

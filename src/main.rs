@@ -20,6 +20,7 @@ extern crate zip;
 extern crate image;
 use std::time::{Instant, Duration};
 extern crate byteorder;
+#[macro_use]
 extern crate serde_json;
 extern crate openssl;
 extern crate sha1;

@@ -127,7 +127,7 @@ impl Tag {
         }
     }
 
-    pub fn as_string(&self) -> Option<&str> {
+    pub fn as_str(&self) -> Option<&str> {
         match *self {
             Tag::String(ref val) => Some(&val[..]),
             _ => None,

@@ -48,7 +48,7 @@ impl EditServerEntry {
             Err(_) => {
                 let mut info = BTreeMap::default();
                 info.insert("servers".to_owned(), Value::Array(vec![]));
-                Value::Object(info)
+                Value::Object(info.into_iter().collect())
             }
         };
 
@@ -56,7 +56,7 @@ impl EditServerEntry {
             let mut entry = BTreeMap::default();
             entry.insert("name".to_owned(), Value::String(name.to_owned()));
             entry.insert("address".to_owned(), Value::String(address.to_owned()));
-            Value::Object(entry)
+            Value::Object(entry.into_iter().collect())
         };
 
         {

@@ -718,10 +718,10 @@ impl Server {
             Some(nbt) => {
                 if block_update.action == 9 {
                     use format;
-                    let line1 = format::Component::from_string(nbt.1.get("Text1").unwrap().as_string().unwrap());
-                    let line2 = format::Component::from_string(nbt.1.get("Text2").unwrap().as_string().unwrap());
-                    let line3 = format::Component::from_string(nbt.1.get("Text3").unwrap().as_string().unwrap());
-                    let line4 = format::Component::from_string(nbt.1.get("Text4").unwrap().as_string().unwrap());
+                    let line1 = format::Component::from_string(nbt.1.get("Text1").unwrap().as_str().unwrap());
+                    let line2 = format::Component::from_string(nbt.1.get("Text2").unwrap().as_str().unwrap());
+                    let line3 = format::Component::from_string(nbt.1.get("Text3").unwrap().as_str().unwrap());
+                    let line4 = format::Component::from_string(nbt.1.get("Text4").unwrap().as_str().unwrap());
                     self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
                         block_update.location,
                         line1,
@@ -780,7 +780,7 @@ impl Server {
                                 continue;
                             },
                         };
-                        if let Some(skin_url) = skin_blob.lookup("textures.SKIN.url").and_then(|v| v.as_string()) {
+                        if let Some(skin_url) = skin_blob.pointer("/textures/SKIN/url").and_then(|v| v.as_str()) {
                             info.skin_url = Some(skin_url.to_owned());
                         }
                     }
@@ -830,7 +830,7 @@ impl Server {
                 let x = block_entity.1.get("x").unwrap().as_int().unwrap();
                 let y = block_entity.1.get("y").unwrap().as_int().unwrap();
                 let z = block_entity.1.get("z").unwrap().as_int().unwrap();
-                let tile_id = block_entity.1.get("id").unwrap().as_string().unwrap();
+                let tile_id = block_entity.1.get("id").unwrap().as_str().unwrap();
                 let action;
                 match tile_id {
                     // Fake a sign update

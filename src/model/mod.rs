@@ -200,7 +200,7 @@ impl Factory {
             multipart: vec![],
         };
 
-        if let Some(variants) = mdl.find("variants").and_then(|v| v.as_object()) {
+        if let Some(variants) = mdl.get("variants").and_then(|v| v.as_object()) {
             for (k, v) in variants {
                 let vars = self.parse_model_list(plugin, v);
                 if vars.models.is_empty() {
@@ -209,11 +209,11 @@ impl Factory {
                 model.variants.insert(k.clone(), vars);
             }
         }
-        if let Some(multipart) = mdl.find("multipart").and_then(|v| v.as_array()) {
+        if let Some(multipart) = mdl.get("multipart").and_then(|v| v.as_array()) {
             for rule in multipart {
-                let apply = self.parse_model_list(plugin, rule.find("apply").unwrap());
+                let apply = self.parse_model_list(plugin, rule.get("apply").unwrap());
                 let mut rules = vec![];
-                if let Some(when) = rule.find("when").and_then(|v| v.as_object()) {
+                if let Some(when) = rule.get("when").and_then(|v| v.as_object()) {
                     Self::parse_rules(when, &mut rules);
                 }
                 model.multipart.push(MultipartRule {
@@ -227,7 +227,7 @@ impl Factory {
         true
     }
 
-    fn parse_rules(when: &::std::collections::BTreeMap<String, serde_json::Value>, rules: &mut Vec<Rule>) {
+    fn parse_rules(when: &serde_json::Map<String, serde_json::Value>, rules: &mut Vec<Rule>) {
         for (name, val) in when {
             if name == "OR" {
                 let mut or_rules = vec![];
@@ -239,10 +239,8 @@ impl Factory {
                 rules.push(Rule::Or(or_rules));
             } else {
                 let v = match *val {
-                    serde_json::Value::Bool(v) => v.to_string(),
-                    serde_json::Value::I64(v) => v.to_string(),
-                    serde_json::Value::U64(v) => v.to_string(),
-                    serde_json::Value::F64(v) => v.to_string(),
+                    serde_json::Value::Bool(ref v) => v.to_string(),
+                    serde_json::Value::Number(ref v) => v.to_string(),
                     serde_json::Value::String(ref v) => v.to_owned(),
                     _ => unreachable!(),
                 };
@@ -268,7 +266,7 @@ impl Factory {
     }
 
     fn parse_block_state_variant(&self, plugin: &str, v: &serde_json::Value) -> Option<RawModel> {
-        let model_name = match v.find("model").and_then(|v| v.as_string()) {
+        let model_name = match v.get("model").and_then(|v| v.as_str()) {
             Some(val) => val,
             None => {
                 error!("Couldn't find model name");
@@ -293,15 +291,15 @@ impl Factory {
             },
         };
 
-        model.y = v.find("y").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        model.x = v.find("x").and_then(|v| v.as_f64()).unwrap_or(0.0);
-        model.uvlock = v.find("uvlock").and_then(|v| v.as_boolean()).unwrap_or(false);
-        model.weight = v.find("weight").and_then(|v| v.as_f64()).unwrap_or(1.0);
+        model.y = v.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        model.x = v.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        model.uvlock = v.get("uvlock").and_then(|v| v.as_bool()).unwrap_or(false);
+        model.weight = v.get("weight").and_then(|v| v.as_f64()).unwrap_or(1.0);
         Some(model)
     }
 
     fn parse_model(&self, plugin: &str, v: &serde_json::Value) -> Option<RawModel> {
-        let parent = v.find("parent").and_then(|v| v.as_string()).unwrap_or("");
+        let parent = v.get("parent").and_then(|v| v.as_str()).unwrap_or("");
         let mut model = if !parent.is_empty() && !parent.starts_with("builtin/") {
             let file = match self.resources.read().unwrap().open(plugin, &format!("models/{}.json", parent)) {
                 Some(val) => val,
@@ -341,20 +339,20 @@ impl Factory {
             }
         };
 
-        if let Some(textures) = v.find("textures").and_then(|v| v.as_object()) {
+        if let Some(textures) = v.get("textures").and_then(|v| v.as_object()) {
             for (k, v) in textures {
-                model.texture_vars.insert(k.clone(), v.as_string().unwrap_or("").to_owned());
+                model.texture_vars.insert(k.clone(), v.as_str().unwrap_or("").to_owned());
             }
         }
 
-        if let Some(ao) = v.find("ambientocclusion").and_then(|v| v.as_boolean()) {
+        if let Some(ao) = v.get("ambientocclusion").and_then(|v| v.as_bool()) {
             model.ambient_occlusion = ao;
             model.ao_set = true;
         } else if !model.ao_set {
             model.ambient_occlusion = true;
         }
 
-        if let Some(elements) = v.find("elements").and_then(|v| v.as_array()) {
+        if let Some(elements) = v.get("elements").and_then(|v| v.as_array()) {
             for e in elements {
                 model.elements.push(self.parse_block_element(e));
             }
@@ -367,25 +365,25 @@ impl Factory {
 
     fn parse_block_element(&self, v: &serde_json::Value) -> ModelElement {
         let mut element = ModelElement {
-            from: v.find("from").and_then(|v| v.as_array()).map(|v| [
+            from: v.get("from").and_then(|v| v.as_array()).map(|v| [
                 v[0].as_f64().unwrap(),
                 v[1].as_f64().unwrap(),
                 v[2].as_f64().unwrap()
             ]).unwrap(),
-            to: v.find("to").and_then(|v| v.as_array()).map(|v| [
+            to: v.get("to").and_then(|v| v.as_array()).map(|v| [
                 v[0].as_f64().unwrap(),
                 v[1].as_f64().unwrap(),
                 v[2].as_f64().unwrap()
             ]).unwrap(),
-            shade: v.find("shade").and_then(|v| v.as_boolean()).unwrap_or(false),
+            shade: v.get("shade").and_then(|v| v.as_bool()).unwrap_or(false),
             faces: [None, None, None, None, None, None],
             rotation: None,
         };
-        if let Some(faces) = v.find("faces").and_then(|v| v.as_object()) {
+        if let Some(faces) = v.get("faces").and_then(|v| v.as_object()) {
             for dir in Direction::all() {
                 if let Some(face) = faces.get(dir.as_string()) {
                     element.faces[dir.index()] = Some(BlockFace {
-                        uv: face.find("uv").and_then(|v| v.as_array()).map_or_else(
+                        uv: face.get("uv").and_then(|v| v.as_array()).map_or_else(
                             || {
                                 let mut uv = [0.0, 0.0, 16.0, 16.0];
                                 match dir {
@@ -418,22 +416,22 @@ impl Factory {
                                 v[3].as_f64().unwrap()
                             ]
                         ),
-                        texture: face.find("texture")
-                            .and_then(|v| v.as_string())
+                        texture: face.get("texture")
+                            .and_then(|v| v.as_str())
                             .map(|v| if v.starts_with('#') {
                                 v.to_owned()
                             } else {
                                 "#".to_owned() + v
                             }).unwrap(),
                         cull_face: Direction::from_string(
-                                face.find("cullface")
-                                    .and_then(|v| v.as_string())
+                                face.get("cullface")
+                                    .and_then(|v| v.as_str())
                                     .unwrap_or("invalid")
                             ),
-                        rotation: face.find("rotation")
+                        rotation: face.get("rotation")
                             .and_then(|v| v.as_i64())
                             .map_or(0, |v| v as i32),
-                        tint_index: face.find("tintindex")
+                        tint_index: face.get("tintindex")
                             .and_then(|v| v.as_i64())
                             .map_or(-1, |v| v as i32),
                     });
@@ -441,16 +439,16 @@ impl Factory {
             }
         }
 
-        if let Some(rotation) = v.find("rotation") {
+        if let Some(rotation) = v.get("rotation") {
             element.rotation = Some(BlockRotation {
-                origin: rotation.find("origin").and_then(|v| v.as_array()).map_or([8.0, 8.0, 8.0], |v| [
+                origin: rotation.get("origin").and_then(|v| v.as_array()).map_or([8.0, 8.0, 8.0], |v| [
                     v[0].as_f64().unwrap(),
                     v[1].as_f64().unwrap(),
                     v[2].as_f64().unwrap()
                 ]),
-                axis: rotation.find("axis").and_then(|v| v.as_string()).unwrap_or("").to_owned(),
-                angle: rotation.find("angle").and_then(|v| v.as_f64()).unwrap_or(0.0),
-                rescale: rotation.find("rescale").and_then(|v| v.as_boolean()).unwrap_or(false),
+                axis: rotation.get("axis").and_then(|v| v.as_str()).unwrap_or("").to_owned(),
+                angle: rotation.get("angle").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                rescale: rotation.get("rescale").and_then(|v| v.as_bool()).unwrap_or(false),
             });
         }
 
