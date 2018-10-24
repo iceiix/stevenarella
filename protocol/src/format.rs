@@ -38,12 +38,12 @@ impl Component {
 
     pub fn from_value(v: &serde_json::Value) -> Self {
         let mut modifier = Modifier::from_value(v);
-        if let Some(val) = v.as_string() {
+        if let Some(val) = v.as_str() {
             Component::Text(TextComponent {
                 text: val.to_owned(),
                 modifier: modifier,
             })
-        } else if v.find("text").is_some() {
+        } else if v.get("text").is_some() {
             Component::Text(TextComponent::from_value(v, modifier))
         } else {
             modifier.color = Some(Color::RGB(255, 0, 0));
@@ -92,17 +92,17 @@ pub struct Modifier {
 impl Modifier {
     pub fn from_value(v: &serde_json::Value) -> Self {
         let mut m = Modifier {
-            bold: v.find("bold").map_or(Option::None, |v| v.as_boolean()),
-            italic: v.find("italic").map_or(Option::None, |v| v.as_boolean()),
-            underlined: v.find("underlined").map_or(Option::None, |v| v.as_boolean()),
-            strikethrough: v.find("strikethrough").map_or(Option::None, |v| v.as_boolean()),
-            obfuscated: v.find("obfuscated").map_or(Option::None, |v| v.as_boolean()),
-            color: v.find("color")
-                    .map_or(Option::None, |v| v.as_string())
+            bold: v.get("bold").map_or(Option::None, |v| v.as_bool()),
+            italic: v.get("italic").map_or(Option::None, |v| v.as_bool()),
+            underlined: v.get("underlined").map_or(Option::None, |v| v.as_bool()),
+            strikethrough: v.get("strikethrough").map_or(Option::None, |v| v.as_bool()),
+            obfuscated: v.get("obfuscated").map_or(Option::None, |v| v.as_bool()),
+            color: v.get("color")
+                    .map_or(Option::None, |v| v.as_str())
                     .map(|v| Color::from_string(&v.to_owned())),
             extra: Option::None,
         };
-        if let Some(extra) = v.find("extra") {
+        if let Some(extra) = v.get("extra") {
             if let Some(data) = extra.as_array() {
                 let mut ex = Vec::new();
                 for e in data {
@@ -135,7 +135,7 @@ impl TextComponent {
 
     pub fn from_value(v: &serde_json::Value, modifier: Modifier) -> Self {
         TextComponent {
-            text: v.find("text").unwrap().as_string().unwrap_or("").to_owned(),
+            text: v.get("text").unwrap().as_str().unwrap_or("").to_owned(),
             modifier: modifier,
         }
     }
