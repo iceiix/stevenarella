@@ -14,9 +14,10 @@
 
 #![allow(dead_code)]
 
-use openssl::crypto::symm;
+use openssl::symm;
 use serde_json;
 use reqwest;
+use openssl;
 
 pub mod mojang;
 
@@ -691,6 +692,7 @@ pub enum Error {
     IOError(io::Error),
     Json(serde_json::Error),
     Reqwest(reqwest::Error),
+    OpenSSL(openssl::error::ErrorStack),
 }
 
 impl convert::From<io::Error> for Error {
@@ -711,6 +713,12 @@ impl convert::From<reqwest::Error> for Error {
     }
 }
 
+impl convert::From<openssl::error::ErrorStack> for Error {
+    fn from(e: openssl::error::ErrorStack) -> Error {
+        Error::OpenSSL(e)
+    }
+}
+
 impl ::std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
@@ -719,6 +727,7 @@ impl ::std::error::Error for Error {
             Error::IOError(ref e) => e.description(),
             Error::Json(ref e) => e.description(),
             Error::Reqwest(ref e) => e.description(),
+            Error::OpenSSL(ref e) => e.description(),
         }
     }
 }
@@ -731,6 +740,7 @@ impl ::std::fmt::Display for Error {
             Error::IOError(ref e) => e.fmt(f),
             Error::Json(ref e) => e.fmt(f),
             Error::Reqwest(ref e) => e.fmt(f),
+            Error::OpenSSL(ref e) => e.fmt(f),
         }
     }
 }
@@ -857,8 +867,10 @@ impl Conn {
     }
 
     pub fn enable_encyption(&mut self, key: &[u8], decrypt: bool) {
-        let cipher = symm::Crypter::new(symm::Type::AES_128_CFB8);
-        cipher.init(if decrypt { symm::Mode::Decrypt } else { symm::Mode::Encrypt }, key, key);
+        let cipher = symm::Crypter::new(symm::Cipher::aes_128_cfb8(),
+            if decrypt { symm::Mode::Decrypt } else { symm::Mode::Encrypt },
+            key,
+            Some(key)).unwrap();
         self.cipher = Option::Some(cipher);
     }
 
@@ -967,8 +979,9 @@ impl Read for Conn {
             Option::None => self.stream.read(buf),
             Option::Some(cipher) => {
                 let ret = try!(self.stream.read(buf));
-                let data = cipher.update(&buf[..ret]);
-                for i in 0..ret {
+                let mut data = vec![0; ret + symm::Cipher::aes_128_cfb8().block_size()];
+                let count = cipher.update(&buf[..ret], &mut data).unwrap();
+                for i in 0..count {
                     buf[i] = data[i];
                 }
                 Ok(ret)
@@ -982,8 +995,9 @@ impl Write for Conn {
         match self.cipher.as_mut() {
             Option::None => self.stream.write(buf),
             Option::Some(cipher) => {
-                let data = cipher.update(buf);
-                try!(self.stream.write_all(&data[..]));
+                let mut data = vec![0; buf.len() + symm::Cipher::aes_128_cfb8().block_size()];
+                let count = cipher.update(buf, &mut data).unwrap();
+                try!(self.stream.write_all(&data[..count]));
                 Ok(buf.len())
             }
         }
