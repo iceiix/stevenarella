@@ -26,7 +26,7 @@ log = "0.4.5"
 cgmath = "0.16.1"
 lazy_static = "1.1.0"
 collision = "0.18.0"
-openssl = "0.7.8"
+openssl = "0.10.15"
 # clippy = "*"
 
 [dependencies.steven_gl]

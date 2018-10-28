@@ -102,8 +102,8 @@ macro_rules! handle_packet {
 impl Server {
 
     pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str) -> Result<Server, protocol::Error> {
-        use openssl::crypto::pkey;
-        use openssl::crypto::rand::rand_bytes;
+        use openssl::rand::rand_bytes;
+        use openssl::rsa::{Rsa, Padding};
         let mut conn = try!(protocol::Conn::new(address));
 
         let host = conn.host.clone();
@@ -144,12 +144,14 @@ impl Server {
             };
         }
 
-        let mut key = pkey::PKey::new();
-        key.load_pub(&packet.public_key.data);
-        let shared = rand_bytes(16);
+        let rsa = Rsa::public_key_from_der(&packet.public_key.data).unwrap();
+        let mut shared = [0; 16];
+        rand_bytes(&mut shared).unwrap();
 
-        let shared_e = key.public_encrypt_with_padding(&shared, pkey::EncryptionPadding::PKCS1v15);
-        let token_e = key.public_encrypt_with_padding(&packet.verify_token.data, pkey::EncryptionPadding::PKCS1v15);
+        let mut shared_e = vec![0; rsa.size() as usize];
+        let mut token_e = vec![0; rsa.size() as usize];
+        rsa.public_encrypt(&shared, &mut shared_e, Padding::PKCS1)?;
+        rsa.public_encrypt(&packet.verify_token.data, &mut token_e, Padding::PKCS1)?;
 
         try!(profile.join_server(&packet.server_id, &shared, &packet.public_key.data));
 
