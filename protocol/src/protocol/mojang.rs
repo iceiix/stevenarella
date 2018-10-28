@@ -14,7 +14,7 @@
 
 use sha1::{self, Digest};
 use serde_json;
-use hyper;
+use reqwest;
 
 #[derive(Clone, Debug)]
 pub struct Profile {
@@ -40,11 +40,11 @@ impl Profile {
             }});
         let req = try!(serde_json::to_string(&req_msg));
 
-        let client = hyper::Client::new();
-        let res = try!(client.post(LOGIN_URL)
-                        .body(&req)
-                        .header(hyper::header::ContentType("application/json".parse().unwrap()))
-                        .send());
+        let client = reqwest::Client::new();
+        let res = client.post(LOGIN_URL)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(req)
+            .send()?;
 
         let ret: serde_json::Value = try!(serde_json::from_reader(res));
         if let Some(error) = ret.get("error").and_then(|v| v.as_str()) {
@@ -68,18 +68,19 @@ impl Profile {
             });
         let req = try!(serde_json::to_string(&req_msg));
 
-        let client = hyper::Client::new();
-        let res = try!(client.post(VALIDATE_URL)
-                        .body(&req)
-                        .header(hyper::header::ContentType("application/json".parse().unwrap()))
-                        .send());
+        let client = reqwest::Client::new();
+        let res = client.post(VALIDATE_URL)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(req)
+            .send()?;
 
-        if res.status != hyper::status::StatusCode::NoContent {
+        if res.status() != reqwest::StatusCode::NO_CONTENT {
+            let req = try!(serde_json::to_string(&req_msg)); // TODO: fix parsing twice to avoid move
             // Refresh needed
-            let res = try!(client.post(REFRESH_URL)
-                            .body(&req)
-                            .header(hyper::header::ContentType("application/json".parse().unwrap()))
-                            .send());
+            let res = client.post(REFRESH_URL)
+                .header(reqwest::header::CONTENT_TYPE, "application/json")
+                .body(req)
+                .send()?;
 
             let ret: serde_json::Value = try!(serde_json::from_reader(res));
             if let Some(error) = ret.get("error").and_then(|v| v.as_str()) {
@@ -126,13 +127,13 @@ impl Profile {
         });
         let join = serde_json::to_string(&join_msg).unwrap();
 
-        let client = hyper::Client::new();
-        let res = try!(client.post(JOIN_URL)
-                        .body(&join)
-                        .header(hyper::header::ContentType("application/json".parse().unwrap()))
-                        .send());
+        let client = reqwest::Client::new();
+        let res = client.post(JOIN_URL)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(join)
+            .send()?;
 
-        if res.status == hyper::status::StatusCode::NoContent {
+        if res.status() == reqwest::StatusCode::NO_CONTENT {
             Ok(())
         } else {
             Err(super::Error::Err("Failed to auth with server".to_owned()))
