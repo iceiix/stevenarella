@@ -26,7 +26,7 @@ use render;
 use format::{Component, TextComponent, Color};
 
 const FILTERED_CRATES: &'static [&'static str] = &[
-    "hyper",
+    //"reqwest", // TODO: needed?
     "mime",
 ];
 

@@ -24,7 +24,7 @@ use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use serde_json;
 
-use hyper;
+use reqwest;
 use zip;
 
 use types::hash::FNVHash;
@@ -285,15 +285,15 @@ impl Manager {
             self.vanilla_assets_chan = Some(recv);
         }
         thread::spawn(move || {
-            let client = hyper::Client::new();
+            let client = reqwest::Client::new();
             if fs::metadata(&location).is_err(){
                 fs::create_dir_all(location.parent().unwrap()).unwrap();
                 let res = client.get(ASSET_INDEX_URL)
                                 .send()
                                 .unwrap();
 
-                let length = *res.headers.get::<hyper::header::ContentLength>().unwrap();
-                Self::add_task(&progress_info, "Downloading Asset Index", &*location.to_string_lossy(), *length);
+                let length = res.headers().get(reqwest::header::CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
+                Self::add_task(&progress_info, "Downloading Asset Index", &*location.to_string_lossy(), length);
                 {
                     let mut file = fs::File::create(format!("index-{}.tmp", ASSET_VERSION)).unwrap();
                     let mut progress = ProgressRead {
@@ -354,15 +354,15 @@ impl Manager {
 
         let progress_info = self.vanilla_progress.clone();
         thread::spawn(move || {
-            let client = hyper::Client::new();
+            let client = reqwest::Client::new();
             let res = client.get(VANILLA_CLIENT_URL)
                             .send()
                             .unwrap();
             let mut file = fs::File::create(format!("{}.tmp", RESOURCES_VERSION)).unwrap();
 
-            let length = *res.headers.get::<hyper::header::ContentLength>().unwrap();
+            let length = res.headers().get(reqwest::header::CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
             let task_file = format!("./resources-{}", RESOURCES_VERSION);
-            Self::add_task(&progress_info, "Downloading Core Assets", &task_file, *length);
+            Self::add_task(&progress_info, "Downloading Core Assets", &task_file, length);
             {
                 let mut progress = ProgressRead {
                     read: res,
