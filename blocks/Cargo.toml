@@ -4,7 +4,7 @@ version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 
 [dependencies]
-lazy_static = "0.1.15"
+lazy_static = "1.1.0"
 cgmath = "0.7.0"
 collision = {git = "https://github.com/TheUnnamedDude/collision-rs", rev = "f80825e"}
 
