@@ -1,7 +1,7 @@
 
 use render;
 use render::model;
-use cgmath::{Vector3, Matrix4, Decomposed, Rotation3, Rad, Angle, Quaternion};
+use cgmath::{Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
 
 pub struct SunModel {
     sun: model::ModelKey,
@@ -38,7 +38,7 @@ impl SunModel {
             let sun = renderer.model.get_model(self.sun).unwrap();
             sun.matrix[0] = Matrix4::from(Decomposed {
                 scale: 1.0,
-                rot: Quaternion::from_angle_z(Rad::new(-(time * PI) as f32)),
+                rot: Quaternion::from_angle_z(Rad(-(time * PI) as f32)),
                 disp: Vector3::new(
                     (renderer.camera.pos.x + ox) as f32,
                     -(renderer.camera.pos.y + oy) as f32,
@@ -51,7 +51,7 @@ impl SunModel {
             let moon = renderer.model.get_model(self.moon).unwrap();
             moon.matrix[0] = Matrix4::from(Decomposed {
                 scale: 1.0,
-                rot: Quaternion::from_angle_z(Rad::new((PI - (time * PI)) as f32)),
+                rot: Quaternion::from_angle_z(Rad((PI - (time * PI)) as f32)),
                 disp: Vector3::new(
                     (renderer.camera.pos.x - ox) as f32,
                     -(renderer.camera.pos.y - oy) as f32,

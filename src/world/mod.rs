@@ -23,7 +23,7 @@ use types::hash::FNVHash;
 use protocol;
 use render;
 use collision;
-use cgmath;
+use cgmath::prelude::*;
 use chunk_builder;
 use ecs;
 use entity::block_entity;
@@ -318,7 +318,6 @@ impl World {
 
     pub fn compute_render_list(&mut self, renderer: &mut render::Renderer) {
         use chunk_builder;
-        use cgmath::Vector;
         use std::collections::VecDeque;
         self.render_list.clear();
 
@@ -347,7 +346,7 @@ impl World {
 
                 let min = cgmath::Point3::new(pos.0 as f32 * 16.0, -pos.1 as f32 * 16.0, pos.2 as f32 * 16.0);
                 let bounds = collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
-                if renderer.frustum.contains(bounds) == collision::Relation::Out && from != Direction::Invalid {
+                if renderer.frustum.contains(&bounds) == collision::Relation::Out && from != Direction::Invalid {
                     continue;
                 }
                 (sec.is_some(), sec.map_or(chunk_builder::CullInfo::all_vis(), |v| v.cull_info))

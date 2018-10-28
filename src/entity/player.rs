@@ -16,7 +16,7 @@ use render;
 use render::model::{self, FormatState};
 use types::Gamemode;
 use collision::{Aabb, Aabb3};
-use cgmath::{self, Point3, Vector3, Matrix4, Decomposed, Rotation3, Rad, Angle, Quaternion};
+use cgmath::{self, Point3, Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use types::hash::FNVHash;
@@ -198,7 +198,7 @@ impl ecs::System for PlayerRenderer {
                 };
                 let offset_matrix = Matrix4::from(Decomposed {
                     scale: 1.0,
-                    rot: Quaternion::from_angle_y(Rad::new(PI + rotation.yaw as f32)),
+                    rot: Quaternion::from_angle_y(Rad(PI + rotation.yaw as f32)),
                     disp: offset,
                 });
 
@@ -207,19 +207,19 @@ impl ecs::System for PlayerRenderer {
                     let ang = (position.position.x - renderer.camera.pos.x).atan2(position.position.z - renderer.camera.pos.z) as f32;
                     mdl.matrix[PlayerModelPart::NameTag as usize] = Matrix4::from(Decomposed {
                         scale: 1.0,
-                        rot: Quaternion::from_angle_y(Rad::new(ang)),
+                        rot: Quaternion::from_angle_y(Rad(ang)),
                         disp: offset + Vector3::new(0.0, (-24.0/16.0) - 0.6, 0.0),
                     });
                 }
 
                 mdl.matrix[PlayerModelPart::Head as usize] = offset_matrix * Matrix4::from(Decomposed {
                     scale: 1.0,
-                    rot: Quaternion::from_angle_x(Rad::new(-rotation.pitch as f32)),
+                    rot: Quaternion::from_angle_x(Rad(-rotation.pitch as f32)),
                     disp: Vector3::new(0.0, -12.0/16.0 - 12.0/16.0, 0.0),
                 });
                 mdl.matrix[PlayerModelPart::Body as usize] = offset_matrix * Matrix4::from(Decomposed {
                     scale: 1.0,
-                    rot: Quaternion::from_angle_x(Rad::new(0.0)),
+                    rot: Quaternion::from_angle_x(Rad(0.0)),
                     disp: Vector3::new(0.0, -12.0/16.0 - 6.0/16.0, 0.0),
                 });
 
@@ -233,12 +233,12 @@ impl ecs::System for PlayerRenderer {
 
                 mdl.matrix[PlayerModelPart::LegRight as usize] = offset_matrix * Matrix4::from(Decomposed {
                     scale: 1.0,
-                    rot: Quaternion::from_angle_x(Rad::new(ang as f32)),
+                    rot: Quaternion::from_angle_x(Rad(ang as f32)),
                     disp: Vector3::new(2.0/16.0, -12.0/16.0, 0.0),
                 });
                 mdl.matrix[PlayerModelPart::LegLeft as usize] = offset_matrix * Matrix4::from(Decomposed {
                     scale: 1.0,
-                    rot: Quaternion::from_angle_x(Rad::new(-ang as f32)),
+                    rot: Quaternion::from_angle_x(Rad(-ang as f32)),
                     disp: Vector3::new(-2.0/16.0, -12.0/16.0, 0.0),
                 });
 
@@ -257,15 +257,15 @@ impl ecs::System for PlayerRenderer {
 
                 mdl.matrix[PlayerModelPart::ArmRight as usize] = offset_matrix * Matrix4::from_translation(
                     Vector3::new(6.0/16.0, -12.0/16.0-12.0/16.0, 0.0)
-                ) * Matrix4::from(Quaternion::from_angle_x(Rad::new(-(ang * 0.75) as f32)))
-                  * Matrix4::from(Quaternion::from_angle_z(Rad::new((i_time.cos() * 0.06 - 0.06) as f32)))
-                  * Matrix4::from(Quaternion::from_angle_x(Rad::new((i_time.sin() * 0.06 - ((7.5 - (player_model.arm_time-7.5).abs()) / 7.5)) as f32)));
+                ) * Matrix4::from(Quaternion::from_angle_x(Rad(-(ang * 0.75) as f32)))
+                  * Matrix4::from(Quaternion::from_angle_z(Rad((i_time.cos() * 0.06 - 0.06) as f32)))
+                  * Matrix4::from(Quaternion::from_angle_x(Rad((i_time.sin() * 0.06 - ((7.5 - (player_model.arm_time-7.5).abs()) / 7.5)) as f32)));
 
                 mdl.matrix[PlayerModelPart::ArmLeft as usize] = offset_matrix * Matrix4::from_translation(
                   Vector3::new(-6.0/16.0, -12.0/16.0-12.0/16.0, 0.0)
-                ) * Matrix4::from(Quaternion::from_angle_x(Rad::new((ang * 0.75) as f32)))
-                  * Matrix4::from(Quaternion::from_angle_z(Rad::new(-(i_time.cos() * 0.06 - 0.06) as f32)))
-                  * Matrix4::from(Quaternion::from_angle_x(Rad::new(-(i_time.sin() * 0.06) as f32)));
+                ) * Matrix4::from(Quaternion::from_angle_x(Rad((ang * 0.75) as f32)))
+                  * Matrix4::from(Quaternion::from_angle_z(Rad(-(i_time.cos() * 0.06 - 0.06) as f32)))
+                  * Matrix4::from(Quaternion::from_angle_x(Rad(-(i_time.sin() * 0.06) as f32)));
 
                 let mut update = true;
                 if position.moved {

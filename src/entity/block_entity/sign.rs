@@ -87,7 +87,7 @@ impl ecs::System for SignRenderer {
 
     fn entity_added(&mut self, m: &mut ecs::Manager, e: ecs::Entity, world: &mut world::World, renderer: &mut render::Renderer) {
         use std::f64::consts::PI;
-        use cgmath::{Vector3, Matrix4, Decomposed, Rotation3, Rad, Angle, Quaternion};
+        use cgmath::{Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
         let position = *m.get_component(e, self.position).unwrap();
         let info = m.get_component_mut(e, self.sign_info).unwrap();
         info.dirty = false;
@@ -172,7 +172,7 @@ impl ecs::System for SignRenderer {
             mdl.z = position.z as f32 + 0.5;
             mdl.matrix[0] = Matrix4::from(Decomposed {
                 scale: 1.0,
-                rot: Quaternion::from_angle_y(Rad::new(info.rotation as f32)),
+                rot: Quaternion::from_angle_y(Rad(info.rotation as f32)),
                 disp: Vector3::new(position.x as f32 + 0.5, -position.y as f32 - 0.5, position.z as f32 + 0.5),
             }) * Matrix4::from_translation(Vector3::new(info.offset_x as f32, -info.offset_y as f32, info.offset_z as f32));
         }

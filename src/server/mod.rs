@@ -27,7 +27,7 @@ use render;
 use settings::Stevenkey;
 use ecs;
 use entity;
-use cgmath::{self, Point};
+use cgmath::prelude::*;
 use types::Gamemode;
 use shared::{Axis, Position};
 use format;
@@ -323,7 +323,7 @@ impl Server {
         if let Some(player) = self.player {
             let position = self.entities.get_component(player, self.position).unwrap();
             let rotation = self.entities.get_component(player, self.rotation).unwrap();
-            renderer.camera.pos = cgmath::Point::from_vec(position.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
+            renderer.camera.pos = cgmath::Point3::from_vec(position.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
             renderer.camera.yaw = rotation.yaw;
             renderer.camera.pitch = rotation.pitch;
         }
@@ -344,7 +344,7 @@ impl Server {
         self.world.tick(&mut self.entities);
 
         if self.player.is_some() {
-            if let Some((pos, bl, _, _)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast(), target::test_block) {
+            if let Some((pos, bl, _, _)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast().unwrap(), target::test_block) {
                 self.target_info.update(renderer, pos, bl);
             } else {
                 self.target_info.clear(renderer);
@@ -505,7 +505,7 @@ impl Server {
     pub fn on_right_click(&mut self, renderer: &mut render::Renderer) {
         use shared::Direction;
         if self.player.is_some() {
-            if let Some((pos, _, face, at)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast(), target::test_block) {
+            if let Some((pos, _, face, at)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast().unwrap(), target::test_block) {
                 self.write_packet(packet::play::serverbound::PlayerBlockPlacement {
                     location: pos,
                     face: protocol::VarInt(match face {

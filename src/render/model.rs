@@ -212,7 +212,7 @@ impl Manager {
             gl::blend_func(collection.blend_s, collection.blend_d);
 
             for model in collection.models.values() {
-                if model.radius > 0.0 && frustum.contains(Sphere {
+                if model.radius > 0.0 && frustum.contains(&Sphere {
                     center: Point3::new(model.x, -model.y, model.z),
                     radius: model.radius
                 }) == collision::Relation::Out {

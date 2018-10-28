@@ -4,7 +4,7 @@ use ecs;
 use world;
 use render;
 use shared::Position as BPos;
-use cgmath::EuclideanVector;
+use cgmath::InnerSpace;
 
 pub struct ApplyVelocity {
     filter: ecs::Filter,
@@ -115,7 +115,7 @@ impl ecs::System for UpdateLastPosition {
         for e in m.find(&self.filter) {
             let pos = m.get_component_mut(e, self.position).unwrap();
 
-            pos.moved = (pos.position - pos.last_position).length2() > 0.01;
+            pos.moved = (pos.position - pos.last_position).magnitude2() > 0.01;
             pos.last_position = pos.position;
         }
     }
@@ -157,7 +157,7 @@ impl ecs::System for LerpPosition {
             let target_pos = m.get_component(e, self.target_position).unwrap();
 
             pos.position = pos.position + (target_pos.position - pos.position) * delta * target_pos.lerp_amount;
-            let len = (pos.position - target_pos.position).length2() ;
+            let len = (pos.position - target_pos.position).magnitude2() ;
             if len < 0.001 || len > 100.0 * 100.0 {
                 pos.position = target_pos.position;
             }
@@ -267,7 +267,7 @@ impl ecs::System for LightEntity {
             let max_y = (pos.position.y + bounds.bounds.max.y).ceil() as i32 + 1;
             let max_z = (pos.position.z + bounds.bounds.max.z).ceil() as i32 + 1;
 
-            let length = (bounds.bounds.max - bounds.bounds.min).length() as f32;
+            let length = (bounds.bounds.max - bounds.bounds.min).magnitude() as f32;
 
             for y in min_y .. max_y {
                 for z in min_z .. max_z {

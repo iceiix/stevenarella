@@ -23,9 +23,9 @@ rand = "0.5.5"
 hex = "0.3.2"
 base64 = "0.9.3"
 log = "0.4.5"
-cgmath = "0.7.0"
+cgmath = "0.16.1"
 lazy_static = "1.1.0"
-collision = {git = "https://github.com/TheUnnamedDude/collision-rs", rev = "f80825e"}
+collision = "0.18.0"
 openssl = "0.7.8"
 # clippy = "*"
 

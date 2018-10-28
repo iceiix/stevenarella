@@ -5,8 +5,8 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 
 [dependencies]
 lazy_static = "1.1.0"
-cgmath = "0.7.0"
-collision = {git = "https://github.com/TheUnnamedDude/collision-rs", rev = "f80825e"}
+cgmath = "0.16.1"
+collision = "0.18.0"
 
 
 [dependencies.steven_shared]
