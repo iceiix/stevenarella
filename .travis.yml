@@ -8,6 +8,7 @@ matrix:
   allow_failures:
     - rust: nightly
   fast_finish: true
+cache: cargo
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install sdl2    ; fi
