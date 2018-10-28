@@ -6,7 +6,7 @@ build = "build.rs"
 
 [build-dependencies]
 gl_generator = "0.9.0"
-khronos_api = "1.0.0"
+khronos_api = "2.2.0"
 
 [dependencies]
 libc = "0.2"
