@@ -1,5 +1,5 @@
 # Steven (Rust)
-[![Build Status](https://travis-ci.org/Thinkofname/steven.svg?branch=master)](https://travis-ci.org/Thinkofname/steven)
+[![Build Status](https://travis-ci.org/iceiix/steven.svg?branch=updates)](https://travis-ci.org/iceiix/steven)
 
 A Minecraft client coded in Rust. Ported from [steven-go](https://github.com/Thinkofname/steven-go).
 Don't expect it to go anywhere, just doing this for fun.
