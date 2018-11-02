@@ -3,7 +3,7 @@ sudo: required
 dist: trusty
 rust:
   - nightly
-  - nightly-2018-10-24
+  - beta
 matrix:
   allow_failures:
     - rust: nightly

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #![recursion_limit="300"]
-#![feature(const_fn)]
 
 extern crate sdl2;
 extern crate zip;
