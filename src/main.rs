@@ -23,6 +23,8 @@ extern crate byteorder;
 #[macro_use]
 extern crate serde_json;
 extern crate openssl;
+extern crate aes;
+extern crate cfb8;
 extern crate sha1;
 extern crate reqwest;
 extern crate flate2;
