@@ -953,13 +953,13 @@ pub struct Statistic {
 impl Serializable for Statistic {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(Statistic {
-            name: try!(Serializable::read_from(buf)),
-            value: try!(Serializable::read_from(buf)),
+            name: Serializable::read_from(buf)?,
+            value: Serializable::read_from(buf)?,
         })
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(self.name.write_to(buf));
+        self.name.write_to(buf)?;
         self.value.write_to(buf)
     }
 }
@@ -974,15 +974,15 @@ pub struct BlockChangeRecord {
 impl Serializable for BlockChangeRecord {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(BlockChangeRecord {
-            xz: try!(Serializable::read_from(buf)),
-            y: try!(Serializable::read_from(buf)),
-            block_id: try!(Serializable::read_from(buf)),
+            xz: Serializable::read_from(buf)?,
+            y: Serializable::read_from(buf)?,
+            block_id: Serializable::read_from(buf)?,
         })
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(self.xz.write_to(buf));
-        try!(self.y.write_to(buf));
+        self.xz.write_to(buf)?;
+        self.y.write_to(buf)?;
         self.block_id.write_to(buf)
     }
 }
@@ -997,15 +997,15 @@ pub struct ExplosionRecord {
 impl Serializable for ExplosionRecord {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(ExplosionRecord {
-            x: try!(Serializable::read_from(buf)),
-            y: try!(Serializable::read_from(buf)),
-            z: try!(Serializable::read_from(buf)),
+            x: Serializable::read_from(buf)?,
+            y: Serializable::read_from(buf)?,
+            z: Serializable::read_from(buf)?,
         })
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(self.x.write_to(buf));
-        try!(self.y.write_to(buf));
+        self.x.write_to(buf)?;
+        self.y.write_to(buf)?;
         self.z.write_to(buf)
     }
 }
@@ -1020,15 +1020,15 @@ pub struct MapIcon {
 impl Serializable for MapIcon {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(MapIcon {
-            direction_type: try!(Serializable::read_from(buf)),
-            x: try!(Serializable::read_from(buf)),
-            z: try!(Serializable::read_from(buf)),
+            direction_type: Serializable::read_from(buf)?,
+            x: Serializable::read_from(buf)?,
+            z: Serializable::read_from(buf)?,
         })
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(self.direction_type.write_to(buf));
-        try!(self.x.write_to(buf));
+        self.direction_type.write_to(buf)?;
+        self.x.write_to(buf)?;
         self.z.write_to(buf)
     }
 }
@@ -1053,15 +1053,15 @@ pub struct EntityProperty {
 impl Serializable for EntityProperty {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(EntityProperty {
-            key: try!(Serializable::read_from(buf)),
-            value: try!(Serializable::read_from(buf)),
-            modifiers: try!(Serializable::read_from(buf)),
+            key: Serializable::read_from(buf)?,
+            value: Serializable::read_from(buf)?,
+            modifiers: Serializable::read_from(buf)?,
         })
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(self.key.write_to(buf));
-        try!(self.value.write_to(buf));
+        self.key.write_to(buf)?;
+        self.value.write_to(buf)?;
         self.modifiers.write_to(buf)
     }
 }
@@ -1076,15 +1076,15 @@ pub struct PropertyModifier {
 impl Serializable for PropertyModifier {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(PropertyModifier {
-            uuid: try!(Serializable::read_from(buf)),
-            amount: try!(Serializable::read_from(buf)),
-            operation: try!(Serializable::read_from(buf)),
+            uuid: Serializable::read_from(buf)?,
+            amount: Serializable::read_from(buf)?,
+            operation: Serializable::read_from(buf)?,
         })
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(self.uuid.write_to(buf));
-        try!(self.amount.write_to(buf));
+        self.uuid.write_to(buf)?;
+        self.amount.write_to(buf)?;
         self.operation.write_to(buf)
     }
 }
@@ -1098,25 +1098,25 @@ pub struct PlayerInfoData {
 impl Serializable for PlayerInfoData {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         let mut m = PlayerInfoData {
-            action: try!(Serializable::read_from(buf)),
+            action: Serializable::read_from(buf)?,
             players: Vec::new(),
         };
-        let len = try!(VarInt::read_from(buf));
+        let len = VarInt::read_from(buf)?;
         for _ in 0..len.0 {
-            let uuid = try!(UUID::read_from(buf));
+            let uuid = UUID::read_from(buf)?;
             match m.action.0 {
                 0 => {
-                    let name = try!(String::read_from(buf));
+                    let name = String::read_from(buf)?;
                     let mut props = Vec::new();
-                    let plen = try!(VarInt::read_from(buf)).0;
+                    let plen = VarInt::read_from(buf)?.0;
                     for _ in 0..plen {
                         let mut prop = PlayerProperty {
-                            name: try!(String::read_from(buf)),
-                            value: try!(String::read_from(buf)),
+                            name: String::read_from(buf)?,
+                            value: String::read_from(buf)?,
                             signature: Default::default(),
                         };
-                        if try!(bool::read_from(buf)) {
-                            prop.signature = Some(try!(String::read_from(buf)));
+                        if bool::read_from(buf)? {
+                            prop.signature = Some(String::read_from(buf)?);
                         }
                         props.push(prop);
                     }
@@ -1124,11 +1124,11 @@ impl Serializable for PlayerInfoData {
                         uuid: uuid,
                         name: name,
                         properties: props,
-                        gamemode: try!(Serializable::read_from(buf)),
-                        ping: try!(Serializable::read_from(buf)),
+                        gamemode: Serializable::read_from(buf)?,
+                        ping: Serializable::read_from(buf)?,
                         display: {
-                            if try!(bool::read_from(buf)) {
-                                Some(try!(Serializable::read_from(buf)))
+                            if bool::read_from(buf)? {
+                                Some(Serializable::read_from(buf)?)
                             } else {
                                 None
                             }
@@ -1139,21 +1139,21 @@ impl Serializable for PlayerInfoData {
                 1 => {
                     m.players.push(PlayerDetail::UpdateGamemode {
                         uuid: uuid,
-                        gamemode: try!(Serializable::read_from(buf)),
+                        gamemode: Serializable::read_from(buf)?,
                     })
                 }
                 2 => {
                     m.players.push(PlayerDetail::UpdateLatency {
                         uuid: uuid,
-                        ping: try!(Serializable::read_from(buf)),
+                        ping: Serializable::read_from(buf)?,
                     })
                 }
                 3 => {
                     m.players.push(PlayerDetail::UpdateDisplayName {
                         uuid: uuid,
                         display: {
-                            if try!(bool::read_from(buf)) {
-                                Some(try!(Serializable::read_from(buf)))
+                            if bool::read_from(buf)? {
+                                Some(Serializable::read_from(buf)?)
                             } else {
                                 None
                             }

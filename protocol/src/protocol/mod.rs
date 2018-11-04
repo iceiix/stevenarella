@@ -98,7 +98,7 @@ macro_rules! state_packets {
                         fn write<W: io::Write>(self, buf: &mut W) -> Result<(), Error> {
                             $(
                                 if true $(&& ($cond(&self)))* {
-                                    try!(self.$field.write_to(buf));
+                                    self.$field.write_to(buf)?;
                                 }
                             )+
 
@@ -127,7 +127,7 @@ macro_rules! state_packets {
                                             let mut packet : $name = $name::default();
                                             $(
                                                 if true $(&& ($cond(&packet)))* {
-                                                    packet.$field = try!(Serializable::read_from(&mut buf));
+                                                    packet.$field = Serializable::read_from(&mut buf)?;
                                                 }
                                             )+
                                             Result::Ok(Option::Some(Packet::$name(packet)))
@@ -155,7 +155,7 @@ pub trait Serializable: Sized {
 impl Serializable for Vec<u8> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Vec<u8>, Error> {
         let mut v = Vec::new();
-        try!(buf.read_to_end(&mut v));
+        buf.read_to_end(&mut v)?;
         Ok(v)
     }
 
@@ -166,23 +166,23 @@ impl Serializable for Vec<u8> {
 
 impl Serializable for Option<nbt::NamedTag>{
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Option<nbt::NamedTag>, Error> {
-        let ty = try!(buf.read_u8());
+        let ty = buf.read_u8()?;
         if ty == 0 {
             Result::Ok(None)
         } else {
-            let name = try!(nbt::read_string(buf));
-            let tag = try!(nbt::Tag::read_from(buf));
+            let name = nbt::read_string(buf)?;
+            let tag = nbt::Tag::read_from(buf)?;
             Result::Ok(Some(nbt::NamedTag(name, tag)))
         }
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         match *self {
             Some(ref val) => {
-                try!(buf.write_u8(10));
-                try!(nbt::write_string(buf, &val.0));
-                try!(val.1.write_to(buf));
+                buf.write_u8(10)?;
+                nbt::write_string(buf, &val.0)?;
+                val.1.write_to(buf)?;
             }
-            None => try!(buf.write_u8(0)),
+            None => buf.write_u8(0)?,
         }
         Result::Ok(())
     }
@@ -190,11 +190,11 @@ impl Serializable for Option<nbt::NamedTag>{
 
 impl <T> Serializable for Option<T> where T : Serializable {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Option<T>, Error> {
-        Result::Ok(Some(try!(T::read_from(buf))))
+        Result::Ok(Some(T::read_from(buf)?))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         if self.is_some() {
-            try!(self.as_ref().unwrap().write_to(buf));
+            self.as_ref().unwrap().write_to(buf)?;
         }
         Result::Ok(())
     }
@@ -206,30 +206,30 @@ impl Serializable for String {
         debug_assert!(len >= 0, "Negative string length: {}", len);
         debug_assert!(len <= 65536, "String length too big: {}", len);
         let mut ret = String::new();
-        try!(buf.take(len as u64).read_to_string(&mut ret));
+        buf.take(len as u64).read_to_string(&mut ret)?;
         Result::Ok(ret)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         let bytes = self.as_bytes();
-        try!(VarInt(bytes.len() as i32).write_to(buf));
-        try!(buf.write_all(bytes));
+        VarInt(bytes.len() as i32).write_to(buf)?;
+        buf.write_all(bytes)?;
         Result::Ok(())
     }
 }
 
 impl Serializable for format::Component {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        let len = try!(VarInt::read_from(buf)).0;
+        let len = VarInt::read_from(buf)?.0;
         let mut ret = String::new();
-        try!(buf.take(len as u64).read_to_string(&mut ret));
+        buf.take(len as u64).read_to_string(&mut ret)?;
         let val: serde_json::Value = serde_json::from_str(&ret[..]).unwrap();
         Result::Ok(Self::from_value(&val))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         let val = serde_json::to_string(&self.to_value()).unwrap();
         let bytes = val.as_bytes();
-        try!(VarInt(bytes.len() as i32).write_to(buf));
-        try!(buf.write_all(bytes));
+        VarInt(bytes.len() as i32).write_to(buf)?;
+        buf.write_all(bytes)?;
         Result::Ok(())
     }
 }
@@ -245,104 +245,104 @@ impl Serializable for () {
 
 impl Serializable for bool {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<bool, Error> {
-        Result::Ok(try!(buf.read_u8()) != 0)
+        Result::Ok(buf.read_u8()? != 0)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_u8(if *self {
+        buf.write_u8(if *self {
             1
         } else {
             0
-        }));
+        })?;
         Result::Ok(())
     }
 }
 
 impl Serializable for i8 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<i8, Error> {
-        Result::Ok(try!(buf.read_i8()))
+        Result::Ok(buf.read_i8()?)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_i8(*self));
+        buf.write_i8(*self)?;
         Result::Ok(())
     }
 }
 
 impl Serializable for i16 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<i16, Error> {
-        Result::Ok(try!(buf.read_i16::<BigEndian>()))
+        Result::Ok(buf.read_i16::<BigEndian>()?)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_i16::<BigEndian>(*self));
+        buf.write_i16::<BigEndian>(*self)?;
         Result::Ok(())
     }
 }
 
 impl Serializable for i32 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<i32, Error> {
-        Result::Ok(try!(buf.read_i32::<BigEndian>()))
+        Result::Ok(buf.read_i32::<BigEndian>()?)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_i32::<BigEndian>(*self));
+        buf.write_i32::<BigEndian>(*self)?;
         Result::Ok(())
     }
 }
 
 impl Serializable for i64 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<i64, Error> {
-        Result::Ok(try!(buf.read_i64::<BigEndian>()))
+        Result::Ok(buf.read_i64::<BigEndian>()?)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_i64::<BigEndian>(*self));
+        buf.write_i64::<BigEndian>(*self)?;
         Result::Ok(())
     }
 }
 
 impl Serializable for u8 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<u8, Error> {
-        Result::Ok(try!(buf.read_u8()))
+        Result::Ok(buf.read_u8()?)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_u8(*self));
+        buf.write_u8(*self)?;
         Result::Ok(())
     }
 }
 
 impl Serializable for u16 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<u16, Error> {
-        Result::Ok(try!(buf.read_u16::<BigEndian>()))
+        Result::Ok(buf.read_u16::<BigEndian>()?)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_u16::<BigEndian>(*self));
+        buf.write_u16::<BigEndian>(*self)?;
         Result::Ok(())
     }
 }
 
 impl Serializable for u64 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<u64, Error> {
-        Result::Ok(try!(buf.read_u64::<BigEndian>()))
+        Result::Ok(buf.read_u64::<BigEndian>()?)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_u64::<BigEndian>(*self));
+        buf.write_u64::<BigEndian>(*self)?;
         Result::Ok(())
     }
 }
 
 impl Serializable for f32 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<f32, Error> {
-        Result::Ok(try!(buf.read_f32::<BigEndian>()))
+        Result::Ok(buf.read_f32::<BigEndian>()?)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_f32::<BigEndian>(*self));
+        buf.write_f32::<BigEndian>(*self)?;
         Result::Ok(())
     }
 }
 
 impl Serializable for f64 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<f64, Error> {
-        Result::Ok(try!(buf.read_f64::<BigEndian>()))
+        Result::Ok(buf.read_f64::<BigEndian>()?)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_f64::<BigEndian>(*self));
+        buf.write_f64::<BigEndian>(*self)?;
         Result::Ok(())
     }
 }
@@ -380,12 +380,12 @@ impl Default for UUID {
 
 impl Serializable for UUID {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<UUID, Error> {
-        Result::Ok(UUID(try!(buf.read_u64::<BigEndian>()),
-                        try!(buf.read_u64::<BigEndian>())))
+        Result::Ok(UUID(buf.read_u64::<BigEndian>()?,
+                        buf.read_u64::<BigEndian>()?))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        try!(buf.write_u64::<BigEndian>(self.0));
-        try!(buf.write_u64::<BigEndian>(self.1));
+        buf.write_u64::<BigEndian>(self.0)?;
+        buf.write_u64::<BigEndian>(self.1)?;
         Result::Ok(())
     }
 }
@@ -412,11 +412,11 @@ impl <L: Lengthable, V: Default>  LenPrefixed<L, V> {
 
 impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<LenPrefixed<L, V>, Error> {
-        let len_data: L = try!(Serializable::read_from(buf));
+        let len_data: L = Serializable::read_from(buf)?;
         let len: usize = len_data.into();
         let mut data: Vec<V> = Vec::with_capacity(len);
         for _ in 0..len {
-            data.push(try!(Serializable::read_from(buf)));
+            data.push(Serializable::read_from(buf)?);
         }
         Result::Ok(LenPrefixed {
             len: len_data,
@@ -426,10 +426,10 @@ impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         let len_data: L = L::from(self.data.len());
-        try!(len_data.write_to(buf));
+        len_data.write_to(buf)?;
         let data = &self.data;
         for val in data {
-            try!(val.write_to(buf));
+            val.write_to(buf)?;
         }
         Result::Ok(())
     }
@@ -468,10 +468,10 @@ impl <L: Lengthable>  LenPrefixedBytes<L> {
 
 impl <L: Lengthable>  Serializable for LenPrefixedBytes<L> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<LenPrefixedBytes<L>, Error> {
-        let len_data: L = try!(Serializable::read_from(buf));
+        let len_data: L = Serializable::read_from(buf)?;
         let len: usize = len_data.into();
         let mut data: Vec<u8> = Vec::with_capacity(len);
-        try!(buf.take(len as u64).read_to_end(&mut data));
+        buf.take(len as u64).read_to_end(&mut data)?;
         Result::Ok(LenPrefixedBytes {
             len: len_data,
             data: data,
@@ -480,8 +480,8 @@ impl <L: Lengthable>  Serializable for LenPrefixedBytes<L> {
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         let len_data: L = L::from(self.data.len());
-        try!(len_data.write_to(buf));
-        try!(buf.write_all(&self.data[..]));
+        len_data.write_to(buf)?;
+        buf.write_all(&self.data[..])?;
         Result::Ok(())
     }
 }
@@ -544,7 +544,7 @@ impl Serializable for VarInt {
         let mut size = 0;
         let mut val = 0u32;
         loop {
-            let b = try!(buf.read_u8()) as u32;
+            let b = buf.read_u8()? as u32;
             val |= (b & PART) << (size * 7);
             size += 1;
             if size > 5 {
@@ -564,10 +564,10 @@ impl Serializable for VarInt {
         let mut val = self.0 as u32;
         loop {
             if (val & !PART) == 0 {
-                try!(buf.write_u8(val as u8));
+                buf.write_u8(val as u8)?;
                 return Result::Ok(());
             }
-            try!(buf.write_u8(((val & PART) | 0x80) as u8));
+            buf.write_u8(((val & PART) | 0x80) as u8)?;
             val >>= 7;
         }
     }
@@ -607,7 +607,7 @@ impl Serializable for VarLong {
         let mut size = 0;
         let mut val = 0u64;
         loop {
-            let b = try!(buf.read_u8()) as u64;
+            let b = buf.read_u8()? as u64;
             val |= (b & PART) << (size * 7);
             size += 1;
             if size > 10 {
@@ -627,10 +627,10 @@ impl Serializable for VarLong {
         let mut val = self.0 as u64;
         loop {
             if (val & !PART) == 0 {
-                try!(buf.write_u8(val as u8));
+                buf.write_u8(val as u8)?;
                 return Result::Ok(());
             }
-            try!(buf.write_u8(((val & PART) | 0x80) as u8));
+            buf.write_u8(((val & PART) | 0x80) as u8)?;
             val >>= 7;
         }
     }
@@ -650,7 +650,7 @@ impl fmt::Debug for VarLong {
 
 impl Serializable for Position {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Position, Error> {
-        let pos = try!(buf.read_u64::<BigEndian>());
+        let pos = buf.read_u64::<BigEndian>()?;
         Ok(Position::new(
             ((pos as i64) >> 38) as i32,
             (((pos as i64) >> 26) & 0xFFF) as i32,
@@ -661,7 +661,7 @@ impl Serializable for Position {
         let pos = (((self.x as u64) & 0x3FFFFFF) << 38)
             | (((self.y as u64) & 0xFFF) << 26)
             | ((self.z as u64) & 0x3FFFFFF);
-        try!(buf.write_u64::<BigEndian>(pos));
+        buf.write_u64::<BigEndian>(pos)?;
         Result::Ok(())
     }
 }
@@ -763,7 +763,7 @@ impl Conn {
         } else {
             format!("{}:{}", parts[0], parts[1])
         };
-        let stream = try!(TcpStream::connect(&*address));
+        let stream = TcpStream::connect(&*address)?;
         Result::Ok(Conn {
             stream: stream,
             host: parts[0].to_owned(),
@@ -779,8 +779,8 @@ impl Conn {
 
     pub fn write_packet<T: PacketType>(&mut self, packet: T) -> Result<(), Error> {
         let mut buf = Vec::new();
-        try!(VarInt(packet.packet_id()).write_to(&mut buf));
-        try!(packet.write(&mut buf));
+        VarInt(packet.packet_id()).write_to(&mut buf)?;
+        packet.write(&mut buf)?;
 
         let mut extra = if self.compression_threshold >= 0 {
             1
@@ -794,26 +794,26 @@ impl Conn {
             extra = 0;
             let uncompressed_size = buf.len();
             let mut new = Vec::new();
-            try!(VarInt(uncompressed_size as i32).write_to(&mut new));
+            VarInt(uncompressed_size as i32).write_to(&mut new)?;
             let write = self.compression_write.as_mut().unwrap();
             write.reset(io::Cursor::new(buf));
-            try!(write.read_to_end(&mut new));
+            write.read_to_end(&mut new)?;
             buf = new;
         }
 
-        try!(VarInt(buf.len() as i32 + extra).write_to(self));
+        VarInt(buf.len() as i32 + extra).write_to(self)?;
         if self.compression_threshold >= 0 && extra == 1 {
-            try!(VarInt(0).write_to(self));
+            VarInt(0).write_to(self)?;
         }
-        try!(self.write_all(&buf));
+        self.write_all(&buf)?;
 
         Result::Ok(())
     }
 
     pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
-        let len = try!(VarInt::read_from(self)).0 as usize;
+        let len = VarInt::read_from(self)?.0 as usize;
         let mut ibuf = vec![0; len];
-        try!(self.read_exact(&mut ibuf));
+        self.read_exact(&mut ibuf)?;
 
         let mut buf = io::Cursor::new(ibuf);
 
@@ -821,25 +821,25 @@ impl Conn {
             if self.compression_read.is_none() {
                 self.compression_read = Some(ZlibDecoder::new(io::Cursor::new(Vec::new())));
             }
-            let uncompressed_size = try!(VarInt::read_from(&mut buf)).0;
+            let uncompressed_size = VarInt::read_from(&mut buf)?.0;
             if uncompressed_size != 0 {
                 let mut new = Vec::with_capacity(uncompressed_size as usize);
                 {
                     let reader = self.compression_read.as_mut().unwrap();
                     reader.reset(buf);
-                    try!(reader.read_to_end(&mut new));
+                    reader.read_to_end(&mut new)?;
                 }
                 buf = io::Cursor::new(new);
             }
         }
-        let id = try!(VarInt::read_from(&mut buf)).0;
+        let id = VarInt::read_from(&mut buf)?.0;
 
         let dir = match self.direction {
             Direction::Clientbound => Direction::Serverbound,
             Direction::Serverbound => Direction::Clientbound,
         };
 
-        let packet = try!(packet::packet_by_id(self.state, dir, id, &mut buf));
+        let packet = packet::packet_by_id(self.state, dir, id, &mut buf)?;
 
         match packet {
             Some(val) => {
@@ -873,26 +873,26 @@ impl Conn {
         use self::packet::Packet;
         let host = self.host.clone();
         let port = self.port;
-        try!(self.write_packet(Handshake {
+        self.write_packet(Handshake {
             protocol_version: VarInt(SUPPORTED_PROTOCOL),
             host: host,
             port: port,
             next: VarInt(1),
-        }));
+        })?;
         self.state = State::Status;
 
-        try!(self.write_packet(StatusRequest { empty: () }));
+        self.write_packet(StatusRequest { empty: () })?;
 
-        let status = if let Packet::StatusResponse(res) = try!(self.read_packet()) {
+        let status = if let Packet::StatusResponse(res) = self.read_packet()? {
             res.status
         } else {
             return Err(Error::Err("Wrong packet".to_owned()));
         };
 
         let start = Instant::now();
-        try!(self.write_packet(StatusPing { ping: 42 }));
+        self.write_packet(StatusPing { ping: 42 })?;
 
-        if let Packet::StatusPong(_) = try!(self.read_packet()) {
+        if let Packet::StatusPong(_) = self.read_packet()? {
         } else {
             return Err(Error::Err("Wrong packet".to_owned()));
         };
@@ -906,28 +906,28 @@ impl Conn {
 
         let invalid_status = || Error::Err("Invalid status".to_owned());
 
-        let version = try!(val.get("version").ok_or(invalid_status()));
-        let players = try!(val.get("players").ok_or(invalid_status()));
+        let version = val.get("version").ok_or(invalid_status())?;
+        let players = val.get("players").ok_or(invalid_status())?;
 
         Ok((Status {
             version: StatusVersion {
-                name: try!(version.get("name").and_then(Value::as_str).ok_or(invalid_status()))
+                name: version.get("name").and_then(Value::as_str).ok_or(invalid_status())?
                           .to_owned(),
-                protocol: try!(version.get("protocol")
+                protocol: version.get("protocol")
                                       .and_then(Value::as_i64)
-                                      .ok_or(invalid_status())) as i32,
+                                      .ok_or(invalid_status())? as i32,
             },
             players: StatusPlayers {
-                max: try!(players.get("max")
+                max: players.get("max")
                                  .and_then(Value::as_i64)
-                                 .ok_or(invalid_status())) as i32,
-                online: try!(players.get("online")
+                                 .ok_or(invalid_status())? as i32,
+                online: players.get("online")
                                     .and_then(Value::as_i64)
-                                    .ok_or(invalid_status())) as i32,
+                                    .ok_or(invalid_status())? as i32,
                 sample: Vec::new(), /* TODO */
             },
-            description: format::Component::from_value(try!(val.get("description")
-                                                               .ok_or(invalid_status()))),
+            description: format::Component::from_value(val.get("description")
+                                                               .ok_or(invalid_status())?),
             favicon: val.get("favicon").and_then(Value::as_str).map(|v| v.to_owned()),
         },
             ping))
@@ -966,7 +966,7 @@ impl Read for Conn {
         match self.cipher.as_mut() {
             Option::None => self.stream.read(buf),
             Option::Some(cipher) => {
-                let ret = try!(self.stream.read(buf));
+                let ret = self.stream.read(buf)?;
                 cipher.decrypt(&mut buf[..ret]);
 
                 Ok(ret)
@@ -988,7 +988,7 @@ impl Write for Conn {
 
                 cipher.encrypt(&mut data);
 
-                try!(self.stream.write_all(&data));
+                self.stream.write_all(&data)?;
                 Ok(buf.len())
             }
         }
