@@ -56,8 +56,8 @@ impl Manager {
         let collection = Collection {
             shader: ModelShader::new_manual(vert, frag),
             models: HashMap::with_hasher(BuildHasherDefault::default()),
-            blend_s: blend_s,
-            blend_d: blend_d,
+            blend_s,
+            blend_d,
             next_id: 0,
         };
         self.collections.push(collection);
@@ -102,8 +102,8 @@ impl Manager {
                 block_light: 15.0,
                 sky_light: 15.0,
 
-                array: array,
-                buffer: buffer,
+                array,
+                buffer,
                 buffer_size: 0,
                 count: 0,
 

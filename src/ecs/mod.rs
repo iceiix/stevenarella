@@ -228,7 +228,7 @@ impl Manager {
             });
             entity.1 += 1;
             return Entity {
-                id: id,
+                id,
                 generation: entity.1,
             }
         }
@@ -242,7 +242,7 @@ impl Manager {
             0
         ));
         Entity {
-            id: id,
+            id,
             generation: 0,
         }
     }

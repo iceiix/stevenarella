@@ -69,7 +69,7 @@ impl ScreenSystem {
 
     pub fn add_screen(&mut self, screen: Box<Screen>) {
         self.screens.push(ScreenInfo {
-            screen: screen,
+            screen,
             init: false,
             active: false,
         });

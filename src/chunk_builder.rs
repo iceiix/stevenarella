@@ -37,10 +37,10 @@ impl ChunkBuilder {
             free.push((i, vec![], vec![]));
         }
         ChunkBuilder {
-            threads: threads,
+            threads,
             free_builders: free,
-            built_recv: built_recv,
-            models: models,
+            built_recv,
+            models,
             resource_version: 0xFFFF,
         }
     }
@@ -80,7 +80,7 @@ impl ChunkBuilder {
             let mut snapshot = world.capture_snapshot(cx - 2, cy - 2, cz - 2, 20, 20, 20);
             snapshot.make_relative(-2, -2, -2);
             self.threads[t_id.0].0.send(BuildReq {
-                snapshot: snapshot,
+                snapshot,
                 position: (x, y, z),
                 solid_buffer: t_id.1,
                 trans_buffer: t_id.2,
@@ -189,12 +189,12 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
         let cull_info = build_cull_info(&snapshot);
 
         built_send.send((id, BuildReply {
-            position: position,
-            solid_buffer: solid_buffer,
-            solid_count: solid_count,
-            trans_buffer: trans_buffer,
-            trans_count: trans_count,
-            cull_info: cull_info,
+            position,
+            solid_buffer,
+            solid_count,
+            trans_buffer,
+            trans_count,
+            cull_info,
         })).unwrap();
     }
 }

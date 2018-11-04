@@ -12,7 +12,7 @@ pub struct Biome {
 impl Biome {
     const fn new(id: usize, t: i16, m: i16) -> Biome {
         Biome {
-            id: id,
+            id,
             temperature: t,
             moisture: m*t,
         }

@@ -92,7 +92,7 @@ impl ServerList {
     pub fn new(disconnect_reason: Option<Component>) -> ServerList {
         ServerList {
             elements: None,
-            disconnect_reason: disconnect_reason,
+            disconnect_reason,
             needs_reload: Rc::new(RefCell::new(false)),
         }
     }
@@ -239,18 +239,18 @@ impl ServerList {
             }
 
             let mut server = Server {
-                back: back,
-                offset: offset,
+                back,
+                offset,
                 y: 0.0,
                 done_ping: false,
-                recv: recv,
+                recv,
 
-                motd: motd,
-                ping: ping,
-                players: players,
-                version: version,
+                motd,
+                ping,
+                players,
+                version,
 
-                icon: icon,
+                icon,
                 icon_texture: None,
             };
             server.update_position();
@@ -278,7 +278,7 @@ impl ServerList {
                             max: res.0.players.max,
                             protocol_version: res.0.version.protocol,
                             protocol_name: res.0.version.name,
-                            favicon: favicon,
+                            favicon,
                         }));
                     }
                     Err(err) => {
@@ -406,7 +406,7 @@ impl super::Screen for ServerList {
         };
 
         self.elements = Some(UIElements {
-            logo: logo,
+            logo,
             servers: Vec::new(),
 
             _add_btn: add,

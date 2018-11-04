@@ -110,8 +110,8 @@ impl Server {
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
              protocol_version: protocol::VarInt(protocol::SUPPORTED_PROTOCOL),
-             host: host,
-             port: port,
+             host,
+             port,
              next: protocol::VarInt(2),
          })?;
         conn.state = protocol::State::Login;
@@ -261,9 +261,9 @@ impl Server {
 
         let version = resources.read().unwrap().version();
         Server {
-            uuid: uuid,
-            conn: conn,
-            read_queue: read_queue,
+            uuid,
+            conn,
+            read_queue,
             disconnect_reason: None,
             just_disconnected: false,
 
@@ -273,11 +273,11 @@ impl Server {
             world_time_target: 0.0,
             tick_time: true,
 
-            version: version,
-            resources: resources,
+            version,
+            resources,
 
             // Entity accessors
-            game_info: game_info,
+            game_info,
             player_movement: entities.get_key(),
             gravity: entities.get_key(),
             position: entities.get_key(),
@@ -288,7 +288,7 @@ impl Server {
             target_rotation: entities.get_key(),
             //
 
-            entities: entities,
+            entities,
             player: None,
             entity_map: HashMap::with_hasher(BuildHasherDefault::default()),
             players: HashMap::with_hasher(BuildHasherDefault::default()),
@@ -494,7 +494,7 @@ impl Server {
                 z: position.position.z,
                 yaw: -(rotation.yaw as f32) * (180.0 / PI),
                 pitch: (-rotation.pitch as f32) * (180.0 / PI) + 180.0,
-                on_ground: on_ground,
+                on_ground,
             };
             self.write_packet(packet);
         }
@@ -749,7 +749,7 @@ impl Server {
                 Add { name, uuid, properties, display, gamemode, ping} => {
                     let info = self.players.entry(uuid.clone()).or_insert(PlayerInfo {
                         name: name.clone(),
-                        uuid: uuid,
+                        uuid,
                         skin_url: None,
 
                         display_name: display.clone(),
@@ -846,7 +846,7 @@ impl Server {
                 }
                 self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
                     location: Position::new(x, y, z),
-                    action: action,
+                    action,
                     nbt: Some(block_entity.clone()),
                 });
             }

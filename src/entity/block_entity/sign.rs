@@ -57,8 +57,8 @@ impl SignRenderer {
             filter: ecs::Filter::new()
                 .with(position)
                 .with(sign_info),
-            position: position,
-            sign_info: sign_info,
+            position,
+            sign_info,
         }
     }
 }
@@ -145,7 +145,7 @@ impl ecs::System for SignRenderer {
                 width: 0.0,
                 offset: 0.0,
                 text: Vec::new(),
-                renderer: renderer,
+                renderer,
                 y_scale: Y_SCALE,
                 x_scale: X_SCALE,
             };

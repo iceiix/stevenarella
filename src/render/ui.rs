@@ -107,7 +107,7 @@ impl UIState {
         }
 
         let mut state = UIState {
-            textures: textures,
+            textures,
             resources: res,
             version: 0xFFFF,
 
@@ -116,17 +116,17 @@ impl UIState {
             prev_size: 0,
 
             index_type: gl::UNSIGNED_BYTE,
-            array: array,
-            buffer: buffer,
-            index_buffer: index_buffer,
+            array,
+            buffer,
+            index_buffer,
             max_index: 0,
 
-            shader: shader,
+            shader,
 
             // Font
             font_pages: pages,
             font_character_info: vec![(0, 0); 0x10000],
-            char_map: char_map,
+            char_map,
             page_width: 0.0,
             page_height: 0.0,
         };
@@ -393,7 +393,7 @@ impl UIState {
             offset += w + 2.0;
         }
         UIText {
-            elements: elements,
+            elements,
             width: (offset - 2.0) * sx,
         }
     }

@@ -150,7 +150,7 @@ impl super::Screen for SettingsMenu {
         }
 
         self.elements = Some(UIElements {
-            background: background,
+            background,
             _buttons: buttons,
         });
 
@@ -195,7 +195,7 @@ pub struct VideoSettingsMenu {
 impl VideoSettingsMenu {
     pub fn new(vars: Rc<console::Vars>) -> VideoSettingsMenu {
         VideoSettingsMenu {
-            vars: vars,
+            vars,
             elements: None,
         }
     }
@@ -299,7 +299,7 @@ impl super::Screen for VideoSettingsMenu {
         }
         buttons.push(done_button);
         self.elements = Some(UIElements {
-            background: background,
+            background,
             _buttons: buttons,
         });
 
@@ -384,7 +384,7 @@ impl super::Screen for AudioSettingsMenu {
         buttons.push(done_button);
 
         self.elements = Some(UIElements {
-            background: background,
+            background,
             _buttons: buttons,
         });
 

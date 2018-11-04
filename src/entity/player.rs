@@ -93,9 +93,9 @@ impl PlayerModel {
             dirty: false,
             name: name.to_owned(),
 
-            has_head: has_head,
-            has_name_tag: has_name_tag,
-            first_person: first_person,
+            has_head,
+            has_name_tag,
+            first_person,
 
             dir: 0,
             time: 0.0,
@@ -132,11 +132,11 @@ impl PlayerRenderer {
                 .with(position)
                 .with(rotation)
                 .with(light),
-            player_model: player_model,
-            position: position,
-            rotation: rotation,
+            player_model,
+            position,
+            rotation,
             game_info: m.get_key(),
-            light: light,
+            light,
         }
     }
 }
@@ -386,7 +386,7 @@ impl ecs::System for PlayerRenderer {
                 width: 0.0,
                 offset: 0.0,
                 text: Vec::new(),
-                renderer: renderer,
+                renderer,
                 y_scale: 0.16,
                 x_scale: 0.01,
             };
@@ -505,13 +505,13 @@ impl MovementHandler {
                 .with(velocity)
                 .with(bounds)
                 .with(rotation),
-            movement: movement,
+            movement,
             gravity: m.get_key(),
             gamemode: m.get_key(),
-            position: position,
-            velocity: velocity,
-            bounds: bounds,
-            rotation: rotation,
+            position,
+            velocity,
+            bounds,
+            rotation,
         }
     }
 }

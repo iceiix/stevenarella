@@ -210,8 +210,8 @@ pub fn trace_ray<F, R>(world: &world::World, max: f64, s: cgmath::Vector3<f64>, 
             };
             Gen {
                 count: 0,
-                base: base,
-                d: d,
+                base,
+                d,
             }
         }
 

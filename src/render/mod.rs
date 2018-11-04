@@ -199,15 +199,15 @@ impl Renderer {
             resource_version: version,
             model: model::Manager::new(&greg),
             clouds: clouds::Clouds::new(&greg, textures.clone()),
-            textures: textures,
-            ui: ui,
+            textures,
+            ui,
             resources: res,
             gl_texture: tex,
             texture_layers: 1,
 
-            chunk_shader: chunk_shader,
-            chunk_shader_alpha: chunk_shader_alpha,
-            trans_shader: trans_shader,
+            chunk_shader,
+            chunk_shader_alpha,
+            trans_shader,
 
             element_buffer: gl::Buffer::new(),
             element_buffer_size: 0,
@@ -233,7 +233,7 @@ impl Renderer {
             light_level: 0.8,
             sky_offset: 1.0,
             skin_request: skin_req,
-            skin_reply: skin_reply,
+            skin_reply,
         }
     }
 
@@ -743,15 +743,15 @@ impl TransInfo {
         shader.position.vertex_pointer(2, gl::FLOAT, false, 8, 0);
 
         TransInfo {
-            main: main,
-            fb_color: fb_color,
+            main,
+            fb_color,
             _fb_depth: fb_depth,
-            trans: trans,
-            accum: accum,
-            revealage: revealage,
+            trans,
+            accum,
+            revealage,
             _depth: trans_depth,
 
-            array: array,
+            array,
             _buffer: buffer,
         }
     }
@@ -1105,9 +1105,9 @@ impl TextureManager {
             };
 
             return Some(AnimatedTexture {
-                frames: frames,
-                data: data,
-                interpolate: interpolate,
+                frames,
+                data,
+                interpolate,
                 current_frame: 0,
                 remaining_time: 0.0,
                 texture: self.get_texture("steven:missing_texture").unwrap(),
@@ -1134,7 +1134,7 @@ impl TextureManager {
         let tex = Texture {
             name: full_name.clone(),
             version: self.version,
-            atlas: atlas,
+            atlas,
             x: rect.x,
             y: rect.y,
             width: rect.width,
@@ -1209,8 +1209,8 @@ impl TextureManager {
             let rect = atlas::Rect {
                 x: tex.x,
                 y: tex.y,
-                width: width,
-                height: height,
+                width,
+                height,
             };
             self.pending_uploads.push((tex.atlas, rect, data));
             let mut t = tex.relative(0.0, 0.0, (width as f32) / (tex.width as f32), (height as f32) / (tex.height as f32));

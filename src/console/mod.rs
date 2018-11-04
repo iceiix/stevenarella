@@ -242,7 +242,7 @@ impl Console {
                 .draw_index(500)
                 .create(ui_container);
             self.elements = Some(ConsoleElements {
-                background: background,
+                background,
                 lines: vec![],
             });
             self.dirty = true;

@@ -21,8 +21,8 @@ impl ApplyVelocity {
             filter: ecs::Filter::new()
                 .with(position)
                 .with(velocity),
-            position: position,
-            velocity: velocity,
+            position,
+            velocity,
             movement: m.get_key(),
         }
     }
@@ -61,7 +61,7 @@ impl ApplyGravity {
             filter: ecs::Filter::new()
                 .with(gravity)
                 .with(velocity),
-            velocity: velocity,
+            velocity,
             movement: m.get_key(),
         }
     }
@@ -100,7 +100,7 @@ impl UpdateLastPosition {
         UpdateLastPosition {
             filter: ecs::Filter::new()
                 .with(position),
-            position: position,
+            position,
         }
     }
 }
@@ -136,8 +136,8 @@ impl LerpPosition {
             filter: ecs::Filter::new()
                 .with(position)
                 .with(target_position),
-            position: position,
-            target_position: target_position,
+            position,
+            target_position,
             game_info: m.get_key(),
         }
     }
@@ -180,8 +180,8 @@ impl LerpRotation {
             filter: ecs::Filter::new()
                 .with(rotation)
                 .with(target_rotation),
-            rotation: rotation,
-            target_rotation: target_rotation,
+            rotation,
+            target_rotation,
             game_info: m.get_key(),
         }
     }
@@ -238,9 +238,9 @@ impl LightEntity {
                 .with(position)
                 .with(bounds)
                 .with(light),
-            position: position,
-            bounds: bounds,
-            light: light,
+            position,
+            bounds,
+            light,
         }
     }
 }

@@ -405,7 +405,7 @@ impl <L: Lengthable, V: Default>  LenPrefixed<L, V> {
     pub fn new(data: Vec<V>) -> LenPrefixed<L, V> {
         LenPrefixed {
             len: Default::default(),
-            data: data,
+            data,
         }
     }
 }
@@ -420,7 +420,7 @@ impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
         }
         Result::Ok(LenPrefixed {
             len: len_data,
-            data: data,
+            data,
         })
     }
 
@@ -461,7 +461,7 @@ impl <L: Lengthable>  LenPrefixedBytes<L> {
     pub fn new(data: Vec<u8>) -> LenPrefixedBytes<L> {
         LenPrefixedBytes {
             len: Default::default(),
-            data: data,
+            data,
         }
     }
 }
@@ -474,7 +474,7 @@ impl <L: Lengthable>  Serializable for LenPrefixedBytes<L> {
         buf.take(len as u64).read_to_end(&mut data)?;
         Result::Ok(LenPrefixedBytes {
             len: len_data,
-            data: data,
+            data,
         })
     }
 
@@ -765,7 +765,7 @@ impl Conn {
         };
         let stream = TcpStream::connect(&*address)?;
         Result::Ok(Conn {
-            stream: stream,
+            stream,
             host: parts[0].to_owned(),
             port: parts[1].parse().unwrap(),
             direction: Direction::Serverbound,
@@ -875,8 +875,8 @@ impl Conn {
         let port = self.port;
         self.write_packet(Handshake {
             protocol_version: VarInt(SUPPORTED_PROTOCOL),
-            host: host,
-            port: port,
+            host,
+            port,
             next: VarInt(1),
         })?;
         self.state = State::Status;

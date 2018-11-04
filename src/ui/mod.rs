@@ -1021,7 +1021,7 @@ impl UIElement for Formatted {
                     offset: 0.0,
                     text: Vec::new(),
                     max_width: self.max_width,
-                    renderer: renderer,
+                    renderer,
                 };
                 state.build(&self.text, format::Color::White);
                 self.text_elements = state.text;
@@ -1079,8 +1079,8 @@ impl Formatted {
             width: 0.0,
             offset: 0.0,
             text: Vec::new(),
-            max_width: max_width,
-            renderer: renderer,
+            max_width,
+            renderer,
         };
         state.build(text, format::Color::White);
         (state.width + 2.0, (state.lines + 1) as f64 * 18.0)

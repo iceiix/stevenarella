@@ -134,31 +134,31 @@ impl Clouds {
         texture.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
 
         Clouds {
-            program: program,
+            program,
             // Shader props
             _a_position: a_position,
-            u_perspective_matrix: u_perspective_matrix,
-            u_camera_matrix: u_camera_matrix,
-            u_light_level: u_light_level,
-            u_sky_offset: u_sky_offset,
-            u_offset: u_offset,
-            u_texture_info: u_texture_info,
-            u_atlas: u_atlas,
-            u_textures: u_textures,
-            u_cloud_map: u_cloud_map,
-            u_cloud_offset: u_cloud_offset,
+            u_perspective_matrix,
+            u_camera_matrix,
+            u_light_level,
+            u_sky_offset,
+            u_offset,
+            u_texture_info,
+            u_atlas,
+            u_textures,
+            u_cloud_map,
+            u_cloud_offset,
 
-            array: array,
+            array,
             _buffer: buffer,
 
-            textures: textures,
+            textures,
 
-            texture: texture,
-            heightmap_data: heightmap_data,
+            texture,
+            heightmap_data,
             dirty: false,
 
             offset: 0.0,
-            num_points: num_points,
+            num_points,
         }
     }
 

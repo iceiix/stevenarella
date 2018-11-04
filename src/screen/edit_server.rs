@@ -38,7 +38,7 @@ impl EditServerEntry {
     pub fn new(entry_info: Option<(usize, String, String)>) -> EditServerEntry {
         EditServerEntry {
             elements: None,
-            entry_info: entry_info,
+            entry_info,
         }
     }
 
@@ -156,7 +156,7 @@ impl super::Screen for EditServerEntry {
         }
 
         self.elements = Some(UIElements {
-            logo: logo,
+            logo,
             _name: server_name,
             _address: server_address,
             _done: done,

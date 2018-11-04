@@ -30,8 +30,8 @@ impl Atlas {
         a.free_space.push(Rect {
             x: 0,
             y: 0,
-            width: width,
-            height: height,
+            width,
+            height,
         });
         a
     }
@@ -62,8 +62,8 @@ impl Atlas {
         let ret = Rect {
             x: t.x,
             y: t.y,
-            width: width,
-            height: height,
+            width,
+            height,
         };
 
         if width == t.width {
@@ -82,7 +82,7 @@ impl Atlas {
                                        Rect {
                                            x: t.x,
                                            y: t.y + height,
-                                           width: width,
+                                           width,
                                            height: t.height - height,
                                        });
                 target_index += 1;

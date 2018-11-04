@@ -12,7 +12,7 @@ impl Brand {
         Serializable::write_to(&self.brand, &mut data).unwrap();
         PluginMessageServerbound {
             channel: "MC|Brand".into(),
-            data: data,
+            data,
         }
     }
 }

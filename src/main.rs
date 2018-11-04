@@ -202,15 +202,15 @@ fn main() {
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
         focused: false,
-        renderer: renderer,
-        screen_sys: screen_sys,
+        renderer,
+        screen_sys,
         resource_manager: resource_manager.clone(),
         console: con,
-        vars: vars,
+        vars,
         should_close: false,
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
-        sdl: sdl,
+        sdl,
     };
     game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
 

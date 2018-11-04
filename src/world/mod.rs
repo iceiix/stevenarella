@@ -178,8 +178,8 @@ impl World {
 
     fn update_light(&mut self, pos: Position, ty: LightType) {
         self.light_updates.push_back(LightUpdate {
-            ty: ty,
-            pos: pos,
+            ty,
+            pos,
         });
     }
 
@@ -470,8 +470,8 @@ impl World {
             sky_light: nibble::Array::new((w * h * d) as usize),
             biomes: vec![0; (w * d) as usize],
 
-            x: x, y: y, z: z,
-            w: w, _h: h, d: d,
+            x, y, z,
+            w, _h: h, d,
         };
         for i in 0 .. (w * h * d) as usize {
             snapshot.sky_light.set(i, 0xF);
@@ -914,7 +914,7 @@ impl Section {
         let mut section = Section {
             cull_info: chunk_builder::CullInfo::all_vis(),
             render_buffer: render::ChunkBuffer::new(),
-            y: y,
+            y,
 
             blocks: storage::BlockStorage::new(4096),
 

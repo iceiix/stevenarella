@@ -777,7 +777,7 @@ impl Buffer {
         unsafe {
             MappedBuffer {
                 inner: Vec::from_raw_parts(gl::MapBuffer(target, access) as *mut u8, 0, length),
-                target: target,
+                target,
             }
         }
     }

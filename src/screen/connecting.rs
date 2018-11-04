@@ -63,7 +63,7 @@ impl super::Screen for Connecting {
             .create(ui_container);
 
         self.elements = Some(UIElements {
-            logo: logo,
+            logo,
             _disclaimer: disclaimer,
             _msg: msg,
             _connect_msg: connect_msg,

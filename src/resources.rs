@@ -202,8 +202,8 @@ impl Manager {
                     position: -UI_HEIGHT,
                     closing: false,
                     progress: 0.0,
-                    background: background,
-                    progress_bar: progress_bar,
+                    background,
+                    progress_bar,
                 });
             }
         }
@@ -368,7 +368,7 @@ impl Manager {
                     read: res,
                     progress: &progress_info,
                     task_name: "Downloading Core Assets".into(),
-                    task_file: task_file,
+                    task_file,
                 };
                 io::copy(&mut progress, &mut file).unwrap();
             }

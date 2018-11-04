@@ -136,19 +136,19 @@ impl super::Screen for Login {
         try_login.set(refresh);
 
         self.elements = Some(UIElements {
-            logo: logo,
-            profile: profile,
-            login_btn: login_btn,
-            login_btn_text: login_btn_text,
-            login_error: login_error,
-            try_login: try_login,
-            refresh: refresh,
+            logo,
+            profile,
+            login_btn,
+            login_btn_text,
+            login_error,
+            try_login,
+            refresh,
             login_res: None,
 
             _disclaimer: disclaimer,
 
-            username_txt: username_txt,
-            password_txt: password_txt,
+            username_txt,
+            password_txt,
         });
     }
     fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {

@@ -126,10 +126,10 @@ impl Logo {
             _shadow: shadow_batch,
             _layer0: layer0,
             text: txt,
-            text_base_scale: text_base_scale,
-            text_orig_x: text_orig_x,
+            text_base_scale,
+            text_orig_x,
             text_index: -1,
-            text_strings: text_strings,
+            text_strings,
         }
     }
 

@@ -63,8 +63,8 @@ impl Factory {
         Factory {
             grass_colors: Factory::load_biome_colors(resources.clone(), "grass"),
             foliage_colors: Factory::load_biome_colors(resources.clone(), "foliage"),
-            resources: resources,
-            textures: textures,
+            resources,
+            textures,
 
             models: HashMap::with_hasher(BuildHasherDefault::default()),
         }
@@ -218,8 +218,8 @@ impl Factory {
                     Self::parse_rules(when, &mut rules);
                 }
                 model.multipart.push(MultipartRule {
-                    apply: apply,
-                    rules: rules,
+                    apply,
+                    rules,
                 })
             }
         }
@@ -1050,7 +1050,7 @@ pub struct BlockVertex {
 impl BlockVertex {
     const fn base(x: f32, y: f32, z: f32, tx: i16, ty: i16) -> BlockVertex {
         BlockVertex {
-            x: x, y: y, z: z,
+            x, y, z,
             tx: 0, ty: 0, tw: 0, th: 0,
             toffsetx: tx, toffsety: ty, tatlas: 0,
             r: 0, g: 0, b: 0,

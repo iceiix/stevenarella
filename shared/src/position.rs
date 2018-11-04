@@ -13,9 +13,9 @@ pub struct Position {
 impl Position {
     pub fn new(x: i32, y: i32, z: i32) -> Position {
         Position {
-            x: x,
-            y: y,
-            z: z,
+            x,
+            y,
+            z,
         }
     }
 

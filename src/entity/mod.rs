@@ -97,8 +97,8 @@ pub struct Rotation {
 impl Rotation {
     pub fn new(yaw: f64, pitch: f64) -> Rotation {
         Rotation {
-            yaw: yaw,
-            pitch: pitch,
+            yaw,
+            pitch,
         }
     }
 
@@ -115,8 +115,8 @@ pub struct TargetRotation {
 impl TargetRotation {
     pub fn new(yaw: f64, pitch: f64) -> TargetRotation {
         TargetRotation {
-            yaw: yaw,
-            pitch: pitch,
+            yaw,
+            pitch,
         }
     }
 
@@ -141,7 +141,7 @@ pub struct Bounds {
 impl Bounds {
     pub fn new(bounds: Aabb3<f64>) -> Bounds {
         Bounds {
-            bounds: bounds,
+            bounds,
         }
     }
 }
