@@ -393,7 +393,7 @@ impl Serializable for UUID {
 
 pub trait Lengthable : Serializable + Copy + Default {
     fn into(self) -> usize;
-    fn from(usize) -> Self;
+    fn from(_: usize) -> Self;
 }
 
 pub struct LenPrefixed<L: Lengthable, V> {
