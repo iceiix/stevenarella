@@ -63,7 +63,7 @@ impl Map {
         Map {
             length: (bits.len()*64 + (size-1)) / size,
             bit_size: size,
-            bits: bits,
+            bits,
         }
     }
 

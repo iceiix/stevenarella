@@ -41,7 +41,7 @@ impl Component {
         if let Some(val) = v.as_str() {
             Component::Text(TextComponent {
                 text: val.to_owned(),
-                modifier: modifier,
+                modifier,
             })
         } else if v.get("text").is_some() {
             Component::Text(TextComponent::from_value(v, modifier))
@@ -49,7 +49,7 @@ impl Component {
             modifier.color = Some(Color::RGB(255, 0, 0));
             Component::Text(TextComponent {
                 text: "UNHANDLED".to_owned(),
-                modifier: modifier,
+                modifier,
             })
         }
     }
@@ -136,7 +136,7 @@ impl TextComponent {
     pub fn from_value(v: &serde_json::Value, modifier: Modifier) -> Self {
         TextComponent {
             text: v.get("text").unwrap().as_str().unwrap_or("").to_owned(),
-            modifier: modifier,
+            modifier,
         }
     }
 

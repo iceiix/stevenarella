@@ -31,7 +31,7 @@ impl <T: MetaValue> MetadataKey<T> {
     #[allow(dead_code)]
     fn new(index: i32) -> MetadataKey<T> {
         MetadataKey {
-            index: index,
+            index,
             ty: PhantomData,
         }
     }
