@@ -4272,8 +4272,8 @@ pub enum StoneVariant {
 }
 
 impl StoneVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             StoneVariant::Normal => "stone",
             StoneVariant::Granite => "granite",
             StoneVariant::SmoothGranite => "smooth_granite",
@@ -4283,8 +4283,8 @@ impl StoneVariant {
             StoneVariant::SmoothAndesite => "smooth_andesite",
         }
     }
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             StoneVariant::Normal => 0,
             StoneVariant::Granite => 1,
             StoneVariant::SmoothGranite => 2,
@@ -4304,16 +4304,16 @@ pub enum DirtVariant {
 }
 
 impl DirtVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             DirtVariant::Normal => "dirt",
             DirtVariant::Coarse => "coarse_dirt",
             DirtVariant::Podzol => "podzol",
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             DirtVariant::Normal => 0,
             DirtVariant::Coarse => 1,
             DirtVariant::Podzol => 2,
@@ -4328,8 +4328,8 @@ pub enum BedPart {
 }
 
 impl BedPart {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             BedPart::Head => "head",
             BedPart::Foot => "foot",
         }
@@ -4344,16 +4344,16 @@ pub enum SandstoneVariant {
 }
 
 impl SandstoneVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             SandstoneVariant::Normal => "sandstone",
             SandstoneVariant::Chiseled => "chiseled_sandstone",
             SandstoneVariant::Smooth => "smooth_sandstone",
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             SandstoneVariant::Normal => 0,
             SandstoneVariant::Chiseled => 1,
             SandstoneVariant::Smooth => 2,
@@ -4369,16 +4369,16 @@ pub enum RedSandstoneVariant {
 }
 
 impl RedSandstoneVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             RedSandstoneVariant::Normal => "red_sandstone",
             RedSandstoneVariant::Chiseled => "chiseled_red_sandstone",
             RedSandstoneVariant::Smooth => "smooth_red_sandstone",
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             RedSandstoneVariant::Normal => 0,
             RedSandstoneVariant::Chiseled => 1,
             RedSandstoneVariant::Smooth => 2,
@@ -4396,8 +4396,8 @@ pub enum QuartzVariant {
 }
 
 impl QuartzVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             QuartzVariant::Normal | QuartzVariant::Chiseled => "normal",
             QuartzVariant::PillarVertical => "axis=y",
             QuartzVariant::PillarNorthSouth => "axis=z",
@@ -4405,8 +4405,8 @@ impl QuartzVariant {
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             QuartzVariant::Normal => 0,
             QuartzVariant::Chiseled => 1,
             QuartzVariant::PillarVertical => 2,
@@ -4424,16 +4424,16 @@ pub enum PrismarineVariant {
 }
 
 impl PrismarineVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             PrismarineVariant::Normal => "prismarine",
             PrismarineVariant::Brick => "prismarine_bricks",
             PrismarineVariant::Dark => "dark_prismarine",
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             PrismarineVariant::Normal => 0,
             PrismarineVariant::Brick => 1,
             PrismarineVariant::Dark => 2,
@@ -4459,8 +4459,8 @@ pub enum MushroomVariant {
 }
 
 impl MushroomVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             MushroomVariant::East => "east",
             MushroomVariant::North => "north",
             MushroomVariant::NorthEast => "north_east",
@@ -4477,8 +4477,8 @@ impl MushroomVariant {
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             MushroomVariant::AllInside => 0,
             MushroomVariant::NorthWest => 1,
             MushroomVariant::North => 2,
@@ -4503,8 +4503,8 @@ pub enum DoorHalf {
 }
 
 impl DoorHalf {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             DoorHalf::Upper => "upper",
             DoorHalf::Lower => "lower",
         }
@@ -4518,8 +4518,8 @@ pub enum Side {
 }
 
 impl Side {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             Side::Left => "left",
             Side::Right => "right",
         }
@@ -4547,8 +4547,8 @@ pub enum ColoredVariant {
 }
 
 impl ColoredVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             ColoredVariant::White => "white",
             ColoredVariant::Orange => "orange",
             ColoredVariant::Magenta => "magenta",
@@ -4568,8 +4568,8 @@ impl ColoredVariant {
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             ColoredVariant::White => 0,
             ColoredVariant::Orange => 1,
             ColoredVariant::Magenta => 2,
@@ -4604,8 +4604,8 @@ pub enum RedFlowerVariant {
 }
 
 impl RedFlowerVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             RedFlowerVariant::Poppy => "poppy",
             RedFlowerVariant::BlueOrchid => "blue_orchid",
             RedFlowerVariant::Allium => "allium",
@@ -4618,8 +4618,8 @@ impl RedFlowerVariant {
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             RedFlowerVariant::Poppy => 0,
             RedFlowerVariant::BlueOrchid => 1,
             RedFlowerVariant::Allium => 2,
@@ -4644,8 +4644,8 @@ pub enum MonsterEggVariant {
 }
 
 impl MonsterEggVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             MonsterEggVariant::Stone => "stone",
             MonsterEggVariant::Cobblestone => "cobblestone",
             MonsterEggVariant::StoneBrick => "stone_brick",
@@ -4655,8 +4655,8 @@ impl MonsterEggVariant {
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             MonsterEggVariant::Stone => 0,
             MonsterEggVariant::Cobblestone => 1,
             MonsterEggVariant::StoneBrick => 2,
@@ -4676,8 +4676,8 @@ pub enum StoneBrickVariant {
 }
 
 impl StoneBrickVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             StoneBrickVariant::Normal => "stonebrick",
             StoneBrickVariant::Mossy => "mossy_stonebrick",
             StoneBrickVariant::Cracked => "cracked_stonebrick",
@@ -4685,8 +4685,8 @@ impl StoneBrickVariant {
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             StoneBrickVariant::Normal => 0,
             StoneBrickVariant::Mossy => 1,
             StoneBrickVariant::Cracked => 2,
@@ -4710,8 +4710,8 @@ pub enum RailShape {
 }
 
 impl RailShape {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             RailShape::NorthSouth => "north_south",
             RailShape::EastWest => "east_west",
             RailShape::AscendingNorth => "ascending_north",
@@ -4725,8 +4725,8 @@ impl RailShape {
         }
     }
 
-    pub fn data(&self) -> usize {
-        match *self {
+    pub fn data(self) -> usize {
+        match self {
             RailShape::NorthSouth => 0,
             RailShape::EastWest => 1,
             RailShape::AscendingEast => 2,
@@ -4748,8 +4748,8 @@ pub enum ComparatorMode {
 }
 
 impl ComparatorMode {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             ComparatorMode::Compare => "compare",
             ComparatorMode::Subtract => "subtract",
         }
@@ -4769,8 +4769,8 @@ pub enum LeverDirection {
 }
 
 impl LeverDirection {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             LeverDirection::North => "north",
             LeverDirection::South => "south",
             LeverDirection::East => "east",
@@ -4782,8 +4782,8 @@ impl LeverDirection {
         }
     }
 
-    pub fn data(&self) -> usize {
-        match *self {
+    pub fn data(self) -> usize {
+        match self {
             LeverDirection::DownX => 0,
             LeverDirection::East => 1,
             LeverDirection::West => 2,
@@ -4804,8 +4804,8 @@ pub enum RedstoneSide {
 }
 
 impl RedstoneSide {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             RedstoneSide::None => "none",
             RedstoneSide::Side => "side",
             RedstoneSide::Up => "up",
@@ -4820,8 +4820,8 @@ pub enum PistonType {
 }
 
 impl PistonType {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             PistonType::Normal => "normal",
             PistonType::Sticky => "sticky",
         }
@@ -4843,8 +4843,8 @@ pub enum StoneSlabVariant {
 }
 
 impl StoneSlabVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             StoneSlabVariant::Stone => "stone",
             StoneSlabVariant::Sandstone => "sandstone",
             StoneSlabVariant::Wood => "wood_old",
@@ -4858,8 +4858,8 @@ impl StoneSlabVariant {
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             StoneSlabVariant::Stone |
             StoneSlabVariant::RedSandstone |
             StoneSlabVariant::Purpur => 0,
@@ -4885,8 +4885,8 @@ pub enum WoodSlabVariant {
 }
 
 impl WoodSlabVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             WoodSlabVariant::Oak => "oak",
             WoodSlabVariant::Spruce => "spruce",
             WoodSlabVariant::Birch => "birch",
@@ -4896,8 +4896,8 @@ impl WoodSlabVariant {
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             WoodSlabVariant::Oak => 0,
             WoodSlabVariant::Spruce => 1,
             WoodSlabVariant::Birch => 2,
@@ -4917,8 +4917,8 @@ pub enum BlockHalf {
 }
 
 impl BlockHalf {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             BlockHalf::Top => "top",
             BlockHalf::Bottom => "bottom",
             BlockHalf::Upper => "upper",
@@ -4934,15 +4934,15 @@ pub enum CobblestoneWallVariant {
 }
 
 impl CobblestoneWallVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             CobblestoneWallVariant::Normal => "cobblestone",
             CobblestoneWallVariant::Mossy => "mossy_cobblestone",
         }
     }
 
-    pub fn data(&self) -> usize {
-        match *self {
+    pub fn data(self) -> usize {
+        match self {
             CobblestoneWallVariant::Normal => 0,
             CobblestoneWallVariant::Mossy => 1,
         }
@@ -4970,8 +4970,8 @@ pub enum Rotation {
 }
 
 impl Rotation {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             Rotation::South => "south",
             Rotation::SouthSouthWest => "south-southwest",
             Rotation::SouthWest => "southwest",
@@ -4991,8 +4991,8 @@ impl Rotation {
         }
     }
 
-    pub fn data(&self) -> usize {
-        match *self {
+    pub fn data(self) -> usize {
+        match self {
             Rotation::South => 0,
             Rotation::SouthSouthWest => 1,
             Rotation::SouthWest => 2,
@@ -5023,8 +5023,8 @@ pub enum StairShape {
 }
 
 impl StairShape {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             StairShape::Straight => "straight",
             StairShape::InnerLeft => "inner_left",
             StairShape::InnerRight => "inner_right",
@@ -5046,8 +5046,8 @@ pub enum TreeVariant {
 }
 
 impl TreeVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             TreeVariant::Oak => "oak",
             TreeVariant::Spruce => "spruce",
             TreeVariant::Birch => "birch",
@@ -5057,8 +5057,8 @@ impl TreeVariant {
         }
     }
 
-    pub fn data(&self) -> usize {
-        match *self {
+    pub fn data(self) -> usize {
+        match self {
             TreeVariant::Oak | TreeVariant::Acacia => 0,
             TreeVariant::Spruce | TreeVariant::DarkOak => 1,
             TreeVariant::Birch => 2,
@@ -5066,8 +5066,8 @@ impl TreeVariant {
         }
     }
 
-    pub fn plank_data(&self) -> usize {
-        match *self {
+    pub fn plank_data(self) -> usize {
+        match self {
             TreeVariant::Oak => 0,
             TreeVariant::Spruce => 1,
             TreeVariant::Birch => 2,
@@ -5086,16 +5086,16 @@ pub enum TallGrassVariant {
 }
 
 impl TallGrassVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             TallGrassVariant::DeadBush => "dead_bush",
             TallGrassVariant::TallGrass => "tall_grass",
             TallGrassVariant::Fern => "fern",
         }
     }
 
-    fn data(&self) -> usize {
-        match *self {
+    fn data(self) -> usize {
+        match self {
             TallGrassVariant::DeadBush => 0,
             TallGrassVariant::TallGrass => 1,
             TallGrassVariant::Fern => 2,
@@ -5114,8 +5114,8 @@ pub enum DoublePlantVariant {
 }
 
 impl DoublePlantVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             DoublePlantVariant::Sunflower => "sunflower",
             DoublePlantVariant::Lilac => "syringa",
             DoublePlantVariant::DoubleTallgrass => "double_grass",
@@ -5125,8 +5125,8 @@ impl DoublePlantVariant {
         }
     }
 
-    pub fn data(&self) -> usize {
-        match *self {
+    pub fn data(self) -> usize {
+        match self {
             DoublePlantVariant::Sunflower => 0,
             DoublePlantVariant::Lilac => 1,
             DoublePlantVariant::DoubleTallgrass => 2,
@@ -5164,8 +5164,8 @@ pub enum FlowerPotVariant {
 }
 
 impl FlowerPotVariant {
-    pub fn as_string(&self) -> &'static str {
-        match *self {
+    pub fn as_string(self) -> &'static str {
+        match self {
             FlowerPotVariant::Empty => "empty",
             FlowerPotVariant::Poppy => "rose",
             FlowerPotVariant::Dandelion => "dandelion",
