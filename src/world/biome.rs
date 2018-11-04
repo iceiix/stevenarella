@@ -1,5 +1,6 @@
 
 use image::Rgba;
+use lazy_static::lazy_static;
 
 #[derive(Clone, Copy)]
 pub struct Biome {

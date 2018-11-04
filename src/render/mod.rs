@@ -32,6 +32,7 @@ use serde_json;
 use cgmath::prelude::*;
 use crate::world;
 use collision;
+use log::{error, trace};
 
 use std::hash::BuildHasherDefault;
 use crate::types::hash::FNVHash;

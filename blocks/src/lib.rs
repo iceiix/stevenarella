@@ -1,15 +1,12 @@
 
 #![recursion_limit="300"]
 
-extern crate cgmath;
-extern crate collision;
-#[macro_use]
-extern crate lazy_static;
 extern crate steven_shared as shared;
 
 use crate::shared::{Axis, Direction, Position};
 use collision::Aabb3;
 use cgmath::Point3;
+use lazy_static::lazy_static;
 
 pub mod material;
 pub use self::material::Material;

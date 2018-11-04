@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use sha1::{self, Digest};
-use serde_json;
+use serde_json::json;
 use reqwest;
 
 #[derive(Clone, Debug)]

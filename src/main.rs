@@ -14,29 +14,8 @@
 
 #![recursion_limit="300"]
 
-extern crate sdl2;
-extern crate zip;
-extern crate image;
 use std::time::{Instant, Duration};
-extern crate byteorder;
-#[macro_use]
-extern crate serde_json;
-extern crate aes;
-extern crate cfb8;
-extern crate sha1;
-extern crate reqwest;
-extern crate flate2;
-extern crate rand;
-extern crate hex;
-extern crate base64;
-extern crate cgmath;
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate lazy_static;
-extern crate collision;
-extern crate rsa_public_encrypt_pkcs1;
-pub extern crate steven_blocks;
+use log::info;
 extern crate steven_shared as shared;
 
 #[macro_use]
