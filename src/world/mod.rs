@@ -580,20 +580,20 @@ impl World {
                 let section = chunk.sections[i as usize].as_mut().unwrap();
                 section.dirty = true;
 
-                let mut bit_size = try!(data.read_u8());
+                let mut bit_size = data.read_u8()?;
                 let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> = HashMap::with_hasher(BuildHasherDefault::default());
                 if bit_size == 0 {
                     bit_size = 13;
                 } else {
-                    let count = try!(VarInt::read_from(&mut data)).0;
+                    let count = VarInt::read_from(&mut data)?.0;
                     for i in 0 .. count {
-                        let id = try!(VarInt::read_from(&mut data)).0;
+                        let id = VarInt::read_from(&mut data)?.0;
                         let bl = block::Block::by_vanilla_id(id as usize);
                         mappings.insert(i as usize, bl);
                     }
                 }
 
-                let bits = try!(LenPrefixed::<VarInt, u64>::read_from(&mut data)).data;
+                let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
                 let m = bit::Map::from_raw(bits, bit_size as usize);
 
                 for bi in 0 .. 4096 {
@@ -614,12 +614,12 @@ impl World {
                     }
                 }
 
-                try!(data.read_exact(&mut section.block_light.data));
-                try!(data.read_exact(&mut section.sky_light.data));
+                data.read_exact(&mut section.block_light.data)?;
+                data.read_exact(&mut section.sky_light.data)?;
             }
 
             if new {
-                try!(data.read_exact(&mut chunk.biomes));
+                data.read_exact(&mut chunk.biomes)?;
             }
 
             chunk.calculate_heightmap();

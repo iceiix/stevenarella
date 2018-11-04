@@ -38,7 +38,7 @@ impl Profile {
                 "name": "Minecraft",
                 "version": 1
             }});
-        let req = try!(serde_json::to_string(&req_msg));
+        let req = serde_json::to_string(&req_msg)?;
 
         let client = reqwest::Client::new();
         let res = client.post(LOGIN_URL)
@@ -46,7 +46,7 @@ impl Profile {
             .body(req)
             .send()?;
 
-        let ret: serde_json::Value = try!(serde_json::from_reader(res));
+        let ret: serde_json::Value = serde_json::from_reader(res)?;
         if let Some(error) = ret.get("error").and_then(|v| v.as_str()) {
             return Err(super::Error::Err(format!(
                 "{}: {}",
@@ -66,7 +66,7 @@ impl Profile {
             "accessToken": self.access_token.clone(),
             "clientToken": token
             });
-        let req = try!(serde_json::to_string(&req_msg));
+        let req = serde_json::to_string(&req_msg)?;
 
         let client = reqwest::Client::new();
         let res = client.post(VALIDATE_URL)
@@ -75,14 +75,14 @@ impl Profile {
             .send()?;
 
         if res.status() != reqwest::StatusCode::NO_CONTENT {
-            let req = try!(serde_json::to_string(&req_msg)); // TODO: fix parsing twice to avoid move
+            let req = serde_json::to_string(&req_msg)?; // TODO: fix parsing twice to avoid move
             // Refresh needed
             let res = client.post(REFRESH_URL)
                 .header(reqwest::header::CONTENT_TYPE, "application/json")
                 .body(req)
                 .send()?;
 
-            let ret: serde_json::Value = try!(serde_json::from_reader(res));
+            let ret: serde_json::Value = serde_json::from_reader(res)?;
             if let Some(error) = ret.get("error").and_then(|v| v.as_str()) {
                 return Err(super::Error::Err(format!(
                     "{}: {}",

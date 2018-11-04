@@ -863,12 +863,12 @@ impl TextureManager {
         use std::io::{Error, ErrorKind};
         let path = format!("skin-cache/{}/{}.png", &hash[..2], hash);
         let cache_path = Path::new(&path);
-        try!(fs::create_dir_all(cache_path.parent().unwrap()));
+        fs::create_dir_all(cache_path.parent().unwrap())?;
         let mut buf = vec![];
         if fs::metadata(cache_path).is_ok() {
             // We have a cached image
-            let mut file = try!(fs::File::open(cache_path));
-            try!(file.read_to_end(&mut buf));
+            let mut file = fs::File::open(cache_path)?;
+            file.read_to_end(&mut buf)?;
         } else {
             // Need to download it
             let url = &format!("http://textures.minecraft.net/texture/{}", hash);
@@ -888,8 +888,8 @@ impl TextureManager {
             }
 
             // Save to cache
-            let mut file = try!(fs::File::create(cache_path));
-            try!(file.write_all(&buf));
+            let mut file = fs::File::create(cache_path)?;
+            file.write_all(&buf)?;
         }
         let mut img = match image::load_from_memory(&buf) {
             Ok(val) => val,

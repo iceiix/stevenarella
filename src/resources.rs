@@ -496,7 +496,7 @@ struct ProgressRead<'a, T> {
 
 impl <'a, T: io::Read> io::Read for ProgressRead<'a, T> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let size = try!(self.read.read(buf));
+        let size = self.read.read(buf)?;
         Manager::add_task_progress(self.progress, &self.task_name, &self.task_file, size as u64);
         Ok(size)
     }

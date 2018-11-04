@@ -103,24 +103,24 @@ macro_rules! handle_packet {
 impl Server {
 
     pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str) -> Result<Server, protocol::Error> {
-        let mut conn = try!(protocol::Conn::new(address));
+        let mut conn = protocol::Conn::new(address)?;
 
         let host = conn.host.clone();
         let port = conn.port;
-        try!(conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
+        conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
              protocol_version: protocol::VarInt(protocol::SUPPORTED_PROTOCOL),
              host: host,
              port: port,
              next: protocol::VarInt(2),
-         }));
+         })?;
         conn.state = protocol::State::Login;
-        try!(conn.write_packet(protocol::packet::login::serverbound::LoginStart {
+        conn.write_packet(protocol::packet::login::serverbound::LoginStart {
             username: profile.username.clone(),
-        }));
+        })?;
 
         let packet;
         loop {
-            match try!(conn.read_packet()) {
+            match conn.read_packet()? {
                 protocol::packet::Packet::SetInitialCompression(val) => {
                     conn.set_compresssion(val.threshold.0);
                 },
@@ -156,12 +156,12 @@ impl Server {
         println!("new shared_e({:}) = {:?}", shared_e.len(), &shared_e);
         println!("new token_e({:}) = {:?}", token_e.len(), &token_e);
 
-        try!(profile.join_server(&packet.server_id, &shared, &packet.public_key.data));
+        profile.join_server(&packet.server_id, &shared, &packet.public_key.data)?;
 
-        try!(conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse {
+        conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse {
             shared_secret: protocol::LenPrefixedBytes::new(shared_e),
             verify_token: protocol::LenPrefixedBytes::new(token_e),
-        }));
+        })?;
 
         let mut read = conn.clone();
         let mut write = conn.clone();
@@ -171,7 +171,7 @@ impl Server {
 
         let uuid;
         loop {
-           match try!(read.read_packet()) {
+           match read.read_packet()? {
                protocol::packet::Packet::SetInitialCompression(val) => {
                    read.set_compresssion(val.threshold.0);
                    write.set_compresssion(val.threshold.0);
