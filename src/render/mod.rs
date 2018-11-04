@@ -957,11 +957,11 @@ impl TextureManager {
             if name.starts_with("steven-dynamic:") {
                 let n = &name["steven-dynamic:".len()..];
                 let (width, height, data) = {
-                    let dyn = match self.dynamic_textures.get(n) {
+                    let dynamic_texture = match self.dynamic_textures.get(n) {
                         Some(val) => val,
                         None => continue,
                     };
-                    let img = &dyn.1;
+                    let img = &dynamic_texture.1;
                     let (width, height) = img.dimensions();
                     (width, height, img.to_rgba().into_vec())
                 };
