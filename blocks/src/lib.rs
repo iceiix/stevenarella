@@ -3897,15 +3897,15 @@ fn fence_gate_collision(facing: Direction, in_wall: bool, open: bool) -> Vec<Aab
 }
 
 fn fence_gate_update_state<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> bool {
-    match world.get_block(pos.shift(facing.clockwise())) {
-        Block::CobblestoneWall{..} => return true,
-        _ => (),
+    if let Block::CobblestoneWall{..} = world.get_block(pos.shift(facing.clockwise())) {
+        return true;
     }
 
-    match world.get_block(pos.shift(facing.counter_clockwise())) {
-        Block::CobblestoneWall{..} => true,
-        _ => false,
+    if let Block::CobblestoneWall{..} = world.get_block(pos.shift(facing.counter_clockwise())) {
+        return true;
     }
+
+    false
 }
 
 fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered: bool) -> Option<usize> {
