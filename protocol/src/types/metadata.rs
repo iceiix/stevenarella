@@ -16,11 +16,11 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::io;
 use std::fmt;
-use protocol;
-use protocol::Serializable;
-use format;
-use item;
-use shared::Position;
+use crate::protocol;
+use crate::protocol::Serializable;
+use crate::format;
+use crate::item;
+use crate::shared::Position;
 
 pub struct MetadataKey<T: MetaValue> {
     index: i32,
