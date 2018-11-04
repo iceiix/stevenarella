@@ -238,7 +238,7 @@ macro_rules! define_blocks {
                     impl <$($fname : Iterator<Item=$ftype> + Clone),*> Iterator for CombinationIter<$($fname),*> {
                         type Item = Block;
 
-                        #[allow(unused_mut, unused_variables, unreachable_code, unused_assignments)]
+                        #[allow(unused_mut, unused_variables, unreachable_code, unused_assignments, clippy::never_loop)]
                         fn next(&mut self) -> Option<Self::Item> {
                             if self.finished {
                                 return None;
@@ -278,6 +278,7 @@ macro_rules! define_blocks {
                     }
                     #[allow(non_camel_case_types)]
                     impl <$($fname : Iterator<Item=$ftype> + Clone),*> CombinationIter<$($fname),*> {
+                        #[allow(clippy::too_many_arguments)]
                         fn new($(mut $fname:$fname),*) -> CombinationIter<$($fname),*> {
                             CombinationIter {
                                 finished: false,
@@ -4176,6 +4177,7 @@ fn stair_data(facing: Direction, half: BlockHalf, shape: StairShape) -> Option<u
     Some((5 - facing.index()) | (if half == BlockHalf::Top { 0x4 } else { 0x0 }))
 }
 
+#[allow(clippy::many_single_char_names)]
 fn stair_collision(facing: Direction, shape: StairShape, half: BlockHalf) -> Vec<Aabb3<f64>> {
     use std::f64::consts::PI;
     let mut bounds = match shape {
