@@ -2,6 +2,7 @@
 name = "steven_gl"
 version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
+edition = "2018"
 build = "build.rs"
 
 [build-dependencies]

@@ -1,6 +1,6 @@
 
 use std::fmt;
-use direction::Direction;
+use crate::direction::Direction;
 use std::ops;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]

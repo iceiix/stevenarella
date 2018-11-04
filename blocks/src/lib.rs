@@ -7,7 +7,7 @@ extern crate collision;
 extern crate lazy_static;
 extern crate steven_shared as shared;
 
-use shared::{Axis, Direction, Position};
+use crate::shared::{Axis, Direction, Position};
 use collision::Aabb3;
 use cgmath::Point3;
 

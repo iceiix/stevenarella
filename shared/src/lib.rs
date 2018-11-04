@@ -1,9 +1,9 @@
 
 pub mod axis;
-pub use axis::Axis;
+pub use self::axis::Axis;
 
 pub mod direction;
-pub use direction::Direction;
+pub use self::direction::Direction;
 
 pub mod position;
-pub use position::Position;
+pub use self::position::Position;
