@@ -205,7 +205,7 @@ pub enum Value {
 }
 
 pub trait MetaValue {
-    fn unwrap(&Value) -> &Self;
+    fn unwrap(_: &Value) -> &Self;
     fn wrap(self) -> Value;
 }
 
