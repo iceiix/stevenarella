@@ -1021,7 +1021,7 @@ define_blocks! {
         },
         material material::NON_SOLID,
         model { ("minecraft", "redstone_wire") },
-        tint TintType::Color{r: ((255.0 / 30.0) * (power as f64) + 14.0) as u8, g: 0, b: 0},
+        tint TintType::Color{r: ((255.0 / 30.0) * (f64::from(power)) + 14.0) as u8, g: 0, b: 0},
         collision vec![],
         update_state (world, pos) => Block::RedstoneWire {
             north: can_connect_redstone(world, pos, Direction::North),
@@ -1389,7 +1389,7 @@ define_blocks! {
         variant format!("layers={}", layers),
         collision vec![Aabb3::new(
             Point3::new(0.0, 0.0, 0.0),
-            Point3::new(1.0, (layers as f64 - 1.0)/8.0, 1.0),
+            Point3::new(1.0, (f64::from(layers) - 1.0)/8.0, 1.0),
         )],
     }
     Ice {
@@ -1535,7 +1535,7 @@ define_blocks! {
         model { ("minecraft", "cake") },
         variant format!("bites={}", bites),
         collision vec![Aabb3::new(
-            Point3::new((1.0 + (bites as f64 * 2.0)) / 16.0, 0.0, 1.0/16.0),
+            Point3::new((1.0 + (f64::from(bites) * 2.0)) / 16.0, 0.0, 1.0/16.0),
             Point3::new(1.0 - (1.0/16.0), 0.5, 1.0 - (1.0/16.0))
         )],
     }
@@ -2173,8 +2173,8 @@ define_blocks! {
         model { ("minecraft", "cocoa") },
         variant format!("age={},facing={}", age, facing.as_string()),
         collision {
-            let i = 4.0 + age as f64 * 2.0;
-            let j = 5.0 + age as f64 * 2.0;
+            let i = 4.0 + f64::from(age) * 2.0;
+            let j = 5.0 + f64::from(age) * 2.0;
             let f = i / 2.0;
 
             let (min_x, min_y, min_z, max_x, max_y, max_z) = match facing {
