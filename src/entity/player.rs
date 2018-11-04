@@ -1,5 +1,5 @@
 
-use ecs;
+use crate::ecs;
 use super::{
     Position,
     TargetPosition,
@@ -11,18 +11,18 @@ use super::{
     GameInfo,
     Light
 };
-use world;
-use render;
-use render::model::{self, FormatState};
-use types::Gamemode;
+use crate::world;
+use crate::render;
+use crate::render::model::{self, FormatState};
+use crate::types::Gamemode;
 use collision::{Aabb, Aabb3};
 use cgmath::{self, Point3, Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
-use types::hash::FNVHash;
-use settings::Stevenkey;
-use shared::Position as BPosition;
-use format;
+use crate::types::hash::FNVHash;
+use crate::settings::Stevenkey;
+use crate::shared::Position as BPosition;
+use crate::format;
 
 pub fn add_systems(m: &mut ecs::Manager) {
     let sys = MovementHandler::new(m);

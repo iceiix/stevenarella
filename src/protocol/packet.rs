@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use format;
+use crate::format;
 
 state_packets!(
     handshake Handshaking {

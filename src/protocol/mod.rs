@@ -22,8 +22,8 @@ use reqwest;
 
 pub mod mojang;
 
-use nbt;
-use format;
+use crate::nbt;
+use crate::format;
 use std::fmt;
 use std::default;
 use std::net::TcpStream;
@@ -34,7 +34,7 @@ use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
 use std::time::{Instant, Duration};
-use shared::Position;
+use crate::shared::Position;
 
 pub const SUPPORTED_PROTOCOL: i32 = 315;
 
@@ -52,7 +52,7 @@ macro_rules! state_packets {
             )*
         })+
     })+) => {
-        use protocol::*;
+        use crate::protocol::*;
         use std::io;
 
         #[derive(Debug)]
@@ -72,13 +72,13 @@ macro_rules! state_packets {
             $(
             pub mod $dir {
                 #![allow(unused_imports)]
-                use protocol::*;
+                use crate::protocol::*;
                 use std::io;
-                use format;
-                use nbt;
-                use types;
-                use item;
-                use shared::Position;
+                use crate::format;
+                use crate::nbt;
+                use crate::types;
+                use crate::item;
+                use crate::shared::Position;
 
 
                 pub mod internal_ids {

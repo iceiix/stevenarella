@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use types::bit::Set as BSet;
+use crate::types::bit::Set as BSet;
 use std::collections::{HashMap, HashSet};
 use std::hash::BuildHasherDefault;
-use types::hash::FNVHash;
+use crate::types::hash::FNVHash;
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 
-use world;
-use render;
+use crate::world;
+use crate::render;
 
 /// Used to reference an entity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

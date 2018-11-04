@@ -2,13 +2,13 @@
 use std::thread;
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
-use world;
-use world::block;
-use render;
-use resources;
-use model;
-use types::bit::Set;
-use shared::Direction;
+use crate::world;
+use crate::world::block;
+use crate::render;
+use crate::resources;
+use crate::model;
+use crate::types::bit::Set;
+use crate::shared::Direction;
 
 const NUM_WORKERS: usize = 8;
 

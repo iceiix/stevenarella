@@ -27,8 +27,8 @@ use serde_json;
 use reqwest;
 use zip;
 
-use types::hash::FNVHash;
-use ui;
+use crate::types::hash::FNVHash;
+use crate::ui;
 
 const RESOURCES_VERSION: &'static str = "1.11";
 const VANILLA_CLIENT_URL: &'static str = "https://launcher.mojang.com/mc/game/1.11/client/780e46b3a96091a7f42c028c615af45974629072/client.jar";

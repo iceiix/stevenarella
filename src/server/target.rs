@@ -1,10 +1,10 @@
 
-use world;
-use world::block;
-use shared::{Position, Direction};
+use crate::world;
+use crate::world::block;
+use crate::shared::{Position, Direction};
 use cgmath;
-use render;
-use render::model;
+use crate::render;
+use crate::render::model;
 use collision::{self, Aabb};
 
 pub struct Info {

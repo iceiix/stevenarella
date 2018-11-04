@@ -1,9 +1,9 @@
 
 use super::*;
-use ecs;
-use world;
-use render;
-use shared::Position as BPos;
+use crate::ecs;
+use crate::world;
+use crate::render;
+use crate::shared::Position as BPos;
 use cgmath::InnerSpace;
 
 pub struct ApplyVelocity {

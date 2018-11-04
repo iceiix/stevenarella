@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 
 use cgmath::{Point3, Matrix4};
 use byteorder::{WriteBytesExt, NativeEndian};
-use gl;
+use crate::gl;
 use super::glsl;
 
 pub struct Clouds {

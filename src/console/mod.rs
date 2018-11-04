@@ -21,9 +21,9 @@ use std::fs;
 use std::io::{BufWriter, Write, BufRead, BufReader};
 use log;
 
-use ui;
-use render;
-use format::{Component, TextComponent, Color};
+use crate::ui;
+use crate::render;
+use crate::format::{Component, TextComponent, Color};
 
 const FILTERED_CRATES: &'static [&'static str] = &[
     //"reqwest", // TODO: needed?

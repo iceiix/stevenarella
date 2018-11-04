@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ui;
-use render;
+use crate::ui;
+use crate::render;
 
 pub struct Connecting {
     elements: Option<UIElements>,

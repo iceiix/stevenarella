@@ -1,10 +1,10 @@
 
 use std::io::Write;
 use std::sync::{Arc, RwLock};
-use world::{self, block};
-use shared::Direction;
-use model::BlockVertex;
-use render;
+use crate::world::{self, block};
+use crate::shared::Direction;
+use crate::model::BlockVertex;
+use crate::render;
 
 pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lava: bool, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
     let get_liquid = if lava {

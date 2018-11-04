@@ -1,6 +1,6 @@
 
-use render;
-use render::model;
+use crate::render;
+use crate::render::model;
 use cgmath::{Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
 
 pub struct SunModel {

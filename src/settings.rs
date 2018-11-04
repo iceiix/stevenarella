@@ -1,4 +1,4 @@
-use console;
+use crate::console;
 use std::marker::PhantomData;
 use sdl2::keyboard::Keycode;
 // Might just rename this to settings.rs

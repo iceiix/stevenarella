@@ -18,11 +18,11 @@ use std::sync::mpsc;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use ui;
-use render;
-use format;
-use format::{Component, TextComponent};
-use protocol;
+use crate::ui;
+use crate::render;
+use crate::format;
+use crate::format::{Component, TextComponent};
+use crate::protocol;
 
 use serde_json;
 use std::time::{Duration};

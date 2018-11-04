@@ -1,9 +1,9 @@
 
 use std::sync::{Arc, RwLock};
 use std::f64::consts;
-use ui;
-use render;
-use resources;
+use crate::ui;
+use crate::render;
+use crate::resources;
 use std::time::{SystemTime, UNIX_EPOCH};
 use rand;
 use rand::Rng;

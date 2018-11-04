@@ -2,7 +2,7 @@
 pub mod player;
 pub mod block_entity;
 
-use ecs;
+use crate::ecs;
 use cgmath::Vector3;
 use collision::Aabb3;
 

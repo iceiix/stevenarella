@@ -23,8 +23,8 @@ pub mod edit_server;
 pub mod settings_menu;
 pub use self::settings_menu::{SettingsMenu, VideoSettingsMenu, AudioSettingsMenu};
 
-use render;
-use ui;
+use crate::render;
+use crate::ui;
 
 pub trait Screen {
     // Called once

@@ -6,15 +6,15 @@ use std::collections::HashMap;
 use std::cell::RefCell;
 use std::io::Write;
 use byteorder::{WriteBytesExt, NativeEndian};
-use resources;
-use render;
-use world;
-use world::block::{Block, TintType};
-use shared::Direction;
+use crate::resources;
+use crate::render;
+use crate::world;
+use crate::world::block::{Block, TintType};
+use crate::shared::Direction;
 use serde_json;
 
 use std::hash::BuildHasherDefault;
-use types::hash::FNVHash;
+use crate::types::hash::FNVHash;
 
 use rand::Rng;
 use image::GenericImageView;
@@ -943,7 +943,7 @@ fn calculate_biome(snapshot: &world::Snapshot, x: i32, z: i32, img: &image::Dyna
 fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z: i32,
                     x: f64, y: f64, z: f64, face: Direction, smooth: bool, force: bool) -> (u16, u16) {
     use std::cmp::max;
-    use world::block;
+    use crate::world::block;
     let (ox, oy, oz) = face.get_offset();
 
     let s_block_light = snapshot.get_block_light(orig_x + ox, orig_y + oy, orig_z + oz);

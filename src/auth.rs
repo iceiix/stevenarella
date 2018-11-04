@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use console;
+use crate::console;
 use std::marker::PhantomData;
 
 pub const CL_USERNAME: console::CVar<String> = console::CVar {

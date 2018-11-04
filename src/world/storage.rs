@@ -1,7 +1,7 @@
 
-use types::bit;
-use types::hash::FNVHash;
-use world::block;
+use crate::types::bit;
+use crate::types::hash::FNVHash;
+use crate::world::block;
 
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;

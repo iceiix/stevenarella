@@ -1,11 +1,11 @@
 
-use ecs;
-use format::{self, Component};
-use shared::{Direction, Position};
-use world;
-use world::block::Block;
-use render;
-use render::model::{self, FormatState};
+use crate::ecs;
+use crate::format::{self, Component};
+use crate::shared::{Direction, Position};
+use crate::world;
+use crate::world::block::Block;
+use crate::render;
+use crate::render::model::{self, FormatState};
 
 pub fn add_systems(m: &mut ecs::Manager) {
     let sys = SignRenderer::new(m);

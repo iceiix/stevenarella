@@ -19,12 +19,12 @@ use std::thread;
 
 use rand::{self, Rng};
 
-use ui;
-use render;
-use console;
-use protocol;
-use protocol::mojang;
-use auth;
+use crate::ui;
+use crate::render;
+use crate::console;
+use crate::protocol;
+use crate::protocol::mojang;
+use crate::auth;
 
 pub struct Login {
     elements: Option<UIElements>,

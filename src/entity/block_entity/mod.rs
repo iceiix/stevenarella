@@ -1,9 +1,9 @@
 
 pub mod sign;
 
-use world::block::Block;
-use shared::Position;
-use ecs;
+use crate::world::block::Block;
+use crate::shared::Position;
+use crate::ecs;
 
 pub fn add_systems(m: &mut ecs::Manager) {
     sign::add_systems(m);

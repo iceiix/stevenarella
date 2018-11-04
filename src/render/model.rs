@@ -1,17 +1,17 @@
 
 use super::glsl;
 use super::shaders;
-use gl;
+use crate::gl;
 use cgmath::{Point3, Matrix4, SquareMatrix};
 use collision::{self, Frustum, Sphere};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::sync::{Arc, RwLock};
-use types::hash::FNVHash;
-use shared::Direction;
+use crate::types::hash::FNVHash;
+use crate::shared::Direction;
 use byteorder::{WriteBytesExt, NativeEndian};
-use model::BlockVertex;
-use format::{self, Component};
+use crate::model::BlockVertex;
+use crate::format::{self, Component};
 
 pub struct Manager {
     collections: Vec<Collection>,
@@ -382,7 +382,7 @@ impl <'a> FormatState<'a> {
             let texture = self.renderer.ui.character_texture(ch);
             let w = self.renderer.ui.size_of_char(ch) as f32;
 
-            for vert in ::model::BlockVertex::face_by_direction(Direction::North) {
+            for vert in crate::model::BlockVertex::face_by_direction(Direction::North) {
                 self.text.push(Vertex {
                     x: vert.x * self.x_scale * w - (self.offset + w * self.x_scale),
                     y: vert.y * self.y_scale + 2.1 / 16.0,

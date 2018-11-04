@@ -14,11 +14,11 @@
 
 use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
-use resources;
-use gl;
-use render;
-use render::glsl;
-use render::shaders;
+use crate::resources;
+use crate::gl;
+use crate::render;
+use crate::render::glsl;
+use crate::render::shaders;
 use byteorder::{WriteBytesExt, NativeEndian};
 use image;
 use image::GenericImageView;

@@ -1,7 +1,7 @@
-use console;
-use render;
-use ui;
-use settings;
+use crate::console;
+use crate::render;
+use crate::ui;
+use crate::settings;
 
 use std::rc::Rc;
 

@@ -68,7 +68,7 @@ use std::rc::Rc;
 use std::marker::PhantomData;
 use std::thread;
 use std::sync::mpsc;
-use protocol::mojang;
+use crate::protocol::mojang;
 use sdl2::Sdl;
 use sdl2::keyboard;
 

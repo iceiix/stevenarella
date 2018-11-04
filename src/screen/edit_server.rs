@@ -15,8 +15,8 @@
 use std::fs;
 use std::collections::BTreeMap;
 
-use ui;
-use render;
+use crate::ui;
+use crate::render;
 
 use serde_json::{self, Value};
 

@@ -1,6 +1,6 @@
 
-use protocol::Serializable;
-use protocol::packet::play::serverbound::PluginMessageServerbound;
+use crate::protocol::Serializable;
+use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 
 pub struct Brand {
     pub brand: String,

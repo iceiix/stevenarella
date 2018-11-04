@@ -17,17 +17,17 @@ pub use steven_blocks as block;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::hash::BuildHasherDefault;
-use types::{bit, nibble};
-use shared::{Position, Direction};
-use types::hash::FNVHash;
-use protocol;
-use render;
+use crate::types::{bit, nibble};
+use crate::shared::{Position, Direction};
+use crate::types::hash::FNVHash;
+use crate::protocol;
+use crate::render;
 use collision;
 use cgmath::prelude::*;
-use chunk_builder;
-use ecs;
-use entity::block_entity;
-use format;
+use crate::chunk_builder;
+use crate::ecs;
+use crate::entity::block_entity;
+use crate::format;
 
 pub mod biome;
 mod storage;
@@ -317,7 +317,7 @@ impl World {
     }
 
     pub fn compute_render_list(&mut self, renderer: &mut render::Renderer) {
-        use chunk_builder;
+        use crate::chunk_builder;
         use std::collections::VecDeque;
         self.render_list.clear();
 
@@ -548,7 +548,7 @@ impl World {
     pub fn load_chunk(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
         use std::io::{Cursor, Read};
         use byteorder::ReadBytesExt;
-        use protocol::{VarInt, Serializable, LenPrefixed};
+        use crate::protocol::{VarInt, Serializable, LenPrefixed};
 
         let mut data = Cursor::new(data);
 
