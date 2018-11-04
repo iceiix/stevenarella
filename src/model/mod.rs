@@ -698,14 +698,14 @@ impl Factory {
     }
 }
 
-const FACE_ROTATION: &'static [Direction] = &[
+const FACE_ROTATION: &[Direction] = &[
     Direction::North,
     Direction::East,
     Direction::South,
     Direction::West,
 ];
 
-const FACE_ROTATION_X: &'static [Direction] = &[
+const FACE_ROTATION_X: &[Direction] = &[
     Direction::North,
     Direction::Down,
     Direction::South,
@@ -989,7 +989,7 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
 
 
 
-pub const PRECOMPUTED_VERTS: [&'static [BlockVertex; 4]; 6] = [
+pub const PRECOMPUTED_VERTS: [&[BlockVertex; 4]; 6] = [
     &[ // Up
         BlockVertex::base(0.0, 1.0, 0.0, 0, 0),
         BlockVertex::base(1.0, 1.0, 0.0, 1, 0),

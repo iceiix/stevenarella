@@ -23,10 +23,10 @@ pub struct Profile {
     pub access_token: String,
 }
 
-const JOIN_URL: &'static str = "https://sessionserver.mojang.com/session/minecraft/join";
-const LOGIN_URL: &'static str = "https://authserver.mojang.com/authenticate";
-const REFRESH_URL: &'static str = "https://authserver.mojang.com/refresh";
-const VALIDATE_URL: &'static str = "https://authserver.mojang.com/validate";
+const JOIN_URL: &str = "https://sessionserver.mojang.com/session/minecraft/join";
+const LOGIN_URL: &str = "https://authserver.mojang.com/authenticate";
+const REFRESH_URL: &str = "https://authserver.mojang.com/refresh";
+const VALIDATE_URL: &str = "https://authserver.mojang.com/validate";
 
 impl Profile {
     pub fn login(username: &str, password: &str, token: &str) -> Result<Profile, super::Error> {

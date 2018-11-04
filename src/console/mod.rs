@@ -25,7 +25,7 @@ use crate::ui;
 use crate::render;
 use crate::format::{Component, TextComponent, Color};
 
-const FILTERED_CRATES: &'static [&'static str] = &[
+const FILTERED_CRATES: &[&str] = &[
     //"reqwest", // TODO: needed?
     "mime",
 ];
