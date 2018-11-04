@@ -1121,8 +1121,8 @@ impl Serializable for PlayerInfoData {
                         props.push(prop);
                     }
                     let p = PlayerDetail::Add {
-                        uuid: uuid,
-                        name: name,
+                        uuid,
+                        name,
                         properties: props,
                         gamemode: Serializable::read_from(buf)?,
                         ping: Serializable::read_from(buf)?,
@@ -1138,19 +1138,19 @@ impl Serializable for PlayerInfoData {
                 }
                 1 => {
                     m.players.push(PlayerDetail::UpdateGamemode {
-                        uuid: uuid,
+                        uuid,
                         gamemode: Serializable::read_from(buf)?,
                     })
                 }
                 2 => {
                     m.players.push(PlayerDetail::UpdateLatency {
-                        uuid: uuid,
+                        uuid,
                         ping: Serializable::read_from(buf)?,
                     })
                 }
                 3 => {
                     m.players.push(PlayerDetail::UpdateDisplayName {
-                        uuid: uuid,
+                        uuid,
                         display: {
                             if bool::read_from(buf)? {
                                 Some(Serializable::read_from(buf)?)
