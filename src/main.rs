@@ -33,7 +33,6 @@ pub mod render;
 pub mod ui;
 pub mod screen;
 pub mod settings;
-#[macro_use]
 pub mod console;
 pub mod server;
 pub mod world;
