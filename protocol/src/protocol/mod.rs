@@ -19,7 +19,6 @@ use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use serde_json;
 use reqwest;
-use openssl;
 
 pub mod mojang;
 
@@ -694,7 +693,6 @@ pub enum Error {
     IOError(io::Error),
     Json(serde_json::Error),
     Reqwest(reqwest::Error),
-    OpenSSL(openssl::error::ErrorStack),
 }
 
 impl convert::From<io::Error> for Error {
@@ -715,12 +713,6 @@ impl convert::From<reqwest::Error> for Error {
     }
 }
 
-impl convert::From<openssl::error::ErrorStack> for Error {
-    fn from(e: openssl::error::ErrorStack) -> Error {
-        Error::OpenSSL(e)
-    }
-}
-
 impl ::std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
@@ -729,7 +721,6 @@ impl ::std::error::Error for Error {
             Error::IOError(ref e) => e.description(),
             Error::Json(ref e) => e.description(),
             Error::Reqwest(ref e) => e.description(),
-            Error::OpenSSL(ref e) => e.description(),
         }
     }
 }
@@ -742,7 +733,6 @@ impl ::std::fmt::Display for Error {
             Error::IOError(ref e) => e.fmt(f),
             Error::Json(ref e) => e.fmt(f),
             Error::Reqwest(ref e) => e.fmt(f),
-            Error::OpenSSL(ref e) => e.fmt(f),
         }
     }
 }
