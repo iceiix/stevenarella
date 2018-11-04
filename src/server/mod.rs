@@ -31,6 +31,7 @@ use cgmath::prelude::*;
 use types::Gamemode;
 use shared::{Axis, Position};
 use format;
+use rsa_public_encrypt_pkcs1;
 
 mod sun;
 pub mod plugin_messages;
@@ -102,8 +103,6 @@ macro_rules! handle_packet {
 impl Server {
 
     pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str) -> Result<Server, protocol::Error> {
-        use openssl::rand::rand_bytes;
-        use openssl::rsa::{Rsa, Padding};
         let mut conn = try!(protocol::Conn::new(address));
 
         let host = conn.host.clone();
@@ -144,14 +143,18 @@ impl Server {
             };
         }
 
-        let rsa = Rsa::public_key_from_der(&packet.public_key.data).unwrap();
+        println!("packet.public_key.data = {:?}", &packet.public_key.data);
         let mut shared = [0; 16];
-        rand_bytes(&mut shared).unwrap();
+        // TODO: is this cryptographically secure enough?
+        rand::thread_rng().fill(&mut shared);
 
-        let mut shared_e = vec![0; rsa.size() as usize];
-        let mut token_e = vec![0; rsa.size() as usize];
-        rsa.public_encrypt(&shared, &mut shared_e, Padding::PKCS1)?;
-        rsa.public_encrypt(&packet.verify_token.data, &mut token_e, Padding::PKCS1)?;
+        println!("shared ({:} bytes) = {:?}", shared.len(), &shared);
+        println!("packet.verify_token.data = {:?}", &packet.verify_token.data);
+
+        let shared_e = rsa_public_encrypt_pkcs1::encrypt(&packet.public_key.data, &shared).unwrap();
+        let token_e = rsa_public_encrypt_pkcs1::encrypt(&packet.public_key.data, &packet.verify_token.data).unwrap();
+        println!("new shared_e({:}) = {:?}", shared_e.len(), &shared_e);
+        println!("new token_e({:}) = {:?}", token_e.len(), &token_e);
 
         try!(profile.join_server(&packet.server_id, &shared, &packet.public_key.data));
 

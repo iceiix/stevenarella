@@ -28,14 +28,6 @@ build_script:
 
     cargo -V
 
-
-    vcpkg integrate install
-
-    vcpkg install openssl:%PLATFORM%-windows
-
-    set VCPKGRS_DYNAMIC=1
-
-
     appveyor DownloadFile https://www.libsdl.org/release/SDL2-devel-2.0.4-VC.zip -FileName sdl2-dev.zip
 
     mkdir C:\sdl2
@@ -53,10 +45,6 @@ build_script:
 
     cp C:\sdl2\SDL2-2.0.4\lib\%PLATFORM%\SDL2.dll dist-debug
 
-    cp C:\tools\vcpkg\installed\%PLATFORM%-windows\bin\libeay32.dll dist-debug
-
-    cp C:\tools\vcpkg\installed\%PLATFORM%-windows\bin\ssleay32.dll dist-debug
-
 
     cargo build --release
 
@@ -66,9 +54,6 @@ build_script:
 
     cp C:\sdl2\SDL2-2.0.4\lib\%PLATFORM%\SDL2.dll dist
 
-    cp C:\tools\vcpkg\installed\%PLATFORM%-windows\bin\libeay32.dll dist
-
-    cp C:\tools\vcpkg\installed\%PLATFORM%-windows\bin\ssleay32.dll dist
 artifacts:
 - path: dist
 - path: dist-debug

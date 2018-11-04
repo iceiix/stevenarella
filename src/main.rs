@@ -21,7 +21,6 @@ use std::time::{Instant, Duration};
 extern crate byteorder;
 #[macro_use]
 extern crate serde_json;
-extern crate openssl;
 extern crate aes;
 extern crate cfb8;
 extern crate sha1;
@@ -36,6 +35,7 @@ extern crate log;
 #[macro_use]
 extern crate lazy_static;
 extern crate collision;
+extern crate rsa_public_encrypt_pkcs1;
 pub extern crate steven_blocks;
 extern crate steven_shared as shared;
 
