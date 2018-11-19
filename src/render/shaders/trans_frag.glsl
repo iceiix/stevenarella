@@ -15,6 +15,7 @@ void main() {
     for (int i = 1; i < samples; i++) {
         col += texelFetch(tcolor, C, i);
     }
+    if (samples != 0)
     col /= float(samples);
 
     float r = accum.a;
