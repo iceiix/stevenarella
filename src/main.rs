@@ -221,7 +221,7 @@ fn main() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.drawable_size();
+        let (width, height) = window.size();
 
         let version = {
             let mut res = game.resource_manager.write().unwrap();
