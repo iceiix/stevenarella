@@ -70,6 +70,15 @@ For example on Debian-based systems such as Ubuntu Linux:
 apt-get install -y libsdl2-dev libsdl2-mixer-dev gcc libegl1-mesa-dev libgles2-mesa-dev
 ```
 
+### Installing dependencies on FreeBSD
+
+Install the SDL2 packages and configure the library path to find them:
+
+```sh
+pkg install sdl2 sdl2_gfx sdl2_image sdl2_mixer sdl2_net sdl2_ttf
+export LIBRARY_PATH=/usr/local/lib
+```
+
 ### Installing dependencies on OS X
 Installing them is easiest with [Homebrew](http://brew.sh/). To install SDL2 issue this command:
 
