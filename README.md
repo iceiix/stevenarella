@@ -22,7 +22,7 @@ Feel free to pop in to say hi, [Webchat can be found here](https://irc.spi.gt/ir
 Windows users can download pre-compiled builds from here: https://ci.appveyor.com/project/iceiix/steven
 (Select your platform, Click the artifacts tab and download Steven.zip)
 
-The Visual Studio 2015 Redistributable is required to run these builds.
+The Visual Studio 2017 Redistributable is required to run these builds.
 
 ## Building
 
@@ -78,11 +78,13 @@ brew install sdl2
 ```
 
 ### Installing dependencies on Windows
-Build with Visual Studio 2015. May build with other compilers, but not tested
+Install [Visual Studio 2017](https://visualstudio.microsoft.com/vs/older-downloads)
+with the Visual C++ option. May build with other compilers, but not tested
 (previously was built with MinGW and the GNU toolchain).
 
 Download [SDL2-devel-2.0.4-VC.zip](https://www.libsdl.org/release/SDL2-devel-2.0.4-VC.zip), extract and
-copy SDL2-2.0.4\lib\x64\SDL2.lib to C:\Rust\lib\rustlib\x86_64-pc-windows-msvc\lib\SDL2.lib.
+copy SDL2-2.0.4\lib\x64\SDL2.lib to .multirust\toolchains\beta-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-msvc\lib\SDL2.lib
+and SDL2-2.0.4\lib\x64\SDL2.dll to target\release.
 
 ## Running
 
