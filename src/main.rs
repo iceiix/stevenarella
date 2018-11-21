@@ -168,7 +168,7 @@ fn main() {
 
     let sdl = sdl2::init().unwrap();
     let sdl_video = sdl.video().unwrap();
-    let window = sdl2::video::WindowBuilder::new(&sdl_video, "Steven", 854, 480)
+    let mut window = sdl2::video::WindowBuilder::new(&sdl_video, "Steven", 854, 480)
                             .opengl()
                             .resizable()
                             .build()
@@ -262,12 +262,12 @@ fn main() {
         window.gl_swap_window();
 
         for event in events.poll_iter() {
-            handle_window_event(&window, &mut game, &mut ui_container, event);
+            handle_window_event(&mut window, &mut game, &mut ui_container, event);
         }
     }
 }
 
-fn handle_window_event(window: &sdl2::video::Window,
+fn handle_window_event(window: &mut sdl2::video::Window,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
                        event: sdl2::event::Event) {
@@ -345,6 +345,15 @@ fn handle_window_event(window: &sdl2::video::Window,
         }
         Event::KeyDown{keycode: Some(Keycode::Backquote), ..} => {
             game.console.lock().unwrap().toggle();
+        }
+        Event::KeyDown{keycode: Some(Keycode::F11), ..} => { // TODO: configurable binding in settings::Stevenkey
+            let state = match window.fullscreen_state() {
+                sdl2::video::FullscreenType::Off => sdl2::video::FullscreenType::Desktop,
+                sdl2::video::FullscreenType::True => sdl2::video::FullscreenType::Off,
+                sdl2::video::FullscreenType::Desktop => sdl2::video::FullscreenType::Off,
+            };
+
+            window.set_fullscreen(state).expect(&format!("failed to set fullscreen to {:?}", state));
         }
         Event::KeyDown{keycode: Some(key), keymod, ..} => {
             if game.focused {
