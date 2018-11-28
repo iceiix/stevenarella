@@ -288,12 +288,12 @@ init_shader! {
         uniform = {
             optional perspective_matrix => "perspectiveMatrix",
             optional camera_matrix => "cameraMatrix",
-            optional model_matrix => "modelMatrix[]",
+            optional model_matrix => "modelMatrix",
             optional texture => "textures",
             optional light_level => "lightLevel",
             optional sky_offset => "skyOffset",
             optional lighting => "lighting",
-            optional color_mul => "colorMul[]",
+            optional color_mul => "colorMul",
         },
     }
 }
