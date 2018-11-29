@@ -33,7 +33,8 @@ vec4 atlasTexture(vec2 tPos) {
 	return texture(textures, vec3(tPos, atlas));
 }
 
-ivec2 texP, heightP;
+ivec2 texP = ivec2(0, 0);
+ivec2 heightP = ivec2(0, 0);
 
 bool isSolid(ivec2 pos) {
 	float height = texelFetch(cloudMap, ivec2(mod(heightP + pos, 512)), 0).r;
