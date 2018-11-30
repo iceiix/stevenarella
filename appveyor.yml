@@ -28,22 +28,12 @@ build_script:
 
     cargo -V
 
-    appveyor DownloadFile https://www.libsdl.org/release/SDL2-devel-2.0.4-VC.zip -FileName sdl2-dev.zip
-
-    mkdir C:\sdl2
-
-    7z x sdl2-dev.zip -oC:\sdl2\ -y
-
-    cp C:\sdl2\SDL2-2.0.4\lib\%PLATFORM%\SDL2.lib C:\Rust\lib\rustlib\%RUST_INSTALL%\lib\SDL2.lib
-
-
     cargo build
 
     mkdir dist-debug
 
     cp target\debug\steven.exe dist-debug
 
-    cp C:\sdl2\SDL2-2.0.4\lib\%PLATFORM%\SDL2.dll dist-debug
 
 
     cargo build --release
@@ -52,7 +42,6 @@ build_script:
 
     cp target\release\steven.exe dist
 
-    cp C:\sdl2\SDL2-2.0.4\lib\%PLATFORM%\SDL2.dll dist
 
 artifacts:
 - path: dist

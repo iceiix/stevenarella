@@ -1,6 +1,6 @@
 use crate::console;
 use std::marker::PhantomData;
-use sdl2::keyboard::Keycode;
+use glutin::VirtualKeyCode;
 // Might just rename this to settings.rs
 
 pub const R_MAX_FPS: console::CVar<i64> = console::CVar {
@@ -46,7 +46,7 @@ macro_rules! create_keybind {
         description: $description,
         mutable: true,
         serializable: true,
-        default: &|| Keycode::$keycode as i64
+        default: &|| VirtualKeyCode::$keycode as i64
     })
 }
 
@@ -56,7 +56,7 @@ pub const CL_KEYBIND_LEFT: console::CVar<i64> = create_keybind!(A, "cl_keybind_l
 pub const CL_KEYBIND_RIGHT: console::CVar<i64> = create_keybind!(D, "cl_keybind_right", "Keybinding for moving to the right");
 pub const CL_KEYBIND_OPEN_INV: console::CVar<i64> = create_keybind!(E, "cl_keybind_open_inv", "Keybinding for opening the inventory");
 pub const CL_KEYBIND_SNEAK: console::CVar<i64> = create_keybind!(LShift, "cl_keybind_sneak", "Keybinding for sneaking");
-pub const CL_KEYBIND_SPRINT: console::CVar<i64> = create_keybind!(LCtrl, "cl_keybind_sprint", "Keybinding for sprinting");
+pub const CL_KEYBIND_SPRINT: console::CVar<i64> = create_keybind!(LControl, "cl_keybind_sprint", "Keybinding for sprinting");
 pub const CL_KEYBIND_JUMP: console::CVar<i64> = create_keybind!(Space, "cl_keybind_jump", "Keybinding for jumping");
 
 pub fn register_vars(vars: &mut console::Vars) {
@@ -74,7 +74,7 @@ pub fn register_vars(vars: &mut console::Vars) {
     vars.register(CL_KEYBIND_JUMP);
 }
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Hash, PartialEq, Eq, Debug)]
 pub enum Stevenkey {
     Forward,
     Backward,
@@ -93,7 +93,7 @@ impl Stevenkey {
             Stevenkey::Sprint, Stevenkey::Jump)
     }
 
-    pub fn get_by_keycode(keycode: Keycode, vars: &console::Vars) -> Option<Stevenkey> {
+    pub fn get_by_keycode(keycode: VirtualKeyCode, vars: &console::Vars) -> Option<Stevenkey> {
         for steven_key in Stevenkey::values() {
             if keycode as i64 == *vars.get(steven_key.get_cvar()) {
                 return Some(steven_key)

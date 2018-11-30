@@ -283,7 +283,7 @@ impl Renderer {
         self.frustum = collision::Frustum::from_matrix4(self.perspective_matrix * self.camera_matrix).unwrap();
     }
 
-    pub fn tick(&mut self, world: &mut world::World, delta: f64, width: u32, height: u32) {
+    pub fn tick(&mut self, world: &mut world::World, delta: f64, width: u32, height: u32, physical_width: u32, physical_height: u32) {
         self.update_textures(delta);
 
         let trans = self.trans.as_mut().unwrap();
@@ -342,8 +342,8 @@ impl Renderer {
         trans.main.bind_read();
         trans.trans.bind_draw();
         gl::blit_framebuffer(
-            0, 0, width as i32, height as i32,
-            0, 0, width as i32, height as i32,
+            0, 0, physical_width as i32, physical_height as i32,
+            0, 0, physical_width as i32, physical_height as i32,
             gl::ClearFlags::Depth, gl::NEAREST
         );
 

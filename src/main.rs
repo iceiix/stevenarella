@@ -47,8 +47,8 @@ use std::marker::PhantomData;
 use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
-use sdl2::Sdl;
-use sdl2::keyboard;
+use glutin;
+use glutin::GlContext;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -73,8 +73,12 @@ pub struct Game {
     chunk_builder: chunk_builder::ChunkBuilder,
 
     connect_reply: Option<mpsc::Receiver<Result<server::Server, protocol::Error>>>,
-
-    sdl: Sdl,
+    dpi_factor: f64,
+    last_mouse_x: f64,
+    last_mouse_y: f64,
+    last_mouse_xrel: f64,
+    last_mouse_yrel: f64,
+    is_fullscreen: bool,
 }
 
 impl Game {
@@ -145,7 +149,7 @@ impl Game {
 
 fn main() {
     let con = Arc::new(Mutex::new(console::Console::new()));
-    let (vars, mut vsync) = {
+    let (vars, vsync) = {
         let mut vars = console::Vars::new();
         vars.register(CL_BRAND);
         auth::register_vars(&mut vars);
@@ -166,28 +170,24 @@ fn main() {
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
 
-    let sdl = sdl2::init().unwrap();
-    let sdl_video = sdl.video().unwrap();
-    let mut window = sdl2::video::WindowBuilder::new(&sdl_video, "Steven", 854, 480)
-                            .opengl()
-                            .resizable()
-                            .build()
-                            .expect("Could not create sdl window.");
-    sdl2::hint::set_with_priority("SDL_MOUSE_RELATIVE_MODE_WARP", "1", &sdl2::hint::Hint::Override);
-    let gl_attr = sdl_video.gl_attr();
-    gl_attr.set_stencil_size(0);
-    gl_attr.set_depth_size(24);
-    gl_attr.set_context_major_version(3);
-    gl_attr.set_context_minor_version(2);
-    gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
+    let mut events_loop = glutin::EventsLoop::new();
+    let window_builder = glutin::WindowBuilder::new()
+        .with_title("Steven")
+        .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
+    let context = glutin::ContextBuilder::new()
+        .with_stencil_buffer(0)
+        .with_depth_buffer(24)
+        .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
+        .with_gl_profile(glutin::GlProfile::Core)
+        .with_vsync(vsync);
+    let mut window = glutin::GlWindow::new(window_builder, context, &events_loop)
+        .expect("Could not create glutin window.");
 
-    let gl_context = window.gl_create_context().unwrap();
-    window.gl_make_current(&gl_context).expect("Could not set current context.");
+    unsafe {
+        window.make_current().expect("Could not set current context.");
+    }
 
-    gl::init(&sdl_video);
-
-    sdl_video.gl_set_swap_interval(if vsync { 1 } else { 0 });
-
+    gl::init(&window);
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
@@ -199,6 +199,7 @@ fn main() {
     screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
 
     let textures = renderer.get_textures();
+    let dpi_factor = window.get_current_monitor().get_hidpi_factor();
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
         focused: false,
@@ -210,18 +211,23 @@ fn main() {
         should_close: false,
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
-        sdl,
+        dpi_factor,
+        last_mouse_x: 0.0,
+        last_mouse_y: 0.0,
+        last_mouse_xrel: 0.0,
+        last_mouse_yrel: 0.0,
+        is_fullscreen: false,
     };
     game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
 
-    let mut events = game.sdl.event_pump().unwrap();
     while !game.should_close {
 
         let now = Instant::now();
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.size();
+        let (width, height) = window.get_inner_size().unwrap().into();
+        let (physical_width, physical_height) = window.get_inner_size().unwrap().to_physical(game.dpi_factor).into();
 
         let version = {
             let mut res = game.resource_manager.write().unwrap();
@@ -231,15 +237,17 @@ fn main() {
 
         let vsync_changed = *game.vars.get(settings::R_VSYNC);
         if vsync != vsync_changed {
-            vsync = vsync_changed;
-            sdl_video.gl_set_swap_interval(if vsync { 1 } else { 0 });
+            println!("Changing vsync currently requires restarting");
+            break;
+            // TODO: after https://github.com/tomaka/glutin/issues/693 Allow changing vsync on a Window
+            //vsync = vsync_changed;
         }
         let fps_cap = *game.vars.get(settings::R_MAX_FPS);
 
         game.tick(delta);
         game.server.tick(&mut game.renderer, delta);
 
-        game.renderer.update_camera(width, height);
+        game.renderer.update_camera(physical_width, physical_height);
         game.server.world.compute_render_list(&mut game.renderer);
         game.chunk_builder.tick(&mut game.server.world, &mut game.renderer, version);
 
@@ -249,7 +257,7 @@ fn main() {
             .unwrap()
             .tick(&mut ui_container, &game.renderer, delta, width as f64);
         ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
-        game.renderer.tick(&mut game.server.world, delta, width, height);
+        game.renderer.tick(&mut game.server.world, delta, width, height, physical_width, physical_height);
 
 
         if fps_cap > 0 && !vsync {
@@ -259,129 +267,176 @@ fn main() {
                 thread::sleep(sleep_interval - frame_time);
             }
         }
-        window.gl_swap_window();
+        window.swap_buffers().expect("Failed to swap GL buffers");
 
-        for event in events.poll_iter() {
+        events_loop.poll_events(|event| {
             handle_window_event(&mut window, &mut game, &mut ui_container, event);
-        }
+        });
     }
 }
 
-fn handle_window_event(window: &mut sdl2::video::Window,
+fn handle_window_event(window: &mut glutin::GlWindow,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
-                       event: sdl2::event::Event) {
-    use sdl2::event::Event;
-    use sdl2::keyboard::Keycode;
-    use sdl2::mouse::MouseButton;
-    use std::f64::consts::PI;
-
-    let mouse = window.subsystem().sdl().mouse();
-
+                       event: glutin::Event) {
+    use glutin::*;
     match event {
-        Event::Quit{..} => game.should_close = true,
+        Event::DeviceEvent{event, ..} => match event {
+            DeviceEvent::MouseMotion{delta:(xrel, yrel)} => {
+                let (rx, ry) =
+                    if xrel > 1000.0 || yrel > 1000.0 {
+                        // Heuristic for if we were passed an absolute value instead of relative
+                        // Workaround https://github.com/tomaka/glutin/issues/1084 MouseMotion event returns absolute instead of relative values, when running Linux in a VM
+                        // Note SDL2 had a hint to handle this scenario:
+                        // sdl2::hint::set_with_priority("SDL_MOUSE_RELATIVE_MODE_WARP", "1", &sdl2::hint::Hint::Override);
+                        let s = 8000.0 + 0.01;
+                        ((xrel - game.last_mouse_xrel) / s, (yrel - game.last_mouse_yrel) / s)
+                    } else {
+                        let s = 2000.0 + 0.01;
+                        (xrel / s, yrel / s)
+                    };
 
-        Event::MouseMotion{x, y, xrel, yrel, ..} => {
-            let (width, height) = window.size();
-            if game.focused {
-                if !mouse.relative_mouse_mode() {
-                    mouse.set_relative_mouse_mode(true);
-                }
-                if let Some(player) = game.server.player {
-                    let s = 2000.0 + 0.01;
-                    let (rx, ry) = (xrel as f64 / s, yrel as f64 / s);
-                    let rotation = game.server.entities.get_component_mut(player, game.server.rotation).unwrap();
-                    rotation.yaw -= rx;
-                    rotation.pitch -= ry;
-                    if rotation.pitch < (PI/2.0) + 0.01 {
-                        rotation.pitch = (PI/2.0) + 0.01;
+                game.last_mouse_xrel = xrel;
+                game.last_mouse_yrel = yrel;
+
+                use std::f64::consts::PI;
+
+                if game.focused {
+                    window.grab_cursor(true).unwrap();
+                    window.hide_cursor(true);
+                    if let Some(player) = game.server.player {
+                        let rotation = game.server.entities.get_component_mut(player, game.server.rotation).unwrap();
+                        rotation.yaw -= rx;
+                        rotation.pitch -= ry;
+                        if rotation.pitch < (PI/2.0) + 0.01 {
+                            rotation.pitch = (PI/2.0) + 0.01;
+                        }
+                        if rotation.pitch > (PI/2.0)*3.0 - 0.01 {
+                            rotation.pitch = (PI/2.0)*3.0 - 0.01;
+                        }
                     }
-                    if rotation.pitch > (PI/2.0)*3.0 - 0.01 {
-                        rotation.pitch = (PI/2.0)*3.0 - 0.01;
+                } else {
+                    window.grab_cursor(false).unwrap();
+                    window.hide_cursor(false);
+                }
+            },
+
+            _ => ()
+        },
+
+        Event::WindowEvent{event, ..} => match event {
+            WindowEvent::CloseRequested => game.should_close = true,
+            WindowEvent::Resized(logical_size) => {
+                game.dpi_factor = window.get_hidpi_factor();
+                window.resize(logical_size.to_physical(game.dpi_factor));
+            },
+
+            WindowEvent::ReceivedCharacter(codepoint) => {
+                if !game.focused {
+                    ui_container.key_type(game, codepoint);
+                }
+            },
+
+            WindowEvent::MouseInput{device_id: _, state, button, modifiers: _} => {
+                match (state, button) {
+                    (ElementState::Released, MouseButton::Left) => {
+                        let (width, height) = window.get_inner_size().unwrap().into();
+
+                        if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
+                            game.focused = true;
+                            window.grab_cursor(true).unwrap();
+                            window.hide_cursor(true);
+                            return;
+                        }
+                        if !game.focused {
+                            window.grab_cursor(false).unwrap();
+                            window.hide_cursor(false);
+                            ui_container.click_at(game, game.last_mouse_x, game.last_mouse_y, width, height);
+                        }
+                    },
+                    (ElementState::Pressed, MouseButton::Right) => {
+                        if game.focused {
+                            game.server.on_right_click(&mut game.renderer);
+                        }
+                    },
+                    (_, _) => ()
+                }
+            },
+            WindowEvent::CursorMoved{device_id: _, position, modifiers: _} => {
+                let (x, y) = position.into();
+                game.last_mouse_x = x;
+                game.last_mouse_y = y;
+
+                if !game.focused {
+                    let (width, height) = window.get_inner_size().unwrap().into();
+                    ui_container.hover_at(game, x, y, width, height);
+                }
+            },
+            WindowEvent::MouseWheel{device_id: _, delta, phase: _, modifiers: _} => {
+                // TODO: line vs pixel delta? does pixel scrolling (e.g. touchpad) need scaling?
+                match delta {
+                    MouseScrollDelta::LineDelta(x, y) => {
+                        game.screen_sys.on_scroll(x.into(), y.into());
+                    },
+                    MouseScrollDelta::PixelDelta(position) => {
+                        let (x, y) = position.into();
+                        game.screen_sys.on_scroll(x, y);
+                    },
+                }
+            },
+            WindowEvent::KeyboardInput{device_id: _, input} => {
+                match (input.state, input.virtual_keycode) {
+                    (ElementState::Released, Some(VirtualKeyCode::Escape)) => {
+                        if game.focused {
+                            window.grab_cursor(false).unwrap();
+                            window.hide_cursor(false);
+                            game.focused = false;
+                            game.screen_sys.replace_screen(Box::new(screen::SettingsMenu::new(game.vars.clone(), true)));
+                        } else if game.screen_sys.is_current_closable() {
+                            window.grab_cursor(true).unwrap();
+                            window.hide_cursor(true);
+                            game.focused = true;
+                            game.screen_sys.pop_screen();
+                        }
                     }
-                }
-            } else {
-                if mouse.relative_mouse_mode() {
-                    mouse.set_relative_mouse_mode(false);
-                }
-                ui_container.hover_at(game, x as f64, y as f64, width as f64, height as f64);
-            }
-        }
-        Event::MouseButtonUp{mouse_btn: MouseButton::Left, x, y, ..} => {
-            let (width, height) = window.size();
+                    (ElementState::Pressed, Some(VirtualKeyCode::Grave)) => {
+                        game.console.lock().unwrap().toggle();
+                    },
+                    (ElementState::Pressed, Some(VirtualKeyCode::F11)) => {
+                        if game.is_fullscreen {
+                            window.set_fullscreen(Some(window.get_current_monitor()));
+                        } else {
+                            window.set_fullscreen(None);
+                        }
 
-            if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
-                game.focused = true;
-                if !mouse.relative_mouse_mode() {
-                    mouse.set_relative_mouse_mode(true);
+                        game.is_fullscreen = !game.is_fullscreen;
+                    },
+                    (ElementState::Pressed, Some(key)) => {
+                        if game.focused {
+                            if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &game.vars) {
+                                game.server.key_press(true, steven_key);
+                            }
+                        } else {
+                            let ctrl_pressed = input.modifiers.ctrl;
+                            ui_container.key_press(game, key, true, ctrl_pressed);
+                        }
+                    },
+                    (ElementState::Released, Some(key)) => {
+                        if game.focused {
+                            if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &game.vars) {
+                                game.server.key_press(false, steven_key);
+                            }
+                        } else {
+                            let ctrl_pressed = input.modifiers.ctrl;
+                            ui_container.key_press(game, key, false, ctrl_pressed);
+                        }
+                    },
+                    (_, None) => ()
                 }
-                return;
-            }
-            if !game.focused {
-                if mouse.relative_mouse_mode() {
-                    mouse.set_relative_mouse_mode(false);
-                }
-                ui_container.click_at(game, x as f64, y as f64, width as f64, height as f64);
-            }
-        }
-        Event::MouseButtonDown{mouse_btn: MouseButton::Right, ..} => {
-            if game.focused {
-                game.server.on_right_click(&mut game.renderer);
-            }
-        }
-        Event::MouseWheel{x, y, ..} => {
-            game.screen_sys.on_scroll(x as f64, y as f64);
-        }
-        Event::KeyUp{keycode: Some(Keycode::Escape), ..} => {
-            if game.focused {
-                mouse.set_relative_mouse_mode(false);
-                game.focused = false;
-                game.screen_sys.replace_screen(Box::new(screen::SettingsMenu::new(game.vars.clone(), true)));
-            } else if game.screen_sys.is_current_closable() {
-                mouse.set_relative_mouse_mode(true);
-                game.focused = true;
-                game.screen_sys.pop_screen();
-            }
-        }
-        Event::KeyDown{keycode: Some(Keycode::Backquote), ..} => {
-            game.console.lock().unwrap().toggle();
-        }
-        Event::KeyDown{keycode: Some(Keycode::F11), ..} => { // TODO: configurable binding in settings::Stevenkey
-            let state = match window.fullscreen_state() {
-                sdl2::video::FullscreenType::Off => sdl2::video::FullscreenType::Desktop,
-                sdl2::video::FullscreenType::True => sdl2::video::FullscreenType::Off,
-                sdl2::video::FullscreenType::Desktop => sdl2::video::FullscreenType::Off,
-            };
+            },
+            _ => ()
+        },
 
-            window.set_fullscreen(state).expect(&format!("failed to set fullscreen to {:?}", state));
-        }
-        Event::KeyDown{keycode: Some(key), keymod, ..} => {
-            if game.focused {
-                if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &game.vars) {
-                    game.server.key_press(true, steven_key);
-                }
-            } else {
-                let ctrl_pressed = keymod.intersects(keyboard::LCTRLMOD | keyboard::RCTRLMOD);
-                ui_container.key_press(game, key, true, ctrl_pressed);
-            }
-        }
-        Event::KeyUp{keycode: Some(key), keymod, ..} => {
-            if game.focused {
-                if let Some(steven_key) = settings::Stevenkey::get_by_keycode(key, &game.vars) {
-                    game.server.key_press(false, steven_key);
-                }
-            } else {
-                let ctrl_pressed = keymod.intersects(keyboard::LCTRLMOD | keyboard::RCTRLMOD);
-                ui_container.key_press(game, key, false, ctrl_pressed);
-            }
-        }
-        Event::TextInput{text, ..} => {
-            if !game.focused {
-                for c in text.chars() {
-                    ui_container.key_type(game, c);
-                }
-            }
-        }
         _ => (),
     }
 }

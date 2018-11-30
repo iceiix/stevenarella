@@ -18,7 +18,8 @@ use std::rc::{Rc, Weak};
 use std::cell::{RefCell, RefMut};
 use crate::render;
 use crate::format;
-use sdl2::keyboard::Keycode;
+use glutin::VirtualKeyCode;
+use clipboard::{ClipboardProvider, ClipboardContext};
 
 const SCALED_WIDTH: f64 = 854.0;
 const SCALED_HEIGHT: f64 = 480.0;
@@ -183,7 +184,7 @@ macro_rules! define_elements {
                 }
             }
 
-            fn key_press(&self, game: &mut crate::Game, key: Keycode, down: bool, ctrl_pressed: bool) {
+            fn key_press(&self, game: &mut crate::Game, key: VirtualKeyCode, down: bool, ctrl_pressed: bool) {
                 match *self {
                     $(
                         Element::$name(ref inner) => {
@@ -395,8 +396,8 @@ impl Container {
         focusables[next_focus].set_focused(true);
     }
 
-    pub fn key_press(&mut self, game: &mut crate::Game, key: Keycode, down: bool, ctrl_pressed: bool) {
-        if key == Keycode::Tab {
+    pub fn key_press(&mut self, game: &mut crate::Game, key: VirtualKeyCode, down: bool, ctrl_pressed: bool) {
+        if key == VirtualKeyCode::Tab {
             if !down {
                 self.cycle_focus();
             }
@@ -465,7 +466,7 @@ trait UIElement {
     fn get_size(&self) -> (f64, f64);
     fn is_dirty(&self) -> bool;
     fn post_init(_: Rc<RefCell<Self>>) {}
-    fn key_press(&mut self, _game: &mut crate::Game, _key: Keycode, _down: bool, _ctrl_pressed: bool) {}
+    fn key_press(&mut self, _game: &mut crate::Game, _key: VirtualKeyCode, _down: bool, _ctrl_pressed: bool) {}
     fn key_type(&mut self, _game: &mut crate::Game, _c: char) {}
     fn tick(&mut self, renderer: &mut render::Renderer);
 }
@@ -1309,10 +1310,10 @@ impl TextBoxBuilder {
 }
 
 impl UIElement for TextBox {
-    fn key_press(&mut self, game: &mut crate::Game, key: Keycode, down: bool, ctrl_pressed: bool) {
+    fn key_press(&mut self, game: &mut crate::Game, key: VirtualKeyCode, down: bool, ctrl_pressed: bool) {
         match (key, down) {
-            (Keycode::Backspace, false) => {self.input.pop();},
-            (Keycode::Return, false) => {
+            (VirtualKeyCode::Back, false) => {self.input.pop();},
+            (VirtualKeyCode::Return, false) => {
                 use std::mem;
                 let len = self.submit_funcs.len();
                 let mut temp = mem::replace(&mut self.submit_funcs, Vec::with_capacity(len));
@@ -1321,12 +1322,12 @@ impl UIElement for TextBox {
                 }
                 self.submit_funcs.append(&mut temp);
             },
-            (Keycode::V, true) => {
+            (VirtualKeyCode::V, true) => {
                 if ctrl_pressed {
-                    let clipboard = game.sdl.video().unwrap().clipboard();
-                    if clipboard.has_clipboard_text() {
-                        let text = clipboard.clipboard_text().unwrap();
-                        self.input.push_str(&text);
+                    let mut clipboard: ClipboardContext = ClipboardProvider::new().unwrap();
+                    match clipboard.get_contents() {
+                        Ok(text) => self.input.push_str(&text),
+                        Err(_) => ()
                     }
                 }
             },
