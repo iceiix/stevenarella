@@ -15,7 +15,7 @@
 #![recursion_limit="300"]
 
 use std::time::{Instant, Duration};
-use log::info;
+use log::{info, warn};
 extern crate steven_shared as shared;
 
 #[macro_use]
@@ -73,6 +73,8 @@ pub struct Game {
     chunk_builder: chunk_builder::ChunkBuilder,
 
     connect_reply: Option<mpsc::Receiver<Result<server::Server, protocol::Error>>>,
+    protocol_version: i32,
+
     dpi_factor: f64,
     last_mouse_x: f64,
     last_mouse_y: f64,
@@ -83,6 +85,23 @@ pub struct Game {
 
 impl Game {
     pub fn connect_to(&mut self, address: &str) {
+        // Read saved server protocol version from ping response TODO: get from memory?
+        use std::fs;
+        let file = match fs::File::open("server_versions.json") {
+            Ok(val) => val,
+            Err(_) => return,
+        };
+        let server_versions_info: serde_json::Value = serde_json::from_reader(file).unwrap();
+        let protocol_version = {
+            if let Some(v) = server_versions_info.get(address) {
+                v.as_i64().unwrap() as i32
+            } else {
+                warn!("Server protocol version not known for {} (no ping response?), defaulting to {}", address, protocol::SUPPORTED_PROTOCOL);
+                protocol::SUPPORTED_PROTOCOL
+            }
+        };
+
+        self.protocol_version = protocol_version;
         let (tx, rx) = mpsc::channel();
         self.connect_reply = Some(rx);
         let address = address.to_owned();
@@ -93,7 +112,7 @@ impl Game {
             access_token: self.vars.get(auth::AUTH_TOKEN).clone(),
         };
         thread::spawn(move || {
-            tx.send(server::Server::connect(resources, profile, &address)).unwrap();
+            tx.send(server::Server::connect(resources, profile, &address, protocol_version)).unwrap();
         });
     }
 
@@ -211,6 +230,7 @@ fn main() {
         should_close: false,
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
+        protocol_version: protocol::SUPPORTED_PROTOCOL,
         dpi_factor,
         last_mouse_x: 0.0,
         last_mouse_y: 0.0,

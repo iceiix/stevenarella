@@ -103,13 +103,13 @@ macro_rules! handle_packet {
 
 impl Server {
 
-    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str) -> Result<Server, protocol::Error> {
+    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address)?;
 
         let host = conn.host.clone();
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
-             protocol_version: protocol::VarInt(protocol::SUPPORTED_PROTOCOL),
+             protocol_version: protocol::VarInt(protocol_version),
              host,
              port,
              next: protocol::VarInt(2),
