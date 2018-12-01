@@ -751,7 +751,7 @@ state_packets!(
                 field flags: Option<u8> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
                 field name_tag_visibility: Option<String> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
                 field collision_rule: Option<String> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
-                field color: Option<u8> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
+                field color: Option<i8> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
                 field players: Option<LenPrefixed<VarInt, String>> = when(|p: &Teams| p.mode == 0 || p.mode == 3 || p.mode == 4),
             }
             /// UpdateScore is used to update or remove an item from a scoreboard

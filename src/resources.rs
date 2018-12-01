@@ -30,8 +30,8 @@ use zip;
 use crate::types::hash::FNVHash;
 use crate::ui;
 
-const RESOURCES_VERSION: &str = "1.11";
-const VANILLA_CLIENT_URL: &str = "https://launcher.mojang.com/mc/game/1.11/client/780e46b3a96091a7f42c028c615af45974629072/client.jar";
+const RESOURCES_VERSION: &str = "1.11.2";
+const VANILLA_CLIENT_URL: &str = "https://launcher.mojang.com/mc/game/1.11.2/client/db5aa600f0b0bf508aaf579509b345c4e34087be/client.jar";
 const ASSET_VERSION: &str = "1.11";
 const ASSET_INDEX_URL: &str = "https://launchermeta.mojang.com/mc/assets/1.11/e02b8fba4390e173057895c56ecc91e3ce3bbd40/1.11.json";
 
