@@ -45,6 +45,9 @@ impl Component {
             })
         } else if v.get("text").is_some() {
             Component::Text(TextComponent::from_value(v, modifier))
+        } else if v.get("translate").is_some() {
+            // TODO: translations
+            Component::Text(TextComponent::new(v.get("translate").unwrap().as_str().unwrap()))
         } else {
             modifier.color = Some(Color::RGB(255, 0, 0));
             Component::Text(TextComponent {
