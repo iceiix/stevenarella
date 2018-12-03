@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #![allow(dead_code)]
+#![allow(non_camel_case_types)]
 
 use aes::Aes128;
 use cfb8::Cfb8;
@@ -36,7 +37,7 @@ use flate2::Compression;
 use std::time::{Instant, Duration};
 use crate::shared::Position;
 
-pub const SUPPORTED_PROTOCOL: i32 = 340;
+pub const SUPPORTED_PROTOCOLS: [i32; 3] = [340, 316, 315];
 
 
 /// Helper macro for defining packets
@@ -83,130 +84,7 @@ macro_rules! state_packets {
 
                 #[allow(non_upper_case_globals)]
                 pub mod internal_ids {
-pub const Handshake: i32 = 0x00;
-pub const TeleportConfirm: i32 = 0x00;
-pub const TabComplete: i32 = 0x01;
-pub const ChatMessage: i32 = 0x02;
-pub const ClientStatus: i32 = 0x03;
-pub const ClientSettings: i32 = 0x04;
-pub const ConfirmTransactionServerbound: i32 = 0x05;
-pub const EnchantItem: i32 = 0x06;
-pub const ClickWindow: i32 = 0x07;
-pub const CloseWindow: i32 = 0x08;
-pub const PluginMessageServerbound: i32 = 0x09;
-pub const UseEntity: i32 = 0x0a;
-pub const KeepAliveServerbound: i32 = 0x0b;
-pub const Player: i32 = 0x0c;
-pub const PlayerPosition: i32 = 0x0d;
-pub const PlayerPositionLook: i32 = 0x0e;
-pub const PlayerLook: i32 = 0x0f;
-pub const VehicleMove: i32 = 0x10;
-pub const SteerBoat: i32 = 0x11;
-pub const CraftRecipeRequest: i32 = 0x12;
-pub const ClientAbilities: i32 = 0x13;
-pub const PlayerDigging: i32 = 0x14;
-pub const PlayerAction: i32 = 0x15;
-pub const SteerVehicle: i32 = 0x16;
-pub const CraftingBookData: i32 = 0x17;
-pub const ResourcePackStatus: i32 = 0x18;
-pub const AdvancementTab: i32 = 0x19;
-pub const HeldItemChange: i32 = 0x1a;
-pub const CreativeInventoryAction: i32 = 0x1b;
-pub const SetSign: i32 = 0x1c;
-pub const ArmSwing: i32 = 0x1d;
-pub const SpectateTeleport: i32 = 0x1e;
-pub const PlayerBlockPlacement: i32 = 0x1f;
-pub const UseItem: i32 = 0x20;
-pub const SpawnObject: i32 = 0x00;
-pub const SpawnExperienceOrb: i32 = 0x01;
-pub const SpawnGlobalEntity: i32 = 0x02;
-pub const SpawnMob: i32 = 0x03;
-pub const SpawnPainting: i32 = 0x04;
-pub const SpawnPlayer: i32 = 0x05;
-pub const Animation: i32 = 0x06;
-pub const Statistics: i32 = 0x07;
-pub const BlockBreakAnimation: i32 = 0x08;
-pub const UpdateBlockEntity: i32 = 0x09;
-pub const BlockAction: i32 = 0x0a;
-pub const BlockChange: i32 = 0x0b;
-pub const BossBar: i32 = 0x0c;
-pub const ServerDifficulty: i32 = 0x0d;
-pub const TabCompleteReply: i32 = 0x0e;
-pub const ServerMessage: i32 = 0x0f;
-pub const MultiBlockChange: i32 = 0x10;
-pub const ConfirmTransaction: i32 = 0x11;
-pub const WindowClose: i32 = 0x12;
-pub const WindowOpen: i32 = 0x13;
-pub const WindowItems: i32 = 0x14;
-pub const WindowProperty: i32 = 0x15;
-pub const WindowSetSlot: i32 = 0x16;
-pub const SetCooldown: i32 = 0x17;
-pub const PluginMessageClientbound: i32 = 0x18;
-pub const NamedSoundEffect: i32 = 0x19;
-pub const Disconnect: i32 = 0x1a;
-pub const EntityAction: i32 = 0x1b;
-pub const Explosion: i32 = 0x1c;
-pub const ChunkUnload: i32 = 0x1d;
-pub const ChangeGameState: i32 = 0x1e;
-pub const KeepAliveClientbound: i32 = 0x1f;
-pub const ChunkData: i32 = 0x20;
-pub const Effect: i32 = 0x21;
-pub const Particle: i32 = 0x22;
-pub const JoinGame: i32 = 0x23;
-pub const Maps: i32 = 0x24;
-pub const Entity: i32 = 0x25;
-pub const EntityMove: i32 = 0x26;
-pub const EntityLookAndMove: i32 = 0x27;
-pub const EntityLook: i32 = 0x28;
-pub const VehicleTeleport: i32 = 0x29;
-pub const SignEditorOpen: i32 = 0x2a;
-pub const CraftRecipeResponse: i32 = 0x2b;
-pub const PlayerAbilities: i32 = 0x2c;
-pub const CombatEvent: i32 = 0x2d;
-pub const PlayerInfo: i32 = 0x2e;
-pub const TeleportPlayer: i32 = 0x2f;
-pub const EntityUsedBed: i32 = 0x30;
-pub const UnlockRecipes: i32 = 0x31;
-pub const EntityDestroy: i32 = 0x32;
-pub const EntityRemoveEffect: i32 = 0x33;
-pub const ResourcePackSend: i32 = 0x34;
-pub const Respawn: i32 = 0x35;
-pub const EntityHeadLook: i32 = 0x36;
-pub const SelectAdvancementTab: i32 = 0x37;
-pub const WorldBorder: i32 = 0x38;
-pub const Camera: i32 = 0x39;
-pub const SetCurrentHotbarSlot: i32 = 0x3a;
-pub const ScoreboardDisplay: i32 = 0x3b;
-pub const EntityMetadata: i32 = 0x3c;
-pub const EntityAttach: i32 = 0x3d;
-pub const EntityVelocity: i32 = 0x3e;
-pub const EntityEquipment: i32 = 0x3f;
-pub const SetExperience: i32 = 0x40;
-pub const UpdateHealth: i32 = 0x41;
-pub const ScoreboardObjective: i32 = 0x42;
-pub const SetPassengers: i32 = 0x43;
-pub const Teams: i32 = 0x44;
-pub const UpdateScore: i32 = 0x45;
-pub const SpawnPosition: i32 = 0x46;
-pub const TimeUpdate: i32 = 0x47;
-pub const Title: i32 = 0x48;
-pub const SoundEffect: i32 = 0x49;
-pub const PlayerListHeaderFooter: i32 = 0x4a;
-pub const CollectItem: i32 = 0x4b;
-pub const EntityTeleport: i32 = 0x4c;
-pub const Advancements: i32 = 0x4d;
-pub const EntityProperties: i32 = 0x4e;
-pub const EntityEffect: i32 = 0x4f;
-pub const LoginStart: i32 = 0x00;
-pub const EncryptionResponse: i32 = 0x01;
-pub const LoginDisconnect: i32 = 0x00;
-pub const EncryptionRequest: i32 = 0x01;
-pub const LoginSuccess: i32 = 0x02;
-pub const SetInitialCompression: i32 = 0x03;
-pub const StatusRequest: i32 = 0x00;
-pub const StatusPing: i32 = 0x01;
-pub const StatusResponse: i32 = 0x00;
-pub const StatusPong: i32 = 0x01;
+                    create_ids!(i32, $($name),*);
                 }
 
                 $(
@@ -217,7 +95,9 @@ pub const StatusPong: i32 = 0x01;
 
                     impl PacketType for $name {
 
-                        fn packet_id(&self) -> i32 { internal_ids::$name }
+                        fn packet_id(&self, version: i32) -> i32 {
+                            packet::versions::translate_internal_packet_id_for_version(version, State::$stateName, Direction::$dirName, internal_ids::$name, false)
+                        }
 
                         fn write<W: io::Write>(self, buf: &mut W) -> Result<(), Error> {
                             $(
@@ -237,14 +117,15 @@ pub const StatusPong: i32 = 0x01;
 
         /// Returns the packet for the given state, direction and id after parsing the fields
         /// from the buffer.
-        pub fn packet_by_id<R: io::Read>(state: State, dir: Direction, id: i32, mut buf: &mut R) -> Result<Option<Packet>, Error> {
+        pub fn packet_by_id<R: io::Read>(version: i32, state: State, dir: Direction, id: i32, mut buf: &mut R) -> Result<Option<Packet>, Error> {
             match state {
                 $(
                     State::$stateName => {
                         match dir {
                             $(
                                 Direction::$dirName => {
-                                    match id {
+                                    let internal_id = packet::versions::translate_internal_packet_id_for_version(version, state, dir, id, true);
+                                    match internal_id {
                                     $(
                                         self::$state::$dir::internal_ids::$name => {
                                             use self::$state::$dir::$name;
@@ -269,8 +150,52 @@ pub const StatusPong: i32 = 0x01;
     }
 }
 
-pub mod packet;
+#[macro_export]
+macro_rules! protocol_packet_ids {
+    ($($state:ident $stateName:ident {
+       $($dir:ident $dirName:ident {
+           $(
+               $(#[$attr:meta])*
+               $id:expr => $name:ident
+           )*
+       })+
+    })+) => {
+        use crate::protocol::*;
 
+        pub fn translate_internal_packet_id(state: State, dir: Direction, id: i32, to_internal: bool) -> i32 {
+            match state {
+                $(
+                    State::$stateName => {
+                        match dir {
+                            $(
+                                Direction::$dirName => {
+                                    if to_internal {
+                                        match id {
+                                        $(
+                                            $id => crate::protocol::packet::$state::$dir::internal_ids::$name,
+                                        )*
+                                            _ => panic!("bad packet id $id in $dir $state"),
+                                        }
+                                    } else {
+                                        match id {
+                                        $(
+                                            crate::protocol::packet::$state::$dir::internal_ids::$name => $id,
+                                        )*
+                                            _ => panic!("bad packet internal id $id in $dir $state"),
+                                        }
+                                    }
+                                }
+                            )*
+                        }
+                    }
+                )*
+            }
+        }
+    }
+}
+
+pub mod packet;
+pub mod versions;
 pub trait Serializable: Sized {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error>;
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error>;
@@ -868,6 +793,7 @@ pub struct Conn {
     pub host: String,
     pub port: u16,
     direction: Direction,
+    pub protocol_version: i32,
     pub state: State,
 
     cipher: Option<Aes128Cfb>,
@@ -878,7 +804,7 @@ pub struct Conn {
 }
 
 impl Conn {
-    pub fn new(target: &str) -> Result<Conn, Error> {
+    pub fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
         // TODO SRV record support
         let mut parts = target.split(':').collect::<Vec<&str>>();
         let address = if parts.len() == 1 {
@@ -894,6 +820,7 @@ impl Conn {
             port: parts[1].parse().unwrap(),
             direction: Direction::Serverbound,
             state: State::Handshaking,
+            protocol_version,
             cipher: Option::None,
             compression_threshold: -1,
             compression_read: Option::None,
@@ -903,7 +830,7 @@ impl Conn {
 
     pub fn write_packet<T: PacketType>(&mut self, packet: T) -> Result<(), Error> {
         let mut buf = Vec::new();
-        VarInt(packet.packet_id()).write_to(&mut buf)?;
+        VarInt(packet.packet_id(self.protocol_version)).write_to(&mut buf)?;
         packet.write(&mut buf)?;
 
         let mut extra = if self.compression_threshold >= 0 {
@@ -963,7 +890,7 @@ impl Conn {
             Direction::Serverbound => Direction::Clientbound,
         };
 
-        let packet = packet::packet_by_id(self.state, dir, id, &mut buf)?;
+        let packet = packet::packet_by_id(self.protocol_version, self.state, dir, id, &mut buf)?;
 
         match packet {
             Some(val) => {
@@ -998,7 +925,7 @@ impl Conn {
         let host = self.host.clone();
         let port = self.port;
         self.write_packet(Handshake {
-            protocol_version: VarInt(SUPPORTED_PROTOCOL),
+            protocol_version: VarInt(self.protocol_version),
             host,
             port,
             next: VarInt(1),
@@ -1131,6 +1058,7 @@ impl Clone for Conn {
             port: self.port,
             direction: self.direction,
             state: self.state,
+            protocol_version: self.protocol_version,
             cipher: Option::None,
             compression_threshold: self.compression_threshold,
             compression_read: Option::None,
@@ -1140,7 +1068,7 @@ impl Clone for Conn {
 }
 
 pub trait PacketType {
-    fn packet_id(&self) -> i32;
+    fn packet_id(&self, protocol_version: i32) -> i32;
 
     fn write<W: io::Write>(self, buf: &mut W) -> Result<(), Error>;
 }
