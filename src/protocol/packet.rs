@@ -214,6 +214,10 @@ state_packets!(
             packet ResourcePackStatus {
                 field result: VarInt =,
             }
+            packet ResourcePackStatus_hash {
+                field hash: String =,
+                field result: VarInt =,
+            }
             // TODO: Document
             packet AdvancementTab {
                 field action: VarInt =,
@@ -493,6 +497,15 @@ state_packets!(
                 field volume: f32 =,
                 field pitch: f32 =,
             }
+            packet NamedSoundEffect_u8 {
+                field name: String =,
+                field category: VarInt =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
+                field volume: f32 =,
+                field pitch: u8 =,
+            }
             /// Disconnect causes the client to disconnect displaying the passed reason.
             packet Disconnect {
                 field reason: format::Component =,
@@ -546,6 +559,13 @@ state_packets!(
                 field bitmask: VarInt =,
                 field data: LenPrefixedBytes<VarInt> =,
                 field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =,
+            }
+            packet ChunkData_NoEntities {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field new: bool =,
+                field bitmask: VarInt =,
+                field data: LenPrefixedBytes<VarInt> =,
             }
             /// Effect plays a sound effect or particle at the target location with the
             /// volume (of sounds) being relative to the player's position unless
@@ -857,6 +877,14 @@ state_packets!(
                 field fade_stay: Option<i32> = when(|p: &Title_notext| p.action.0 == 2),
                 field fade_out: Option<i32> = when(|p: &Title_notext| p.action.0 == 2),
             }
+            /// UpdateSign sets or changes the text on a sign.
+            packet UpdateSign {
+                field location: Position =,
+                field line1: format::Component =,
+                field line2: format::Component =,
+                field line3: format::Component =,
+                field line4: format::Component =,
+            }
             /// SoundEffect plays the named sound at the target location.
             packet SoundEffect {
                 field name: VarInt =,
@@ -866,6 +894,15 @@ state_packets!(
                 field z: i32 =,
                 field volume: f32 =,
                 field pitch: f32 =,
+            }
+            packet SoundEffect_u8 {
+                field name: VarInt =,
+                field category: VarInt =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
+                field volume: f32 =,
+                field pitch: u8 =,
             }
             /// PlayerListHeaderFooter updates the header/footer of the player list.
             packet PlayerListHeaderFooter {
