@@ -104,7 +104,7 @@ macro_rules! handle_packet {
 impl Server {
 
     pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32) -> Result<Server, protocol::Error> {
-        let mut conn = protocol::Conn::new(address)?;
+        let mut conn = protocol::Conn::new(address, protocol_version)?;
 
         let host = conn.host.clone();
         let port = conn.port;
@@ -374,7 +374,8 @@ impl Server {
                         self pck {
                             JoinGame => on_game_join,
                             Respawn => on_respawn,
-                            KeepAliveClientbound => on_keep_alive,
+                            KeepAliveClientbound_i64 => on_keep_alive_i64,
+                            KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             ChunkData => on_chunk_data,
                             ChunkUnload => on_chunk_unload,
                             BlockChange => on_block_change,
@@ -536,8 +537,14 @@ impl Server {
         let _ = self.conn.as_mut().unwrap().write_packet(p); // TODO handle errors
     }
 
-    fn on_keep_alive(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound) {
-        self.write_packet(packet::play::serverbound::KeepAliveServerbound {
+    fn on_keep_alive_i64(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound_i64) {
+        self.write_packet(packet::play::serverbound::KeepAliveServerbound_i64 {
+            id: keep_alive.id,
+        });
+    }
+
+    fn on_keep_alive_varint(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound_VarInt) {
+        self.write_packet(packet::play::serverbound::KeepAliveServerbound_VarInt {
             id: keep_alive.id,
         });
     }

@@ -96,8 +96,8 @@ impl Game {
             if let Some(v) = server_versions_info.get(address) {
                 v.as_i64().unwrap() as i32
             } else {
-                warn!("Server protocol version not known for {} (no ping response?), defaulting to {}", address, protocol::SUPPORTED_PROTOCOL);
-                protocol::SUPPORTED_PROTOCOL
+                warn!("Server protocol version not known for {} (no ping response?), defaulting to {}", address, protocol::SUPPORTED_PROTOCOLS[0]);
+                protocol::SUPPORTED_PROTOCOLS[0]
             }
         };
 
@@ -230,7 +230,7 @@ fn main() {
         should_close: false,
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
-        protocol_version: protocol::SUPPORTED_PROTOCOL,
+        protocol_version: protocol::SUPPORTED_PROTOCOLS[0],
         dpi_factor,
         last_mouse_x: 0.0,
         last_mouse_y: 0.0,

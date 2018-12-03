@@ -123,8 +123,11 @@ state_packets!(
             /// KeepAliveServerbound is sent by a client as a response to a
             /// KeepAliveClientbound. If the client doesn't reply the server
             /// may disconnect the client.
-            packet KeepAliveServerbound {
+            packet KeepAliveServerbound_i64 {
                 field id: i64 =,
+            }
+            packet KeepAliveServerbound_VarInt {
+                field id: VarInt =,
             }
             /// PlayerPosition is used to update the player's position.
             packet PlayerPosition {
@@ -505,8 +508,11 @@ state_packets!(
             /// client is still responding and keep the connection open.
             /// The client should reply with the KeepAliveServerbound
             /// packet setting ID to the same as this one.
-            packet KeepAliveClientbound {
+            packet KeepAliveClientbound_i64 {
                 field id: i64 =,
+            }
+            packet KeepAliveClientbound_VarInt {
+                field id: VarInt =,
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
