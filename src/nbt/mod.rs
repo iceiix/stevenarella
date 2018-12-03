@@ -34,6 +34,7 @@ pub enum Tag {
     List(Vec<Tag>),
     Compound(HashMap<String, Tag>),
     IntArray(Vec<i32>),
+    LongArray(Vec<i64>),
 }
 
 #[derive(Debug, Clone)]
@@ -155,6 +156,14 @@ impl Tag {
         }
     }
 
+    pub fn as_long_array(&self) -> Option<&[i64]> {
+        match *self {
+            Tag::LongArray(ref val) => Some(&val[..]),
+            _ => None,
+        }
+    }
+
+
     fn internal_id(&self) -> u8 {
         match *self {
             Tag::End => 0,
@@ -169,6 +178,7 @@ impl Tag {
             Tag::List(_) => 9,
             Tag::Compound(_) => 10,
             Tag::IntArray(_) => 11,
+            Tag::LongArray(_) => 12,
         }
     }
 
@@ -217,6 +227,14 @@ impl Tag {
                 }
                 data
             })),
+            12 => Ok(Tag::LongArray({
+                let len: i32 = Serializable::read_from(buf)?;
+                let mut data = Vec::with_capacity(len as usize);
+                for _ in 0..len {
+                    data.push(buf.read_i64::<BigEndian>()?);
+                }
+                data
+            })),
             _ => Err(protocol::Error::Err("invalid tag".to_owned())),
         }
     }
@@ -262,6 +280,12 @@ impl Serializable for Tag {
                 buf.write_u8(0)?;
             }
             Tag::IntArray(ref val) => {
+                (val.len() as i32).write_to(buf)?;
+                for v in val {
+                    v.write_to(buf)?;
+                }
+            }
+            Tag::LongArray(ref val) => {
                 (val.len() as i32).write_to(buf)?;
                 for v in val {
                     v.write_to(buf)?;
