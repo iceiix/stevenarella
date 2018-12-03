@@ -36,14 +36,14 @@ protocol_packet_ids!(
             0x19 => SetSign
             0x1a => ArmSwing
             0x1b => SpectateTeleport
-            0x1c => PlayerBlockPlacement_f32
+            0x1c => PlayerBlockPlacement_u8
             0x1d => UseItem
         }
         clientbound Clientbound {
             0x00 => SpawnObject
             0x01 => SpawnExperienceOrb
             0x02 => SpawnGlobalEntity
-            0x03 => SpawnMob
+            0x03 => SpawnMob_u8
             0x04 => SpawnPainting
             0x05 => SpawnPlayer
             0x06 => Animation
@@ -109,10 +109,10 @@ protocol_packet_ids!(
             0x42 => UpdateScore
             0x43 => SpawnPosition
             0x44 => TimeUpdate
-            0x45 => Title
+            0x45 => Title_notext
             0x46 => SoundEffect
             0x47 => PlayerListHeaderFooter
-            0x48 => CollectItem
+            0x48 => CollectItem_nocount
             0x49 => EntityTeleport
             0x4a => EntityProperties
             0x4b => EntityEffect

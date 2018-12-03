@@ -37,7 +37,7 @@ use flate2::Compression;
 use std::time::{Instant, Duration};
 use crate::shared::Position;
 
-pub const SUPPORTED_PROTOCOLS: [i32; 3] = [340, 316, 315];
+pub const SUPPORTED_PROTOCOLS: [i32; 4] = [340, 316, 315, 210];
 
 
 /// Helper macro for defining packets

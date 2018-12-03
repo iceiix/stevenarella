@@ -39,7 +39,7 @@ protocol_packet_ids!(
             0x1c => SetSign
             0x1d => ArmSwing
             0x1e => SpectateTeleport
-            0x1f => PlayerBlockPlacement
+            0x1f => PlayerBlockPlacement_f32
             0x20 => UseItem
         }
         clientbound Clientbound {
