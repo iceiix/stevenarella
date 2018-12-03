@@ -124,7 +124,7 @@ state_packets!(
             /// KeepAliveClientbound. If the client doesn't reply the server
             /// may disconnect the client.
             packet KeepAliveServerbound {
-                field id: VarInt =,
+                field id: i64 =,
             }
             /// PlayerPosition is used to update the player's position.
             packet PlayerPosition {
@@ -166,6 +166,12 @@ state_packets!(
                 field unknown: bool =,
                 field unknown2: bool =,
             }
+            /// CraftRecipeRequest is sent when player clicks a recipe in the crafting book.
+            packet CraftRecipeRequest {
+                field window_id: u8 =,
+                field recipe: VarInt =,
+                field make_all: bool =,
+            }
             /// ClientAbilities is used to modify the players current abilities.
             /// Currently flying is the only one
             packet ClientAbilities {
@@ -193,10 +199,22 @@ state_packets!(
                 field forward: f32 =,
                 field flags: u8 =,
             }
+            /// CraftingBookData is sent when the player interacts with the crafting book.
+            packet CraftingBookData {
+                field action: VarInt =,
+                field recipe_id: i32 = when(|p: &CraftingBookData| p.action.0 == 0),
+                field crafting_book_open: bool = when(|p: &CraftingBookData| p.action.0 == 1),
+                field crafting_filter: bool = when(|p: &CraftingBookData| p.action.0 == 1),
+            }
             /// ResourcePackStatus informs the server of the client's current progress
             /// in activating the requested resource pack
             packet ResourcePackStatus {
                 field result: VarInt =,
+            }
+            // TODO: Document
+            packet AdvancementTab {
+                field action: VarInt =,
+                field tab_id: String = when(|p: &AdvancementTab| p.action.0 == 0),
             }
             /// HeldItemChange is sent when the player changes the currently active
             /// hotbar slot.
@@ -488,7 +506,7 @@ state_packets!(
             /// The client should reply with the KeepAliveServerbound
             /// packet setting ID to the same as this one.
             packet KeepAliveClientbound {
-                field id: VarInt =,
+                field id: i64 =,
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
@@ -522,7 +540,7 @@ state_packets!(
                 field offset_z: f32 =,
                 field speed: f32 =,
                 field count: i32 =,
-                field data1: VarInt = when(|p: &Particle| p.particle_id == 36 || p.particle_id == 37 || p.particle_id == 38),
+                field data1: VarInt = when(|p: &Particle| p.particle_id == 36 || p.particle_id == 37 || p.particle_id == 38 || p.particle_id == 46),
                 field data2: VarInt = when(|p: &Particle| p.particle_id == 36),
             }
             /// JoinGame is sent after completing the login process. This
@@ -598,6 +616,11 @@ state_packets!(
             packet SignEditorOpen {
                 field location: Position =,
             }
+            /// CraftRecipeResponse is a response to CraftRecipeRequest, notifies the UI.
+            packet CraftRecipeResponse {
+                field window_id: u8 =,
+                field recipe: VarInt =,
+            }
             /// PlayerAbilities is used to modify the players current abilities. Flying,
             /// creative, god mode etc.
             packet PlayerAbilities {
@@ -636,6 +659,13 @@ state_packets!(
                 field entity_id: VarInt =,
                 field location: Position =,
             }
+            packet UnlockRecipes {
+                field action: VarInt =,
+                field crafting_book_open: bool =,
+                field filtering_craftable: bool =,
+                field recipe_ids: LenPrefixed<VarInt, VarInt> =,
+                field recipe_ids2: LenPrefixed<VarInt, VarInt> = when(|p: &UnlockRecipes| p.action.0 == 0),
+            }
             /// EntityDestroy destroys the entities with the ids in the provided slice.
             packet EntityDestroy {
                 field entity_ids: LenPrefixed<VarInt, VarInt> =,
@@ -663,6 +693,11 @@ state_packets!(
             packet EntityHeadLook {
                 field entity_id: VarInt =,
                 field head_yaw: i8 =,
+            }
+            /// SelectAdvancementTab indicates the client should switch the advancement tab.
+            packet SelectAdvancementTab {
+                field has_id: bool =,
+                field tab_id: String = when(|p: &SelectAdvancementTab| p.has_id),
             }
             /// WorldBorder configures the world's border.
             packet WorldBorder {
@@ -817,6 +852,12 @@ state_packets!(
                 field yaw: i8 =,
                 field pitch: i8 =,
                 field on_ground: bool =,
+            }
+            packet Advancements {
+                field reset_clear: bool =,
+                field mapping: LenPrefixed<VarInt, packet::Advancement> =,
+                field identifiers: LenPrefixed<VarInt, String> =,
+                field progress: LenPrefixed<VarInt, packet::AdvancementProgress> =,
             }
             /// EntityProperties updates the properties for an entity.
             packet EntityProperties {
@@ -1042,6 +1083,163 @@ impl Default for MapIcon {
         }
     }
 }
+
+#[derive(Debug, Default)]
+pub struct Advancement {
+    pub id: String,
+    pub parent_id: Option<String>,
+    pub display_data: Option<AdvancementDisplay>,
+    pub criteria: LenPrefixed<VarInt, String>,
+    pub requirements: LenPrefixed<VarInt, LenPrefixed<VarInt, String>>,
+}
+
+impl Serializable for Advancement {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let id: String = Serializable::read_from(buf)?;
+        let parent_id = {
+            let has_parent: u8 = Serializable::read_from(buf)?;
+            if has_parent != 0 {
+                let parent_id: String = Serializable::read_from(buf)?;
+                Some(parent_id)
+            } else {
+                None
+            }
+        };
+
+        let has_display: u8 = Serializable::read_from(buf)?;
+        let display_data = {
+            if has_display != 0 {
+                let display_data: AdvancementDisplay = Serializable::read_from(buf)?;
+                Some(display_data)
+            } else {
+                None
+            }
+        };
+
+        let criteria: LenPrefixed<VarInt, String> = Serializable::read_from(buf)?;
+        let requirements: LenPrefixed<VarInt, LenPrefixed<VarInt, String>> = Serializable::read_from(buf)?;
+        Ok(Advancement {
+            id,
+            parent_id,
+            display_data,
+            criteria,
+            requirements,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.id.write_to(buf)?;
+        self.parent_id.write_to(buf)?;
+        self.display_data.write_to(buf)?;
+        self.criteria.write_to(buf)?;
+        self.requirements.write_to(buf)
+    }
+
+}
+
+#[derive(Debug, Default)]
+pub struct AdvancementDisplay {
+    pub title: String,
+    pub description: String,
+    pub icon: Option<crate::item::Stack>,
+    pub frame_type: VarInt,
+    pub flags: i32,
+    pub background_texture: Option<String>,
+    pub x_coord: f32,
+    pub y_coord: f32,
+}
+
+impl Serializable for AdvancementDisplay {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let title: String = Serializable::read_from(buf)?;
+        let description: String = Serializable::read_from(buf)?;
+        let icon: Option<crate::item::Stack> = Serializable::read_from(buf)?;
+        let frame_type: VarInt = Serializable::read_from(buf)?;
+        let flags: i32 = Serializable::read_from(buf)?;
+        let background_texture: Option<String> = if flags & 1 != 0 {
+            Serializable::read_from(buf)?
+        } else {
+            None
+        };
+        let x_coord: f32 = Serializable::read_from(buf)?;
+        let y_coord: f32 = Serializable::read_from(buf)?;
+
+        Ok(AdvancementDisplay {
+            title,
+            description,
+            icon,
+            frame_type,
+            flags,
+            background_texture,
+            x_coord,
+            y_coord,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.title.write_to(buf)?;
+        self.description.write_to(buf)?;
+        self.icon.write_to(buf)?;
+        self.frame_type.write_to(buf)?;
+        self.flags.write_to(buf)?;
+        if self.flags & 1 != 0 {
+            self.background_texture.write_to(buf)?;
+        }
+        self.x_coord.write_to(buf)?;
+        self.y_coord.write_to(buf)
+    }
+
+}
+
+#[derive(Debug, Default)]
+pub struct AdvancementProgress {
+    pub id: String,
+    pub criteria: LenPrefixed<VarInt, CriterionProgress>,
+}
+
+impl Serializable for AdvancementProgress {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(AdvancementProgress {
+            id: Serializable::read_from(buf)?,
+            criteria: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.id.write_to(buf)?;
+        self.criteria.write_to(buf)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct CriterionProgress {
+    pub id: String,
+    pub date_of_achieving: Option<i64>,
+}
+
+impl Serializable for CriterionProgress {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let id = Serializable::read_from(buf)?;
+        let achieved: u8 = Serializable::read_from(buf)?;
+        let date_of_achieving: Option<i64> = if achieved != 0 {
+            Serializable::read_from(buf)?
+        } else {
+            None
+        };
+
+        Ok(CriterionProgress {
+            id,
+            date_of_achieving,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.id.write_to(buf)?;
+        self.date_of_achieving.write_to(buf)
+    }
+}
+
+
 
 #[derive(Debug, Default)]
 pub struct EntityProperty {
