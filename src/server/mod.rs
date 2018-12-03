@@ -41,6 +41,7 @@ pub mod target;
 pub struct Server {
     uuid: protocol::UUID,
     conn: Option<protocol::Conn>,
+    protocol_version: i32,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub disconnect_reason: Option<format::Component>,
     just_disconnected: bool,
@@ -137,7 +138,7 @@ impl Server {
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
-                    return Ok(Server::new(protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
+                    return Ok(Server::new(protocol_version, protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
                 }
                 protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
                 val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
@@ -191,7 +192,7 @@ impl Server {
 
         let rx = Self::spawn_reader(read);
 
-        Ok(Server::new(protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
+        Ok(Server::new(protocol_version, protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
     }
 
     fn spawn_reader(mut read: protocol::Conn) -> mpsc::Receiver<Result<packet::Packet, protocol::Error>> {
@@ -212,7 +213,7 @@ impl Server {
     }
 
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>) -> Server {
-        let mut server = Server::new(protocol::UUID::default(), resources, None, None);
+        let mut server = Server::new(protocol::SUPPORTED_PROTOCOLS[0], protocol::UUID::default(), resources, None, None);
         let mut rng = rand::thread_rng();
         for x in -7*16 .. 7*16 {
             for z in -7*16 .. 7*16 {
@@ -248,6 +249,7 @@ impl Server {
     }
 
     fn new(
+        protocol_version: i32,
         uuid: protocol::UUID,
         resources: Arc<RwLock<resources::Manager>>,
         conn: Option<protocol::Conn>, read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>
@@ -263,6 +265,7 @@ impl Server {
         Server {
             uuid,
             conn,
+            protocol_version,
             read_queue,
             disconnect_reason: None,
             just_disconnected: false,
@@ -513,22 +516,41 @@ impl Server {
         use crate::shared::Direction;
         if self.player.is_some() {
             if let Some((pos, _, face, at)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast().unwrap(), target::test_block) {
-                self.write_packet(packet::play::serverbound::PlayerBlockPlacement {
-                    location: pos,
-                    face: protocol::VarInt(match face {
-                        Direction::Down => 0,
-                        Direction::Up => 1,
-                        Direction::North => 2,
-                        Direction::South => 3,
-                        Direction::West => 4,
-                        Direction::East => 5,
-                        _ => unreachable!(),
-                    }),
-                    hand: protocol::VarInt(0),
-                    cursor_x: at.x as f32,
-                    cursor_y: at.y as f32,
-                    cursor_z: at.z as f32
-                });
+                if self.protocol_version >= 315 {
+                    self.write_packet(packet::play::serverbound::PlayerBlockPlacement_f32 {
+                        location: pos,
+                        face: protocol::VarInt(match face {
+                            Direction::Down => 0,
+                            Direction::Up => 1,
+                            Direction::North => 2,
+                            Direction::South => 3,
+                            Direction::West => 4,
+                            Direction::East => 5,
+                            _ => unreachable!(),
+                        }),
+                        hand: protocol::VarInt(0),
+                        cursor_x: at.x as f32,
+                        cursor_y: at.y as f32,
+                        cursor_z: at.z as f32,
+                    });
+                } else {
+                    self.write_packet(packet::play::serverbound::PlayerBlockPlacement_u8 {
+                        location: pos,
+                        face: protocol::VarInt(match face {
+                            Direction::Down => 0,
+                            Direction::Up => 1,
+                            Direction::North => 2,
+                            Direction::South => 3,
+                            Direction::West => 4,
+                            Direction::East => 5,
+                            _ => unreachable!(),
+                        }),
+                        hand: protocol::VarInt(0),
+                        cursor_x: (at.x * 16.0) as u8,
+                        cursor_y: (at.y * 16.0) as u8,
+                        cursor_z: (at.z * 16.0) as u8,
+                    });
+                }
             }
         }
     }

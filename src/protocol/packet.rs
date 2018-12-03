@@ -248,13 +248,21 @@ state_packets!(
                 field target: UUID =,
             }
             /// PlayerBlockPlacement is sent when the client tries to place a block.
-            packet PlayerBlockPlacement {
+            packet PlayerBlockPlacement_f32 {
                 field location: Position =,
                 field face: VarInt =,
                 field hand: VarInt =,
                 field cursor_x: f32 =,
                 field cursor_y: f32 =,
                 field cursor_z: f32 =,
+            }
+            packet PlayerBlockPlacement_u8 {
+                field location: Position =,
+                field face: VarInt =,
+                field hand: VarInt =,
+                field cursor_x: u8 =,
+                field cursor_y: u8 =,
+                field cursor_z: u8 =,
             }
             /// UseItem is sent when the client tries to use an item.
             packet UseItem {
@@ -303,6 +311,21 @@ state_packets!(
                 field entity_id: VarInt =,
                 field uuid: UUID =,
                 field ty: VarInt =,
+                field x: f64 =,
+                field y: f64 =,
+                field z: f64 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+                field head_pitch: i8 =,
+                field velocity_x: i16 =,
+                field velocity_y: i16 =,
+                field velocity_z: i16 =,
+                field metadata: types::Metadata =,
+            }
+            packet SpawnMob_u8 {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field ty: u8 =,
                 field x: f64 =,
                 field y: f64 =,
                 field z: f64 =,
@@ -826,6 +849,14 @@ state_packets!(
                 field fade_stay: Option<i32> = when(|p: &Title| p.action.0 == 3),
                 field fade_out: Option<i32> = when(|p: &Title| p.action.0 == 3),
             }
+            packet Title_notext {
+                field action: VarInt =,
+                field title: Option<format::Component> = when(|p: &Title_notext| p.action.0 == 0),
+                field sub_title: Option<format::Component> = when(|p: &Title_notext| p.action.0 == 1),
+                field fade_in: Option<i32> = when(|p: &Title_notext| p.action.0 == 2),
+                field fade_stay: Option<i32> = when(|p: &Title_notext| p.action.0 == 2),
+                field fade_out: Option<i32> = when(|p: &Title_notext| p.action.0 == 2),
+            }
             /// SoundEffect plays the named sound at the target location.
             packet SoundEffect {
                 field name: VarInt =,
@@ -847,6 +878,10 @@ state_packets!(
                 field collected_entity_id: VarInt =,
                 field collector_entity_id: VarInt =,
                 field number_of_items: VarInt =,
+            }
+            packet CollectItem_nocount {
+                field collected_entity_id: VarInt =,
+                field collector_entity_id: VarInt =,
             }
             /// EntityTeleport teleports the entity to the target location. This is
             /// sent if the entity moves further than EntityMove allows.
