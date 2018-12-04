@@ -78,7 +78,7 @@ protocol_packet_ids!(
             0x20 => ChunkData
             0x21 => Effect
             0x22 => Particle
-            0x23 => JoinGame
+            0x23 => JoinGame_i32
             0x24 => Maps
             0x25 => Entity
             0x26 => EntityMove

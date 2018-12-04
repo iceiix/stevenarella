@@ -4,6 +4,7 @@ mod v1_12_2;
 mod v1_11_2;
 mod v1_10_2;
 mod v1_9_2;
+mod v1_9;
 
 pub fn translate_internal_packet_id_for_version(version: i32, state: State, dir: Direction, id: i32, to_internal: bool) -> i32 {
     match version {
@@ -23,6 +24,9 @@ pub fn translate_internal_packet_id_for_version(version: i32, state: State, dir:
 
         // 1.9.2
         109 => v1_9_2::translate_internal_packet_id(state, dir, id, to_internal),
+
+        // 1.9
+        107 => v1_9::translate_internal_packet_id(state, dir, id, to_internal),
 
         _ => panic!("unsupported protocol version"),
     }
