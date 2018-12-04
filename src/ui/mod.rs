@@ -1312,7 +1312,7 @@ impl TextBoxBuilder {
 impl UIElement for TextBox {
     fn key_press(&mut self, game: &mut crate::Game, key: VirtualKeyCode, down: bool, ctrl_pressed: bool) {
         match (key, down) {
-            (VirtualKeyCode::Back, false) => {self.input.pop();},
+            (VirtualKeyCode::Back, _) => {self.input.pop();},
             (VirtualKeyCode::Return, false) => {
                 use std::mem;
                 let len = self.submit_funcs.len();
