@@ -48,7 +48,7 @@ protocol_packet_ids!(
             0x02 => SpawnGlobalEntity
             0x03 => SpawnMob
             0x04 => SpawnPainting
-            0x05 => SpawnPlayer
+            0x05 => SpawnPlayer_f64
             0x06 => Animation
             0x07 => Statistics
             0x08 => BlockBreakAnimation
@@ -81,8 +81,8 @@ protocol_packet_ids!(
             0x23 => JoinGame_i32
             0x24 => Maps
             0x25 => Entity
-            0x26 => EntityMove
-            0x27 => EntityLookAndMove
+            0x26 => EntityMove_i16
+            0x27 => EntityLookAndMove_i16
             0x28 => EntityLook
             0x29 => VehicleTeleport
             0x2a => SignEditorOpen
@@ -90,7 +90,7 @@ protocol_packet_ids!(
             0x2c => PlayerAbilities
             0x2d => CombatEvent
             0x2e => PlayerInfo
-            0x2f => TeleportPlayer
+            0x2f => TeleportPlayer_WithConfirm
             0x30 => EntityUsedBed
             0x31 => UnlockRecipes
             0x32 => EntityDestroy
@@ -119,7 +119,7 @@ protocol_packet_ids!(
             0x49 => SoundEffect
             0x4a => PlayerListHeaderFooter
             0x4b => CollectItem
-            0x4c => EntityTeleport
+            0x4c => EntityTeleport_f64
             0x4d => Advancements
             0x4e => EntityProperties
             0x4f => EntityEffect

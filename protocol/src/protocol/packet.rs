@@ -61,6 +61,11 @@ state_packets!(
                 field has_target: bool =,
                 field target: Option<Position> = when(|p: &TabComplete| p.has_target),
             }
+            packet TabComplete_NoAssume {
+                field text: String =,
+                field has_target: bool =,
+                field target: Option<Position> = when(|p: &TabComplete_NoAssume| p.has_target),
+            }
             /// ChatMessage is sent by the client when it sends a chat message or
             /// executes a command (prefixed by '/').
             packet ChatMessage {
@@ -75,6 +80,14 @@ state_packets!(
                 field locale: String =,
                 field view_distance: u8 =,
                 field chat_mode: VarInt =,
+                field chat_colors: bool =,
+                field displayed_skin_parts: u8 =,
+                field main_hand: VarInt =,
+            }
+            packet ClientSettings_u8 {
+                field locale: String =,
+                field view_distance: u8 =,
+                field chat_mode: u8 =,
                 field chat_colors: bool =,
                 field displayed_skin_parts: u8 =,
                 field main_hand: VarInt =,
@@ -97,6 +110,14 @@ state_packets!(
                 field button: u8 =,
                 field action_number: u16 =,
                 field mode: VarInt =,
+                field clicked_item: Option<item::Stack> =,
+            }
+            packet ClickWindow_u8 {
+                field id: u8 =,
+                field slot: i16 =,
+                field button: u8 =,
+                field action_number: u16 =,
+                field mode: u8 =,
                 field clicked_item: Option<item::Stack> =,
             }
             /// CloseWindow is sent when the client closes a window.
@@ -186,6 +207,11 @@ state_packets!(
             /// It also can be sent for droppping items and eating/shooting.
             packet PlayerDigging {
                 field status: VarInt =,
+                field location: Position =,
+                field face: u8 =,
+            }
+            packet PlayerDigging_u8 {
+                field status: u8 =,
                 field location: Position =,
                 field face: u8 =,
             }
@@ -290,6 +316,20 @@ state_packets!(
                 field velocity_y: i16 =,
                 field velocity_z: i16 =,
             }
+            packet SpawnObject_i32 {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field ty: u8 =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
+                field pitch: i8 =,
+                field yaw: i8 =,
+                field data: i32 =,
+                field velocity_x: i16 =,
+                field velocity_y: i16 =,
+                field velocity_z: i16 =,
+            }
             /// SpawnExperienceOrb spawns a single experience orb into the world when
             /// it is in range of the client. The count controls the amount of experience
             /// gained when collected.
@@ -300,6 +340,13 @@ state_packets!(
                 field z: f64 =,
                 field count: i16 =,
             }
+            packet SpawnExperienceOrb_i32 {
+                field entity_id: VarInt =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
+                field count: i16 =,
+            }
             /// SpawnGlobalEntity spawns an entity which is visible from anywhere in the
             /// world. Currently only used for lightning.
             packet SpawnGlobalEntity {
@@ -308,6 +355,13 @@ state_packets!(
                 field x: f64 =,
                 field y: f64 =,
                 field z: f64 =,
+            }
+            packet SpawnGlobalEntity_i32 {
+                field entity_id: VarInt =,
+                field ty: u8 =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
             }
             /// SpawnMob is used to spawn a living entity into the world when it is in
             /// range of the client.
@@ -341,6 +395,21 @@ state_packets!(
                 field velocity_z: i16 =,
                 field metadata: types::Metadata =,
             }
+            packet SpawnMob_u8_i32 {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field ty: u8 =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+                field head_pitch: i8 =,
+                field velocity_x: i16 =,
+                field velocity_y: i16 =,
+                field velocity_z: i16 =,
+                field metadata: types::Metadata =,
+            }
             /// SpawnPainting spawns a painting into the world when it is in range of
             /// the client. The title effects the size and the texture of the painting.
             packet SpawnPainting {
@@ -350,15 +419,31 @@ state_packets!(
                 field location: Position =,
                 field direction: u8 =,
             }
+            packet SpawnPainting_NoUUID {
+                field entity_id: VarInt =,
+                field title: String =,
+                field location: Position =,
+                field direction: u8 =,
+            }
             /// SpawnPlayer is used to spawn a player when they are in range of the client.
             /// This packet alone isn't enough to display the player as the skin and username
             /// information is in the player information packet.
-            packet SpawnPlayer {
+            packet SpawnPlayer_f64 {
                 field entity_id: VarInt =,
                 field uuid: UUID =,
                 field x: f64 =,
                 field y: f64 =,
                 field z: f64 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+                field metadata: types::Metadata =,
+            }
+            packet SpawnPlayer_i32 {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
                 field yaw: i8 =,
                 field pitch: i8 =,
                 field metadata: types::Metadata =,
@@ -506,6 +591,14 @@ state_packets!(
                 field volume: f32 =,
                 field pitch: u8 =,
             }
+            packet NamedSoundEffect_u8_NoCategory {
+                field name: String =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
+                field volume: f32 =,
+                field pitch: u8 =,
+            }
             /// Disconnect causes the client to disconnect displaying the passed reason.
             packet Disconnect {
                 field reason: format::Component =,
@@ -533,6 +626,10 @@ state_packets!(
             packet ChunkUnload {
                 field x: i32 =,
                 field z: i32 =,
+            }
+            /// SetCompression updates the compression threshold.
+            packet SetCompression {
+                field threshold: VarInt =,
             }
             /// ChangeGameState is used to modify the game's state like gamemode or
             /// weather.
@@ -641,19 +738,35 @@ state_packets!(
                 field data: Option<LenPrefixedBytes<VarInt>> = when(|p: &Maps| p.columns > 0),
             }
             /// EntityMove moves the entity with the id by the offsets provided.
-            packet EntityMove {
+            packet EntityMove_i16 {
                 field entity_id: VarInt =,
                 field delta_x: i16 =,
                 field delta_y: i16 =,
                 field delta_z: i16 =,
                 field on_ground: bool =,
             }
+            packet EntityMove_i8 {
+                field entity_id: VarInt =,
+                field delta_x: i8 =,
+                field delta_y: i8 =,
+                field delta_z: i8 =,
+                field on_ground: bool =,
+            }
             /// EntityLookAndMove is a combination of EntityMove and EntityLook.
-            packet EntityLookAndMove {
+            packet EntityLookAndMove_i16 {
                 field entity_id: VarInt =,
                 field delta_x: i16 =,
                 field delta_y: i16 =,
                 field delta_z: i16 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+                field on_ground: bool =,
+            }
+            packet EntityLookAndMove_i8 {
+                field entity_id: VarInt =,
+                field delta_x: i8 =,
+                field delta_y: i8 =,
+                field delta_z: i8 =,
                 field yaw: i8 =,
                 field pitch: i8 =,
                 field on_ground: bool =,
@@ -711,7 +824,7 @@ state_packets!(
             /// TeleportPlayer is sent to change the player's position. The client is expected
             /// to reply to the server with the same positions as contained in this packet
             /// otherwise will reject future packets.
-            packet TeleportPlayer {
+            packet TeleportPlayer_WithConfirm {
                 field x: f64 =,
                 field y: f64 =,
                 field z: f64 =,
@@ -719,6 +832,14 @@ state_packets!(
                 field pitch: f32 =,
                 field flags: u8 =,
                 field teleport_id: VarInt =,
+            }
+            packet TeleportPlayer_NoConfirm {
+                field x: f64 =,
+                field y: f64 =,
+                field z: f64 =,
+                field yaw: f32 =,
+                field pitch: f32 =,
+                field flags: u8 =,
             }
             /// EntityUsedBed is sent by the server when a player goes to bed.
             packet EntityUsedBed {
@@ -801,6 +922,11 @@ state_packets!(
             packet EntityAttach {
                 field entity_id: i32 =,
                 field vehicle: i32 =,
+            }
+            packet EntityAttach_leashed {
+                field entity_id: i32 =,
+                field vehicle: i32 =,
+                field leash: bool =,
             }
             /// EntityVelocity sets the velocity of an entity in 1/8000 of a block
             /// per a tick.
@@ -894,6 +1020,14 @@ state_packets!(
                 field fade_stay: Option<i32> = when(|p: &Title_notext| p.action.0 == 2),
                 field fade_out: Option<i32> = when(|p: &Title_notext| p.action.0 == 2),
             }
+            packet Title_notext_component {
+                field action: VarInt =,
+                field title: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 0),
+                field sub_title: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 1),
+                field fade_in: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 2),
+                field fade_stay: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 2),
+                field fade_out: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 2),
+            }
             /// UpdateSign sets or changes the text on a sign.
             packet UpdateSign {
                 field location: Position =,
@@ -939,11 +1073,20 @@ state_packets!(
             }
             /// EntityTeleport teleports the entity to the target location. This is
             /// sent if the entity moves further than EntityMove allows.
-            packet EntityTeleport {
+            packet EntityTeleport_f64 {
                 field entity_id: VarInt =,
                 field x: f64 =,
                 field y: f64 =,
                 field z: f64 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+                field on_ground: bool =,
+            }
+            packet EntityTeleport_i32 {
+                field entity_id: VarInt =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
                 field yaw: i8 =,
                 field pitch: i8 =,
                 field on_ground: bool =,
