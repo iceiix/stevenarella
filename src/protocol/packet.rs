@@ -594,13 +594,30 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
-            packet JoinGame {
+            packet JoinGame_i32 {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
                 /// The starting gamemode of the client
                 field gamemode: u8 =,
                 /// The dimension the client is starting in
                 field dimension: i32 =,
+                /// The difficuilty setting for the server
+                field difficulty: u8 =,
+                /// The max number of players on the server
+                field max_players: u8 =,
+                /// The level type of the server
+                field level_type: String =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+            }
+            packet JoinGame_i8 {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The dimension the client is starting in
+                field dimension: i8 =,
                 /// The difficuilty setting for the server
                 field difficulty: u8 =,
                 /// The max number of players on the server
