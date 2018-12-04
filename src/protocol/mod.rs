@@ -174,14 +174,14 @@ macro_rules! protocol_packet_ids {
                                         $(
                                             $id => crate::protocol::packet::$state::$dir::internal_ids::$name,
                                         )*
-                                            _ => panic!("bad packet id $id in $dir $state"),
+                                            _ => panic!("bad packet id 0x{:x} in {:?} {:?}", id, dir, state),
                                         }
                                     } else {
                                         match id {
                                         $(
                                             crate::protocol::packet::$state::$dir::internal_ids::$name => $id,
                                         )*
-                                            _ => panic!("bad packet internal id $id in $dir $state"),
+                                            _ => panic!("bad packet internal id 0x{:x} in {:?} {:?}", id, dir, state),
                                         }
                                     }
                                 }
@@ -718,7 +718,7 @@ impl Serializable for Position {
 
 /// Direction is used to define whether packets are going to the
 /// server or the client.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Direction {
     Serverbound,
     Clientbound,
@@ -726,7 +726,7 @@ pub enum Direction {
 
 /// The protocol has multiple 'sub-protocols' or states which control which
 /// packet an id points to.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum State {
     Handshaking,
     Play,
