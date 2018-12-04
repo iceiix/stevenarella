@@ -385,7 +385,8 @@ impl Server {
                             ChunkUnload => on_chunk_unload,
                             BlockChange => on_block_change,
                             MultiBlockChange => on_multi_block_change,
-                            TeleportPlayer => on_teleport,
+                            TeleportPlayer_WithConfirm => on_teleport_player_withconfirm,
+                            TeleportPlayer_NoConfirm => on_teleport_player_noconfirm,
                             TimeUpdate => on_time_update,
                             ChangeGameState => on_game_state_change,
                             UpdateBlockEntity => on_block_entity_update,
@@ -394,11 +395,15 @@ impl Server {
                             Disconnect => on_disconnect,
                             // Entities
                             EntityDestroy => on_entity_destroy,
-                            SpawnPlayer => on_player_spawn,
-                            EntityTeleport => on_entity_teleport,
-                            EntityMove => on_entity_move,
+                            SpawnPlayer_f64 => on_player_spawn_f64,
+                            SpawnPlayer_i32 => on_player_spawn_i32,
+                            EntityTeleport_f64 => on_entity_teleport_f64,
+                            EntityTeleport_i32 => on_entity_teleport_i32,
+                            EntityMove_i16 => on_entity_move_i16,
+                            EntityMove_i8 => on_entity_move_i8,
                             EntityLook => on_entity_look,
-                            EntityLookAndMove => on_entity_look_and_move,
+                            EntityLookAndMove_i16 => on_entity_look_and_move_i16,
+                            EntityLookAndMove_i8 => on_entity_look_and_move_i8,
                         }
                     },
                     Err(err) => panic!("Err: {:?}", err),
@@ -647,25 +652,41 @@ impl Server {
         }
     }
 
-    fn on_entity_teleport(&mut self, entity_telport: packet::play::clientbound::EntityTeleport) {
+    fn on_entity_teleport_f64(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_f64) {
+        self.on_entity_teleport(entity_telport.entity_id.0, entity_telport.x, entity_telport.y, entity_telport.z, entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
+    }
+
+    fn on_entity_teleport_i32(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_i32) {
+        self.on_entity_teleport(entity_telport.entity_id.0, entity_telport.x as f64, entity_telport.y as f64, entity_telport.z as f64, entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
+    }
+
+    fn on_entity_teleport(&mut self, entity_id: i32, x: f64, y: f64, z: f64, yaw: f64, pitch: f64, _on_ground: bool) {
         use std::f64::consts::PI;
-        if let Some(entity) = self.entity_map.get(&entity_telport.entity_id.0) {
+        if let Some(entity) = self.entity_map.get(&entity_id) {
             let target_position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
             let target_rotation = self.entities.get_component_mut(*entity, self.target_rotation).unwrap();
-            target_position.position.x = entity_telport.x;
-            target_position.position.y = entity_telport.y;
-            target_position.position.z = entity_telport.z;
-            target_rotation.yaw = -((entity_telport.yaw as f64) / 256.0) * PI * 2.0;
-            target_rotation.pitch = -((entity_telport.pitch as f64) / 256.0) * PI * 2.0;
+            target_position.position.x = x;
+            target_position.position.y = y;
+            target_position.position.z = z;
+            target_rotation.yaw = -(yaw / 256.0) * PI * 2.0;
+            target_rotation.pitch = -(pitch / 256.0) * PI * 2.0;
         }
     }
 
-    fn on_entity_move(&mut self, m: packet::play::clientbound::EntityMove) {
-        if let Some(entity) = self.entity_map.get(&m.entity_id.0) {
+    fn on_entity_move_i16(&mut self, m: packet::play::clientbound::EntityMove_i16) {
+        self.on_entity_move(m.entity_id.0, m.delta_x as f64, m.delta_y as f64, m.delta_z as f64)
+    }
+
+    fn on_entity_move_i8(&mut self, m: packet::play::clientbound::EntityMove_i8) {
+        self.on_entity_move(m.entity_id.0, m.delta_x as f64, m.delta_y as f64, m.delta_z as f64)
+    }
+
+    fn on_entity_move(&mut self, entity_id: i32, delta_x: f64, delta_y: f64, delta_z: f64) {
+        if let Some(entity) = self.entity_map.get(&entity_id) {
             let position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
-            position.position.x += m.delta_x as f64 / (32.0 * 128.0);
-            position.position.y += m.delta_y as f64 / (32.0 * 128.0);
-            position.position.z += m.delta_z as f64 / (32.0 * 128.0);
+            position.position.x += delta_x / (32.0 * 128.0);
+            position.position.y += delta_y / (32.0 * 128.0);
+            position.position.z += delta_z / (32.0 * 128.0);
         }
     }
 
@@ -678,78 +699,108 @@ impl Server {
         }
     }
 
-    fn on_entity_look_and_move(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove) {
+    fn on_entity_look_and_move_i16(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i16) {
+        self.on_entity_look_and_move(lookmove.entity_id.0,
+                                     lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
+                                     lookmove.yaw as f64, lookmove.pitch as f64)
+    }
+
+    fn on_entity_look_and_move_i8(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i8) {
+        self.on_entity_look_and_move(lookmove.entity_id.0,
+                                     lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
+                                     lookmove.yaw as f64, lookmove.pitch as f64)
+    }
+
+    fn on_entity_look_and_move(&mut self, entity_id: i32, delta_x: f64, delta_y: f64, delta_z: f64, yaw: f64, pitch: f64) {
         use std::f64::consts::PI;
-        if let Some(entity) = self.entity_map.get(&lookmove.entity_id.0) {
+        if let Some(entity) = self.entity_map.get(&entity_id) {
             let position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
             let rotation = self.entities.get_component_mut(*entity, self.target_rotation).unwrap();
-            position.position.x += lookmove.delta_x as f64 / (32.0 * 128.0);
-            position.position.y += lookmove.delta_y as f64 / (32.0 * 128.0);
-            position.position.z += lookmove.delta_z as f64 / (32.0 * 128.0);
-            rotation.yaw = -((lookmove.yaw as f64) / 256.0) * PI * 2.0;
-            rotation.pitch = -((lookmove.pitch as f64) / 256.0) * PI * 2.0;
+            position.position.x += delta_x / (32.0 * 128.0);
+            position.position.y += delta_y / (32.0 * 128.0);
+            position.position.z += delta_z / (32.0 * 128.0);
+            rotation.yaw = -(yaw / 256.0) * PI * 2.0;
+            rotation.pitch = -(pitch / 256.0) * PI * 2.0;
         }
     }
 
-    fn on_player_spawn(&mut self, spawn: packet::play::clientbound::SpawnPlayer) {
+    fn on_player_spawn_f64(&mut self, spawn: packet::play::clientbound::SpawnPlayer_f64) {
+        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x, spawn.y, spawn.z, spawn.yaw as f64, spawn.pitch as f64)
+    }
+
+    fn on_player_spawn_i32(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32) {
+        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
+    }
+
+    fn on_player_spawn(&mut self, entity_id: i32, uuid: protocol::UUID, x: f64, y: f64, z: f64, pitch: f64, yaw: f64) {
         use std::f64::consts::PI;
-        if let Some(entity) = self.entity_map.remove(&spawn.entity_id.0) {
+        if let Some(entity) = self.entity_map.remove(&entity_id) {
             self.entities.remove_entity(entity);
         }
-        let entity = entity::player::create_remote(&mut self.entities, self.players.get(&spawn.uuid).map_or("MISSING", |v| &v.name));
+        let entity = entity::player::create_remote(&mut self.entities, self.players.get(&uuid).map_or("MISSING", |v| &v.name));
         let position = self.entities.get_component_mut(entity, self.position).unwrap();
         let target_position = self.entities.get_component_mut(entity, self.target_position).unwrap();
         let rotation = self.entities.get_component_mut(entity, self.rotation).unwrap();
         let target_rotation = self.entities.get_component_mut(entity, self.target_rotation).unwrap();
-        position.position.x = spawn.x;
-        position.position.y = spawn.y;
-        position.position.z = spawn.z;
-        target_position.position.x = spawn.x;
-        target_position.position.y = spawn.y;
-        target_position.position.z = spawn.z;
-        rotation.yaw = -((spawn.yaw as f64) / 256.0) * PI * 2.0;
-        rotation.pitch = -((spawn.pitch as f64) / 256.0) * PI * 2.0;
+        position.position.x = x;
+        position.position.y = y;
+        position.position.z = z;
+        target_position.position.x = x;
+        target_position.position.y = y;
+        target_position.position.z = z;
+        rotation.yaw = -(yaw / 256.0) * PI * 2.0;
+        rotation.pitch = -(pitch / 256.0) * PI * 2.0;
         target_rotation.yaw = rotation.yaw;
         target_rotation.pitch = rotation.pitch;
-        if let Some(info) = self.players.get(&spawn.uuid) {
+        if let Some(info) = self.players.get(&uuid) {
             let model = self.entities.get_component_mut_direct::<entity::player::PlayerModel>(entity).unwrap();
             model.set_skin(info.skin_url.clone());
         }
-        self.entity_map.insert(spawn.entity_id.0, entity);
+        self.entity_map.insert(entity_id, entity);
     }
 
-    fn on_teleport(&mut self, teleport: packet::play::clientbound::TeleportPlayer) {
+    fn on_teleport_player_withconfirm(&mut self, teleport: packet::play::clientbound::TeleportPlayer_WithConfirm) {
+        self.on_teleport_player(teleport.x, teleport.y, teleport.z, teleport.yaw as f64, teleport.pitch as f64, teleport.flags, Some(teleport.teleport_id))
+    }
+
+    fn on_teleport_player_noconfirm(&mut self, teleport: packet::play::clientbound::TeleportPlayer_NoConfirm) {
+        self.on_teleport_player(teleport.x, teleport.y, teleport.z, teleport.yaw as f64, teleport.pitch as f64, teleport.flags, None)
+    }
+
+    fn on_teleport_player(&mut self, x: f64, y: f64, z: f64, yaw: f64, pitch: f64, flags: u8, teleport_id: Option<protocol::VarInt>) {
         use std::f64::consts::PI;
         if let Some(player) = self.player {
             let position = self.entities.get_component_mut(player, self.target_position).unwrap();
             let rotation = self.entities.get_component_mut(player, self.rotation).unwrap();
             let velocity = self.entities.get_component_mut(player, self.velocity).unwrap();
 
-            position.position.x = calculate_relative_teleport(TeleportFlag::RelX, teleport.flags, position.position.x, teleport.x);
-            position.position.y = calculate_relative_teleport(TeleportFlag::RelY, teleport.flags, position.position.y, teleport.y);
-            position.position.z = calculate_relative_teleport(TeleportFlag::RelZ, teleport.flags, position.position.z, teleport.z);
-            rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, teleport.flags, rotation.yaw, -teleport.yaw as f64 * (PI / 180.0));
+            position.position.x = calculate_relative_teleport(TeleportFlag::RelX, flags, position.position.x, x);
+            position.position.y = calculate_relative_teleport(TeleportFlag::RelY, flags, position.position.y, y);
+            position.position.z = calculate_relative_teleport(TeleportFlag::RelZ, flags, position.position.z, z);
+            rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, flags, rotation.yaw, -yaw as f64 * (PI / 180.0));
 
             rotation.pitch = -((calculate_relative_teleport(
                 TeleportFlag::RelPitch,
-                teleport.flags,
+                flags,
                 (-rotation.pitch) * (180.0 / PI) + 180.0,
-                teleport.pitch as f64
+                pitch
             ) - 180.0) * (PI / 180.0));
 
-            if (teleport.flags & (TeleportFlag::RelX as u8)) == 0 {
+            if (flags & (TeleportFlag::RelX as u8)) == 0 {
                 velocity.velocity.x = 0.0;
             }
-            if (teleport.flags & (TeleportFlag::RelY as u8)) == 0 {
+            if (flags & (TeleportFlag::RelY as u8)) == 0 {
                 velocity.velocity.y = 0.0;
             }
-            if (teleport.flags & (TeleportFlag::RelZ as u8)) == 0 {
+            if (flags & (TeleportFlag::RelZ as u8)) == 0 {
                 velocity.velocity.z = 0.0;
             }
 
-            self.write_packet(packet::play::serverbound::TeleportConfirm {
-                teleport_id: teleport.teleport_id,
-            });
+            if let Some(teleport_id) = teleport_id {
+                self.write_packet(packet::play::serverbound::TeleportConfirm {
+                    teleport_id,
+                });
+            }
         }
     }
 
