@@ -26,7 +26,7 @@ The Visual Studio 2017 Redistributable is required to run these builds.
 
 ## Building
 
-Currently requires Rust version 1.31.0-beta or newer to build.
+Requires Rust stable version 1.31.0 or newer to build.
 
 Compile and run:
 ```bash
@@ -35,20 +35,6 @@ cargo run --release
 Just compile:
 ```bash
 cargo build --release
-```
-
-### Prerequisites
-
-An easy way to manage multiple Rust toolchains is [`rustup`](https://github.com/rust-lang-nursery/rustup.rs). Installation instructions for `rustup` can be found on its [website](https://www.rustup.rs/).
-
-Once you've set up `rustup`, grab Rust beta by running
-```sh
-rustup install beta
-```
-
-Now we need to make sure that `steven` is compiled with beta. To do this without making beta the default across the entire system, run the following command in the `steven` directory:
-```sh
-rustup override set beta
 ```
 
 ## Running
