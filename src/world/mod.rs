@@ -545,7 +545,115 @@ impl World {
         }
     }
 
-    pub fn load_chunk(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
+    pub fn load_chunks18(&mut self, new: bool, skylight: bool, chunk_metas: &[crate::protocol::packet::ChunkMeta], data: Vec<u8>) -> Result<(), protocol::Error> {
+         let mut data = std::io::Cursor::new(data);
+
+         for chunk_meta in chunk_metas {
+             let x = chunk_meta.x;
+             let z = chunk_meta.z;
+             let mask = chunk_meta.bitmask;
+
+             self.load_chunk18(x, z, new, skylight, mask, &mut data)?;
+         }
+         Ok(())
+    }
+
+    pub fn load_chunk18(&mut self, x: i32, z: i32, new: bool, _skylight: bool, mask: u16, data: &mut std::io::Cursor<Vec<u8>>) -> Result<(), protocol::Error> {
+        use std::io::Read;
+        use byteorder::ReadBytesExt;
+
+        let cpos = CPos(x, z);
+        {
+            let chunk = if new {
+                self.chunks.insert(cpos, Chunk::new(cpos));
+                self.chunks.get_mut(&cpos).unwrap()
+            } else {
+                if !self.chunks.contains_key(&cpos) {
+                    return Ok(());
+                }
+                self.chunks.get_mut(&cpos).unwrap()
+            };
+
+            for i in 0 .. 16 {
+                if chunk.sections[i].is_none() {
+                    let mut fill_sky = chunk.sections.iter()
+                        .skip(i)
+                        .all(|v| v.is_none());
+                    fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
+                    if !fill_sky || mask & (1 << i) != 0 {
+                        chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
+                    }
+                }
+                if mask & (1 << i) == 0 {
+                    continue;
+                }
+                let section = chunk.sections[i as usize].as_mut().unwrap();
+                section.dirty = true;
+
+                for bi in 0 .. 4096 {
+                    let id = data.read_u16::<byteorder::LittleEndian>()?;
+                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize));
+
+                    // Spawn block entities
+                    let b = section.blocks.get(bi);
+                    if block_entity::BlockEntityType::get_block_entity(b).is_some() {
+                        let pos = Position::new(
+                            (bi & 0xF) as i32,
+                            (bi >> 8) as i32,
+                            ((bi >> 4) & 0xF) as i32
+                        ) + (chunk.position.0 << 4, (i << 4) as i32, chunk.position.1 << 4);
+                        if chunk.block_entities.contains_key(&pos) {
+                            self.block_entity_actions.push_back(BlockEntityAction::Remove(pos))
+                        }
+                        self.block_entity_actions.push_back(BlockEntityAction::Create(pos))
+                    }
+                }
+            }
+
+            for i in 0 .. 16 {
+                if mask & (1 << i) == 0 {
+                    continue;
+                }
+                let section = chunk.sections[i as usize].as_mut().unwrap();
+
+                data.read_exact(&mut section.block_light.data)?;
+            }
+
+            for i in 0 .. 16 {
+                if mask & (1 << i) == 0 {
+                    continue;
+                }
+                let section = chunk.sections[i as usize].as_mut().unwrap();
+
+                data.read_exact(&mut section.sky_light.data)?;
+            }
+
+            if new {
+                data.read_exact(&mut chunk.biomes)?;
+            }
+
+            chunk.calculate_heightmap();
+        }
+
+        for i in 0 .. 16 {
+            if mask & (1 << i) == 0 {
+                continue;
+            }
+            for pos in [
+                (-1, 0, 0), (1, 0, 0),
+                (0, -1, 0), (0, 1, 0),
+                (0, 0, -1), (0, 0, 1)].into_iter() {
+                self.flag_section_dirty(x + pos.0, i as i32 + pos.1, z + pos.2);
+            }
+            self.update_range(
+                (x<<4) - 1, (i<<4) - 1, (z<<4) - 1,
+                (x<<4) + 17, (i<<4) + 17, (z<<4) + 17
+            );
+        }
+        Ok(())
+    }
+
+    pub fn load_chunk19(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
         use std::io::{Cursor, Read};
         use byteorder::ReadBytesExt;
         use crate::protocol::{VarInt, Serializable, LenPrefixed};

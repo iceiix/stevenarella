@@ -382,6 +382,8 @@ impl Server {
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             ChunkData => on_chunk_data,
                             ChunkData_NoEntities => on_chunk_data_no_entities,
+                            ChunkData_NoEntities_u16 => on_chunk_data_no_entities_u16,
+                            ChunkDataBulk => on_chunk_data_bulk,
                             ChunkUnload => on_chunk_unload,
                             BlockChange => on_block_change,
                             MultiBlockChange => on_multi_block_change,
@@ -397,6 +399,7 @@ impl Server {
                             EntityDestroy => on_entity_destroy,
                             SpawnPlayer_f64 => on_player_spawn_f64,
                             SpawnPlayer_i32 => on_player_spawn_i32,
+                            SpawnPlayer_i32_HeldItem_18 => on_player_spawn_i32_helditem_18,
                             EntityTeleport_f64 => on_entity_teleport_f64,
                             EntityTeleport_i32 => on_entity_teleport_i32,
                             EntityMove_i16 => on_entity_move_i16,
@@ -541,7 +544,7 @@ impl Server {
                         cursor_y: at.y as f32,
                         cursor_z: at.z as f32,
                     });
-                } else {
+                } else if self.protocol_version >= 49 {
                     self.write_packet(packet::play::serverbound::PlayerBlockPlacement_u8 {
                         location: pos,
                         face: protocol::VarInt(match face {
@@ -554,6 +557,23 @@ impl Server {
                             _ => unreachable!(),
                         }),
                         hand: protocol::VarInt(0),
+                        cursor_x: (at.x * 16.0) as u8,
+                        cursor_y: (at.y * 16.0) as u8,
+                        cursor_z: (at.z * 16.0) as u8,
+                    });
+                } else {
+                    self.write_packet(packet::play::serverbound::PlayerBlockPlacement_u8_Item {
+                        location: pos,
+                        face: match face {
+                            Direction::Down => 0,
+                            Direction::Up => 1,
+                            Direction::North => 2,
+                            Direction::South => 3,
+                            Direction::West => 4,
+                            Direction::East => 5,
+                            _ => unreachable!(),
+                        },
+                        hand: None,
                         cursor_x: (at.x * 16.0) as u8,
                         cursor_y: (at.y * 16.0) as u8,
                         cursor_z: (at.z * 16.0) as u8,
@@ -729,6 +749,10 @@ impl Server {
     }
 
     fn on_player_spawn_i32(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32) {
+        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
+    }
+
+    fn on_player_spawn_i32_helditem_18(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_18) {
         self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
     }
 
@@ -930,7 +954,7 @@ impl Server {
     }
 
     fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
-        self.world.load_chunk(
+        self.world.load_chunk19(
             chunk_data.chunk_x,
             chunk_data.chunk_z,
             chunk_data.new,
@@ -960,13 +984,28 @@ impl Server {
     }
 
     fn on_chunk_data_no_entities(&mut self, chunk_data: packet::play::clientbound::ChunkData_NoEntities) {
-        self.world.load_chunk(
+        self.world.load_chunk19(
             chunk_data.chunk_x,
             chunk_data.chunk_z,
             chunk_data.new,
             chunk_data.bitmask.0 as u16,
             chunk_data.data.data
         ).unwrap();
+    }
+
+    fn on_chunk_data_no_entities_u16(&mut self, chunk_data: packet::play::clientbound::ChunkData_NoEntities_u16) {
+        let chunk_meta = vec![crate::protocol::packet::ChunkMeta {
+            x: chunk_data.chunk_x,
+            z: chunk_data.chunk_z,
+            bitmask: chunk_data.bitmask,
+        }];
+        let skylight = false;
+        self.world.load_chunks18(chunk_data.new, skylight, &chunk_meta, chunk_data.data.data).unwrap();
+    }
+
+    fn on_chunk_data_bulk(&mut self, bulk: packet::play::clientbound::ChunkDataBulk) {
+        let new = true;
+        self.world.load_chunks18(new, bulk.skylight, &bulk.chunk_meta.data, bulk.chunk_data.to_vec()).unwrap();
     }
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {

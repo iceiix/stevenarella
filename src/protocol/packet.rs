@@ -92,6 +92,13 @@ state_packets!(
                 field displayed_skin_parts: u8 =,
                 field main_hand: VarInt =,
             }
+            packet ClientSettings_u8_Handsfree {
+                field locale: String =,
+                field view_distance: u8 =,
+                field chat_mode: u8 =,
+                field chat_colors: bool =,
+                field displayed_skin_parts: u8 =,
+            }
             /// ConfirmTransactionServerbound is a reply to ConfirmTransaction.
             packet ConfirmTransactionServerbound {
                 field id: u8 =,
@@ -140,6 +147,13 @@ state_packets!(
                 field target_y: f32 = when(|p: &UseEntity| p.ty.0 == 2),
                 field target_z: f32 = when(|p: &UseEntity| p.ty.0 == 2),
                 field hand: VarInt = when(|p: &UseEntity| p.ty.0 == 0 || p.ty.0 == 2),
+            }
+            packet UseEntity_Handsfree {
+                field target_id: VarInt =,
+                field ty: VarInt =,
+                field target_x: f32 = when(|p: &UseEntity_Handsfree| p.ty.0 == 2),
+                field target_y: f32 = when(|p: &UseEntity_Handsfree| p.ty.0 == 2),
+                field target_z: f32 = when(|p: &UseEntity_Handsfree| p.ty.0 == 2),
             }
             /// KeepAliveServerbound is sent by a client as a response to a
             /// KeepAliveClientbound. If the client doesn't reply the server
@@ -273,6 +287,9 @@ state_packets!(
             packet ArmSwing {
                 field hand: VarInt =,
             }
+            packet ArmSwing_Handsfree {
+                field empty: () =,
+            }
             /// SpectateTeleport is sent by clients in spectator mode to teleport to a player.
             packet SpectateTeleport {
                 field target: UUID =,
@@ -294,6 +311,15 @@ state_packets!(
                 field cursor_y: u8 =,
                 field cursor_z: u8 =,
             }
+            packet PlayerBlockPlacement_u8_Item {
+                field location: Position =,
+                field face: u8 =,
+                field hand: Option<item::Stack> =,
+                field cursor_x: u8 =,
+                field cursor_y: u8 =,
+                field cursor_z: u8 =,
+            }
+
             /// UseItem is sent when the client tries to use an item.
             packet UseItem {
                 field hand: VarInt =,
@@ -329,6 +355,19 @@ state_packets!(
                 field velocity_x: i16 =,
                 field velocity_y: i16 =,
                 field velocity_z: i16 =,
+            }
+            packet SpawnObject_i32_NoUUID {
+                field entity_id: VarInt =,
+                field ty: u8 =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
+                field pitch: i8 =,
+                field yaw: i8 =,
+                field data: i32 =,
+                field velocity_x: i16 = when(|p: &SpawnObject_i32_NoUUID| p.data != 0),
+                field velocity_y: i16 = when(|p: &SpawnObject_i32_NoUUID| p.data != 0),
+                field velocity_z: i16 = when(|p: &SpawnObject_i32_NoUUID| p.data != 0),
             }
             /// SpawnExperienceOrb spawns a single experience orb into the world when
             /// it is in range of the client. The count controls the amount of experience
@@ -378,7 +417,7 @@ state_packets!(
                 field velocity_x: i16 =,
                 field velocity_y: i16 =,
                 field velocity_z: i16 =,
-                field metadata: types::Metadata =,
+                field metadata: types::Metadata19 =,
             }
             packet SpawnMob_u8 {
                 field entity_id: VarInt =,
@@ -393,7 +432,7 @@ state_packets!(
                 field velocity_x: i16 =,
                 field velocity_y: i16 =,
                 field velocity_z: i16 =,
-                field metadata: types::Metadata =,
+                field metadata: types::Metadata19 =,
             }
             packet SpawnMob_u8_i32 {
                 field entity_id: VarInt =,
@@ -408,7 +447,21 @@ state_packets!(
                 field velocity_x: i16 =,
                 field velocity_y: i16 =,
                 field velocity_z: i16 =,
-                field metadata: types::Metadata =,
+                field metadata: types::Metadata19 =,
+            }
+            packet SpawnMob_u8_i32_NoUUID_18 {
+                field entity_id: VarInt =,
+                field ty: u8 =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+                field head_pitch: i8 =,
+                field velocity_x: i16 =,
+                field velocity_y: i16 =,
+                field velocity_z: i16 =,
+                field metadata: types::Metadata18 =,
             }
             /// SpawnPainting spawns a painting into the world when it is in range of
             /// the client. The title effects the size and the texture of the painting.
@@ -436,7 +489,7 @@ state_packets!(
                 field z: f64 =,
                 field yaw: i8 =,
                 field pitch: i8 =,
-                field metadata: types::Metadata =,
+                field metadata: types::Metadata19 =,
             }
             packet SpawnPlayer_i32 {
                 field entity_id: VarInt =,
@@ -446,7 +499,18 @@ state_packets!(
                 field z: i32 =,
                 field yaw: i8 =,
                 field pitch: i8 =,
-                field metadata: types::Metadata =,
+                field metadata: types::Metadata19 =,
+            }
+            packet SpawnPlayer_i32_HeldItem_18 {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field x: i32 =,
+                field y: i32 =,
+                field z: i32 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+                field current_item: u16 =,
+                field metadata: types::Metadata18 =,
             }
             /// Animation is sent by the server to play an animation on a specific entity.
             packet Animation {
@@ -664,6 +728,18 @@ state_packets!(
                 field bitmask: VarInt =,
                 field data: LenPrefixedBytes<VarInt> =,
             }
+            packet ChunkData_NoEntities_u16 {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field new: bool =,
+                field bitmask: u16 =,
+                field data: LenPrefixedBytes<VarInt> =,
+            }
+            packet ChunkDataBulk {
+                field skylight: bool =,
+                field chunk_meta: LenPrefixed<VarInt, packet::ChunkMeta> =,
+                field chunk_data: Vec<u8> =,
+            }
             /// Effect plays a sound effect or particle at the target location with the
             /// volume (of sounds) being relative to the player's position unless
             /// DisableRelative is set to true.
@@ -737,6 +813,16 @@ state_packets!(
                 field z: Option<u8> = when(|p: &Maps| p.columns > 0),
                 field data: Option<LenPrefixedBytes<VarInt>> = when(|p: &Maps| p.columns > 0),
             }
+            packet Maps_NoTracking {
+                field item_damage: VarInt =,
+                field scale: i8 =,
+                field icons: LenPrefixed<VarInt, packet::MapIcon> =,
+                field columns: u8 =,
+                field rows: Option<u8> = when(|p: &Maps_NoTracking| p.columns > 0),
+                field x: Option<u8> = when(|p: &Maps_NoTracking| p.columns > 0),
+                field z: Option<u8> = when(|p: &Maps_NoTracking| p.columns > 0),
+                field data: Option<LenPrefixedBytes<VarInt>> = when(|p: &Maps_NoTracking| p.columns > 0),
+            }
             /// EntityMove moves the entity with the id by the offsets provided.
             packet EntityMove_i16 {
                 field entity_id: VarInt =,
@@ -781,6 +867,11 @@ state_packets!(
             /// Entity does nothing. It is a result of subclassing used in Minecraft.
             packet Entity {
                 field entity_id: VarInt =,
+            }
+            /// EntityUpdateNBT updates the entity named binary tag.
+            packet EntityUpdateNBT {
+                field entity_id: VarInt =,
+                field nbt: Option<nbt::NamedTag> =,
             }
             /// Teleports the player's vehicle
             packet VehicleTeleport {
@@ -881,6 +972,10 @@ state_packets!(
                 field entity_id: VarInt =,
                 field head_yaw: i8 =,
             }
+            packet EntityStatus {
+                field entity_id: i32 =,
+                field entity_status: i8 =,
+            }
             /// SelectAdvancementTab indicates the client should switch the advancement tab.
             packet SelectAdvancementTab {
                 field has_id: bool =,
@@ -915,7 +1010,11 @@ state_packets!(
             /// EntityMetadata updates the metadata for an entity.
             packet EntityMetadata {
                 field entity_id: VarInt =,
-                field metadata: types::Metadata =,
+                field metadata: types::Metadata19 =,
+            }
+            packet EntityMetadata_18 {
+                field entity_id: VarInt =,
+                field metadata: types::Metadata18 =,
             }
             /// EntityAttach attaches to entities together, either by mounting or leashing.
             /// -1 can be used at the EntityID to deattach.
@@ -942,6 +1041,11 @@ state_packets!(
             packet EntityEquipment {
                 field entity_id: VarInt =,
                 field slot: VarInt =,
+                field item: Option<item::Stack> =,
+            }
+            packet EntityEquipment_u16 {
+                field entity_id: VarInt =,
+                field slot: u16 =,
                 field item: Option<item::Stack> =,
             }
             /// SetExperience updates the experience bar on the client.
@@ -1263,6 +1367,29 @@ impl Serializable for BlockChangeRecord {
         self.xz.write_to(buf)?;
         self.y.write_to(buf)?;
         self.block_id.write_to(buf)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct ChunkMeta {
+    pub x: i32,
+    pub z: i32,
+    pub bitmask: u16,
+}
+
+impl Serializable for ChunkMeta {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(ChunkMeta {
+            x: Serializable::read_from(buf)?,
+            z: Serializable::read_from(buf)?,
+            bitmask: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.x.write_to(buf)?;
+        self.z.write_to(buf)?;
+        self.bitmask.write_to(buf)
     }
 }
 
