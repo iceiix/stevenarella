@@ -38,32 +38,161 @@ impl <T: MetaValue> MetadataKey<T> {
     }
 }
 
-pub struct Metadata {
+pub struct Metadata18 {
     map: HashMap<i32, Value>,
 }
 
-impl Metadata {
-    pub fn new() -> Metadata {
-        Metadata { map: HashMap::new() }
+pub struct Metadata19 {
+    map: HashMap<i32, Value>,
+}
+
+trait MetadataBase: fmt::Debug + Default {
+    fn map(&self) -> &HashMap<i32, Value>;
+    fn map_mut(&mut self) -> &mut HashMap<i32, Value>;
+
+    fn get<T: MetaValue>(&self, key: &MetadataKey<T>) -> Option<&T> {
+        self.map().get(&key.index).map(T::unwrap)
     }
 
-    pub fn get<T: MetaValue>(&self, key: &MetadataKey<T>) -> Option<&T> {
-        self.map.get(&key.index).map(T::unwrap)
-    }
-
-    pub fn put<T: MetaValue>(&mut self, key: &MetadataKey<T>, val: T) {
-        self.map.insert(key.index, val.wrap());
+    fn put<T: MetaValue>(&mut self, key: &MetadataKey<T>, val: T) {
+        self.map_mut().insert(key.index, val.wrap());
     }
 
     fn put_raw<T: MetaValue>(&mut self, index: i32, val: T) {
-        self.map.insert(index, val.wrap());
+        self.map_mut().insert(index, val.wrap());
+    }
+
+    fn fmt2(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Metadata[ ")?;
+        for (k, v) in self.map() {
+            write!(f, "{:?}={:?}, ", k, v)?;
+        }
+        write!(f, "]")
     }
 }
 
-impl Serializable for Metadata {
+impl MetadataBase for Metadata18 {
+    fn map(&self) -> &HashMap<i32, Value> { &self.map }
+    fn map_mut(&mut self) -> &mut HashMap<i32, Value> { &mut self.map }
+}
+
+impl MetadataBase for Metadata19 {
+    fn map(&self) -> &HashMap<i32, Value> { &self.map }
+    fn map_mut(&mut self) -> &mut HashMap<i32, Value> { &mut self.map }
+}
+
+impl Metadata18 {
+    pub fn new() -> Self {
+        Self { map: HashMap::new() }
+    }
+}
+
+impl Metadata19 {
+    pub fn new() -> Self {
+        Self { map: HashMap::new() }
+    }
+}
+
+
+
+impl Serializable for Metadata18 {
 
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
-        let mut m = Metadata::new();
+        let mut m = Self::new();
+        loop {
+            let ty_index = u8::read_from(buf)? as i32;
+            if ty_index == 0x7f {
+                break;
+            }
+            let index = ty_index & 0x1f;
+            let ty = ty_index >> 5;
+
+            match ty {
+                0 => m.put_raw(index, i8::read_from(buf)?),
+                1 => m.put_raw(index, i16::read_from(buf)?),
+                2 => m.put_raw(index, i32::read_from(buf)?),
+                3 => m.put_raw(index, f32::read_from(buf)?),
+                4 => m.put_raw(index, String::read_from(buf)?),
+                5 => m.put_raw(index, Option::<item::Stack>::read_from(buf)?),
+                6 => m.put_raw(index,
+                               [i32::read_from(buf)?,
+                                i32::read_from(buf)?,
+                                i32::read_from(buf)?]),
+                7 => m.put_raw(index,
+                               [f32::read_from(buf)?,
+                                f32::read_from(buf)?,
+                                f32::read_from(buf)?]),
+                _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
+            }
+        }
+        Ok(m)
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+        for (k, v) in &self.map {
+            if (*k as u8) > 0x1f {
+                panic!("write metadata index {:x} > 0x1f", *k as u8);
+            }
+
+            let ty_index: u8 = *k as u8;
+            const TYPE_SHIFT: usize = 5;
+
+            match *v
+            {
+                Value::Byte(ref val) => {
+                    u8::write_to(&(ty_index | (0 << TYPE_SHIFT)), buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::Short(ref val) => {
+                    u8::write_to(&(ty_index | (1 << TYPE_SHIFT)), buf)?;
+                    val.write_to(buf)?;
+                }
+
+                Value::Int(ref val) => {
+                    u8::write_to(&(ty_index | (2 << TYPE_SHIFT)), buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::Float(ref val) => {
+                    u8::write_to(&(ty_index | (3 << TYPE_SHIFT)), buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::String(ref val) => {
+                    u8::write_to(&(ty_index | (4 << TYPE_SHIFT)), buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::OptionalItemStack(ref val) => {
+                    u8::write_to(&(ty_index | (5 << TYPE_SHIFT)), buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::Vector(ref val) => {
+                    u8::write_to(&(ty_index | (6 << TYPE_SHIFT)), buf)?;
+                    val[0].write_to(buf)?;
+                    val[1].write_to(buf)?;
+                    val[2].write_to(buf)?;
+                }
+                Value::Rotation(ref val) => {
+                    u8::write_to(&(ty_index | (7 << TYPE_SHIFT)), buf)?;
+                    val[0].write_to(buf)?;
+                    val[1].write_to(buf)?;
+                    val[2].write_to(buf)?;
+                }
+
+                Value::FormatComponent(_) | Value::Bool(_) | Value::Position(_) |
+                Value::OptionalPosition(_) | Value::Direction(_) | Value::OptionalUUID(_) |
+                Value::Block(_) | Value::NBTTag(_) => {
+                    panic!("attempted to write 1.9+ metadata to 1.8");
+                }
+            }
+        }
+        u8::write_to(&0x7f, buf)?;
+        Ok(())
+    }
+}
+
+impl Serializable for Metadata19 {
+
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+        let mut m = Self::new();
         loop {
             let index = u8::read_from(buf)? as i32;
             if index == 0xFF {
@@ -179,6 +308,7 @@ impl Serializable for Metadata {
                     // TODO: write NBT tags metadata
                     //nbt::Tag(*val).write_to(buf)?;
                 }
+                _ => panic!("unexpected metadata"),
             }
         }
         u8::write_to(&0xFF, buf)?;
@@ -186,25 +316,25 @@ impl Serializable for Metadata {
     }
 }
 
-impl fmt::Debug for Metadata {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Metadata[ ")?;
-        for (k, v) in &self.map {
-            write!(f, "{:?}={:?}, ", k, v)?;
-        }
-        write!(f, "]")
+// TODO: is it possible to implement these traits on MetadataBase instead?
+impl fmt::Debug for Metadata19 { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.fmt2(f) } }
+impl fmt::Debug for Metadata18 { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.fmt2(f) } }
+
+impl Default for Metadata19 {
+    fn default() -> Self {
+        Self::new()
     }
 }
-
-impl Default for Metadata {
-    fn default() -> Metadata {
-        Metadata::new()
+impl Default for Metadata18 {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 #[derive(Debug)]
 pub enum Value {
     Byte(i8),
+    Short(i16),
     Int(i32),
     Float(f32),
     String(String),
@@ -212,6 +342,7 @@ pub enum Value {
     OptionalItemStack(Option<item::Stack>),
     Bool(bool),
     Vector([f32; 3]),
+    Rotation([i32; 3]),
     Position(Position),
     OptionalPosition(Option<Position>),
     Direction(protocol::VarInt), // TODO: Proper type
@@ -234,6 +365,18 @@ impl MetaValue for i8 {
     }
     fn wrap(self) -> Value {
         Value::Byte(self)
+    }
+}
+
+impl MetaValue for i16 {
+    fn unwrap(value: &Value) -> &Self {
+        match *value {
+            Value::Short(ref val) => val,
+            _ => panic!("incorrect key"),
+        }
+    }
+    fn wrap(self) -> Value {
+        Value::Short(self)
     }
 }
 
@@ -306,6 +449,18 @@ impl MetaValue for bool {
     }
     fn wrap(self) -> Value {
         Value::Bool(self)
+    }
+}
+
+impl MetaValue for [i32; 3] {
+    fn unwrap(value: &Value) -> &Self {
+        match *value {
+            Value::Rotation(ref val) => val,
+            _ => panic!("incorrect key"),
+        }
+    }
+    fn wrap(self) -> Value {
+        Value::Rotation(self)
     }
 }
 
@@ -406,7 +561,7 @@ mod test {
 
     #[test]
     fn basic() {
-        let mut m = Metadata::new();
+        let mut m = Metadata19::new();
 
         m.put(&TEST, "Hello world".to_owned());
 
