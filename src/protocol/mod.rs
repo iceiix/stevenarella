@@ -39,6 +39,8 @@ use crate::shared::Position;
 
 pub const SUPPORTED_PROTOCOLS: [i32; 8] = [340, 316, 315, 210, 109, 107, 74, 47];
 
+// TODO: switch to using thread_local storage?, see https://doc.rust-lang.org/std/macro.thread_local.html
+pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
 
 /// Helper macro for defining packets
 #[macro_export]
@@ -805,6 +807,10 @@ pub struct Conn {
 
 impl Conn {
     pub fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
+        unsafe {
+            CURRENT_PROTOCOL_VERSION = protocol_version;
+        }
+
         // TODO SRV record support
         let mut parts = target.split(':').collect::<Vec<&str>>();
         let address = if parts.len() == 1 {

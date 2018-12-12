@@ -38,66 +38,28 @@ impl <T: MetaValue> MetadataKey<T> {
     }
 }
 
-pub struct Metadata18 {
+pub struct Metadata {
     map: HashMap<i32, Value>,
 }
 
-pub struct Metadata19 {
-    map: HashMap<i32, Value>,
-}
-
-trait MetadataBase: fmt::Debug + Default {
-    fn map(&self) -> &HashMap<i32, Value>;
-    fn map_mut(&mut self) -> &mut HashMap<i32, Value>;
-
-    fn get<T: MetaValue>(&self, key: &MetadataKey<T>) -> Option<&T> {
-        self.map().get(&key.index).map(T::unwrap)
+impl Metadata {
+    pub fn new() -> Metadata {
+        Metadata { map: HashMap::new() }
     }
 
-    fn put<T: MetaValue>(&mut self, key: &MetadataKey<T>, val: T) {
-        self.map_mut().insert(key.index, val.wrap());
+    pub fn get<T: MetaValue>(&self, key: &MetadataKey<T>) -> Option<&T> {
+        self.map.get(&key.index).map(T::unwrap)
+    }
+
+    pub fn put<T: MetaValue>(&mut self, key: &MetadataKey<T>, val: T) {
+        self.map.insert(key.index, val.wrap());
     }
 
     fn put_raw<T: MetaValue>(&mut self, index: i32, val: T) {
-        self.map_mut().insert(index, val.wrap());
+        self.map.insert(index, val.wrap());
     }
 
-    fn fmt2(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Metadata[ ")?;
-        for (k, v) in self.map() {
-            write!(f, "{:?}={:?}, ", k, v)?;
-        }
-        write!(f, "]")
-    }
-}
-
-impl MetadataBase for Metadata18 {
-    fn map(&self) -> &HashMap<i32, Value> { &self.map }
-    fn map_mut(&mut self) -> &mut HashMap<i32, Value> { &mut self.map }
-}
-
-impl MetadataBase for Metadata19 {
-    fn map(&self) -> &HashMap<i32, Value> { &self.map }
-    fn map_mut(&mut self) -> &mut HashMap<i32, Value> { &mut self.map }
-}
-
-impl Metadata18 {
-    pub fn new() -> Self {
-        Self { map: HashMap::new() }
-    }
-}
-
-impl Metadata19 {
-    pub fn new() -> Self {
-        Self { map: HashMap::new() }
-    }
-}
-
-
-
-impl Serializable for Metadata18 {
-
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+    fn read_from18<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
         let mut m = Self::new();
         loop {
             let ty_index = u8::read_from(buf)? as i32;
@@ -128,7 +90,7 @@ impl Serializable for Metadata18 {
         Ok(m)
     }
 
-    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to18<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
         for (k, v) in &self.map {
             if (*k as u8) > 0x1f {
                 panic!("write metadata index {:x} > 0x1f", *k as u8);
@@ -177,9 +139,7 @@ impl Serializable for Metadata18 {
                     val[2].write_to(buf)?;
                 }
 
-                Value::FormatComponent(_) | Value::Bool(_) | Value::Position(_) |
-                Value::OptionalPosition(_) | Value::Direction(_) | Value::OptionalUUID(_) |
-                Value::Block(_) | Value::NBTTag(_) => {
+                _ => {
                     panic!("attempted to write 1.9+ metadata to 1.8");
                 }
             }
@@ -187,11 +147,8 @@ impl Serializable for Metadata18 {
         u8::write_to(&0x7f, buf)?;
         Ok(())
     }
-}
 
-impl Serializable for Metadata19 {
-
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+    fn read_from19<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
         let mut m = Self::new();
         loop {
             let index = u8::read_from(buf)? as i32;
@@ -243,7 +200,7 @@ impl Serializable for Metadata19 {
         Ok(m)
     }
 
-    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to19<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
         for (k, v) in &self.map {
             (*k as u8).write_to(buf)?;
             match *v {
@@ -316,18 +273,41 @@ impl Serializable for Metadata19 {
     }
 }
 
-// TODO: is it possible to implement these traits on MetadataBase instead?
-impl fmt::Debug for Metadata19 { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.fmt2(f) } }
-impl fmt::Debug for Metadata18 { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.fmt2(f) } }
+impl Serializable for Metadata {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+        let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
 
-impl Default for Metadata19 {
-    fn default() -> Self {
-        Self::new()
+        if protocol_version >= 74 {
+            Metadata::read_from19(buf)
+        } else {
+            Metadata::read_from18(buf)
+        }
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+        let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
+
+        if protocol_version >= 74 {
+            self.write_to19(buf)
+        } else {
+            self.write_to18(buf)
+        }
     }
 }
-impl Default for Metadata18 {
-    fn default() -> Self {
-        Self::new()
+
+impl fmt::Debug for Metadata {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Metadata[ ")?;
+        for (k, v) in &self.map {
+            write!(f, "{:?}={:?}, ", k, v)?;
+        }
+        write!(f, "]")
+    }
+}
+
+impl Default for Metadata {
+    fn default() -> Metadata {
+        Metadata::new()
     }
 }
 
@@ -561,7 +541,7 @@ mod test {
 
     #[test]
     fn basic() {
-        let mut m = Metadata19::new();
+        let mut m = Metadata::new();
 
         m.put(&TEST, "Hello world".to_owned());
 
