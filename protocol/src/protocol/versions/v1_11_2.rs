@@ -51,12 +51,12 @@ protocol_packet_ids!(
             0x08 => BlockBreakAnimation
             0x09 => UpdateBlockEntity
             0x0a => BlockAction
-            0x0b => BlockChange
+            0x0b => BlockChange_VarInt
             0x0c => BossBar
             0x0d => ServerDifficulty
             0x0e => TabCompleteReply
             0x0f => ServerMessage
-            0x10 => MultiBlockChange
+            0x10 => MultiBlockChange_VarInt
             0x11 => ConfirmTransaction
             0x12 => WindowClose
             0x13 => WindowOpen
@@ -79,7 +79,7 @@ protocol_packet_ids!(
             0x24 => Maps
             0x25 => EntityMove_i16
             0x26 => EntityLookAndMove_i16
-            0x27 => EntityLook
+            0x27 => EntityLook_VarInt
             0x28 => Entity
             0x29 => VehicleTeleport
             0x2a => SignEditorOpen
