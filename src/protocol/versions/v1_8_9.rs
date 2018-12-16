@@ -58,7 +58,7 @@ protocol_packet_ids!(
             0x13 => EntityDestroy
             0x14 => Entity
             0x15 => EntityMove_i8
-            0x16 => EntityLook
+            0x16 => EntityLook_VarInt
             0x17 => EntityLookAndMove_i8
             0x18 => EntityTeleport_i32
             0x19 => EntityHeadLook
@@ -70,8 +70,8 @@ protocol_packet_ids!(
             0x1f => SetExperience
             0x20 => EntityProperties
             0x21 => ChunkData_NoEntities_u16
-            0x22 => MultiBlockChange
-            0x23 => BlockChange
+            0x22 => MultiBlockChange_VarInt
+            0x23 => BlockChange_VarInt
             0x24 => BlockAction
             0x25 => BlockBreakAnimation
             0x26 => ChunkDataBulk

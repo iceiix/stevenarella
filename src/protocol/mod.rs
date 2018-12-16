@@ -37,7 +37,7 @@ use flate2::Compression;
 use std::time::{Instant, Duration};
 use crate::shared::Position;
 
-pub const SUPPORTED_PROTOCOLS: [i32; 8] = [340, 316, 315, 210, 109, 107, 74, 47];
+pub const SUPPORTED_PROTOCOLS: [i32; 9] = [340, 316, 315, 210, 109, 107, 74, 47, 5];
 
 // TODO: switch to using thread_local storage?, see https://doc.rust-lang.org/std/macro.thread_local.html
 pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
@@ -550,6 +550,16 @@ impl <L: Lengthable> Default for LenPrefixedBytes<L> {
 impl <L: Lengthable> fmt::Debug for LenPrefixedBytes<L> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.data.fmt(f)
+    }
+}
+
+impl Lengthable for u8 {
+    fn into(self) -> usize {
+        self as usize
+    }
+
+    fn from(u: usize) -> u8 {
+        u as u8
     }
 }
 

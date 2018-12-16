@@ -28,6 +28,8 @@ use crate::chunk_builder;
 use crate::ecs;
 use crate::entity::block_entity;
 use crate::format;
+use flate2::read::ZlibDecoder;
+use std::io::Read;
 
 pub mod biome;
 mod storage;
@@ -558,6 +560,24 @@ impl World {
          Ok(())
     }
 
+    fn dirty_chunks_by_bitmask(&mut self, x: i32, z: i32, mask: u16) {
+        for i in 0 .. 16 {
+            if mask & (1 << i) == 0 {
+                continue;
+            }
+            for pos in [
+                (-1, 0, 0), (1, 0, 0),
+                (0, -1, 0), (0, 1, 0),
+                (0, 0, -1), (0, 0, 1)].into_iter() {
+                self.flag_section_dirty(x + pos.0, i as i32 + pos.1, z + pos.2);
+            }
+            self.update_range(
+                (x<<4) - 1, (i<<4) - 1, (z<<4) - 1,
+                (x<<4) + 17, (i<<4) + 17, (z<<4) + 17
+            );
+        }
+    }
+
     pub fn load_chunk18(&mut self, x: i32, z: i32, new: bool, _skylight: bool, mask: u16, data: &mut std::io::Cursor<Vec<u8>>) -> Result<(), protocol::Error> {
         use std::io::Read;
         use byteorder::ReadBytesExt;
@@ -635,21 +655,175 @@ impl World {
             chunk.calculate_heightmap();
         }
 
-        for i in 0 .. 16 {
-            if mask & (1 << i) == 0 {
-                continue;
-            }
-            for pos in [
-                (-1, 0, 0), (1, 0, 0),
-                (0, -1, 0), (0, 1, 0),
-                (0, 0, -1), (0, 0, 1)].into_iter() {
-                self.flag_section_dirty(x + pos.0, i as i32 + pos.1, z + pos.2);
-            }
-            self.update_range(
-                (x<<4) - 1, (i<<4) - 1, (z<<4) - 1,
-                (x<<4) + 17, (i<<4) + 17, (z<<4) + 17
-            );
+        self.dirty_chunks_by_bitmask(x, z, mask);
+        Ok(())
+    }
+
+    pub fn load_chunks17(&mut self, chunk_column_count: u16, data_length: i32, skylight: bool, data: &[u8]) -> Result<(), protocol::Error> {
+        let compressed_chunk_data = &data[0..data_length as usize];
+        let metadata = &data[data_length as usize..];
+
+        let mut zlib = ZlibDecoder::new(std::io::Cursor::new(compressed_chunk_data.to_vec()));
+        let mut chunk_data = Vec::new();
+        zlib.read_to_end(&mut chunk_data)?;
+
+        let mut chunk_data = std::io::Cursor::new(chunk_data);
+
+        // Chunk metadata
+        let mut metadata = std::io::Cursor::new(metadata);
+        for _i in 0..chunk_column_count {
+            use byteorder::ReadBytesExt;
+
+            let x = metadata.read_i32::<byteorder::BigEndian>()?;
+            let z = metadata.read_i32::<byteorder::BigEndian>()?;
+            let mask = metadata.read_u16::<byteorder::BigEndian>()?;
+            let mask_add = metadata.read_u16::<byteorder::BigEndian>()?;
+
+            let new = true;
+
+            self.load_uncompressed_chunk17(x, z, new, skylight, mask, mask_add, &mut chunk_data)?;
         }
+
+        Ok(())
+    }
+
+    pub fn load_chunk17(&mut self, x: i32, z: i32, new: bool, mask: u16, mask_add: u16, compressed_data: Vec<u8>) -> Result<(), protocol::Error> {
+         let mut zlib = ZlibDecoder::new(std::io::Cursor::new(compressed_data.to_vec()));
+         let mut data = Vec::new();
+         zlib.read_to_end(&mut data)?;
+
+         let skylight = true;
+         self.load_uncompressed_chunk17(x, z, new, skylight, mask, mask_add, &mut std::io::Cursor::new(data))
+    }
+
+    fn load_uncompressed_chunk17(&mut self, x: i32, z: i32, new: bool, skylight: bool, mask: u16, mask_add: u16, data: &mut std::io::Cursor<Vec<u8>>) -> Result<(), protocol::Error> {
+        use std::io::Read;
+        use crate::types::nibble;
+
+        let cpos = CPos(x, z);
+        {
+            let chunk = if new {
+                self.chunks.insert(cpos, Chunk::new(cpos));
+                self.chunks.get_mut(&cpos).unwrap()
+            } else {
+                if !self.chunks.contains_key(&cpos) {
+                    return Ok(());
+                }
+                self.chunks.get_mut(&cpos).unwrap()
+            };
+
+            // Block type array - whole byte per block
+            let mut block_types = [[0u8; 4096]; 16];
+            for i in 0 .. 16 {
+                if chunk.sections[i].is_none() {
+                    let mut fill_sky = chunk.sections.iter()
+                        .skip(i)
+                        .all(|v| v.is_none());
+                    fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
+                    if !fill_sky || mask & (1 << i) != 0 {
+                        chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
+                    }
+                }
+                if mask & (1 << i) == 0 {
+                    continue;
+                }
+                let section = chunk.sections[i as usize].as_mut().unwrap();
+                section.dirty = true;
+
+                data.read_exact(&mut block_types[i])?;
+            }
+
+            // Block metadata array - half byte per block
+            let mut block_meta: [nibble::Array; 16] = [
+                // TODO: cleanup this initialization
+                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+            ];
+
+            for i in 0 .. 16 {
+                if mask & (1 << i) == 0 {
+                    continue;
+                }
+
+                data.read_exact(&mut block_meta[i].data)?;
+            }
+
+            // Block light array - half byte per block
+            for i in 0 .. 16 {
+                if mask & (1 << i) == 0 {
+                    continue;
+                }
+                let section = chunk.sections[i as usize].as_mut().unwrap();
+
+                data.read_exact(&mut section.block_light.data)?;
+            }
+
+            // Sky light array - half byte per block - only if 'skylight' is true
+            if skylight {
+                for i in 0 .. 16 {
+                    if mask & (1 << i) == 0 {
+                        continue;
+                    }
+                    let section = chunk.sections[i as usize].as_mut().unwrap();
+
+                    data.read_exact(&mut section.sky_light.data)?;
+                }
+            }
+
+            // Add array - half byte per block - uses secondary bitmask
+            let mut block_add: [nibble::Array; 16] = [
+                // TODO: cleanup this initialization
+                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+            ];
+
+            for i in 0 .. 16 {
+                if mask_add & (1 << i) == 0 {
+                    continue;
+                }
+                data.read_exact(&mut block_add[i].data)?;
+            }
+
+            // Now that we have the block types, metadata, and add, combine to initialize the blocks
+            for i in 0 .. 16 {
+                if mask & (1 << i) == 0 {
+                    continue;
+                }
+
+                let section = chunk.sections[i as usize].as_mut().unwrap();
+
+                for bi in 0 .. 4096 {
+                    let id = ((block_add[i].get(bi) as u16) << 12) | ((block_types[i][bi] as u16) << 4) | (block_meta[i].get(bi) as u16);
+                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize));
+
+                    // Spawn block entities
+                    let b = section.blocks.get(bi);
+                    if block_entity::BlockEntityType::get_block_entity(b).is_some() {
+                        let pos = Position::new(
+                            (bi & 0xF) as i32,
+                            (bi >> 8) as i32,
+                            ((bi >> 4) & 0xF) as i32
+                        ) + (chunk.position.0 << 4, (i << 4) as i32, chunk.position.1 << 4);
+                        if chunk.block_entities.contains_key(&pos) {
+                            self.block_entity_actions.push_back(BlockEntityAction::Remove(pos))
+                        }
+                        self.block_entity_actions.push_back(BlockEntityAction::Create(pos))
+                    }
+                }
+            }
+
+            if new {
+                data.read_exact(&mut chunk.biomes)?;
+            }
+
+            chunk.calculate_heightmap();
+        }
+
+        self.dirty_chunks_by_bitmask(x, z, mask);
         Ok(())
     }
 
@@ -733,21 +907,7 @@ impl World {
             chunk.calculate_heightmap();
         }
 
-        for i in 0 .. 16 {
-            if mask & (1 << i) == 0 {
-                continue;
-            }
-            for pos in [
-                (-1, 0, 0), (1, 0, 0),
-                (0, -1, 0), (0, 1, 0),
-                (0, 0, -1), (0, 0, 1)].into_iter() {
-                self.flag_section_dirty(x + pos.0, i as i32 + pos.1, z + pos.2);
-            }
-            self.update_range(
-                (x<<4) - 1, (i<<4) - 1, (z<<4) - 1,
-                (x<<4) + 17, (i<<4) + 17, (z<<4) + 17
-            );
-        }
+        self.dirty_chunks_by_bitmask(x, z, mask);
         Ok(())
     }
 

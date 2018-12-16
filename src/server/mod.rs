@@ -120,14 +120,23 @@ impl Server {
             username: profile.username.clone(),
         })?;
 
-        let packet;
+        use std::rc::Rc;
+        let (server_id, public_key, verify_token);
         loop {
             match conn.read_packet()? {
                 protocol::packet::Packet::SetInitialCompression(val) => {
                     conn.set_compresssion(val.threshold.0);
                 },
                 protocol::packet::Packet::EncryptionRequest(val) => {
-                    packet = val;
+                    server_id = Rc::new(val.server_id);
+                    public_key = Rc::new(val.public_key.data);
+                    verify_token = Rc::new(val.verify_token.data);
+                    break;
+                },
+                protocol::packet::Packet::EncryptionRequest_i16(val) => {
+                    server_id = Rc::new(val.server_id);
+                    public_key = Rc::new(val.public_key.data);
+                    verify_token = Rc::new(val.verify_token.data);
                     break;
                 },
                 protocol::packet::Packet::LoginSuccess(val) => {
@@ -145,25 +154,26 @@ impl Server {
             };
         }
 
-        println!("packet.public_key.data = {:?}", &packet.public_key.data);
         let mut shared = [0; 16];
         // TODO: is this cryptographically secure enough?
         rand::thread_rng().fill(&mut shared);
 
-        println!("shared ({:} bytes) = {:?}", shared.len(), &shared);
-        println!("packet.verify_token.data = {:?}", &packet.verify_token.data);
+        let shared_e = rsa_public_encrypt_pkcs1::encrypt(&public_key, &shared).unwrap();
+        let token_e = rsa_public_encrypt_pkcs1::encrypt(&public_key, &verify_token).unwrap();
 
-        let shared_e = rsa_public_encrypt_pkcs1::encrypt(&packet.public_key.data, &shared).unwrap();
-        let token_e = rsa_public_encrypt_pkcs1::encrypt(&packet.public_key.data, &packet.verify_token.data).unwrap();
-        println!("new shared_e({:}) = {:?}", shared_e.len(), &shared_e);
-        println!("new token_e({:}) = {:?}", token_e.len(), &token_e);
+        profile.join_server(&server_id, &shared, &public_key)?;
 
-        profile.join_server(&packet.server_id, &shared, &packet.public_key.data)?;
-
-        conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse {
-            shared_secret: protocol::LenPrefixedBytes::new(shared_e),
-            verify_token: protocol::LenPrefixedBytes::new(token_e),
-        })?;
+        if protocol_version >= 47 {
+            conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse {
+                shared_secret: protocol::LenPrefixedBytes::new(shared_e),
+                verify_token: protocol::LenPrefixedBytes::new(token_e),
+            })?;
+        } else {
+            conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse_i16 {
+                shared_secret: protocol::LenPrefixedBytes::new(shared_e),
+                verify_token: protocol::LenPrefixedBytes::new(token_e),
+            })?;
+        }
 
         let mut read = conn.clone();
         let mut write = conn.clone();
@@ -377,36 +387,51 @@ impl Server {
                         self pck {
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
+                            JoinGame_i8_NoDebug => on_game_join_i8_nodebug,
                             Respawn => on_respawn,
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
+                            KeepAliveClientbound_i32 => on_keep_alive_i32,
                             ChunkData => on_chunk_data,
                             ChunkData_NoEntities => on_chunk_data_no_entities,
                             ChunkData_NoEntities_u16 => on_chunk_data_no_entities_u16,
+                            ChunkData_17 => on_chunk_data_17,
                             ChunkDataBulk => on_chunk_data_bulk,
+                            ChunkDataBulk_17 => on_chunk_data_bulk_17,
                             ChunkUnload => on_chunk_unload,
-                            BlockChange => on_block_change,
-                            MultiBlockChange => on_multi_block_change,
+                            BlockChange_VarInt => on_block_change_varint,
+                            BlockChange_u8 => on_block_change_u8,
+                            MultiBlockChange_VarInt => on_multi_block_change_varint,
+                            MultiBlockChange_u16 => on_multi_block_change_u16,
                             TeleportPlayer_WithConfirm => on_teleport_player_withconfirm,
                             TeleportPlayer_NoConfirm => on_teleport_player_noconfirm,
                             TimeUpdate => on_time_update,
                             ChangeGameState => on_game_state_change,
                             UpdateBlockEntity => on_block_entity_update,
+                            UpdateBlockEntity_Data => on_block_entity_update_data,
                             UpdateSign => on_sign_update,
+                            UpdateSign_u16 => on_sign_update_u16,
                             PlayerInfo => on_player_info,
+                            PlayerInfo_String => on_player_info_string,
                             Disconnect => on_disconnect,
                             // Entities
                             EntityDestroy => on_entity_destroy,
+                            EntityDestroy_u8 => on_entity_destroy_u8,
                             SpawnPlayer_f64 => on_player_spawn_f64,
                             SpawnPlayer_i32 => on_player_spawn_i32,
                             SpawnPlayer_i32_HeldItem => on_player_spawn_i32_helditem,
+                            SpawnPlayer_i32_HeldItem_String => on_player_spawn_i32_helditem_string,
                             EntityTeleport_f64 => on_entity_teleport_f64,
                             EntityTeleport_i32 => on_entity_teleport_i32,
+                            EntityTeleport_i32_i32_NoGround => on_entity_teleport_i32_i32_noground,
                             EntityMove_i16 => on_entity_move_i16,
                             EntityMove_i8 => on_entity_move_i8,
-                            EntityLook => on_entity_look,
+                            EntityMove_i8_i32_NoGround => on_entity_move_i8_i32_noground,
+                            EntityLook_VarInt => on_entity_look_varint,
+                            EntityLook_i32_NoGround => on_entity_look_i32_noground,
                             EntityLookAndMove_i16 => on_entity_look_and_move_i16,
                             EntityLookAndMove_i8 => on_entity_look_and_move_i8,
+                            EntityLookAndMove_i8_i32_NoGround => on_entity_look_and_move_i8_i32_noground,
                         }
                     },
                     Err(err) => panic!("Err: {:?}", err),
@@ -503,15 +528,28 @@ impl Server {
 
             // Sync our position to the server
             // Use the smaller packets when possible
-            let packet = packet::play::serverbound::PlayerPositionLook {
-                x: position.position.x,
-                y: position.position.y,
-                z: position.position.z,
-                yaw: -(rotation.yaw as f32) * (180.0 / PI),
-                pitch: (-rotation.pitch as f32) * (180.0 / PI) + 180.0,
-                on_ground,
-            };
-            self.write_packet(packet);
+            if self.protocol_version >= 47 {
+                let packet = packet::play::serverbound::PlayerPositionLook {
+                    x: position.position.x,
+                    y: position.position.y,
+                    z: position.position.z,
+                    yaw: -(rotation.yaw as f32) * (180.0 / PI),
+                    pitch: (-rotation.pitch as f32) * (180.0 / PI) + 180.0,
+                    on_ground,
+                };
+                self.write_packet(packet);
+            } else {
+                let packet = packet::play::serverbound::PlayerPositionLook_HeadY {
+                    x: position.position.x,
+                    feet_y: position.position.y - 1.62,
+                    head_y: position.position.y,
+                    z: position.position.z,
+                    yaw: -(rotation.yaw as f32) * (180.0 / PI),
+                    pitch: (-rotation.pitch as f32) * (180.0 / PI) + 180.0,
+                    on_ground,
+                };
+                self.write_packet(packet);
+            }
         }
     }
 
@@ -561,9 +599,28 @@ impl Server {
                         cursor_y: (at.y * 16.0) as u8,
                         cursor_z: (at.z * 16.0) as u8,
                     });
-                } else {
+                } else if self.protocol_version >= 47 {
                     self.write_packet(packet::play::serverbound::PlayerBlockPlacement_u8_Item {
                         location: pos,
+                        face: match face {
+                            Direction::Down => 0,
+                            Direction::Up => 1,
+                            Direction::North => 2,
+                            Direction::South => 3,
+                            Direction::West => 4,
+                            Direction::East => 5,
+                            _ => unreachable!(),
+                        },
+                        hand: None,
+                        cursor_x: (at.x * 16.0) as u8,
+                        cursor_y: (at.y * 16.0) as u8,
+                        cursor_z: (at.z * 16.0) as u8,
+                    });
+                } else {
+                    self.write_packet(packet::play::serverbound::PlayerBlockPlacement_u8_Item_u8y {
+                        x: pos.x,
+                        y: pos.y as u8,
+                        z: pos.x,
                         face: match face {
                             Direction::Down => 0,
                             Direction::Up => 1,
@@ -599,6 +656,12 @@ impl Server {
         });
     }
 
+    fn on_keep_alive_i32(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound_i32) {
+        self.write_packet(packet::play::serverbound::KeepAliveServerbound_i32 {
+            id: keep_alive.id,
+        });
+    }
+
     fn on_game_join_i32(&mut self, join: packet::play::clientbound::JoinGame_i32) {
         self.on_game_join(join.gamemode, join.entity_id)
     }
@@ -606,6 +669,11 @@ impl Server {
     fn on_game_join_i8(&mut self, join: packet::play::clientbound::JoinGame_i8) {
         self.on_game_join(join.gamemode, join.entity_id)
     }
+
+    fn on_game_join_i8_nodebug(&mut self, join: packet::play::clientbound::JoinGame_i8_NoDebug) {
+        self.on_game_join(join.gamemode, join.entity_id)
+    }
+
 
     fn on_game_join(&mut self, gamemode: u8, entity_id: i32) {
         let gamemode = Gamemode::from_int((gamemode & 0x7) as i32);
@@ -622,9 +690,14 @@ impl Server {
         self.player = Some(player);
 
         // Let the server know who we are
-        self.write_packet(plugin_messages::Brand {
-            brand: "Steven".into(),
-        }.as_message());
+        let brand = plugin_messages::Brand {
+                brand: "Steven".into(),
+            };
+        if self.protocol_version >= 47 {
+            self.write_packet(brand.as_message());
+        } else {
+            self.write_packet(brand.as_message17());
+        }
     }
 
     fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
@@ -672,6 +745,14 @@ impl Server {
         }
     }
 
+    fn on_entity_destroy_u8(&mut self, entity_destroy: packet::play::clientbound::EntityDestroy_u8) {
+        for id in entity_destroy.entity_ids.data {
+            if let Some(entity) = self.entity_map.remove(&id) {
+                self.entities.remove_entity(entity);
+            }
+        }
+    }
+
     fn on_entity_teleport_f64(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_f64) {
         self.on_entity_teleport(entity_telport.entity_id.0, entity_telport.x, entity_telport.y, entity_telport.z, entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
     }
@@ -679,6 +760,12 @@ impl Server {
     fn on_entity_teleport_i32(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_i32) {
         self.on_entity_teleport(entity_telport.entity_id.0, entity_telport.x as f64, entity_telport.y as f64, entity_telport.z as f64, entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
     }
+
+    fn on_entity_teleport_i32_i32_noground(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_i32_i32_NoGround) {
+        let on_ground = true; // TODO: how is this supposed to be set? (for 1.7)
+        self.on_entity_teleport(entity_telport.entity_id, entity_telport.x as f64, entity_telport.y as f64, entity_telport.z as f64, entity_telport.yaw as f64, entity_telport.pitch as f64, on_ground)
+    }
+
 
     fn on_entity_teleport(&mut self, entity_id: i32, x: f64, y: f64, z: f64, yaw: f64, pitch: f64, _on_ground: bool) {
         use std::f64::consts::PI;
@@ -701,6 +788,11 @@ impl Server {
         self.on_entity_move(m.entity_id.0, m.delta_x as f64, m.delta_y as f64, m.delta_z as f64)
     }
 
+    fn on_entity_move_i8_i32_noground(&mut self, m: packet::play::clientbound::EntityMove_i8_i32_NoGround) {
+        self.on_entity_move(m.entity_id, m.delta_x as f64, m.delta_y as f64, m.delta_z as f64)
+    }
+
+
     fn on_entity_move(&mut self, entity_id: i32, delta_x: f64, delta_y: f64, delta_z: f64) {
         if let Some(entity) = self.entity_map.get(&entity_id) {
             let position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
@@ -710,13 +802,21 @@ impl Server {
         }
     }
 
-    fn on_entity_look(&mut self, look: packet::play::clientbound::EntityLook) {
+    fn on_entity_look(&mut self, entity_id: i32, yaw: f64, pitch: f64) {
         use std::f64::consts::PI;
-        if let Some(entity) = self.entity_map.get(&look.entity_id.0) {
+        if let Some(entity) = self.entity_map.get(&entity_id) {
             let rotation = self.entities.get_component_mut(*entity, self.target_rotation).unwrap();
-            rotation.yaw = -((look.yaw as f64) / 256.0) * PI * 2.0;
-            rotation.pitch = -((look.pitch as f64) / 256.0) * PI * 2.0;
+            rotation.yaw = -(yaw / 256.0) * PI * 2.0;
+            rotation.pitch = -(pitch / 256.0) * PI * 2.0;
         }
+    }
+
+    fn on_entity_look_varint(&mut self, look: packet::play::clientbound::EntityLook_VarInt) {
+        self.on_entity_look(look.entity_id.0, look.yaw as f64, look.pitch as f64)
+    }
+
+    fn on_entity_look_i32_noground(&mut self, look: packet::play::clientbound::EntityLook_i32_NoGround) {
+        self.on_entity_look(look.entity_id, look.yaw as f64, look.pitch as f64)
     }
 
     fn on_entity_look_and_move_i16(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i16) {
@@ -727,6 +827,12 @@ impl Server {
 
     fn on_entity_look_and_move_i8(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i8) {
         self.on_entity_look_and_move(lookmove.entity_id.0,
+                                     lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
+                                     lookmove.yaw as f64, lookmove.pitch as f64)
+    }
+
+    fn on_entity_look_and_move_i8_i32_noground(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i8_i32_NoGround) {
+        self.on_entity_look_and_move(lookmove.entity_id,
                                      lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
                                      lookmove.yaw as f64, lookmove.pitch as f64)
     }
@@ -754,6 +860,10 @@ impl Server {
 
     fn on_player_spawn_i32_helditem(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem) {
         self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
+    }
+
+    fn on_player_spawn_i32_helditem_string(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_String) {
+        self.on_player_spawn(spawn.entity_id.0, protocol::UUID::from_str(&spawn.uuid), spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
     }
 
     fn on_player_spawn(&mut self, entity_id: i32, uuid: protocol::UUID, x: f64, y: f64, z: f64, pitch: f64, yaw: f64) {
@@ -855,6 +965,10 @@ impl Server {
         }
     }
 
+    fn on_block_entity_update_data(&mut self, _block_update: packet::play::clientbound::UpdateBlockEntity_Data) {
+        // TODO: handle UpdateBlockEntity_Data for 1.7, decompress gzipped_nbt
+    }
+
     fn on_sign_update(&mut self, mut update_sign: packet::play::clientbound::UpdateSign) {
         use crate::format;
         format::convert_legacy(&mut update_sign.line1);
@@ -868,6 +982,26 @@ impl Server {
             update_sign.line3,
             update_sign.line4,
         ));
+    }
+
+    fn on_sign_update_u16(&mut self, mut update_sign: packet::play::clientbound::UpdateSign_u16) {
+        use crate::format;
+        format::convert_legacy(&mut update_sign.line1);
+        format::convert_legacy(&mut update_sign.line2);
+        format::convert_legacy(&mut update_sign.line3);
+        format::convert_legacy(&mut update_sign.line4);
+        self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+            Position::new(update_sign.x, update_sign.y as i32, update_sign.z),
+            update_sign.line1,
+            update_sign.line2,
+            update_sign.line3,
+            update_sign.line4,
+        ));
+    }
+
+
+    fn on_player_info_string(&mut self, _player_info: packet::play::clientbound::PlayerInfo_String) {
+        // TODO: support PlayerInfo_String for 1.7
     }
 
     fn on_player_info(&mut self, player_info: packet::play::clientbound::PlayerInfo) {
@@ -1003,23 +1137,39 @@ impl Server {
         self.world.load_chunks18(chunk_data.new, skylight, &chunk_meta, chunk_data.data.data).unwrap();
     }
 
+    fn on_chunk_data_17(&mut self, chunk_data: packet::play::clientbound::ChunkData_17) {
+        self.world.load_chunk17(chunk_data.chunk_x, chunk_data.chunk_z, chunk_data.new, chunk_data.bitmask, chunk_data.add_bitmask, chunk_data.compressed_data.data).unwrap();
+    }
+
     fn on_chunk_data_bulk(&mut self, bulk: packet::play::clientbound::ChunkDataBulk) {
         let new = true;
         self.world.load_chunks18(new, bulk.skylight, &bulk.chunk_meta.data, bulk.chunk_data.to_vec()).unwrap();
+    }
+
+    fn on_chunk_data_bulk_17(&mut self, bulk: packet::play::clientbound::ChunkDataBulk_17) {
+        self.world.load_chunks17(bulk.chunk_column_count, bulk.data_length, bulk.skylight, &bulk.chunk_data_and_meta).unwrap();
     }
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
         self.world.unload_chunk(chunk_unload.x, chunk_unload.z, &mut self.entities);
     }
 
-    fn on_block_change(&mut self, block_change: packet::play::clientbound::BlockChange) {
-        self.world.set_block(
-            block_change.location,
-            block::Block::by_vanilla_id(block_change.block_id.0 as usize)
+    fn on_block_change(&mut self, location: Position, id: i32) {
+        self.world.set_block(location, block::Block::by_vanilla_id(id as usize))
+    }
+
+    fn on_block_change_varint(&mut self, block_change: packet::play::clientbound::BlockChange_VarInt) {
+        self.on_block_change(block_change.location, block_change.block_id.0)
+    }
+
+    fn on_block_change_u8(&mut self, block_change: packet::play::clientbound::BlockChange_u8) {
+        self.on_block_change(
+            crate::shared::Position::new(block_change.x, block_change.y as i32, block_change.z),
+            (block_change.block_id.0 << 4) | (block_change.block_metadata as i32)
         );
     }
 
-    fn on_multi_block_change(&mut self, block_change: packet::play::clientbound::MultiBlockChange) {
+    fn on_multi_block_change_varint(&mut self, block_change: packet::play::clientbound::MultiBlockChange_VarInt) {
         let ox = block_change.chunk_x << 4;
         let oz = block_change.chunk_z << 4;
         for record in block_change.records.data {
@@ -1033,6 +1183,30 @@ impl Server {
             );
         }
     }
+
+    fn on_multi_block_change_u16(&mut self, block_change: packet::play::clientbound::MultiBlockChange_u16) {
+        let ox = block_change.chunk_x << 4;
+        let oz = block_change.chunk_z << 4;
+
+        let mut data = std::io::Cursor::new(block_change.data);
+
+        for _ in 0 .. block_change.record_count {
+            use byteorder::{BigEndian, ReadBytesExt};
+
+            let record = data.read_u32::<BigEndian>().unwrap();
+
+            let id = record & 0x0000_ffff;
+            let y = ((record & 0x00ff_0000) >> 16) as i32;
+            let z = oz + ((record & 0x0f00_0000) >> 24) as i32;
+            let x = ox + ((record & 0xf000_0000) >> 28) as i32;
+
+            self.world.set_block(
+                Position::new(x, y, z),
+                block::Block::by_vanilla_id(id as usize)
+            );
+        }
+    }
+
 }
 
 #[derive(Debug, Clone, Copy)]

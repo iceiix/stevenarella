@@ -43,11 +43,32 @@ impl Serializable for Option<Stack> {
         if id == -1 {
             return Ok(None);
         }
+        let count = buf.read_u8()? as isize;
+        let damage = buf.read_i16::<BigEndian>()? as isize;
+
+        let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
+
+        let tag: Option<nbt::NamedTag> = if protocol_version >= 47 {
+            Serializable::read_from(buf)?
+        } else {
+            // 1.7 uses a different slot data format described on https://wiki.vg/index.php?title=Slot_Data&diff=6056&oldid=4753
+            let tag_size = buf.read_i16::<BigEndian>()?;
+            if tag_size != -1 {
+                for _ in 0..tag_size {
+                    let _ = buf.read_u8()?;
+                }
+                // TODO: decompress zlib NBT for 1.7
+                None
+            } else {
+                None
+            }
+        };
+
         Ok(Some(Stack {
             id: id as isize,
-            count: buf.read_u8()? as isize,
-            damage: buf.read_i16::<BigEndian>()? as isize,
-            tag: Serializable::read_from(buf)?,
+            count,
+            damage,
+            tag,
         }))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
@@ -56,6 +77,7 @@ impl Serializable for Option<Stack> {
                 buf.write_i16::<BigEndian>(val.id as i16)?;
                 buf.write_u8(val.count as u8)?;
                 buf.write_i16::<BigEndian>(val.damage as i16)?;
+                // TODO: compress zlib NBT if 1.7
                 val.tag.write_to(buf)?;
             }
             None => buf.write_i16::<BigEndian>(-1)?,
