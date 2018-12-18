@@ -3749,6 +3749,37 @@ define_blocks! {
         props {},
         model { ("minecraft", "frosted_ice") },
     }
+    MagmaBlock {
+        props {},
+        model { ("minecraft", "magma") },
+    }
+    NetherWartBlock {
+        props {},
+        model { ("minecraft", "nether_wart_block") },
+    }
+    RedNetherBrick {
+        props {},
+        model { ("minecraft", "red_nether_brick") },
+    }
+    BoneBlock {
+        props {
+            axis: Axis = [Axis::Y, Axis::Z, Axis::X],
+        },
+        data Some(axis.index() << 2),
+        model { ("minecraft", "bone_block") },
+        variant format!("axis={}", axis.as_string()),
+    }
+    StructureVoid {
+        props {},
+        material material::Material {
+            collidable: false,
+            .. material::INVISIBLE
+        },
+        model { ("minecraft", "structure_void") },
+        // TODO: a small hit box but no collision
+        collision vec![],
+    }
+
     Missing {
         props {},
         data None::<usize>,
