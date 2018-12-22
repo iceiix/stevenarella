@@ -3779,6 +3779,528 @@ define_blocks! {
         // TODO: a small hit box but no collision
         collision vec![],
     }
+    Observer {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+            powered: bool = [false, true],
+        },
+        data Some(facing.index() | (if powered { 0x8 } else { 0x0 })),
+        model { ("minecraft", "observer") },
+        variant format!("facing={},powered={}", facing.as_string(), powered),
+    }
+    // TODO: Shulker box textures (1.11+), since there is no model, we use wool for now
+    // The textures should be built from textures/blocks/shulker_top_<color>.png
+    // and textures/entity/shulker/shulker_<color>.png
+    WhiteShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "white_wool") },
+    }
+    OrangeShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "orange_wool") },
+    }
+    MagentaShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "magenta_wool") },
+    }
+    LightBlueShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "light_blue_wool") },
+    }
+    YellowShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "yellow_wool") },
+    }
+    LimeShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "lime_wool") },
+    }
+    PinkShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "pink_wool") },
+    }
+    GrayShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "gray_wool") },
+    }
+    LightGrayShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "light_gray_wool") },
+    }
+    CyanShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "cyan_wool") },
+    }
+    PurpleShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "purple_wool") },
+    }
+    BlueShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "blue_wool") },
+    }
+    BrownShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "brown_wool") },
+    }
+    GreenShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "green_wool") },
+    }
+    RedShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "red_wool") },
+    }
+    BlackShulkerBox {
+        props {
+            facing: Direction = [
+                Direction::Up,
+                Direction::Down,
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.index()),
+        model { ("minecraft", "black_wool") },
+    }
+    WhiteGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "white_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    OrangeGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "orange_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    MagentaGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "magenta_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    LightBlueGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "light_blue_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    YellowGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "yellow_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    LimeGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "lime_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    PinkGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "pink_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    GrayGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "gray_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    LightGrayGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "silver_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    CyanGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "cyan_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    PurpleGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "purple_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    BlueGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "blue_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    BrownGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "brown_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    GreenGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "green_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    RedGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "red_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    BlackGlazedTerracotta {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data Some(facing.horizontal_index()),
+        model { ("minecraft", "black_glazed_terracotta") },
+        variant format!("facing={}", facing.as_string()),
+    }
+    Concrete {
+        props {
+            color: ColoredVariant = [
+                ColoredVariant::White,
+                ColoredVariant::Orange,
+                ColoredVariant::Magenta,
+                ColoredVariant::LightBlue,
+                ColoredVariant::Yellow,
+                ColoredVariant::Lime,
+                ColoredVariant::Pink,
+                ColoredVariant::Gray,
+                ColoredVariant::Silver,
+                ColoredVariant::Cyan,
+                ColoredVariant::Purple,
+                ColoredVariant::Blue,
+                ColoredVariant::Brown,
+                ColoredVariant::Green,
+                ColoredVariant::Red,
+                ColoredVariant::Black
+            ],
+        },
+        data Some(color.data()),
+        model { ("minecraft", format!("{}_concrete", color.as_string()) ) },
+    }
+    ConcretePowder {
+        props {
+            color: ColoredVariant = [
+                ColoredVariant::White,
+                ColoredVariant::Orange,
+                ColoredVariant::Magenta,
+                ColoredVariant::LightBlue,
+                ColoredVariant::Yellow,
+                ColoredVariant::Lime,
+                ColoredVariant::Pink,
+                ColoredVariant::Gray,
+                ColoredVariant::Silver,
+                ColoredVariant::Cyan,
+                ColoredVariant::Purple,
+                ColoredVariant::Blue,
+                ColoredVariant::Brown,
+                ColoredVariant::Green,
+                ColoredVariant::Red,
+                ColoredVariant::Black
+            ],
+        },
+        data Some(color.data()),
+        model { ("minecraft", format!("{}_concrete_powder", color.as_string()) ) },
+    }
+    Missing253 {
+        props {},
+        data None::<usize>,
+        model { ("steven", "missing_block") },
+    }
+    Missing254 {
+        props {},
+        data None::<usize>,
+        model { ("steven", "missing_block") },
+    }
+    StructureBlock {
+        props {
+            mode: StructureBlockMode = [
+                StructureBlockMode::Save,
+                StructureBlockMode::Load,
+                StructureBlockMode::Corner,
+                StructureBlockMode::Data
+            ],
+        },
+        data Some(mode.data()),
+        model { ("minecraft", "structure_block") },
+        variant format!("mode={}", mode.as_string()),
+    }
 
     Missing {
         props {},
@@ -5063,6 +5585,34 @@ impl StairShape {
             StairShape::InnerRight => "inner_right",
             StairShape::OuterLeft => "outer_left",
             StairShape::OuterRight => "outer_right",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum StructureBlockMode {
+    Save,
+    Load,
+    Corner,
+    Data,
+}
+
+impl StructureBlockMode {
+    pub fn data(self) -> usize {
+        match self {
+            StructureBlockMode::Save => 0,
+            StructureBlockMode::Load => 1,
+            StructureBlockMode::Corner => 2,
+            StructureBlockMode::Data => 3,
+        }
+    }
+
+    pub fn as_string(self) -> &'static str {
+        match self {
+            StructureBlockMode::Save => "save",
+            StructureBlockMode::Load => "load",
+            StructureBlockMode::Corner => "corner",
+            StructureBlockMode::Data => "data",
         }
     }
 }
