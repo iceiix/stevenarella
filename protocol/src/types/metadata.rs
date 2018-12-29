@@ -18,6 +18,7 @@ use std::io;
 use std::fmt;
 use crate::protocol;
 use crate::protocol::Serializable;
+use crate::protocol::LenPrefixed;
 use crate::format;
 use crate::item;
 use crate::shared::Position;
@@ -271,13 +272,151 @@ impl Metadata {
         u8::write_to(&0xFF, buf)?;
         Ok(())
     }
+
+    fn read_from113<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+        let mut m = Self::new();
+        loop {
+            let index = u8::read_from(buf)? as i32;
+            if index == 0xFF {
+                break;
+            }
+            let ty = protocol::VarInt::read_from(buf)?.0;
+            match ty {
+                0 => m.put_raw(index, i8::read_from(buf)?),
+                1 => m.put_raw(index, protocol::VarInt::read_from(buf)?.0),
+                2 => m.put_raw(index, f32::read_from(buf)?),
+                3 => m.put_raw(index, String::read_from(buf)?),
+                4 => m.put_raw(index, format::Component::read_from(buf)?),
+                5 => m.put_raw(index, LenPrefixed::<bool, format::Component>::read_from(buf)?),
+                6 => m.put_raw(index, Option::<item::Stack>::read_from(buf)?),
+                7 => m.put_raw(index, bool::read_from(buf)?),
+                8 => m.put_raw(index,
+                               [f32::read_from(buf)?,
+                                f32::read_from(buf)?,
+                                f32::read_from(buf)?]),
+                9 => m.put_raw(index, Position::read_from(buf)?),
+                10 => {
+                    if bool::read_from(buf)? {
+                        m.put_raw(index, Option::<Position>::read_from(buf)?);
+                    } else {
+                        m.put_raw::<Option<Position>>(index, None);
+                    }
+                }
+                11 => m.put_raw(index, protocol::VarInt::read_from(buf)?),
+                12 => {
+                    if bool::read_from(buf)? {
+                        m.put_raw(index, Option::<protocol::UUID>::read_from(buf)?);
+                    } else {
+                        m.put_raw::<Option<protocol::UUID>>(index, None);
+                    }
+                }
+                13 => m.put_raw(index, protocol::VarInt::read_from(buf)?.0 as u16),
+                14 => {
+                    let ty = u8::read_from(buf)?;
+                    if ty != 0 {
+                        let name = nbt::read_string(buf)?;
+                        let tag = nbt::Tag::read_from(buf)?;
+
+                        m.put_raw(index, nbt::NamedTag(name, tag));
+                    }
+                }
+                15 => panic!("TODO: particle"),
+                _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
+            }
+        }
+        Ok(m)
+    }
+
+    fn write_to113<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+        for (k, v) in &self.map {
+            (*k as u8).write_to(buf)?;
+            match *v {
+                Value::Byte(ref val) => {
+                    u8::write_to(&0, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::Int(ref val) => {
+                    u8::write_to(&1, buf)?;
+                    protocol::VarInt(*val).write_to(buf)?;
+                }
+                Value::Float(ref val) => {
+                    u8::write_to(&2, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::String(ref val) => {
+                    u8::write_to(&3, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::FormatComponent(ref val) => {
+                    u8::write_to(&4, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::OptionalFormatComponent(ref val) => {
+                    u8::write_to(&5, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::OptionalItemStack(ref val) => {
+                    u8::write_to(&6, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::Bool(ref val) => {
+                    u8::write_to(&7, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::Vector(ref val) => {
+                    u8::write_to(&8, buf)?;
+                    val[0].write_to(buf)?;
+                    val[1].write_to(buf)?;
+                    val[2].write_to(buf)?;
+                }
+                Value::Position(ref val) => {
+                    u8::write_to(&9, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::OptionalPosition(ref val) => {
+                    u8::write_to(&10, buf)?;
+                    val.is_some().write_to(buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::Direction(ref val) => {
+                    u8::write_to(&11, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::OptionalUUID(ref val) => {
+                    u8::write_to(&12, buf)?;
+                    val.is_some().write_to(buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::Block(ref val) => {
+                    u8::write_to(&13, buf)?;
+                    protocol::VarInt(*val as i32).write_to(buf)?;
+                }
+                Value::NBTTag(ref _val) => {
+                    u8::write_to(&14, buf)?;
+                    // TODO: write NBT tags metadata
+                    //nbt::Tag(*val).write_to(buf)?;
+                }
+                Value::Particle(ref val) => {
+                    u8::write_to(&15, buf)?;
+                    val.write_to(buf)?;
+                }
+                _ => panic!("unexpected metadata"),
+            }
+        }
+        u8::write_to(&0xFF, buf)?;
+        Ok(())
+    }
+
+
 }
 
 impl Serializable for Metadata {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
         let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
 
-        if protocol_version >= 74 {
+        if protocol_version >= 404 {
+            Metadata::read_from113(buf)
+        } else if protocol_version >= 74 {
             Metadata::read_from19(buf)
         } else {
             Metadata::read_from18(buf)
@@ -287,7 +426,9 @@ impl Serializable for Metadata {
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
         let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
 
-        if protocol_version >= 74 {
+        if protocol_version >= 404 {
+            self.write_to113(buf)
+        } else if protocol_version >= 74 {
             self.write_to19(buf)
         } else {
             self.write_to18(buf)
@@ -319,6 +460,7 @@ pub enum Value {
     Float(f32),
     String(String),
     FormatComponent(format::Component),
+    OptionalFormatComponent(LenPrefixed<bool, format::Component>),
     OptionalItemStack(Option<item::Stack>),
     Bool(bool),
     Vector([f32; 3]),
@@ -329,6 +471,146 @@ pub enum Value {
     OptionalUUID(Option<protocol::UUID>),
     Block(u16), // TODO: Proper type
     NBTTag(nbt::NamedTag),
+    Particle(ParticleData),
+}
+
+#[derive(Debug)]
+pub enum ParticleData {
+    AmbientEntityEffect,
+    AngryVillager,
+    Barrier,
+    Block {
+        block_state: protocol::VarInt,
+    },
+    Bubble,
+    Cloud,
+    Crit,
+    DamageIndicator,
+    DragonBreath,
+    DrippingLava,
+    DrippingWater,
+    Dust {
+        red: f32,
+        green: f32,
+        blue: f32,
+        scale: f32,
+    },
+    Effect,
+    ElderGuardian,
+    EnchantedHit,
+    Enchant,
+    EndRod,
+    EntityEffect,
+    ExplosionEmitter,
+    Explosion,
+    FallingDust {
+        block_state: protocol::VarInt,
+    },
+    Firework,
+    Fishing,
+    Flame,
+    HappyVillager,
+    Heart,
+    InstantEffect,
+    Item {
+        item: Option<item::Stack>,
+    },
+    ItemSlime,
+    ItemSnowball,
+    LargeSmoke,
+    Lava,
+    Mycelium,
+    Note,
+    Poof,
+    Portal,
+    Rain,
+    Smoke,
+    Spit,
+    SquidInk,
+    SweepAttack,
+    TotemOfUndying,
+    Underwater,
+    Splash,
+    Witch,
+    BubblePop,
+    CurrentDown,
+    BubbleColumnUp,
+    Nautilus,
+    Dolphin,
+}
+
+impl Serializable for ParticleData {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+        let id = protocol::VarInt::read_from(buf)?.0;
+        Ok(match id {
+            0 => ParticleData::AmbientEntityEffect,
+            1 => ParticleData::AngryVillager,
+            2 => ParticleData::Barrier,
+            3 => ParticleData::Block {
+                block_state: Serializable::read_from(buf)?
+            },
+            4 => ParticleData::Bubble,
+            5 => ParticleData::Cloud,
+            6 => ParticleData::Crit,
+            7 => ParticleData::DamageIndicator,
+            8 => ParticleData::DragonBreath,
+            9 => ParticleData::DrippingLava,
+            10 => ParticleData::DrippingWater,
+            11 => ParticleData::Dust {
+                red: Serializable::read_from(buf)?,
+                green: Serializable::read_from(buf)?,
+                blue: Serializable::read_from(buf)?,
+                scale: Serializable::read_from(buf)?,
+            },
+            12 => ParticleData::Effect,
+            13 => ParticleData::ElderGuardian,
+            14 => ParticleData::EnchantedHit,
+            15 => ParticleData::Enchant,
+            16 => ParticleData::EndRod,
+            17 => ParticleData::EntityEffect,
+            18 => ParticleData::ExplosionEmitter,
+            19 => ParticleData::Explosion,
+            20 => ParticleData::FallingDust {
+                block_state: Serializable::read_from(buf)?,
+            },
+            21 => ParticleData::Firework,
+            22 => ParticleData::Fishing,
+            23 => ParticleData::Flame,
+            24 => ParticleData::HappyVillager,
+            25 => ParticleData::Heart,
+            26 => ParticleData::InstantEffect,
+            27 => ParticleData::Item {
+                item: Serializable::read_from(buf)?,
+            },
+            28 => ParticleData::ItemSlime,
+            29 => ParticleData::ItemSnowball,
+            30 => ParticleData::LargeSmoke,
+            31 => ParticleData::Lava,
+            32 => ParticleData::Mycelium,
+            33 => ParticleData::Note,
+            34 => ParticleData::Poof,
+            35 => ParticleData::Portal,
+            36 => ParticleData::Rain,
+            37 => ParticleData::Smoke,
+            38 => ParticleData::Spit,
+            39 => ParticleData::SquidInk,
+            40 => ParticleData::SweepAttack,
+            41 => ParticleData::TotemOfUndying,
+            42 => ParticleData::Underwater,
+            43 => ParticleData::Splash,
+            44 => ParticleData::Witch,
+            45 => ParticleData::BubblePop,
+            46 => ParticleData::CurrentDown,
+            47 => ParticleData::BubbleColumnUp,
+            48 => ParticleData::Nautilus,
+            49 => ParticleData::Dolphin,
+            _ => panic!("unrecognized particle data id {}", id),
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), protocol::Error> {
+        unimplemented!()
+    }
 }
 
 pub trait MetaValue {
@@ -407,6 +689,19 @@ impl MetaValue for format::Component {
         Value::FormatComponent(self)
     }
 }
+
+impl MetaValue for LenPrefixed<bool, format::Component> {
+    fn unwrap(value: &Value) -> &Self {
+        match *value {
+            Value::OptionalFormatComponent(ref val) => val,
+            _ => panic!("incorrect key"),
+        }
+    }
+    fn wrap(self) -> Value {
+        Value::OptionalFormatComponent(self)
+    }
+}
+
 
 impl MetaValue for Option<item::Stack> {
     fn unwrap(value: &Value) -> &Self {
