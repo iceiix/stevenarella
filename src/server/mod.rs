@@ -242,13 +242,13 @@ impl Server {
                             if xx == 0 && z == 0 {
                                 continue;
                             }
-                            server.world.set_block(Position::new(x + xx, h + 3, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false });
-                            server.world.set_block(Position::new(x + xx, h + 4, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false });
+                            server.world.set_block(Position::new(x + xx, h + 3, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false, distance: 1 });
+                            server.world.set_block(Position::new(x + xx, h + 4, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false, distance: 1 });
                             if xx.abs() <= 1 && zz.abs() <= 1 {
-                                server.world.set_block(Position::new(x + xx, h + 5, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false });
+                                server.world.set_block(Position::new(x + xx, h + 5, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false, distance: 1 });
                             }
                             if xx * xx + zz * zz <= 1 {
-                                server.world.set_block(Position::new(x + xx, h + 6, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false });
+                                server.world.set_block(Position::new(x + xx, h + 6, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false, distance: 1 });
                             }
                         }
                     }
@@ -280,7 +280,7 @@ impl Server {
             disconnect_reason: None,
             just_disconnected: false,
 
-            world: world::World::new(),
+            world: world::World::new(protocol_version),
             world_age: 0,
             world_time: 0.0,
             world_time_target: 0.0,
@@ -701,7 +701,7 @@ impl Server {
     }
 
     fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
-        self.world = world::World::new();
+        self.world = world::World::new(self.protocol_version);
         let gamemode = Gamemode::from_int((respawn.gamemode & 0x7) as i32);
 
         if let Some(player) = self.player {
@@ -1155,7 +1155,7 @@ impl Server {
     }
 
     fn on_block_change(&mut self, location: Position, id: i32) {
-        self.world.set_block(location, block::Block::by_vanilla_id(id as usize))
+        self.world.set_block(location, block::Block::by_vanilla_id(id as usize, self.protocol_version))
     }
 
     fn on_block_change_varint(&mut self, block_change: packet::play::clientbound::BlockChange_VarInt) {
@@ -1179,7 +1179,7 @@ impl Server {
                     record.y as i32,
                     oz + (record.xz & 0xF) as i32
                 ),
-                block::Block::by_vanilla_id(record.block_id.0 as usize)
+                block::Block::by_vanilla_id(record.block_id.0 as usize, self.protocol_version)
             );
         }
     }
@@ -1202,7 +1202,7 @@ impl Server {
 
             self.world.set_block(
                 Position::new(x, y, z),
-                block::Block::by_vanilla_id(id as usize)
+                block::Block::by_vanilla_id(id as usize, self.protocol_version)
             );
         }
     }

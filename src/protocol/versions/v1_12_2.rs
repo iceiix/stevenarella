@@ -92,7 +92,7 @@ protocol_packet_ids!(
             0x2e => PlayerInfo
             0x2f => TeleportPlayer_WithConfirm
             0x30 => EntityUsedBed
-            0x31 => UnlockRecipes
+            0x31 => UnlockRecipes_NoSmelting
             0x32 => EntityDestroy
             0x33 => EntityRemoveEffect
             0x34 => ResourcePackSend

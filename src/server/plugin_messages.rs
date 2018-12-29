@@ -9,10 +9,18 @@ pub struct Brand {
 
 impl Brand {
     pub fn as_message(self) -> PluginMessageServerbound {
+        let protocol_version = unsafe { crate::protocol::CURRENT_PROTOCOL_VERSION };
+
+        let channel_name = if protocol_version >= 404 {
+            "minecraft:brand"
+        } else {
+            "MC|Brand"
+        };
+
         let mut data = vec![];
         Serializable::write_to(&self.brand, &mut data).unwrap();
         PluginMessageServerbound {
-            channel: "MC|Brand".into(),
+            channel: channel_name.into(),
             data,
         }
     }

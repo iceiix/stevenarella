@@ -53,6 +53,10 @@ state_packets!(
             packet TeleportConfirm {
                 field teleport_id: VarInt =,
             }
+            packet QueryBlockNBT {
+                field transaction_id: VarInt =,
+                field location: Position =,
+            }
             /// TabComplete is sent by the client when the client presses tab in
             /// the chat box.
             packet TabComplete {
@@ -156,6 +160,15 @@ state_packets!(
                 field channel: String =,
                 field data: LenPrefixedBytes<i16> =,
             }
+            packet EditBook {
+                field new_book: Option<item::Stack> =,
+                field is_signing: bool =,
+                field hand: VarInt =,
+            }
+            packet QueryEntityNBT {
+                field transaction_id: VarInt =,
+                field entity_id: VarInt =,
+            }
             /// UseEntity is sent when the user interacts (right clicks) or attacks
             /// (left clicks) an entity.
             packet UseEntity {
@@ -240,10 +253,13 @@ state_packets!(
                 field yaw: f32 =,
                 field pitch: f32 =,
             }
-            /// TODO: Document
+            /// SteerBoat is used to visually update the boat paddles.
             packet SteerBoat {
-                field unknown: bool =,
-                field unknown2: bool =,
+                field left_paddle_turning: bool =,
+                field right_paddle_turning: bool =,
+            }
+            packet PickItem {
+                field slot_to_use: VarInt =,
             }
             /// CraftRecipeRequest is sent when player clicks a recipe in the crafting book.
             packet CraftRecipeRequest {
@@ -308,6 +324,9 @@ state_packets!(
                 field crafting_book_open: bool = when(|p: &CraftingBookData| p.action.0 == 1),
                 field crafting_filter: bool = when(|p: &CraftingBookData| p.action.0 == 1),
             }
+            packet NameItem {
+                field item_name: String =,
+            }
             /// ResourcePackStatus informs the server of the client's current progress
             /// in activating the requested resource pack
             packet ResourcePackStatus {
@@ -322,16 +341,52 @@ state_packets!(
                 field action: VarInt =,
                 field tab_id: String = when(|p: &AdvancementTab| p.action.0 == 0),
             }
+            packet SelectTrade {
+                field selected_slot: VarInt =,
+            }
+            packet SetBeaconEffect {
+                field primary_effect: VarInt =,
+                field secondary_effect: VarInt =,
+            }
             /// HeldItemChange is sent when the player changes the currently active
             /// hotbar slot.
             packet HeldItemChange {
                 field slot: i16 =,
+            }
+            packet UpdateCommandBlock {
+                field location: Position =,
+                field command: String =,
+                field mode: VarInt =,
+                field flags: u8 =,
+            }
+            packet UpdateCommandBlockMinecart {
+                field entity_id: VarInt =,
+                field command: String =,
+                field track_output: bool =,
             }
             /// CreativeInventoryAction is sent when the client clicks in the creative
             /// inventory. This is used to spawn items in creative.
             packet CreativeInventoryAction {
                 field slot: i16 =,
                 field clicked_item: Option<item::Stack> =,
+            }
+            packet UpdateStructureBlock {
+                field location: Position =,
+                field action: VarInt =,
+                field mode: VarInt =,
+                field name: String =,
+                field offset_x: i8 =,
+                field offset_y: i8 =,
+                field offset_z: i8 =,
+                field size_x: i8 =,
+                field size_y: i8 =,
+                field size_z: i8 =,
+                field mirror: VarInt =,
+                field rotation: VarInt =,
+                field metadata: String =,
+                field integrity: f32 =,
+                field seed: VarLong =,
+                field flags: i8 =,
             }
             /// SetSign sets the text on a sign after placing it.
             packet SetSign {
@@ -703,6 +758,10 @@ state_packets!(
             /// player sent.
             packet TabCompleteReply {
                 field matches: LenPrefixed<VarInt, String> =,
+            }
+            packet DeclareCommands {
+                field nodes: LenPrefixed<VarInt, packet::CommandNode> =,
+                field root_index: VarInt =,
             }
             /// ServerMessage is a message sent by the server. It could be from a player
             /// or just a system message. The Type field controls the location the
@@ -1148,6 +1207,15 @@ state_packets!(
                 field online: bool =,
                 field ping: u16 =,
             }
+            packet FacePlayer {
+                field feet_eyes: VarInt =,
+                field target_x: f64 =,
+                field target_y: f64 =,
+                field target_z: f64 =,
+                field is_entity: bool =,
+                field entity_id: Option<VarInt> = when(|p: &FacePlayer| p.is_entity),
+                field entity_feet_eyes: Option<VarInt> = when(|p: &FacePlayer| p.is_entity),
+            }
             /// TeleportPlayer is sent to change the player's position. The client is expected
             /// to reply to the server with the same positions as contained in this packet
             /// otherwise will reject future packets.
@@ -1179,12 +1247,21 @@ state_packets!(
                 field y: u8 =,
                 field z: i32 =,
             }
-            packet UnlockRecipes {
+            packet UnlockRecipes_NoSmelting {
                 field action: VarInt =,
                 field crafting_book_open: bool =,
                 field filtering_craftable: bool =,
                 field recipe_ids: LenPrefixed<VarInt, VarInt> =,
-                field recipe_ids2: LenPrefixed<VarInt, VarInt> = when(|p: &UnlockRecipes| p.action.0 == 0),
+                field recipe_ids2: LenPrefixed<VarInt, VarInt> = when(|p: &UnlockRecipes_NoSmelting| p.action.0 == 0),
+            }
+            packet UnlockRecipes_WithSmelting {
+                field action: VarInt =,
+                field crafting_book_open: bool =,
+                field filtering_craftable: bool =,
+                field smelting_book_open: bool =,
+                field filtering_smeltable: bool =,
+                field recipe_ids: LenPrefixed<VarInt, String> =,
+                field recipe_ids2: LenPrefixed<VarInt, String> = when(|p: &UnlockRecipes_WithSmelting| p.action.0 == 0),
             }
             /// EntityDestroy destroys the entities with the ids in the provided slice.
             packet EntityDestroy {
@@ -1228,6 +1305,10 @@ state_packets!(
             packet EntityStatus {
                 field entity_id: i32 =,
                 field entity_status: i8 =,
+            }
+            packet NBTQueryResponse {
+                field transaction_id: VarInt =,
+                field nbt: Option<nbt::NamedTag> =,
             }
             /// SelectAdvancementTab indicates the client should switch the advancement tab.
             packet SelectAdvancementTab {
@@ -1405,6 +1486,11 @@ state_packets!(
                 field world_age: i64 =,
                 field time_of_day: i64 =,
             }
+            packet StopSound {
+                field flags: u8 =,
+                field source: Option<VarInt> = when(|p: &StopSound| p.flags & 0x01 != 0),
+                field sound: Option<String> = when(|p: &StopSound| p.flags & 0x02 != 0),
+            }
             /// Title configures an on-screen title.
             packet Title {
                 field action: VarInt =,
@@ -1544,6 +1630,14 @@ state_packets!(
                 field amplifier: i8 =,
                 field duration: i16 =,
             }
+            packet DeclareRecipes {
+                field recipes: LenPrefixed<VarInt, packet::Recipe> =,
+            }
+            packet Tags {
+                field block_tags: LenPrefixed<VarInt, packet::Tags> =,
+                field item_tags: LenPrefixed<VarInt, packet::Tags> =,
+                field fluid_tags: LenPrefixed<VarInt, packet::Tags> =,
+            }
        }
     }
     login Login {
@@ -1568,6 +1662,11 @@ state_packets!(
             packet EncryptionResponse_i16 {
                 field shared_secret: LenPrefixedBytes<i16> =,
                 field verify_token: LenPrefixedBytes<i16> =,
+            }
+            packet LoginPluginResponse {
+                field message_id: VarInt =,
+                field successful: bool =,
+                field data: Vec<u8> =,
             }
         }
         clientbound Clientbound {
@@ -1608,6 +1707,11 @@ state_packets!(
             packet SetInitialCompression {
                 /// Threshold where a packet should be sent compressed
                 field threshold: VarInt =,
+            }
+            packet LoginPluginRequest {
+                field message_id: VarInt =,
+                field channel: String =,
+                field data: Vec<u8> =,
             }
         }
     }
@@ -2165,3 +2269,324 @@ pub struct PlayerProperty {
     pub value: String,
     pub signature: Option<String>,
 }
+
+use crate::item;
+type RecipeIngredient = LenPrefixed<VarInt, Option<item::Stack>>;
+
+#[derive(Debug)]
+pub enum RecipeData {
+    Shapeless {
+        group: String,
+        ingredients: LenPrefixed<VarInt, RecipeIngredient>,
+        result: Option<item::Stack>,
+    },
+    Shaped {
+        width: VarInt,
+        height: VarInt,
+        group: String,
+        ingredients: Vec<RecipeIngredient>,
+        result: Option<item::Stack>,
+    },
+    ArmorDye,
+    BookCloning,
+    MapCloning,
+    MapExtending,
+    FireworkRocket,
+    FireworkStar,
+    FireworkStarFade,
+    RepairItem,
+    TippedArrow,
+    BannerDuplicate,
+    BannerAddPattern,
+    ShieldDecoration,
+    ShulkerBoxColoring,
+    Smelting {
+        group: String,
+        ingredient: RecipeIngredient,
+        result: Option<item::Stack>,
+        experience: f32,
+        cooking_time: VarInt,
+    },
+}
+
+impl Default for RecipeData {
+    fn default() -> Self {
+        RecipeData::ArmorDye
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Recipe {
+    pub id: String,
+    pub ty: String,
+    pub data: RecipeData,
+}
+
+impl Serializable for Recipe {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let id = String::read_from(buf)?;
+        let ty = String::read_from(buf)?;
+
+        let data =
+        match ty.as_ref() {
+            "crafting_shapeless" => RecipeData::Shapeless {
+                group: Serializable::read_from(buf)?,
+                ingredients: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
+            },
+            "crafting_shaped" => {
+                let width: VarInt = Serializable::read_from(buf)?;
+                let height: VarInt = Serializable::read_from(buf)?;
+                let group: String = Serializable::read_from(buf)?;
+
+                let capacity = width.0 as usize * height.0 as usize;
+
+                let mut ingredients = Vec::with_capacity(capacity);
+                for _ in 0 .. capacity {
+                    ingredients.push(Serializable::read_from(buf)?);
+                }
+                let result: Option<item::Stack> = Serializable::read_from(buf)?;
+
+                RecipeData::Shaped { width, height, group, ingredients, result }
+            }
+            "crafting_special_armordye" => RecipeData::ArmorDye,
+            "crafting_special_bookcloning" => RecipeData::BookCloning,
+            "crafting_special_mapcloning" => RecipeData::MapCloning,
+            "crafting_special_mapextending" => RecipeData::MapExtending,
+            "crafting_special_firework_rocket" => RecipeData::FireworkRocket,
+            "crafting_special_firework_star" => RecipeData::FireworkStar,
+            "crafting_special_firework_star_fade" => RecipeData::FireworkStarFade,
+            "crafting_special_repairitem" => RecipeData::RepairItem,
+            "crafting_special_tippedarrow" => RecipeData::TippedArrow,
+            "crafting_special_bannerduplicate" => RecipeData::BannerDuplicate,
+            "crafting_special_banneraddpattern" => RecipeData::BannerAddPattern,
+            "crafting_special_shielddecoration" => RecipeData::ShieldDecoration,
+            "crafting_special_shulkerboxcoloring" => RecipeData::ShulkerBoxColoring,
+            "smelting" => RecipeData::Smelting {
+                group: Serializable::read_from(buf)?,
+                ingredient: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
+                experience: Serializable::read_from(buf)?,
+                cooking_time: Serializable::read_from(buf)?,
+            },
+            _ => panic!("unrecognized recipe type: {}", ty)
+        };
+
+        Ok(Recipe { id, ty, data })
+    }
+
+    fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Tags {
+    pub tag_name: String,
+    pub entries: LenPrefixed<VarInt, VarInt>,
+}
+
+impl Serializable for Tags {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(Tags {
+            tag_name: Serializable::read_from(buf)?,
+            entries: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct CommandNode {
+    pub flags: u8,
+    pub children: LenPrefixed<VarInt, VarInt>,
+    pub redirect_node: Option<VarInt>,
+    pub name: Option<String>,
+    pub parser: Option<String>,
+    pub properties: Option<CommandProperty>,
+    pub suggestions_type: Option<String>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum CommandNodeType {
+    Root,
+    Literal,
+    Argument,
+}
+
+#[derive(Debug)]
+pub enum CommandProperty {
+    Bool,
+    Double {
+        flags: u8,
+        min: Option<f64>,
+        max: Option<f64>,
+    },
+    Float {
+        flags: u8,
+        min: Option<f32>,
+        max: Option<f32>,
+    },
+    Integer {
+        flags: u8,
+        min: Option<i32>,
+        max: Option<i32>,
+    },
+    String {
+        token_type: VarInt,
+    },
+    Entity {
+        flags: u8,
+    },
+    GameProfile,
+    BlockPos,
+    Vec3,
+    Vec2,
+    BlockState,
+    BlockPredicate,
+    ItemStack,
+    ItemPredicate,
+    Color,
+    Component,
+    Message,
+    Nbt,
+    NbtPath,
+    Objective,
+    ObjectiveCriteria,
+    Operation,
+    Particle,
+    Rotation,
+    ScoreboardSlot,
+    ScoreHolder {
+        flags: u8,
+    },
+    Swizzle,
+    Team,
+    ItemSlot,
+    ResourceLocation,
+    MobEffect,
+    Function,
+    EntityAnchor,
+    Range {
+        decimals: bool,
+    },
+    ItemEnchantment,
+}
+
+
+impl Serializable for CommandNode {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let flags: u8 = Serializable::read_from(buf)?;
+        let children: LenPrefixed<VarInt, VarInt> = Serializable::read_from(buf)?;
+
+        let node_type = match flags & 0x03 {
+            0 => CommandNodeType::Root,
+            1 => CommandNodeType::Literal,
+            2 => CommandNodeType::Argument,
+            _ => panic!("unrecognized command node type {}", flags & 0x03),
+        };
+        let _is_executable = flags & 0x04 != 0;
+        let has_redirect = flags & 0x08 != 0;
+        let has_suggestions_type = flags & 0x10 != 0;
+
+        let redirect_node: Option<VarInt> = if has_redirect {
+            Some(Serializable::read_from(buf)?)
+        } else {
+            None
+        };
+
+        let name: Option<String> = if node_type == CommandNodeType::Argument || node_type == CommandNodeType::Literal {
+            Serializable::read_from(buf)?
+        } else {
+            None
+        };
+        let parser: Option<String> = if node_type == CommandNodeType::Argument {
+            Serializable::read_from(buf)?
+        } else {
+            None
+        };
+
+        let properties: Option<CommandProperty> = if let Some(ref parse) = parser {
+            Some(match parse.as_ref() {
+                "brigadier:bool" => CommandProperty::Bool,
+                "brigadier:double" => {
+                    let flags = Serializable::read_from(buf)?;
+                    let min = if flags & 0x01 != 0 { Some(Serializable::read_from(buf)?) } else { None };
+                    let max = if flags & 0x02 != 0 { Some(Serializable::read_from(buf)?) } else { None };
+                    CommandProperty::Double { flags, min, max }
+                },
+                "brigadier:float" => {
+                    let flags = Serializable::read_from(buf)?;
+                    let min = if flags & 0x01 != 0 { Some(Serializable::read_from(buf)?) } else { None };
+                    let max = if flags & 0x02 != 0 { Some(Serializable::read_from(buf)?) } else { None };
+                    CommandProperty::Float { flags, min, max }
+                },
+                "brigadier:integer" => {
+                    let flags = Serializable::read_from(buf)?;
+                    let min = if flags & 0x01 != 0 { Some(Serializable::read_from(buf)?) } else { None };
+                    let max = if flags & 0x02 != 0 { Some(Serializable::read_from(buf)?) } else { None };
+                    CommandProperty::Integer { flags, min, max }
+                },
+                "brigadier:string" => {
+                    CommandProperty::String { token_type: Serializable::read_from(buf)? }
+                },
+                "minecraft:entity" => {
+                    CommandProperty::Entity { flags: Serializable::read_from(buf)? }
+                },
+                "minecraft:game_profile" => CommandProperty::GameProfile,
+                "minecraft:block_pos" => CommandProperty::BlockPos,
+                "minecraft:vec3" => CommandProperty::Vec3,
+                "minecraft:vec2" => CommandProperty::Vec2,
+                "minecraft:block_state" => CommandProperty::BlockState,
+                "minecraft:block_predicate" => CommandProperty::BlockPredicate,
+                "minecraft:item_stack" => CommandProperty::ItemStack,
+                "minecraft:item_predicate" => CommandProperty::ItemPredicate,
+                "minecraft:color" => CommandProperty::Color,
+                "minecraft:component" => CommandProperty::Component,
+                "minecraft:message" => CommandProperty::Message,
+                "minecraft:nbt" => CommandProperty::Nbt,
+                "minecraft:nbt_path" => CommandProperty::NbtPath,
+                "minecraft:objective" => CommandProperty::Objective,
+                "minecraft:objective_criteria" => CommandProperty::ObjectiveCriteria,
+                "minecraft:operation" => CommandProperty::Operation,
+                "minecraft:particle" => CommandProperty::Particle,
+                "minecraft:rotation" => CommandProperty::Rotation,
+                "minecraft:scoreboard_slot" => CommandProperty::ScoreboardSlot,
+                "minecraft:score_holder" => {
+                    CommandProperty::ScoreHolder { flags: Serializable::read_from(buf)? }
+                },
+                "minecraft:swizzle" => CommandProperty::Swizzle,
+                "minecraft:team" => CommandProperty::Team,
+                "minecraft:item_slot" => CommandProperty::ItemSlot,
+                "minecraft:resource_location" => CommandProperty::ResourceLocation,
+                "minecraft:mob_effect" => CommandProperty::MobEffect,
+                "minecraft:function" => CommandProperty::Function,
+                "minecraft:entity_anchor" => CommandProperty::EntityAnchor,
+                "minecraft:range" => {
+                    CommandProperty::Range { decimals: Serializable::read_from(buf)? }
+                },
+                "minecraft:item_enchantment" => CommandProperty::ItemEnchantment,
+                _ => panic!("unsupported command node parser {}", parse),
+            })
+        } else {
+            None
+        };
+
+        let suggestions_type: Option<String> = if has_suggestions_type {
+            Serializable::read_from(buf)?
+        } else {
+            None
+        };
+
+        Ok(CommandNode { flags, children, redirect_node, name, parser, properties, suggestions_type })
+    }
+
+    fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
+
