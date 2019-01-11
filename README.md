@@ -1,7 +1,8 @@
-# Steven (Rust)
+# Stevenarella
 [![Build Status](https://travis-ci.org/iceiix/steven.svg?branch=updates)](https://travis-ci.org/iceiix/steven)
 
-A Minecraft client coded in Rust. Ported from [steven-go](https://github.com/Thinkofname/steven-go).
+Multi-protocol Minecraft-compatible client written in Rust
+
 Don't expect it to go anywhere, just doing this for fun.
 
 ## Images
@@ -12,10 +13,11 @@ Don't expect it to go anywhere, just doing this for fun.
 
 In action: http://gfycat.com/NeedyElaborateGypsymoth
 
-## Chat
+## Credits
 
-I generally am on the `irc.spi.gt` irc network in the `#think` channel.
-Feel free to pop in to say hi, [Webchat can be found here](https://irc.spi.gt/iris/?channels=think)
+Thanks to [@thinkofname](https://github.com/thinkofname/) for
+the original [Steven (Rust)](https://github.com/thinkofname/steven),
+which Stevenarella is an updated version of.
 
 ## Downloads
 
@@ -44,3 +46,7 @@ cargo build --release
 Just running steven via a double click (Windows) or `./steven` (everything else)
 will bring up a login screen followed by a server list which you can select a server
 from.
+
+## License
+
+Dual-licensed MIT and ApacheV2
