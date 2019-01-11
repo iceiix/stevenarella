@@ -321,6 +321,7 @@ impl Metadata {
                     }
                 }
                 15 => panic!("TODO: particle"),
+                16 => m.put_raw(index, VillagerData::read_from(buf)?),
                 _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
             }
         }
@@ -400,6 +401,10 @@ impl Metadata {
                     u8::write_to(&15, buf)?;
                     val.write_to(buf)?;
                 }
+                Value::Villager(ref val) => {
+                    u8::write_to(&16, buf)?;
+                    val.write_to(buf)?;
+                }
                 _ => panic!("unexpected metadata"),
             }
         }
@@ -472,6 +477,7 @@ pub enum Value {
     Block(u16), // TODO: Proper type
     NBTTag(nbt::NamedTag),
     Particle(ParticleData),
+    Villager(VillagerData),
 }
 
 #[derive(Debug)]
@@ -612,6 +618,27 @@ impl Serializable for ParticleData {
         unimplemented!()
     }
 }
+
+#[derive(Debug)]
+pub struct VillagerData {
+    villager_type: protocol::VarInt,
+    profession: protocol::VarInt,
+    level: protocol::VarInt,
+}
+
+impl Serializable for VillagerData {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+        let villager_type = protocol::VarInt::read_from(buf)?;
+        let profession = protocol::VarInt::read_from(buf)?;
+        let level = protocol::VarInt::read_from(buf)?;
+        Ok(VillagerData { villager_type, profession, level })
+    }
+
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), protocol::Error> {
+        unimplemented!()
+    }
+}
+
 
 pub trait MetaValue {
     fn unwrap(_: &Value) -> &Self;
@@ -820,6 +847,18 @@ impl MetaValue for nbt::NamedTag {
     }
     fn wrap(self) -> Value {
         Value::NBTTag(self)
+    }
+}
+
+impl MetaValue for VillagerData {
+    fn unwrap(value: &Value) -> &Self {
+        match *value {
+            Value::Villager(ref val) => val,
+            _ => panic!("incorrect key"),
+        }
+    }
+    fn wrap(self) -> Value {
+        Value::Villager(self)
     }
 }
 
