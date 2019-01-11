@@ -67,7 +67,7 @@ cargo build --release
 
 ### Standalone
 
-Just running steven via a double click (Windows) or `./steven` (everything else)
+Just running steven via a double click (Windows) or `./stevenarella` (everything else)
 will bring up a login screen followed by a server list which you can select a server
 from.
 
