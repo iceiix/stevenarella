@@ -868,6 +868,11 @@ impl World {
                 }
                 let section = chunk.sections[i as usize].as_mut().unwrap();
                 section.dirty = true;
+ 
+                if self.protocol_version >= 451 {
+                    let _block_count = data.read_u16::<byteorder::LittleEndian>()?;
+                    // TODO: use block_count
+                }
 
                 let mut bit_size = data.read_u8()?;
                 let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> = HashMap::with_hasher(BuildHasherDefault::default());
@@ -903,8 +908,12 @@ impl World {
                     }
                 }
 
-                data.read_exact(&mut section.block_light.data)?;
-                data.read_exact(&mut section.sky_light.data)?;
+                if self.protocol_version >= 451 {
+                    // Skylight in update skylight packet for 1.14+
+                } else {
+                    data.read_exact(&mut section.block_light.data)?;
+                    data.read_exact(&mut section.sky_light.data)?;
+                }
             }
 
             if new {

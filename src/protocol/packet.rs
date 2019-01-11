@@ -931,6 +931,15 @@ state_packets!(
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
+            packet ChunkData_HeightMap {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field new: bool =,
+                field bitmask: VarInt =,
+                field heightmaps: Option<nbt::NamedTag> =,
+                field data: LenPrefixedBytes<VarInt> =,
+                field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =,
+            }
             packet ChunkData {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,
@@ -1165,6 +1174,10 @@ state_packets!(
                 field z: f64 =,
                 field yaw: f32 =,
                 field pitch: f32 =,
+            }
+            /// Opens the book GUI.
+            packet OpenBook {
+                field hand: VarInt =,
             }
             /// SignEditorOpen causes the client to open the editor for a sign so that
             /// it can write to it. Only sent in vanilla when the player places a sign.
@@ -1553,6 +1566,14 @@ state_packets!(
                 field volume: f32 =,
                 field pitch: u8 =,
             }
+            /// Plays a sound effect from an entity.
+            packet EntitySoundEffect {
+                field sound_id: VarInt =,
+                field sound_category: VarInt =,
+                field entity_id: VarInt =,
+                field volume: f32 =,
+                field pitch: f32 =,
+            }
             /// PlayerListHeaderFooter updates the header/footer of the player list.
             packet PlayerListHeaderFooter {
                 field header: format::Component =,
@@ -1637,6 +1658,20 @@ state_packets!(
                 field block_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field item_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field fluid_tags: LenPrefixed<VarInt, packet::Tags> =,
+            }
+            packet TagsWithEntities {
+                field block_tags: LenPrefixed<VarInt, packet::Tags> =,
+                field item_tags: LenPrefixed<VarInt, packet::Tags> =,
+                field fluid_tags: LenPrefixed<VarInt, packet::Tags> =,
+                field entity_tags: LenPrefixed<VarInt, packet::Tags> =,
+            }
+            packet UpdateLight {
+                field chunk_x: VarInt =,
+                field chunk_z: VarInt =,
+                field sky_light_mask: VarInt =,
+                field block_light_mask: VarInt =,
+                field empty_sky_light_mask: VarInt =,
+                field light_arrays: Vec<u8> =,
             }
        }
     }
@@ -2300,7 +2335,22 @@ pub enum RecipeData {
     BannerAddPattern,
     ShieldDecoration,
     ShulkerBoxColoring,
+    SuspiciousStew,
     Smelting {
+        group: String,
+        ingredient: RecipeIngredient,
+        result: Option<item::Stack>,
+        experience: f32,
+        cooking_time: VarInt,
+    },
+    Blasting {
+        group: String,
+        ingredient: RecipeIngredient,
+        result: Option<item::Stack>,
+        experience: f32,
+        cooking_time: VarInt,
+    },
+    Smoking {
         group: String,
         ingredient: RecipeIngredient,
         result: Option<item::Stack>,
@@ -2362,7 +2412,22 @@ impl Serializable for Recipe {
             "crafting_special_banneraddpattern" => RecipeData::BannerAddPattern,
             "crafting_special_shielddecoration" => RecipeData::ShieldDecoration,
             "crafting_special_shulkerboxcoloring" => RecipeData::ShulkerBoxColoring,
+            "crafting_special_suspiciousstew" => RecipeData::SuspiciousStew,
             "smelting" => RecipeData::Smelting {
+                group: Serializable::read_from(buf)?,
+                ingredient: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
+                experience: Serializable::read_from(buf)?,
+                cooking_time: Serializable::read_from(buf)?,
+            },
+            "blasting" => RecipeData::Blasting {
+                group: Serializable::read_from(buf)?,
+                ingredient: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
+                experience: Serializable::read_from(buf)?,
+                cooking_time: Serializable::read_from(buf)?,
+            },
+            "smoking" => RecipeData::Smoking {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
