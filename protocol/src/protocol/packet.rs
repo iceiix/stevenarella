@@ -809,6 +809,11 @@ state_packets!(
                 field slot_count: u8 =,
                 field entity_id: i32 = when(|p: &WindowOpen| p.ty == "EntityHorse"),
             }
+            packet WindowOpenHorse {
+                field window_id: u8 =,
+                field number_of_slots: VarInt =,
+                field entity_id: i32 =,
+            }
             packet WindowOpen_u8 {
                 field id: u8 =,
                 field ty: u8 =,
@@ -816,6 +821,11 @@ state_packets!(
                 field slot_count: u8 =,
                 field use_provided_window_title: bool =,
                 field entity_id: i32 = when(|p: &WindowOpen_u8| p.ty == 11),
+            }
+            packet WindowOpen_VarInt {
+                field id: VarInt =,
+                field ty: VarInt =,
+                field title: format::Component =,
             }
             /// WindowItems sets every item in a window.
             packet WindowItems {
@@ -1673,6 +1683,10 @@ state_packets!(
                 field empty_sky_light_mask: VarInt =,
                 field light_arrays: Vec<u8> =,
             }
+            packet TradeList {
+                field id: VarInt =,
+                field trades: LenPrefixed<u8, packet::Trade> =,
+            }
        }
     }
     login Login {
@@ -2357,6 +2371,13 @@ pub enum RecipeData {
         experience: f32,
         cooking_time: VarInt,
     },
+    Campfire {
+        group: String,
+        ingredient: RecipeIngredient,
+        result: Option<item::Stack>,
+        experience: f32,
+        cooking_time: VarInt,
+    },
 }
 
 impl Default for RecipeData {
@@ -2434,6 +2455,13 @@ impl Serializable for Recipe {
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
             },
+            "campfire" => RecipeData::Campfire {
+                group: Serializable::read_from(buf)?,
+                ingredient: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
+                experience: Serializable::read_from(buf)?,
+                cooking_time: Serializable::read_from(buf)?,
+            },
             _ => panic!("unrecognized recipe type: {}", ty)
         };
 
@@ -2463,6 +2491,36 @@ impl Serializable for Tags {
         unimplemented!()
     }
 }
+
+#[derive(Debug, Default)]
+pub struct Trade {
+    pub input_item_1: Option<nbt::NamedTag>,
+    pub output_item: Option<nbt::NamedTag>,
+    pub has_second_item: bool,
+    pub input_item_2: Option<nbt::NamedTag>,
+    pub trades_disabled: bool,
+    pub tool_uses: i32,
+    pub max_trade_uses: i32,
+}
+
+impl Serializable for Trade {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(Trade {
+            input_item_1: Serializable::read_from(buf)?,
+            output_item: Serializable::read_from(buf)?,
+            has_second_item: Serializable::read_from(buf)?,
+            input_item_2: Serializable::read_from(buf)?,
+            trades_disabled: Serializable::read_from(buf)?,
+            tool_uses: Serializable::read_from(buf)?,
+            max_trade_uses: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
 
 #[derive(Debug, Default)]
 pub struct CommandNode {
