@@ -215,7 +215,14 @@ fn main() {
     let frame_time = 1e9f64 / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
-    screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
+    }
 
     let textures = renderer.get_textures();
     let dpi_factor = window.get_current_monitor().get_hidpi_factor();

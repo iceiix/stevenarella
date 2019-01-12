@@ -796,6 +796,7 @@ impl TextureManager {
         let (tx, rx) = mpsc::channel();
         let (stx, srx) = mpsc::channel();
         let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
+
         let mut tm = TextureManager {
             textures: HashMap::with_hasher(BuildHasherDefault::default()),
             version: {
@@ -837,6 +838,11 @@ impl TextureManager {
         ]);
     }
 
+    #[cfg(target_arch = "wasm32")]
+    fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
         use reqwest;
         let client = reqwest::Client::new();
@@ -857,6 +863,7 @@ impl TextureManager {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn obtain_skin(client: &::reqwest::Client, hash: &str) -> Result<image::DynamicImage, ::std::io::Error> {
         use std::io::Read;
         use std::fs;
