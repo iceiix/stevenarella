@@ -26,7 +26,7 @@ base64 = "0.10.0"
 log = { version = "0.4.6", features = ["std"] }
 cgmath = "0.16.1"
 lazy_static = "1.2.0"
-collision = "0.18.0"
+collision = { git = "https://github.com/rustgd/collision-rs", rev = "e6cf49483fbf5c6cadc79e652469b2def2b98be4" }
 aes = "0.3.2"
 cfb8 = "0.3.1"
 rsa_public_encrypt_pkcs1 = "0.2.0"
