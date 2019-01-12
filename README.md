@@ -63,6 +63,13 @@ Just compile:
 cargo build --release
 ```
 
+To build for WebAssembly:
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo build --target wasm32-unknown-unknown
+```
+
 ## Running
 
 ### Standalone
