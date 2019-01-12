@@ -1,5 +1,5 @@
 # Stevenarella
-[![Build Status](https://travis-ci.org/iceiix/steven.svg?branch=updates)](https://travis-ci.org/iceiix/steven)
+[![Build Status](https://travis-ci.org/iceiix/stevenarella.svg)](https://travis-ci.org/iceiix/stevenarella)
 
 Multi-protocol Minecraft-compatible client written in Rust
 
@@ -30,10 +30,10 @@ In action: http://gfycat.com/NeedyElaborateGypsymoth
 | 1.8.9  | 47  | ✓ |
 | 1.7.10 | 5   | ✓ |
 
-Stevenarella is designed to support protocol versions, so that client
+Stevenarella is designed to support multiple protocol versions, so that client
 development is not in lock-step with the server version. The level of
 support varies, but the goal is to support major versions from 1.7.10
-up to the current latest major version. Occasionally, snapshots are supported.
+up to the current latest major version. Occasionally, snapshots are also supported.
 
 Support for older protocols will _not_ be dropped as newer protocols are added.
 
@@ -41,11 +41,11 @@ Support for older protocols will _not_ be dropped as newer protocols are added.
 
 Thanks to [@thinkofname](https://github.com/thinkofname/) for
 the original [Steven (Rust)](https://github.com/thinkofname/steven),
-which Stevenarella is an updated version of.
+which Stevenarella is an updated and enhanced version of.
 
 ## Downloads
 
-Windows users can download pre-compiled builds from here: https://ci.appveyor.com/project/iceiix/steven
+Windows users can download pre-compiled builds from here: https://ci.appveyor.com/project/iceiix/stevenarella
 (Select your platform, Click the artifacts tab and download Steven.zip)
 
 The Visual Studio 2017 Redistributable is required to run these builds.
@@ -67,7 +67,7 @@ cargo build --release
 
 ### Standalone
 
-Just running steven via a double click (Windows) or `./stevenarella` (everything else)
+Just running Stevenarella via a double click (Windows) or `./stevenarella` (everything else)
 will bring up a login screen followed by a server list which you can select a server
 from.
 
