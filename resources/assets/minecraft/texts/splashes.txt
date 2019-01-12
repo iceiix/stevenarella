@@ -18,8 +18,8 @@ Now with more bugs!
 I blame Mojang
 The logo is totally not ascii art rendered as textures
 Look, it works on my machine.
-Originally in Go! https://github.com/thinkofname/steven
-Open Source! https://github.com/thinkofname/steven-rust
+Originally in Go! https://github.com/thinkofname/steven-go
+Open Source! http://github.com/iceiix/stevenarella
 Built with Rust!
 try { } catch (Throwable e) { }
 panic(recover())
@@ -67,3 +67,12 @@ macros_rule!
 cat /dev/random > steven; git push --force
 No touchy the topic
 Hypixel you!
+Mozzarella? Stevenarella!
+Rust 2018 edition!
+r#try!#
+Who needs OpenSSL or SDL anyway?
+[[Multiprotocol]]
+/r/1710forlife
+Updated! For now...
+hMod?! Bukkit?! Forge?! MCPC?! Spigot?! MCPC+?! Cauldron?! Fabric?!
+74 files changed, 11060 insertions(+), 2405 deletions(-)
