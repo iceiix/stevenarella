@@ -391,21 +391,27 @@ macro_rules! define_blocks {
                                     blocks_flat[id]
                                 );
                             }
+                        }
 
-                            if let Some(vanilla_id) = vanilla_id {
-                                if blocks_hier.len() <= vanilla_id {
-                                    blocks_hier.resize(vanilla_id + 1, None);
-                                }
-                                if blocks_hier[vanilla_id].is_none() {
-                                    blocks_hier[vanilla_id] = Some(block);
-                                } else {
-                                    panic!(
-                                        "Tried to register {:#?} to {} but {:#?} was already registered",
-                                        block,
-                                        id,
-                                        blocks_hier[vanilla_id]
-                                    );
-                                }
+                        if let Some(vanilla_id) = vanilla_id {
+                            /*
+                            if offset.is_none() {
+                                println!("(no flat) block state = {:?} hierarchical {}:{}", block, vanilla_id >> 4, vanilla_id & 0xF);
+                            }
+                            */
+
+                            if blocks_hier.len() <= vanilla_id {
+                                blocks_hier.resize(vanilla_id + 1, None);
+                            }
+                            if blocks_hier[vanilla_id].is_none() {
+                                blocks_hier[vanilla_id] = Some(block);
+                            } else {
+                                panic!(
+                                    "Tried to register {:#?} to {} but {:#?} was already registered",
+                                    block,
+                                    vanilla_id,
+                                    blocks_hier[vanilla_id]
+                                );
                             }
                         }
                     }
