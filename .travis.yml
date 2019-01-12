@@ -17,7 +17,8 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y gcc libegl1-mesa-dev libgles2-mesa-dev ; fi
 script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export LIBRARY_PATH="$LIBRARY_PATH:/usr/local/lib"         ; fi
-  - travis_wait 30 cargo build --verbose
+  - travis_wait 30 cargo build --verbose --target wasm32-unknown-unknown
+  #- travis_wait 30 cargo build --verbose
   - cargo test --verbose
 os:
   - linux
