@@ -191,7 +191,7 @@ fn main() {
 
     let mut events_loop = glutin::EventsLoop::new();
     let window_builder = glutin::WindowBuilder::new()
-        .with_title("Steven")
+        .with_title("Stevenarella")
         .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
     let context = glutin::ContextBuilder::new()
         .with_stencil_buffer(0)

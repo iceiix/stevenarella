@@ -1,7 +1,7 @@
 [package]
-name = "steven"
+name = "stevenarella"
 version = "0.0.1"
-authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
+authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>", "iceiix <ice_ix@protonmail.ch>" ]
 edition = "2018"
 
 [profile.dev]
