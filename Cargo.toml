@@ -30,7 +30,7 @@ collision = { git = "https://github.com/rustgd/collision-rs", rev = "e6cf49483fb
 aes = "0.3.2"
 cfb8 = "0.3.1"
 rsa_public_encrypt_pkcs1 = "0.2.0"
-clipboard = "0.5.0"
+clipboard = { git = "https://github.com/iceiix/rust-clipboard", branch = "emscripten" }
 # clippy = "*"
 
 [dependencies.steven_gl]
