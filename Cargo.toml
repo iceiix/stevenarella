@@ -14,7 +14,6 @@ opt-level = 1
 sha-1 = "0.8.1"
 glutin = "0.19.0"
 byteorder = "1.2.7"
-reqwest = "0.9.8"
 serde = "1.0.84"
 serde_json = "1.0.34"
 flate2 = "1.0.6"
@@ -32,6 +31,9 @@ cfb8 = "0.3.1"
 rsa_public_encrypt_pkcs1 = "0.2.0"
 clipboard = { git = "https://github.com/iceiix/rust-clipboard", branch = "emscripten" }
 # clippy = "*"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = "0.9.8"
 
 [dependencies.steven_gl]
 path = "./gl"
