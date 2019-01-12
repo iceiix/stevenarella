@@ -35,7 +35,7 @@ build_script:
 
     mkdir dist-debug
 
-    cp target\debug\steven.exe dist-debug
+    cp target\debug\stevenarella.exe dist-debug
 
 
 
@@ -43,7 +43,7 @@ build_script:
 
     mkdir dist
 
-    cp target\release\steven.exe dist
+    cp target\release\stevenarella.exe dist
 
 
 artifacts:
