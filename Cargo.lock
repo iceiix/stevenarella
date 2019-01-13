@@ -265,7 +265,7 @@ dependencies = [
 [[package]]
 name = "collision"
 version = "0.19.0"
-source = "git+https://github.com/rustgd/collision-rs?rev=e6cf49483fbf5c6cadc79e652469b2def2b98be4#e6cf49483fbf5c6cadc79e652469b2def2b98be4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bit-set 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1534,7 +1534,7 @@ name = "steven_blocks"
 version = "0.0.1"
 dependencies = [
  "cgmath 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "collision 0.19.0 (git+https://github.com/rustgd/collision-rs?rev=e6cf49483fbf5c6cadc79e652469b2def2b98be4)",
+ "collision 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "steven_shared 0.0.1",
 ]
@@ -1566,7 +1566,7 @@ dependencies = [
  "cfb8 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cgmath 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "clipboard 0.5.0 (git+https://github.com/iceiix/rust-clipboard?branch=emscripten)",
- "collision 0.19.0 (git+https://github.com/rustgd/collision-rs?rev=e6cf49483fbf5c6cadc79e652469b2def2b98be4)",
+ "collision 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "glutin 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2067,7 +2067,7 @@ dependencies = [
 "checksum clipboard-win 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "289da2fc09ab964a4948a63287c94fcb4698fa823c46da84c3792928c9d36110"
 "checksum cloudabi 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ddfc5b9aa5d4507acaf872de71051dfd0e309860e88966e1051e462a077aac4f"
 "checksum cocoa 0.18.4 (registry+https://github.com/rust-lang/crates.io-index)" = "cf79daa4e11e5def06e55306aa3601b87de6b5149671529318da048f67cdd77b"
-"checksum collision 0.19.0 (git+https://github.com/rustgd/collision-rs?rev=e6cf49483fbf5c6cadc79e652469b2def2b98be4)" = "<none>"
+"checksum collision 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2f2a7f3c1279555e955d10ae466cc9c9c73b5618191379ec64fc65072d456136"
 "checksum color_quant 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0dbbb57365263e881e805dc77d94697c9118fd94d8da011240555aa7b23445bd"
 "checksum core-foundation 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "286e0b41c3a20da26536c6000a280585d519fd07b3956b43aed8a79e9edce980"
 "checksum core-foundation 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "4e2640d6d0bf22e82bed1b73c6aef8d5dd31e5abe6666c57e6d45e2649f4f887"
