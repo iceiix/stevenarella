@@ -15,7 +15,6 @@
 #![recursion_limit="300"]
 
 use std::time::{Instant, Duration};
-use std::env::set_var;
 use log::{info, warn};
 extern crate steven_shared as shared;
 
