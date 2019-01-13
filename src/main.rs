@@ -15,6 +15,7 @@
 #![recursion_limit="300"]
 
 use std::time::{Instant, Duration};
+use std::env::set_var;
 use log::{info, warn};
 extern crate steven_shared as shared;
 
@@ -167,6 +168,8 @@ impl Game {
 }
 
 fn main() {
+    std::env::set_var("RUST_BACKTRACE", "1");
+
     let con = Arc::new(Mutex::new(console::Console::new()));
     let (vars, vsync) = {
         let mut vars = console::Vars::new();
