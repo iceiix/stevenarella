@@ -18,7 +18,7 @@ before_install:
 script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export LIBRARY_PATH="$LIBRARY_PATH:/usr/local/lib"         ; fi
   - rustup target add wasm32-unknown-unknown
-  - travis_wait 30 cargo build --verbose --target wasm32-unknown-unknown
+  - travis_wait 45 cargo build --verbose --target wasm32-unknown-unknown
   #- travis_wait 30 cargo build --verbose
   - cargo test --verbose
 os:
