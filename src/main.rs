@@ -226,6 +226,7 @@ fn main() {
 
     let textures = renderer.get_textures();
     let dpi_factor = window.get_current_monitor().get_hidpi_factor();
+    println!("dpi_factor = {}", dpi_factor);
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
         focused: false,
@@ -255,7 +256,7 @@ fn main() {
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
         let (width, height) = window.get_inner_size().unwrap().into();
-        let (physical_width, physical_height) = window.get_inner_size().unwrap().to_physical(game.dpi_factor).into();
+        let (physical_width, physical_height) = window.get_inner_size().unwrap().to_physical(if game.dpi_factor != 0.0 { game.dpi_factor } else { 1.0 }).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -364,7 +365,7 @@ fn handle_window_event(window: &mut glutin::GlWindow,
             WindowEvent::CloseRequested => game.should_close = true,
             WindowEvent::Resized(logical_size) => {
                 game.dpi_factor = window.get_hidpi_factor();
-                window.resize(logical_size.to_physical(game.dpi_factor));
+                window.resize(logical_size.to_physical(if game.dpi_factor != 0.0 { game.dpi_factor } else { 1.0 }));
             },
 
             WindowEvent::ReceivedCharacter(codepoint) => {
