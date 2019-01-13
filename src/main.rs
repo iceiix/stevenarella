@@ -189,45 +189,63 @@ fn main() {
     info!("Starting steven");
 
     let (res, mut resui) = resources::Manager::new();
+    info!("init 1");
     let resource_manager = Arc::new(RwLock::new(res));
+    info!("init 2");
 
     let mut events_loop = glutin::EventsLoop::new();
+    info!("init 3");
     let window_builder = glutin::WindowBuilder::new()
         .with_title("Stevenarella")
         .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
+    info!("init 4");
     let context = glutin::ContextBuilder::new()
         .with_stencil_buffer(0)
         .with_depth_buffer(24)
         .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
         .with_gl_profile(glutin::GlProfile::Core)
         .with_vsync(vsync);
+    info!("init 5");
     let mut window = glutin::GlWindow::new(window_builder, context, &events_loop)
         .expect("Could not create glutin window.");
+    info!("init 6");
 
     unsafe {
         window.make_current().expect("Could not set current context.");
     }
+    info!("init 7");
 
     gl::init(&window);
+    info!("init 8");
 
     let renderer = render::Renderer::new(resource_manager.clone());
+    info!("init 9");
     let mut ui_container = ui::Container::new();
+    info!("init 10");
 
     let mut last_frame = Instant::now();
+    info!("init 11");
     let frame_time = 1e9f64 / 60.0;
+    info!("init 12");
 
     let mut screen_sys = screen::ScreenSystem::new();
+    info!("init 13");
     #[cfg(not(target_arch = "wasm32"))]
     {
         screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
+        info!("init 14");
     }
     #[cfg(target_arch = "wasm32")]
     {
         screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
     }
+    info!("init 15");
 
     let textures = renderer.get_textures();
+    info!("init 16");
     let dpi_factor = window.get_current_monitor().get_hidpi_factor();
+    info!("init 17");
+    info!("dpi_factor = {}", dpi_factor);
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
         focused: false,
