@@ -1583,7 +1583,6 @@ dependencies = [
  "steven_gl 0.0.1",
  "steven_resources 0.1.0",
  "steven_shared 0.0.1",
- "wasm-bindgen 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "zip 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1857,53 +1856,6 @@ dependencies = [
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "try-lock 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[[package]]
-name = "wasm-bindgen"
-version = "0.2.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "wasm-bindgen-macro 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "wasm-bindgen-backend"
-version = "0.2.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2 0.4.19 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.6.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.15.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-shared 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "wasm-bindgen-macro"
-version = "0.2.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "quote 0.6.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-macro-support 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "wasm-bindgen-macro-support"
-version = "0.2.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "proc-macro2 0.4.19 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.6.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.15.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-backend 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-shared 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "wasm-bindgen-shared"
-version = "0.2.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "wayland-client"
@@ -2289,11 +2241,6 @@ dependencies = [
 "checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 "checksum walkdir 2.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "9d9d7ed3431229a144296213105a390676cc49c9b6a72bd19f3176c98e129fa1"
 "checksum want 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "797464475f30ddb8830cc529aaaae648d581f99e2036a928877dfde027ddf6b3"
-"checksum wasm-bindgen 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)" = "f45ea87af0efdd3b142836cf2ea233c938fbd0ead3a9da0fd240abd5303d1f5c"
-"checksum wasm-bindgen-backend 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)" = "65aafeecd4dcb2385505cbd33479c08c961902eae2d19f8cdc09a27c3cd50e09"
-"checksum wasm-bindgen-macro 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)" = "e3723ce26569facc66e1b53982a1035224d5c0d89a766eb3a45e56153e59b5e1"
-"checksum wasm-bindgen-macro-support 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)" = "51ff31a6a49abf9743b2cac233bf83a33f24b154878ffdce5a41c8d11f91b3d9"
-"checksum wasm-bindgen-shared 0.2.31 (registry+https://github.com/rust-lang/crates.io-index)" = "98c697f76b3ab6a0e8abd4489ba81c1ad2eded87f8a871ea5593bb45323400c8"
 "checksum wayland-client 0.21.7 (registry+https://github.com/rust-lang/crates.io-index)" = "267d642a6e551e5af62a5e4fbfaab299221e6ddbd453b5985cfa84c835887679"
 "checksum wayland-commons 0.21.7 (registry+https://github.com/rust-lang/crates.io-index)" = "da95f98e6b8222cb0f248811ecd69ba6ebe243b737fd34020f7c73665bb4a3af"
 "checksum wayland-protocols 0.21.7 (registry+https://github.com/rust-lang/crates.io-index)" = "a1d20e951995113cdb8f32578c8402e619aa3d3e894f3ca334deb219abc1f6df"

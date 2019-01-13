@@ -4,9 +4,6 @@ version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>", "iceiix <ice_ix@protonmail.ch>" ]
 edition = "2018"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [profile.dev]
 # Steven runs horrendously slow with no optimizations, and often freezes.
 # However, building with full -O3 optimizations takes too long for a debug build.
@@ -14,7 +11,6 @@ crate-type = ["cdylib", "rlib"]
 opt-level = 1
 
 [dependencies]
-wasm-bindgen = "0.2"
 sha-1 = "0.8.1"
 glutin = "0.19.0"
 byteorder = "1.2.7"
