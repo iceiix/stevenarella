@@ -10,6 +10,9 @@ edition = "2018"
 # Use an -O1 optimization level strikes a good compromise between build and program performance.
 opt-level = 1
 
+[patch.crates-io]
+winit = { git = "https://github.com/iceiix/winit", branch = "subnormal" }
+
 [dependencies]
 sha-1 = "0.8.1"
 glutin = "0.19.0"
