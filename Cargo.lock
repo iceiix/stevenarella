@@ -276,19 +276,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "collision"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "bit-set 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cgmath 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "num 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "smallvec 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "color_quant"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
