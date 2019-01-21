@@ -16,7 +16,7 @@ byteorder = "1.2.7"
 serde = "1.0.84"
 serde_json = "1.0.36"
 flate2 = "1.0.6"
-zip = "0.5.0"
+zip = { version = "0.5.0", features = ["deflate"], default-features = false }
 image = "0.21.0"
 rand = "0.5.5"
 hex = "0.3.2"
