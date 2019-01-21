@@ -41,6 +41,7 @@ pub mod auth;
 pub mod model;
 pub mod entity;
 
+use cfg_if::cfg_if;
 use std::sync::{Arc, RwLock, Mutex};
 use std::rc::Rc;
 use std::marker::PhantomData;
@@ -166,7 +167,18 @@ impl Game {
     }
 }
 
+cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        extern crate console_error_panic_hook;
+        pub use console_error_panic_hook::set_once as set_panic_hook;
+    } else {
+        #[inline]
+        pub fn set_panic_hook() {}
+    }
+}
+
 fn main() {
+    set_panic_hook();
     std::env::set_var("RUST_BACKTRACE", "1");
 
     let con = Arc::new(Mutex::new(console::Console::new()));

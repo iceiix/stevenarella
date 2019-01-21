@@ -11,6 +11,7 @@ edition = "2018"
 opt-level = 1
 
 [dependencies]
+cfg-if = "0.1.2"
 sha-1 = "0.8.1"
 byteorder = "1.2.7"
 serde = "1.0.84"
@@ -36,6 +37,9 @@ miniz_oxide_c_api = { git = "https://github.com/Frommi/miniz_oxide", branch = "m
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = "0.9.8"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.1"
 
 [dependencies.steven_gl]
 path = "./gl"
