@@ -67,7 +67,8 @@ To build for WebAssembly:
 
 ```sh
 rustup target add wasm32-unknown-unknown
-cargo build --target wasm32-unknown-unknown
+cargo install wasm-bindgen-cli
+wasm-pack build
 ```
 
 ## Running
@@ -77,6 +78,19 @@ cargo build --target wasm32-unknown-unknown
 Just running Stevenarella via a double click (Windows) or `./stevenarella` (everything else)
 will bring up a login screen followed by a server list which you can select a server
 from.
+
+### Web
+
+```sh
+cd pkg
+npm link
+cd ..
+cd www
+npm link stevenarella
+npm install
+npm run start
+open http://localhost:8080/
+```
 
 ## License
 

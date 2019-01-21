@@ -42,6 +42,7 @@ pub mod model;
 pub mod entity;
 
 use cfg_if::cfg_if;
+use wasm_bindgen::prelude::*;
 use std::sync::{Arc, RwLock, Mutex};
 use std::rc::Rc;
 use std::marker::PhantomData;
@@ -177,7 +178,8 @@ cfg_if! {
     }
 }
 
-fn main() {
+#[wasm_bindgen]
+pub fn main() {
     set_panic_hook();
     std::env::set_var("RUST_BACKTRACE", "1");
 
