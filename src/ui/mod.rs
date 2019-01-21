@@ -18,7 +18,8 @@ use std::rc::{Rc, Weak};
 use std::cell::{RefCell, RefMut};
 use crate::render;
 use crate::format;
-use glutin::VirtualKeyCode;
+//use glutin::VirtualKeyCode;
+type VirtualKeyCode = u32;
 #[cfg(not(target_arch = "wasm32"))]
 use clipboard::{ClipboardProvider, ClipboardContext};
 
@@ -398,12 +399,12 @@ impl Container {
     }
 
     pub fn key_press(&mut self, game: &mut crate::Game, key: VirtualKeyCode, down: bool, ctrl_pressed: bool) {
-        if key == VirtualKeyCode::Tab {
+        /*if key == VirtualKeyCode::Tab {
             if !down {
                 self.cycle_focus();
             }
             return;
-        }
+        }*/
         for el in self.focusable_elements.iter()
             .flat_map(|v| v.upgrade()) {
             if el.is_focused() {
@@ -1312,6 +1313,7 @@ impl TextBoxBuilder {
 
 impl UIElement for TextBox {
     fn key_press(&mut self, game: &mut crate::Game, key: VirtualKeyCode, down: bool, ctrl_pressed: bool) {
+        /*
         match (key, down) {
             (VirtualKeyCode::Back, _) => {self.input.pop();},
             (VirtualKeyCode::Return, false) => {
@@ -1336,6 +1338,7 @@ impl UIElement for TextBox {
             },
             _ => {},
         }
+        */
     }
 
     fn key_type(&mut self, _game: &mut crate::Game, c: char) {

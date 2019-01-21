@@ -47,8 +47,8 @@ use std::marker::PhantomData;
 use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
-use glutin;
-use glutin::GlContext;
+//use glutin;
+//use glutin::GlContext;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -191,6 +191,7 @@ fn main() {
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
 
+    /*
     let mut events_loop = glutin::EventsLoop::new();
     let window_builder = glutin::WindowBuilder::new()
         .with_title("Stevenarella")
@@ -207,8 +208,9 @@ fn main() {
     unsafe {
         window.make_current().expect("Could not set current context.");
     }
+    */
 
-    gl::init(&window);
+    gl::init();
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
@@ -227,7 +229,7 @@ fn main() {
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = window.get_current_monitor().get_hidpi_factor();
+    let dpi_factor = 1.0;//window.get_current_monitor().get_hidpi_factor();
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
         focused: false,
@@ -256,8 +258,8 @@ fn main() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.get_inner_size().unwrap().into();
-        let (physical_width, physical_height) = window.get_inner_size().unwrap().to_physical(game.dpi_factor).into();
+        let (width, height) = (1024, 768); //window.get_inner_size().unwrap().into();
+        let (physical_width, physical_height) = (width, height); //window.get_inner_size().unwrap().to_physical(game.dpi_factor).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -305,14 +307,17 @@ fn main() {
                 thread::sleep(sleep_interval - frame_time);
             }
         }
+        /*
         window.swap_buffers().expect("Failed to swap GL buffers");
 
         events_loop.poll_events(|event| {
             handle_window_event(&mut window, &mut game, &mut ui_container, event);
         });
+        */
     }
 }
 
+/*
 fn handle_window_event(window: &mut glutin::GlWindow,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
@@ -478,3 +483,4 @@ fn handle_window_event(window: &mut glutin::GlWindow,
         _ => (),
     }
 }
+*/

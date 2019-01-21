@@ -1,6 +1,7 @@
 use crate::console;
 use std::marker::PhantomData;
-use glutin::VirtualKeyCode;
+type VirtualKeyCode = u32;
+//use glutin::VirtualKeyCode;
 // Might just rename this to settings.rs
 
 pub const R_MAX_FPS: console::CVar<i64> = console::CVar {
@@ -46,7 +47,7 @@ macro_rules! create_keybind {
         description: $description,
         mutable: true,
         serializable: true,
-        default: &|| VirtualKeyCode::$keycode as i64
+        default: &|| 0 //VirtualKeyCode::$keycode as i64
     })
 }
 
