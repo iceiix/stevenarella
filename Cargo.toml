@@ -14,15 +14,15 @@ opt-level = 1
 sha-1 = "0.8.1"
 glutin = "0.19.0"
 byteorder = "1.2.7"
-reqwest = "0.9.8"
-serde = "1.0.84"
-serde_json = "1.0.36"
+reqwest = "0.9.9"
+serde = "1.0.85"
+serde_json = "1.0.37"
 flate2 = { version = "1.0.6", features = ["rust_backend"], default-features = false }
 zip = { version = "0.5.0", features = ["deflate"], default-features = false }
 image = "0.21.0"
 rand = "0.5.5"
 hex = "0.3.2"
-base64 = "0.10.0"
+base64 = "0.10.1"
 log = { version = "0.4.6", features = ["std"] }
 cgmath = "0.16.1"
 lazy_static = "1.2.0"
