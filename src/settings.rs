@@ -59,6 +59,8 @@ pub const CL_KEYBIND_SNEAK: console::CVar<i64> = create_keybind!(LShift, "cl_key
 pub const CL_KEYBIND_SPRINT: console::CVar<i64> = create_keybind!(LControl, "cl_keybind_sprint", "Keybinding for sprinting");
 pub const CL_KEYBIND_JUMP: console::CVar<i64> = create_keybind!(Space, "cl_keybind_jump", "Keybinding for jumping");
 
+pub const DOUBLE_JUMP_MS: u32 = 100;
+
 pub fn register_vars(vars: &mut console::Vars) {
     vars.register(R_MAX_FPS);
     vars.register(R_FOV);
