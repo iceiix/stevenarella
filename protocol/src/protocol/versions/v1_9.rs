@@ -74,7 +74,7 @@ protocol_packet_ids!(
             0x1f => KeepAliveClientbound_VarInt
             0x20 => ChunkData_NoEntities
             0x21 => Effect
-            0x22 => Particle
+            0x22 => Particle_VarIntArray
             0x23 => JoinGame_i8
             0x24 => Maps
             0x25 => EntityMove_i16
