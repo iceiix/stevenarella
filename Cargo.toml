@@ -16,7 +16,7 @@ glutin = "0.19.0"
 byteorder = "1.2.7"
 reqwest = "0.9.9"
 serde = "1.0.85"
-serde_json = "1.0.37"
+serde_json = "1.0.38"
 flate2 = { version = "1.0.6", features = ["rust_backend"], default-features = false }
 zip = { version = "0.5.0", features = ["deflate"], default-features = false }
 image = "0.21.0"
