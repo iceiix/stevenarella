@@ -14,7 +14,7 @@ opt-level = 1
 sha-1 = "0.8.1"
 glutin = "0.19.0"
 byteorder = "1.2.7"
-reqwest = "0.9.9"
+reqwest = "0.9.10"
 serde = "1.0.85"
 serde_json = "1.0.37"
 flate2 = { version = "1.0.6", features = ["rust_backend"], default-features = false }

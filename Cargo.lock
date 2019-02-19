@@ -1409,7 +1409,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.9.9"
+version = "0.9.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1702,7 +1702,7 @@ dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "reqwest 0.9.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest 0.9.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "rsa_public_encrypt_pkcs1 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.85 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2322,7 +2322,7 @@ dependencies = [
 "checksum rdrand 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "678054eb77286b51581ba43620cc911abf02758c91f93f479767aed0f90458b2"
 "checksum redox_syscall 0.1.51 (registry+https://github.com/rust-lang/crates.io-index)" = "423e376fffca3dfa06c9e9790a9ccd282fafb3cc6e6397d01dbf64f9bacc6b85"
 "checksum remove_dir_all 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3488ba1b9a2084d38645c4c08276a1752dcbf2c7130d74f1569681ad5d2799c5"
-"checksum reqwest 0.9.9 (registry+https://github.com/rust-lang/crates.io-index)" = "09d6e187a58d923ee132fcda141c94e716bcfe301c2ea2bef5c81536e0085376"
+"checksum reqwest 0.9.10 (registry+https://github.com/rust-lang/crates.io-index)" = "f205a95638627fc0d21c53901671b06f439dc2830311ff11ecdff34ae2d839a8"
 "checksum rsa_public_encrypt_pkcs1 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c82a2353440d2314c25680aefd2e34e7e47e3dd60fddccb2228a6e3b977845ee"
 "checksum rustc-demangle 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "adacaae16d02b6ec37fdc7acfcddf365978de76d1983d3ee22afc260e1ca9619"
 "checksum rustc_version 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
