@@ -75,12 +75,12 @@ pub struct Game {
     connect_reply: Option<mpsc::Receiver<Result<server::Server, protocol::Error>>>,
     protocol_version: i32,
 
-    dpi_factor: f64,
-    last_mouse_x: f64,
-    last_mouse_y: f64,
-    last_mouse_xrel: f64,
-    last_mouse_yrel: f64,
-    is_fullscreen: bool,
+    #[cfg(not(target_arch = "wasm32"))] dpi_factor: f64,
+    #[cfg(not(target_arch = "wasm32"))] last_mouse_x: f64,
+    #[cfg(not(target_arch = "wasm32"))] last_mouse_y: f64,
+    #[cfg(not(target_arch = "wasm32"))] last_mouse_xrel: f64,
+    #[cfg(not(target_arch = "wasm32"))] last_mouse_yrel: f64,
+    #[cfg(not(target_arch = "wasm32"))] is_fullscreen: bool,
 }
 
 impl Game {
