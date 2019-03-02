@@ -18,6 +18,8 @@ use std::time::{Instant, Duration};
 use log::{info, warn};
 extern crate steven_shared as shared;
 
+use structopt::StructOpt;
+
 #[macro_use]
 pub mod macros;
 
@@ -166,7 +168,22 @@ impl Game {
     }
 }
 
+#[derive(StructOpt, Debug)]
+#[structopt(name = "basic")]
+struct Opt {
+    /// Server to connect to
+    #[structopt(short = "s", long = "server")]
+    server: Option<String>,
+
+    /// Server protocol version
+    #[structopt(short = "p", long = "protocol-version")]
+    protocol_version: Option<i32>,
+}
+
 fn main() {
+    let opt = Opt::from_args();
+    println!("opt={:?}", opt);
+
     let con = Arc::new(Mutex::new(console::Console::new()));
     let (vars, vsync) = {
         let mut vars = console::Vars::new();
@@ -230,7 +247,7 @@ fn main() {
         should_close: false,
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
-        protocol_version: protocol::SUPPORTED_PROTOCOLS[0],
+        protocol_version: opt.protocol_version.unwrap_or(protocol::SUPPORTED_PROTOCOLS[0]),
         dpi_factor,
         last_mouse_x: 0.0,
         last_mouse_y: 0.0,
@@ -239,6 +256,10 @@ fn main() {
         is_fullscreen: false,
     };
     game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
+
+    if opt.server.is_some() {
+        game.connect_to(&opt.server.unwrap());
+    }
 
     let mut last_resource_version = 0;
     while !game.should_close {
