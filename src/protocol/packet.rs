@@ -1010,7 +1010,7 @@ state_packets!(
             }
             /// Particle spawns particles at the target location with the various
             /// modifiers.
-            packet Particle {
+            packet Particle_Data {
                 field particle_id: i32 =,
                 field long_distance: bool =,
                 field x: f32 =,
@@ -1021,8 +1021,26 @@ state_packets!(
                 field offset_z: f32 =,
                 field speed: f32 =,
                 field count: i32 =,
-                field data1: VarInt = when(|p: &Particle| p.particle_id == 36 || p.particle_id == 37 || p.particle_id == 38 || p.particle_id == 46),
-                field data2: VarInt = when(|p: &Particle| p.particle_id == 36),
+                field block_state: VarInt = when(|p: &Particle_Data| p.particle_id == 3 || p.particle_id == 20),
+                field red: f32 = when(|p: &Particle_Data| p.particle_id == 11),
+                field green: f32 = when(|p: &Particle_Data| p.particle_id == 11),
+                field blue: f32 = when(|p: &Particle_Data| p.particle_id == 11),
+                field scale: f32 = when(|p: &Particle_Data| p.particle_id == 11),
+                field item: Option<nbt::NamedTag> = when(|p: &Particle_Data| p.particle_id == 27),
+            }
+            packet Particle_VarIntArray {
+                field particle_id: i32 =,
+                field long_distance: bool =,
+                field x: f32 =,
+                field y: f32 =,
+                field z: f32 =,
+                field offset_x: f32 =,
+                field offset_y: f32 =,
+                field offset_z: f32 =,
+                field speed: f32 =,
+                field count: i32 =,
+                field data1: VarInt = when(|p: &Particle_VarIntArray| p.particle_id == 36 || p.particle_id == 37 || p.particle_id == 38 || p.particle_id == 46),
+                field data2: VarInt = when(|p: &Particle_VarIntArray| p.particle_id == 36),
             }
             packet Particle_Named {
                 field particle_id: String =,

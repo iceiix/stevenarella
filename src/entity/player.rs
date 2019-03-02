@@ -19,6 +19,7 @@ use collision::{Aabb, Aabb3};
 use cgmath::{self, Point3, Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
+use std::time::Instant;
 use crate::types::hash::FNVHash;
 use crate::settings::Stevenkey;
 use crate::shared::Position as BPosition;
@@ -441,6 +442,9 @@ impl ecs::System for PlayerRenderer {
 #[derive(Default)]
 pub struct PlayerMovement {
     pub flying: bool,
+    pub want_to_fly: bool,
+    pub when_last_jump_pressed: Option<Instant>,
+    pub when_last_jump_released: Option<Instant>,
     pub did_touch_ground: bool,
     pub pressed_keys: HashMap<Stevenkey, bool, BuildHasherDefault<FNVHash>>,
 }
@@ -532,6 +536,27 @@ impl ecs::System for MovementHandler {
             }
             let gamemode = m.get_component(e, self.gamemode).unwrap();
             movement.flying |= gamemode.always_fly();
+
+            // Detect double-tapping jump to toggle creative flight
+            if movement.is_key_pressed(Stevenkey::Jump) {
+                if movement.when_last_jump_pressed.is_none() {
+                    movement.when_last_jump_pressed = Some(Instant::now());
+                    if !movement.when_last_jump_released.is_none() {
+                        let dt = movement.when_last_jump_pressed.unwrap() - movement.when_last_jump_released.unwrap();
+                        if dt.as_secs() == 0 && dt.subsec_millis() <= crate::settings::DOUBLE_JUMP_MS {
+                            movement.want_to_fly = !movement.want_to_fly;
+                            //println!("double jump! dt={:?} toggle want_to_fly = {}", dt, movement.want_to_fly);
+
+                            if gamemode.can_fly() && !gamemode.always_fly() {
+                                movement.flying = movement.want_to_fly;
+                            }
+                        }
+                    }
+                }
+            } else if !movement.when_last_jump_pressed.is_none() {
+                movement.when_last_jump_released = Some(Instant::now());
+                movement.when_last_jump_pressed = None;
+            }
 
             let position = m.get_component_mut(e, self.position).unwrap();
             let rotation = m.get_component(e, self.rotation).unwrap();

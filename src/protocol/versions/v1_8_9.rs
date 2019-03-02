@@ -78,7 +78,7 @@ protocol_packet_ids!(
             0x27 => Explosion
             0x28 => Effect
             0x29 => NamedSoundEffect_u8_NoCategory
-            0x2a => Particle
+            0x2a => Particle_VarIntArray
             0x2b => ChangeGameState
             0x2c => SpawnGlobalEntity_i32
             0x2d => WindowOpen
