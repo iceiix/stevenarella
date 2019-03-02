@@ -208,7 +208,7 @@ pub fn main() {
         gl::init();
     }
     
-    let mut dpi_factor;
+    let dpi_factor;
     #[cfg(not(target_arch = "wasm32"))]
     {
         use glutin;
