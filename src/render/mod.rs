@@ -796,7 +796,6 @@ impl TextureManager {
         let (tx, rx) = mpsc::channel();
         let (stx, srx) = mpsc::channel();
         let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
-
         let mut tm = TextureManager {
             textures: HashMap::with_hasher(BuildHasherDefault::default()),
             version: {

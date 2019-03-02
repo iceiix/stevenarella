@@ -224,8 +224,6 @@ pub fn main() {
 
     gl::init(&window);
 
-    let dpi_factor = window.get_current_monitor().get_hidpi_factor();
-
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
 
@@ -244,6 +242,7 @@ pub fn main() {
     }
 
     let textures = renderer.get_textures();
+    let dpi_factor = window.get_current_monitor().get_hidpi_factor();
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
         focused: false,
@@ -321,7 +320,6 @@ pub fn main() {
                 thread::sleep(sleep_interval - frame_time);
             }
         }
-
         window.swap_buffers().expect("Failed to swap GL buffers");
 
         events_loop.poll_events(|event| {
