@@ -49,8 +49,6 @@ use std::marker::PhantomData;
 use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
-//use glutin;
-//use glutin::GlContext;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -205,26 +203,35 @@ pub fn main() {
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
 
-    /*
-    let mut events_loop = glutin::EventsLoop::new();
-    let window_builder = glutin::WindowBuilder::new()
-        .with_title("Stevenarella")
-        .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
-    let context = glutin::ContextBuilder::new()
-        .with_stencil_buffer(0)
-        .with_depth_buffer(24)
-        .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
-        .with_gl_profile(glutin::GlProfile::Core)
-        .with_vsync(vsync);
-    let mut window = glutin::GlWindow::new(window_builder, context, &events_loop)
-        .expect("Could not create glutin window.");
-
-    unsafe {
-        window.make_current().expect("Could not set current context.");
+    #[cfg(target_arch = "wasm32")]
+    {
+        gl::init();
     }
-    */
+    
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use glutin;
+        use glutin::GlContext;
 
-    gl::init();
+        let mut events_loop = glutin::EventsLoop::new();
+        let window_builder = glutin::WindowBuilder::new()
+            .with_title("Stevenarella")
+            .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
+        let context = glutin::ContextBuilder::new()
+            .with_stencil_buffer(0)
+            .with_depth_buffer(24)
+            .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
+            .with_gl_profile(glutin::GlProfile::Core)
+            .with_vsync(vsync);
+        let mut window = glutin::GlWindow::new(window_builder, context, &events_loop)
+            .expect("Could not create glutin window.");
+
+        unsafe {
+            window.make_current().expect("Could not set current context.");
+        }
+
+        gl::init(&window);
+    }
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();

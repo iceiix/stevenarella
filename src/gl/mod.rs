@@ -13,8 +13,8 @@
 // limitations under the License.
 
 extern crate steven_gl as gl;
-//use glutin::GlContext;
 
+use cfg_if::cfg_if;
 use std::ops::BitOr;
 use std::ffi;
 use std::mem;
@@ -22,9 +22,17 @@ use std::ptr;
 use std::ops::{Deref, DerefMut};
 
 /// Inits the gl library. This should be called once a context is ready.
-//pub fn init(vid: & glutin::GlWindow) {
-pub fn init() {
-    //gl::load_with(|s| vid.get_proc_address(s) as *const _);
+cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        pub fn init() {
+        }
+    } else {
+        use glutin::GlContext;
+
+        pub fn init(vid: & glutin::GlWindow) {
+            gl::load_with(|s| vid.get_proc_address(s) as *const _);
+        }
+    }
 }
 
 /// Dsed to specify how the vertices will be handled
