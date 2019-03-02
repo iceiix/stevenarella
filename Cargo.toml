@@ -12,7 +12,7 @@ opt-level = 1
 
 [dependencies]
 sha-1 = "0.8.1"
-glutin = "0.19.0"
+glutin = { git = "https://github.com/tomaka/glutin", rev = "23b3b101e554e521f38c1179f90d3d2f278b857c" }
 byteorder = "1.2.7"
 reqwest = "0.9.10"
 serde = "1.0.88"

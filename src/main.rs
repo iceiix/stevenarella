@@ -48,7 +48,7 @@ use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
 use glutin;
-use glutin::GlContext;
+use glutin::ContextTrait;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -199,7 +199,7 @@ fn main() {
         .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
         .with_gl_profile(glutin::GlProfile::Core)
         .with_vsync(vsync);
-    let mut window = glutin::GlWindow::new(window_builder, context, &events_loop)
+    let mut window = glutin::CombinedContext::new(window_builder, context, &events_loop)
         .expect("Could not create glutin window.");
 
     unsafe {
@@ -304,7 +304,7 @@ fn main() {
     }
 }
 
-fn handle_window_event(window: &mut glutin::GlWindow,
+fn handle_window_event(window: &mut glutin::CombinedContext,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
                        event: glutin::Event) {
