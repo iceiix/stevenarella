@@ -183,7 +183,7 @@ dependencies = [
 [[package]]
 name = "clipboard"
 version = "0.5.0"
-source = "git+https://github.com/iceiix/rust-clipboard?branch=emscripten#311e5a6abd7200c839749ef53e4b206f96915608"
+source = "git+https://github.com/aweinstock314/rust-clipboard?rev=07d080be58a361a5bbdb548fafe9449843d968be#07d080be58a361a5bbdb548fafe9449843d968be"
 dependencies = [
  "clipboard-win 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "objc 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1437,7 +1437,7 @@ dependencies = [
  "cfb8 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "cgmath 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "clipboard 0.5.0 (git+https://github.com/iceiix/rust-clipboard?branch=emscripten)",
+ "clipboard 0.5.0 (git+https://github.com/aweinstock314/rust-clipboard?rev=07d080be58a361a5bbdb548fafe9449843d968be)",
  "collision 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1863,7 +1863,7 @@ dependencies = [
 "checksum cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "082bb9b28e00d3c9d39cc03e64ce4cea0f1bb9b3fde493f0cbc008472d22bdf4"
 "checksum cgmath 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)" = "64a4b57c8f4e3a2e9ac07e0f6abc9c24b6fc9e1b54c3478cfb598f3d0023e51c"
 "checksum chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "45912881121cb26fad7c38c17ba7daa18764771836b34fab7d3fbd93ed633878"
-"checksum clipboard 0.5.0 (git+https://github.com/iceiix/rust-clipboard?branch=emscripten)" = "<none>"
+"checksum clipboard 0.5.0 (git+https://github.com/aweinstock314/rust-clipboard?rev=07d080be58a361a5bbdb548fafe9449843d968be)" = "<none>"
 "checksum clipboard-win 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "289da2fc09ab964a4948a63287c94fcb4698fa823c46da84c3792928c9d36110"
 "checksum cloudabi 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ddfc5b9aa5d4507acaf872de71051dfd0e309860e88966e1051e462a077aac4f"
 "checksum collision 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2f2a7f3c1279555e955d10ae466cc9c9c73b5618191379ec64fc65072d456136"
