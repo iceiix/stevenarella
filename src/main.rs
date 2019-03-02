@@ -208,6 +208,7 @@ pub fn main() {
         gl::init();
     }
     
+    let mut dpi_factor;
     #[cfg(not(target_arch = "wasm32"))]
     {
         use glutin;
@@ -231,6 +232,8 @@ pub fn main() {
         }
 
         gl::init(&window);
+
+        dpi_factor = window.get_current_monitor().get_hidpi_factor();
     }
 
     let renderer = render::Renderer::new(resource_manager.clone());
@@ -244,13 +247,14 @@ pub fn main() {
     {
         screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
     }
+
     #[cfg(target_arch = "wasm32")]
     {
         screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
+        dpi_factor = 1.0;
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = 1.0;//window.get_current_monitor().get_hidpi_factor();
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
         focused: false,
