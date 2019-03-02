@@ -38,6 +38,9 @@ rsa_public_encrypt_pkcs1 = "0.2.0"
 clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", rev = "07d080be58a361a5bbdb548fafe9449843d968be" }
 # clippy = "*"
 
+[patch.crates-io]
+winit = { git = "https://github.com/tomaka/winit", branch = "master" }
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = "0.9.10"
 
