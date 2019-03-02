@@ -49,6 +49,8 @@ use std::marker::PhantomData;
 use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
+use glutin;
+use glutin::GlContext;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -203,38 +205,26 @@ pub fn main() {
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
 
-    #[cfg(target_arch = "wasm32")]
-    {
-        gl::init();
+    let mut events_loop = glutin::EventsLoop::new();
+    let window_builder = glutin::WindowBuilder::new()
+        .with_title("Stevenarella")
+        .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
+    let context = glutin::ContextBuilder::new()
+        .with_stencil_buffer(0)
+        .with_depth_buffer(24)
+        .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
+        .with_gl_profile(glutin::GlProfile::Core)
+        .with_vsync(vsync);
+    let mut window = glutin::GlWindow::new(window_builder, context, &events_loop)
+        .expect("Could not create glutin window.");
+
+    unsafe {
+        window.make_current().expect("Could not set current context.");
     }
-    
-    let dpi_factor;
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        use glutin;
-        use glutin::GlContext;
 
-        let mut events_loop = glutin::EventsLoop::new();
-        let window_builder = glutin::WindowBuilder::new()
-            .with_title("Stevenarella")
-            .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
-        let context = glutin::ContextBuilder::new()
-            .with_stencil_buffer(0)
-            .with_depth_buffer(24)
-            .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
-            .with_gl_profile(glutin::GlProfile::Core)
-            .with_vsync(vsync);
-        let mut window = glutin::GlWindow::new(window_builder, context, &events_loop)
-            .expect("Could not create glutin window.");
+    gl::init(&window);
 
-        unsafe {
-            window.make_current().expect("Could not set current context.");
-        }
-
-        gl::init(&window);
-
-        dpi_factor = window.get_current_monitor().get_hidpi_factor();
-    }
+    let dpi_factor = window.get_current_monitor().get_hidpi_factor();
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
@@ -251,7 +241,6 @@ pub fn main() {
     #[cfg(target_arch = "wasm32")]
     {
         screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
-        dpi_factor = 1.0;
     }
 
     let textures = renderer.get_textures();
@@ -283,8 +272,8 @@ pub fn main() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = (1024, 768); //window.get_inner_size().unwrap().into();
-        let (physical_width, physical_height) = (width, height); //window.get_inner_size().unwrap().to_physical(game.dpi_factor).into();
+        let (width, height) = window.get_inner_size().unwrap().into();
+        let (physical_width, physical_height) = window.get_inner_size().unwrap().to_physical(game.dpi_factor).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -332,17 +321,15 @@ pub fn main() {
                 thread::sleep(sleep_interval - frame_time);
             }
         }
-        /*
+
         window.swap_buffers().expect("Failed to swap GL buffers");
 
         events_loop.poll_events(|event| {
             handle_window_event(&mut window, &mut game, &mut ui_container, event);
         });
-        */
     }
 }
 
-/*
 fn handle_window_event(window: &mut glutin::GlWindow,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
@@ -508,4 +495,3 @@ fn handle_window_event(window: &mut glutin::GlWindow,
         _ => (),
     }
 }
-*/
