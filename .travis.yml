@@ -11,7 +11,9 @@ matrix:
   include:
       - env: WASM=true
       - env: WASM=false
-cache: cargo
+cache:
+    cargo: true
+    timeout: 1000
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo chown root:wheel /usr/local/bin/brew ; fi
