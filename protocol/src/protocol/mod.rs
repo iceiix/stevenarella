@@ -19,6 +19,7 @@ use aes::Aes128;
 use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use serde_json;
+#[cfg(not(target_arch = "wasm32"))]
 use reqwest;
 
 pub mod mojang;
@@ -764,6 +765,7 @@ pub enum Error {
     Disconnect(format::Component),
     IOError(io::Error),
     Json(serde_json::Error),
+    #[cfg(not(target_arch = "wasm32"))]
     Reqwest(reqwest::Error),
 }
 
@@ -779,6 +781,7 @@ impl convert::From<serde_json::Error> for Error {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl convert::From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Error {
         Error::Reqwest(e)
@@ -792,6 +795,7 @@ impl ::std::error::Error for Error {
             Error::Disconnect(_) => "Disconnect",
             Error::IOError(ref e) => e.description(),
             Error::Json(ref e) => e.description(),
+            #[cfg(not(target_arch = "wasm32"))]
             Error::Reqwest(ref e) => e.description(),
         }
     }
@@ -804,6 +808,7 @@ impl ::std::fmt::Display for Error {
             Error::Disconnect(ref val) => write!(f, "{}", val),
             Error::IOError(ref e) => e.fmt(f),
             Error::Json(ref e) => e.fmt(f),
+            #[cfg(not(target_arch = "wasm32"))]
             Error::Reqwest(ref e) => e.fmt(f),
         }
     }
