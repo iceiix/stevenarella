@@ -69,13 +69,7 @@ Just compile:
 cargo build --release
 ```
 
-To build for WebAssembly:
-
-```sh
-rustup target add wasm32-unknown-unknown
-cargo install wasm-bindgen-cli
-wasm-pack build
-```
+For progress on web support, see [www/](./www).
 
 ## Running
 
@@ -84,19 +78,6 @@ wasm-pack build
 Just running Stevenarella via a double click (Windows) or `./stevenarella` (everything else)
 will bring up a login screen followed by a server list which you can select a server
 from.
-
-### Web
-
-```sh
-cd pkg
-npm link
-cd ..
-cd www
-npm link stevenarella
-npm install
-npm start
-open http://localhost:8080/
-```
 
 ## License
 
