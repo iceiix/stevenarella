@@ -22,6 +22,7 @@ script:
   - if [[ "$WASM" == "true" ]]; then
     rustup target add wasm32-unknown-unknown;
     cargo install wasm-bindgen-cli;
+    cargo install wasm-pack;
     travis_wait 120 wasm-pack build;
     else
     travis_wait 30 cargo build --verbose;
