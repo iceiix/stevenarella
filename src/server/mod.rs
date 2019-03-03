@@ -161,7 +161,10 @@ impl Server {
         let shared_e = rsa_public_encrypt_pkcs1::encrypt(&public_key, &shared).unwrap();
         let token_e = rsa_public_encrypt_pkcs1::encrypt(&public_key, &verify_token).unwrap();
 
-        profile.join_server(&server_id, &shared, &public_key)?;
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            profile.join_server(&server_id, &shared, &public_key)?;
+        }
 
         if protocol_version >= 47 {
             conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse {

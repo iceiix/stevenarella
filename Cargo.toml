@@ -7,6 +7,10 @@ description = "Multi-protocol multi-platform Minecraft-compatible client"
 repository = "https://github.com/iceiix/stevenarella"
 license = "(MIT OR Apache-2.0)"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "src/main.rs"
+
 [profile.dev]
 # Steven runs horrendously slow with no optimizations, and often freezes.
 # However, building with full -O3 optimizations takes too long for a debug build.
@@ -14,10 +18,11 @@ license = "(MIT OR Apache-2.0)"
 opt-level = 1
 
 [dependencies]
+cfg-if = "0.1.2"
+wasm-bindgen = "0.2.33"
 sha-1 = "0.8.1"
-glutin = { git = "https://github.com/tomaka/glutin", rev = "23b3b101e554e521f38c1179f90d3d2f278b857c" }
+glutin = { git = "https://github.com/iceiix/glutin", rev = "97797352b5242436cb82d8ecfb44242b69766e4c" }
 byteorder = "1.2.7"
-reqwest = "0.9.10"
 serde = "1.0.89"
 serde_json = "1.0.39"
 flate2 = { version = "1.0.6", features = ["rust_backend"], default-features = false }
@@ -33,8 +38,14 @@ collision = "0.19.0"
 aes = "0.3.2"
 cfb8 = "0.3.1"
 rsa_public_encrypt_pkcs1 = "0.2.0"
-clipboard = "0.5.0"
+clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", rev = "07d080be58a361a5bbdb548fafe9449843d968be" }
 # clippy = "*"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = "0.9.10"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.1"
 
 [dependencies.steven_gl]
 path = "./gl"

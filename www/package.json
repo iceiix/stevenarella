@@ -1,0 +1,27 @@
+{
+  "name": "stevenarella-web",
+  "version": "0.0.1",
+  "description": "Multi-protocol Minecraft-compatible client, web-based version",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "start": "webpack-dev-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iceiix/stevenarella.git"
+  },
+  "keywords": [],
+  "author": "iceiix <ice_ix@protonmail.ch>",
+  "license": "(MIT OR Apache-2.0)",
+  "bugs": {
+    "url": "https://github.com/iceiix/stevenarella/issues"
+  },
+  "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
+  "devDependencies": {
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.2.3",
+    "webpack-dev-server": "^3.2.1",
+    "copy-webpack-plugin": "^5.0.0"
+  }
+}

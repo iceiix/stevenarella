@@ -14,6 +14,7 @@
 
 use sha1::{self, Digest};
 use serde_json::json;
+#[cfg(not(target_arch = "wasm32"))]
 use reqwest;
 
 #[derive(Clone, Debug)]
@@ -28,6 +29,7 @@ const LOGIN_URL: &str = "https://authserver.mojang.com/authenticate";
 const REFRESH_URL: &str = "https://authserver.mojang.com/refresh";
 const VALIDATE_URL: &str = "https://authserver.mojang.com/validate";
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Profile {
     pub fn login(username: &str, password: &str, token: &str) -> Result<Profile, super::Error> {
         let req_msg = json!({

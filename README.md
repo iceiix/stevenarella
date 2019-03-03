@@ -69,6 +69,8 @@ Just compile:
 cargo build --release
 ```
 
+For progress on web support, see [www/](./www).
+
 ## Running
 
 ### Standalone

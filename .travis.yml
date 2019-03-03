@@ -8,7 +8,12 @@ matrix:
   allow_failures:
     - rust: nightly
   fast_finish: true
-cache: cargo
+  include:
+      - env: WASM=true
+      - env: WASM=false
+cache:
+    cargo: true
+    timeout: 1000
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo chown root:wheel /usr/local/bin/brew ; fi
@@ -16,8 +21,15 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y gcc libegl1-mesa-dev libgles2-mesa-dev ; fi
 script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export LIBRARY_PATH="$LIBRARY_PATH:/usr/local/lib"         ; fi
-  - travis_wait 30 cargo build --verbose
-  - cargo test --verbose
+  - if [[ "$WASM" == "true" ]]; then
+    rustup target add wasm32-unknown-unknown;
+    cargo install wasm-bindgen-cli;
+    cargo install wasm-pack;
+    travis_wait 120 wasm-pack build;
+    else
+    travis_wait 30 cargo build --verbose;
+    cargo test --verbose;
+    fi
 os:
   - linux
   - osx

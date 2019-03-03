@@ -41,6 +41,8 @@ pub mod auth;
 pub mod model;
 pub mod entity;
 
+use cfg_if::cfg_if;
+use wasm_bindgen::prelude::*;
 use std::sync::{Arc, RwLock, Mutex};
 use std::rc::Rc;
 use std::marker::PhantomData;
@@ -166,7 +168,21 @@ impl Game {
     }
 }
 
-fn main() {
+cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        extern crate console_error_panic_hook;
+        pub use console_error_panic_hook::set_once as set_panic_hook;
+    } else {
+        #[inline]
+        pub fn set_panic_hook() {}
+    }
+}
+
+#[wasm_bindgen]
+pub fn main() {
+    set_panic_hook();
+    std::env::set_var("RUST_BACKTRACE", "1");
+
     let con = Arc::new(Mutex::new(console::Console::new()));
     let (vars, vsync) = {
         let mut vars = console::Vars::new();
@@ -215,7 +231,15 @@ fn main() {
     let frame_time = 1e9f64 / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
-    screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
+    }
 
     let textures = renderer.get_textures();
     let dpi_factor = window.get_current_monitor().get_hidpi_factor();

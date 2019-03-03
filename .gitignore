@@ -1,6 +1,8 @@
 target/
 .rust/
 working/
+*.log
+pkg
 
 # IntelliJ
 .idea
