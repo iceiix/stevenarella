@@ -18,7 +18,7 @@ path = "src/main.rs"
 opt-level = 1
 
 [dependencies]
-cfg-if = "0.1.2"
+cfg-if = "0.1.7"
 wasm-bindgen = "0.2.33"
 sha-1 = "0.8.1"
 glutin = { git = "https://github.com/iceiix/glutin", rev = "de52fba20678f3931fba3eb6700774469e48512f" }
