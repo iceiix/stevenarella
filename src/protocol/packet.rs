@@ -2584,6 +2584,7 @@ pub enum CommandProperty {
     },
     GameProfile,
     BlockPos,
+    ColumnPos,
     Vec3,
     Vec2,
     BlockState,
@@ -2614,7 +2615,11 @@ pub enum CommandProperty {
     Range {
         decimals: bool,
     },
+    IntRange,
+    FloatRange,
     ItemEnchantment,
+    EntitySummon,
+    Dimension,
 }
 
 
@@ -2679,6 +2684,7 @@ impl Serializable for CommandNode {
                 },
                 "minecraft:game_profile" => CommandProperty::GameProfile,
                 "minecraft:block_pos" => CommandProperty::BlockPos,
+                "minecraft:column_pos" => CommandProperty::ColumnPos,
                 "minecraft:vec3" => CommandProperty::Vec3,
                 "minecraft:vec2" => CommandProperty::Vec2,
                 "minecraft:block_state" => CommandProperty::BlockState,
@@ -2709,7 +2715,11 @@ impl Serializable for CommandNode {
                 "minecraft:range" => {
                     CommandProperty::Range { decimals: Serializable::read_from(buf)? }
                 },
+                "minecraft:int_range" => CommandProperty::IntRange,
+                "minecraft:float_range" => CommandProperty::FloatRange,
                 "minecraft:item_enchantment" => CommandProperty::ItemEnchantment,
+                "minecraft:entity_summon" => CommandProperty::EntitySummon,
+                "minecraft:dimension" => CommandProperty::Dimension,
                 _ => panic!("unsupported command node parser {}", parse),
             })
         } else {
