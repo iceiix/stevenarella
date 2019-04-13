@@ -18,15 +18,15 @@ path = "src/main.rs"
 opt-level = 1
 
 [dependencies]
-cfg-if = "0.1.2"
+cfg-if = "0.1.7"
 wasm-bindgen = "0.2.33"
 sha-1 = "0.8.1"
 glutin = { git = "https://github.com/iceiix/glutin", rev = "de52fba20678f3931fba3eb6700774469e48512f" }
 byteorder = "1.2.7"
-serde = "1.0.89"
+serde = "1.0.90"
 serde_json = "1.0.39"
-flate2 = { version = "1.0.6", features = ["rust_backend"], default-features = false }
-zip = { version = "0.5.0", features = ["deflate"], default-features = false }
+flate2 = { version = "1.0.7", features = ["rust_backend"], default-features = false }
+zip = { version = "0.5.2", features = ["deflate"], default-features = false }
 image = "0.21.0"
 rand = "0.5.5"
 hex = "0.3.2"
@@ -36,7 +36,7 @@ cgmath = "0.16.1"
 lazy_static = "1.3.0"
 collision = "0.19.0"
 aes = "0.3.2"
-cfb8 = "0.3.1"
+cfb8 = "0.3.2"
 rsa_public_encrypt_pkcs1 = "0.2.0"
 clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", rev = "07d080be58a361a5bbdb548fafe9449843d968be" }
 # clippy = "*"
