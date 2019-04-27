@@ -753,6 +753,10 @@ state_packets!(
             packet ServerDifficulty {
                 field difficulty: u8 =,
             }
+            packet ServerDifficulty_Locked {
+                field difficulty: u8 =,
+                field locked: bool =,
+            }
             /// TabCompleteReply is sent as a reply to a tab completion request.
             /// The matches should be possible completions for the command/chat the
             /// player sent.
