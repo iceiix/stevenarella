@@ -2434,8 +2434,35 @@ pub struct Recipe {
 
 impl Serializable for Recipe {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        let id = String::read_from(buf)?;
-        let ty = String::read_from(buf)?;
+        let (id, ty, namespace) = {
+            let a = String::read_from(buf)?;
+            let b = String::read_from(buf)?;
+
+            let protocol_version = unsafe { crate::protocol::CURRENT_PROTOCOL_VERSION };
+
+            // 1.14+ swaps recipe identifier and type, and adds namespace to type
+            if protocol_version >= 477 {
+                let ty = a;
+                let id = b;
+
+                if let Some(at) = ty.find(':') {
+                    let (namespace, ty) = ty.split_at(at + 1);
+                    let ty: String = ty.into();
+                    let namespace: String = namespace.into();
+                    (id, ty, namespace)
+                } else {
+                    (id, ty, "minecraft:".to_string())
+                }
+            } else {
+                let ty = b;
+                let id = a;
+                (id, ty, "minecraft:".to_string())
+            }
+        };
+
+        if namespace != "minecraft:" {
+            panic!("unrecognized recipe type namespace: {}", namespace);
+        }
 
         let data =
         match ty.as_ref() {
