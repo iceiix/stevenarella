@@ -2417,6 +2417,12 @@ pub enum RecipeData {
         experience: f32,
         cooking_time: VarInt,
     },
+    Stonecutting {
+        group: String,
+        ingredient: RecipeIngredient,
+        result: Option<item::Stack>,
+        count: VarInt,
+    },
 }
 
 impl Default for RecipeData {
@@ -2527,6 +2533,12 @@ impl Serializable for Recipe {
                 result: Serializable::read_from(buf)?,
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
+            },
+            "stonecutting" => RecipeData::Stonecutting {
+                group: Serializable::read_from(buf)?,
+                ingredient: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
+                count: Serializable::read_from(buf)?,
             },
             _ => panic!("unrecognized recipe type: {}", ty)
         };
