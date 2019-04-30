@@ -2466,6 +2466,8 @@ impl Serializable for Recipe {
             }
         };
 
+        println!("recipe id={:?}, ty={:?}, namespace={:?}", id, ty, namespace);
+
         if namespace != "minecraft:" {
             panic!("unrecognized recipe type namespace: {}", namespace);
         }
