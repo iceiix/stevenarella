@@ -257,8 +257,9 @@ impl Serializable for String {
         let len = VarInt::read_from(buf)?.0;
         debug_assert!(len >= 0, "Negative string length: {}", len);
         debug_assert!(len <= 65536, "String length too big: {}", len);
-        let mut ret = String::new();
-        buf.take(len as u64).read_to_string(&mut ret)?;
+        let mut bytes = Vec::<u8>::new();
+        buf.take(len as u64).read_to_end(&mut bytes)?;
+        let ret = String::from_utf8(bytes).unwrap();
         Result::Ok(ret)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
