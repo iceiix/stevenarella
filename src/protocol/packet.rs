@@ -2528,7 +2528,7 @@ impl Serializable for Recipe {
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
             },
-            "campfire" => RecipeData::Campfire {
+            "campfire" | "campfire_cooking" => RecipeData::Campfire {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
