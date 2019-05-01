@@ -2536,24 +2536,11 @@ impl Serializable for Recipe {
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
             },
-            "stonecutting" => {
-                println!("reading stonecutting");
-                println!("reading group");
-                let group: String = Serializable::read_from(buf)?;
-                println!("group = {:?}", group);
-                let ingredient: RecipeIngredient = Serializable::read_from(buf)?;
-                println!("ingredient = {:?}", ingredient);
-                let result: Option<item::Stack> = Serializable::read_from(buf)?;
-                println!("result = {:?}", result);
-                let count: VarInt = Serializable::read_from(buf)?;
-                println!("count = {:?}", count);
-
-                RecipeData::Stonecutting {
-                    group,
-                    ingredient,
-                    result,
-                    count,
-                }
+            "stonecutting" => RecipeData::Stonecutting {
+                group: Serializable::read_from(buf)?,
+                ingredient: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
+                count: Serializable::read_from(buf)?,
             },
             _ => panic!("unrecognized recipe type: {}", ty)
         };
