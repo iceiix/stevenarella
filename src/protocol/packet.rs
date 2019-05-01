@@ -2421,7 +2421,6 @@ pub enum RecipeData {
         group: String,
         ingredient: RecipeIngredient,
         result: Option<item::Stack>,
-        count: VarInt,
     },
 }
 
@@ -2540,7 +2539,6 @@ impl Serializable for Recipe {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
-                count: Serializable::read_from(buf)?,
             },
             _ => panic!("unrecognized recipe type: {}", ty)
         };
