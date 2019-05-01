@@ -254,11 +254,17 @@ impl <T> Serializable for Option<T> where T : Serializable {
 
 impl Serializable for String {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<String, Error> {
+        println!("about to read_from string");
         let len = VarInt::read_from(buf)?.0;
+        println!("len = {}", len);
         debug_assert!(len >= 0, "Negative string length: {}", len);
         debug_assert!(len <= 65536, "String length too big: {}", len);
-        let mut ret = String::new();
-        buf.take(len as u64).read_to_string(&mut ret)?;
+        //let mut ret = String::new();
+        //buf.take(len as u64).read_to_string(&mut ret)?;
+        let mut b = Vec::<u8>::new();
+        buf.take(len as u64).read_to_end(&mut b)?;
+        println!("b = {:?}", b);
+        let ret = String::from_utf8(b).unwrap();
         Result::Ok(ret)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
