@@ -137,8 +137,8 @@ protocol_packet_ids!(
             0x4d => SpawnPosition
             0x4e => TimeUpdate
             0x4f => Title
-            0x50 => SoundEffect
-            0x51 => EntitySoundEffect
+            0x50 => EntitySoundEffect
+            0x51 => SoundEffect
             0x52 => StopSound
             0x53 => PlayerListHeaderFooter
             0x54 => NBTQueryResponse
