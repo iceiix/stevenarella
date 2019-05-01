@@ -10,7 +10,7 @@ protocol_packet_ids!(
         serverbound Serverbound {
             0x00 => TeleportConfirm
             0x01 => QueryBlockNBT
-            //0x02 => SetDifficulty
+            0x02 => SetDifficulty
             0x03 => ChatMessage
             0x04 => ClientStatus
             0x05 => ClientSettings
@@ -25,7 +25,7 @@ protocol_packet_ids!(
             0x0d => QueryEntityNBT
             0x0e => UseEntity
             0x0f => KeepAliveServerbound_i64
-            //0x10 => LockDifficulty
+            0x10 => LockDifficulty
             0x11 => PlayerPosition
             0x12 => PlayerPositionLook
             0x13 => PlayerLook
@@ -48,7 +48,7 @@ protocol_packet_ids!(
             0x24 => UpdateCommandBlock
             0x25 => UpdateCommandBlockMinecart
             0x26 => CreativeInventoryAction
-            //0x27 => UpdateJigsawBlock
+            0x27 => UpdateJigsawBlock
             0x28 => UpdateStructureBlock
             0x29 => SetSign
             0x2a => ArmSwing
@@ -111,7 +111,6 @@ protocol_packet_ids!(
             0x33 => PlayerInfo
             0x34 => FacePlayer
             0x35 => TeleportPlayer_WithConfirm
-            //0x34 => EntityUsedBed
             0x36 => UnlockRecipes_WithSmelting
             0x37 => EntityDestroy
             0x38 => EntityRemoveEffect
@@ -122,8 +121,8 @@ protocol_packet_ids!(
             0x3d => WorldBorder
             0x3e => Camera
             0x3f => SetCurrentHotbarSlot
-            //0x40 => UpdateViewPosition
-            //0x41 => UpdateViewDistance
+            0x40 => UpdateViewPosition
+            0x41 => UpdateViewDistance
             0x42 => ScoreboardDisplay
             0x43 => EntityMetadata
             0x44 => EntityAttach

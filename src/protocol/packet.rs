@@ -57,6 +57,9 @@ state_packets!(
                 field transaction_id: VarInt =,
                 field location: Position =,
             }
+            packet SetDifficulty {
+                field new_difficulty: u8 =,
+            }
             /// TabComplete is sent by the client when the client presses tab in
             /// the chat box.
             packet TabComplete {
@@ -201,6 +204,9 @@ state_packets!(
             }
             packet KeepAliveServerbound_i32 {
                 field id: i32 =,
+            }
+            packet LockDifficulty {
+                field locked: bool =,
             }
             /// PlayerPosition is used to update the player's position.
             packet PlayerPosition {
@@ -369,6 +375,12 @@ state_packets!(
             packet CreativeInventoryAction {
                 field slot: i16 =,
                 field clicked_item: Option<item::Stack> =,
+            }
+            packet UpdateJigsawBlock {
+                field location: Position =,
+                field attachment_type: String =,
+                field target_pool: String =,
+                field final_state: String =,
             }
             packet UpdateStructureBlock {
                 field location: Position =,
@@ -1397,6 +1409,15 @@ state_packets!(
             /// SetCurrentHotbarSlot changes the player's currently selected hotbar item.
             packet SetCurrentHotbarSlot {
                 field slot: u8 =,
+            }
+            /// UpdateViewPosition is used to determine what chunks should be remain loaded.
+            packet UpdateViewPosition {
+                field chunk_x: VarInt =,
+                field chunk_z: VarInt =,
+            }
+            /// UpdateViewDistance is sent by the integrated server when changing render distance.
+            packet UpdateViewDistance {
+                field view_distance: VarInt =,
             }
             /// ScoreboardDisplay is used to set the display position of a scoreboard.
             packet ScoreboardDisplay {
