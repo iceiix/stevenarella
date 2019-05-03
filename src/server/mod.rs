@@ -56,8 +56,6 @@ pub struct Server {
     resources: Arc<RwLock<resources::Manager>>,
     version: usize,
 
-    plugin_message_handler: plugin_messages::PluginMessageHandler,
-
     // Entity accessors
     game_info: ecs::Key<entity::GameInfo>,
     player_movement: ecs::Key<entity::player::PlayerMovement>,
@@ -293,8 +291,6 @@ impl Server {
 
             version,
             resources,
-
-            plugin_message_handler: plugin_messages::PluginMessageHandler {},
 
             // Entity accessors
             game_info,
@@ -674,11 +670,46 @@ impl Server {
     }
 
     fn on_plugin_message_clientbound_i16(&mut self, msg: packet::play::clientbound::PluginMessageClientbound_i16) {
-        self.plugin_message_handler.on_plugin_message_clientbound(&msg.channel, msg.data.data.as_slice())
+        self.on_plugin_message_clientbound(&msg.channel, msg.data.data.as_slice())
     }
 
     fn on_plugin_message_clientbound_1(&mut self, msg: packet::play::clientbound::PluginMessageClientbound) {
-        self.plugin_message_handler.on_plugin_message_clientbound(&msg.channel, &msg.data)
+        self.on_plugin_message_clientbound(&msg.channel, &msg.data)
+    }
+
+    fn on_plugin_message_clientbound(&mut self, channel: &str, data: &[u8]) {
+        println!("Received plugin message: channel={}, data={:?}", channel, data);
+
+        match channel {
+            // TODO: "REGISTER" => 
+            // TODO: "UNREGISTER" =>
+            "FML|HS" => {
+                // https://wiki.vg/Minecraft_Forge_Handshake
+                let discriminator = data[0];
+
+                match discriminator {
+                    0 => {
+                        // ServerHello
+                        let fml_protocol_version = data[1];
+                        let dimension = if fml_protocol_version > 1 {
+                            use byteorder::{BigEndian, ReadBytesExt};
+                            let dimension = (&data[2..2 + 4]).read_u32::<BigEndian>().unwrap();
+                            Some(dimension)
+                        } else {
+                            None
+                        };
+
+                        println!("FML|HS ServerHello: fml_protocol_version={}, dimension={:?}", fml_protocol_version, dimension);
+
+                        // TODO: send reply
+                    },
+                    _ => {
+                        println!("Unhandled FML|HS packet: discriminator={}", discriminator);
+                    }
+                }
+            }
+            _ => ()
+        }
     }
 
     fn on_game_join_i32_viewdistance(&mut self, join: packet::play::clientbound::JoinGame_i32_ViewDistance) {
