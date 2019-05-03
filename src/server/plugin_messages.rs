@@ -1,7 +1,33 @@
 
+use std::collections::HashMap;
+
 use crate::protocol::Serializable;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
+
+pub enum FmlHs<'a> {
+    ServerHello {
+        fml_protocol_version: i8,
+        override_dimension: i32,
+    },
+    ClientHello {
+        fml_protocol_version: i8,
+    },
+    ModList {
+        mods: HashMap<&'a str, &'a str>,
+    },
+    RegistryData {
+        has_more: bool,
+        name: String,
+        ids: HashMap<&'a str, i32>,
+        substitutions: Vec<&'a str>,
+        dummies: Vec<&'a str>,
+    },
+    HandshakeAck {
+        phase: i8,
+    },
+    HandshakeReset,
+}
 
 pub struct Brand {
     pub brand: String,
