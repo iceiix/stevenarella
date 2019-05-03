@@ -388,6 +388,8 @@ impl Server {
                 match pck {
                     Ok(pck) => handle_packet!{
                         self pck {
+                            PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
+                            PluginMessageClientbound => on_plugin_message_clientbound_1,
                             JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
@@ -665,6 +667,18 @@ impl Server {
         self.write_packet(packet::play::serverbound::KeepAliveServerbound_i32 {
             id: keep_alive.id,
         });
+    }
+
+    fn on_plugin_message_clientbound_i16(&mut self, msg: packet::play::clientbound::PluginMessageClientbound_i16) {
+        self.on_plugin_message_clientbound(&msg.channel, msg.data.data.as_slice())
+    }
+
+    fn on_plugin_message_clientbound_1(&mut self, msg: packet::play::clientbound::PluginMessageClientbound) {
+        self.on_plugin_message_clientbound(&msg.channel, &msg.data)
+    }
+
+    fn on_plugin_message_clientbound(&mut self, channel: &str, data: &[u8]) {
+        println!("Received plugin message: channel={}, data={:?}", channel, data);
     }
 
     fn on_game_join_i32_viewdistance(&mut self, join: packet::play::clientbound::JoinGame_i32_ViewDistance) {
