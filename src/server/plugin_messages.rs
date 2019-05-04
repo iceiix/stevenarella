@@ -8,14 +8,14 @@ use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
 use crate::protocol::{Serializable, Error, LenPrefixed, VarInt};
 
 #[derive(Debug, Default)]
-pub struct Mod {
+pub struct ForgeMod {
     name: String,
     version: String,
 }
 
-impl Serializable for Mod {
+impl Serializable for ForgeMod {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        Ok(Mod {
+        Ok(ForgeMod {
             name: Serializable::read_from(buf)?,
             version: Serializable::read_from(buf)?,
         })
@@ -37,7 +37,7 @@ pub enum FmlHs<'a> {
         fml_protocol_version: i8,
     },
     ModList {
-        mods: LenPrefixed<VarInt, Mod>,
+        mods: LenPrefixed<VarInt, ForgeMod>,
     },
     RegistryData {
         has_more: bool,
@@ -77,7 +77,7 @@ impl<'a> Serializable for FmlHs<'a> {
             },
             1 => panic!("Received unexpected FML|HS ClientHello from server"),
             2 => {
-                let mods: LenPrefixed<VarInt, Mod> = Serializable::read_from(buf)?;
+                let mods: LenPrefixed<VarInt, ForgeMod> = Serializable::read_from(buf)?;
 
                 Ok(FmlHs::ModList {
                     mods,

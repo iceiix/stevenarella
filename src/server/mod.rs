@@ -693,7 +693,7 @@ impl Server {
 
                         self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
                         self.write_fmlhs_plugin_message(&plugin_messages::FmlHs::ClientHello { fml_protocol_version });
-                        let mods: crate::protocol::LenPrefixed<crate::protocol::VarInt, plugin_messages::Mod> = Default::default();
+                        let mods: crate::protocol::LenPrefixed<crate::protocol::VarInt, plugin_messages::ForgeMod> = Default::default();
                         self.write_fmlhs_plugin_message(&plugin_messages::FmlHs::ModList { mods });
                     },
                     _ => (),
