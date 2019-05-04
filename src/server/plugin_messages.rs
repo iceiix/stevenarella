@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use crate::protocol::Serializable;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
+use crate::protocol::VarInt;
 
 #[derive(Debug)]
 pub enum FmlHs<'a> {
@@ -35,6 +36,14 @@ impl<'a> FmlHs<'a> {
         match self {
             FmlHs::ClientHello { fml_protocol_version } => {
                 vec![1, *fml_protocol_version as u8]
+            },
+            FmlHs::ModList { mods } => {
+                let mut buf = vec![2];
+                let number_of_mods = VarInt(mods.len() as i32);
+                number_of_mods.write_to(&mut buf).unwrap();
+                // TODO: write mods
+
+                buf
             },
             _ => unimplemented!()
         }
