@@ -57,6 +57,9 @@ state_packets!(
                 field transaction_id: VarInt =,
                 field location: Position =,
             }
+            packet SetDifficulty {
+                field new_difficulty: u8 =,
+            }
             /// TabComplete is sent by the client when the client presses tab in
             /// the chat box.
             packet TabComplete {
@@ -201,6 +204,9 @@ state_packets!(
             }
             packet KeepAliveServerbound_i32 {
                 field id: i32 =,
+            }
+            packet LockDifficulty {
+                field locked: bool =,
             }
             /// PlayerPosition is used to update the player's position.
             packet PlayerPosition {
@@ -369,6 +375,12 @@ state_packets!(
             packet CreativeInventoryAction {
                 field slot: i16 =,
                 field clicked_item: Option<item::Stack> =,
+            }
+            packet UpdateJigsawBlock {
+                field location: Position =,
+                field attachment_type: String =,
+                field target_pool: String =,
+                field final_state: String =,
             }
             packet UpdateStructureBlock {
                 field location: Position =,
@@ -753,6 +765,10 @@ state_packets!(
             packet ServerDifficulty {
                 field difficulty: u8 =,
             }
+            packet ServerDifficulty_Locked {
+                field difficulty: u8 =,
+                field locked: bool =,
+            }
             /// TabCompleteReply is sent as a reply to a tab completion request.
             /// The matches should be possible completions for the command/chat the
             /// player sent.
@@ -1055,6 +1071,23 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
+            packet JoinGame_i32_ViewDistance {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The dimension the client is starting in
+                field dimension: i32 =,
+                /// The max number of players on the server
+                field max_players: u8 =,
+                /// The level type of the server
+                field level_type: String =,
+                /// The render distance (2-32)
+                field view_distance: VarInt =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+            }
             packet JoinGame_i32 {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -1376,6 +1409,15 @@ state_packets!(
             /// SetCurrentHotbarSlot changes the player's currently selected hotbar item.
             packet SetCurrentHotbarSlot {
                 field slot: u8 =,
+            }
+            /// UpdateViewPosition is used to determine what chunks should be remain loaded.
+            packet UpdateViewPosition {
+                field chunk_x: VarInt =,
+                field chunk_z: VarInt =,
+            }
+            /// UpdateViewDistance is sent by the integrated server when changing render distance.
+            packet UpdateViewDistance {
+                field view_distance: VarInt =,
             }
             /// ScoreboardDisplay is used to set the display position of a scoreboard.
             packet ScoreboardDisplay {
@@ -2396,6 +2438,11 @@ pub enum RecipeData {
         experience: f32,
         cooking_time: VarInt,
     },
+    Stonecutting {
+        group: String,
+        ingredient: RecipeIngredient,
+        result: Option<item::Stack>,
+    },
 }
 
 impl Default for RecipeData {
@@ -2413,8 +2460,35 @@ pub struct Recipe {
 
 impl Serializable for Recipe {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        let id = String::read_from(buf)?;
-        let ty = String::read_from(buf)?;
+        let (id, ty, namespace) = {
+            let a = String::read_from(buf)?;
+            let b = String::read_from(buf)?;
+
+            let protocol_version = unsafe { crate::protocol::CURRENT_PROTOCOL_VERSION };
+
+            // 1.14+ swaps recipe identifier and type, and adds namespace to type
+            if protocol_version >= 477 {
+                let ty = a;
+                let id = b;
+
+                if let Some(at) = ty.find(':') {
+                    let (namespace, ty) = ty.split_at(at + 1);
+                    let ty: String = ty.into();
+                    let namespace: String = namespace.into();
+                    (id, ty, namespace)
+                } else {
+                    (id, ty, "minecraft:".to_string())
+                }
+            } else {
+                let ty = b;
+                let id = a;
+                (id, ty, "minecraft:".to_string())
+            }
+        };
+
+        if namespace != "minecraft:" {
+            panic!("unrecognized recipe type namespace: {}", namespace);
+        }
 
         let data =
         match ty.as_ref() {
@@ -2473,12 +2547,17 @@ impl Serializable for Recipe {
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
             },
-            "campfire" => RecipeData::Campfire {
+            "campfire" | "campfire_cooking" => RecipeData::Campfire {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
+            },
+            "stonecutting" => RecipeData::Stonecutting {
+                group: Serializable::read_from(buf)?,
+                ingredient: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
             },
             _ => panic!("unrecognized recipe type: {}", ty)
         };
