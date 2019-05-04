@@ -996,6 +996,29 @@ impl Conn {
         let version = val.get("version").ok_or(invalid_status())?;
         let players = val.get("players").ok_or(invalid_status())?;
 
+        // TODO: Option<> to distinguish non-modded, vs no mods?
+        let mut forge_mods: std::vec::Vec<crate::server::plugin_messages::ForgeMod> = vec![];
+        if let Some(modinfo) = val.get("modinfo") {
+            if let Some(modinfo_type) = modinfo.get("type") {
+                if modinfo_type == "FML" {
+                    if let Some(modlist) = modinfo.get("modList") {
+                        if let Value::Array(items) = modlist {
+                            for item in items {
+                                if let Value::Object(obj) = item {
+                                    let modid = obj.get("modid").unwrap().as_str().unwrap().to_string();
+                                    let version = obj.get("version").unwrap().as_str().unwrap().to_string();
+
+                                    forge_mods.push(crate::server::plugin_messages::ForgeMod { modid, version });
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    panic!("Unrecognized modinfo type in server ping response: {} in {}", modinfo_type, modinfo);
+                }
+            }
+        }
+
         Ok((Status {
             version: StatusVersion {
                 name: version.get("name").and_then(Value::as_str).ok_or(invalid_status())?
@@ -1016,6 +1039,7 @@ impl Conn {
             description: format::Component::from_value(val.get("description")
                                                                .ok_or(invalid_status())?),
             favicon: val.get("favicon").and_then(Value::as_str).map(|v| v.to_owned()),
+            forge_mods,
         },
             ping))
     }
@@ -1027,6 +1051,7 @@ pub struct Status {
     pub players: StatusPlayers,
     pub description: format::Component,
     pub favicon: Option<String>,
+    pub forge_mods: Vec<crate::server::plugin_messages::ForgeMod>,
 }
 
 #[derive(Debug)]

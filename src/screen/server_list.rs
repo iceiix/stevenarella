@@ -78,6 +78,7 @@ struct PingInfo {
     max: i32,
     protocol_version: i32,
     protocol_name: String,
+    forge_mods: Vec<crate::server::plugin_messages::ForgeMod>,
     favicon: Option<image::DynamicImage>,
 }
 
@@ -283,6 +284,7 @@ impl ServerList {
                             max: res.0.players.max,
                             protocol_version: res.0.version.protocol,
                             protocol_name: res.0.version.name,
+                            forge_mods: res.0.forge_mods,
                             favicon,
                         }));
                     }
@@ -299,6 +301,7 @@ impl ServerList {
                             max: 0,
                             protocol_version: 0,
                             protocol_name: "".to_owned(),
+                            forge_mods: vec![],
                             favicon: None,
                         });
                     }
@@ -497,6 +500,9 @@ impl super::Screen for ServerList {
 
                                 // TODO: store in memory instead of disk? but where?
                                 self.server_protocol_versions.insert(res.address, res.protocol_version);
+                                if res.forge_mods.len() > 0 {
+                                    println!("Forge mods installed on server: {:?}", res.forge_mods);
+                                }
                                 let mut out = fs::File::create("server_versions.json").unwrap();
                                 serde_json::to_writer_pretty(&mut out, &self.server_protocol_versions).unwrap();
                             }
