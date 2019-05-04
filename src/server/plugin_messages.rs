@@ -1,10 +1,10 @@
 
 use std::collections::HashMap;
+use std::io;
 
-use crate::protocol::Serializable;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
-use crate::protocol::VarInt;
+use crate::protocol::{Serializable, VarInt, Error};
 
 #[derive(Debug)]
 pub enum FmlHs<'a> {
@@ -31,6 +31,49 @@ pub enum FmlHs<'a> {
     HandshakeReset,
 }
 
+impl<'a> Serializable for FmlHs<'a> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        // https://wiki.vg/Minecraft_Forge_Handshake
+        let discriminator: u8 = Serializable::read_from(buf)?;
+
+        match discriminator {
+            0 => {
+                // ServerHello
+                let fml_protocol_version: i8 = Serializable::read_from(buf)?;
+                let override_dimension = if fml_protocol_version > 1 {
+                    let dimension: i32 = Serializable::read_from(buf)?;
+                    Some(dimension)
+                } else {
+                    None
+                };
+
+                println!("FML|HS ServerHello: fml_protocol_version={}, override_dimension={:?}", fml_protocol_version, override_dimension);
+
+                Ok(FmlHs::ServerHello {
+                    fml_protocol_version,
+                    override_dimension,
+                })
+            },
+            1 => panic!("Received unexpected FML|HS ClientHello from server"),
+            2 => {
+                //TODO let number_of_mods = VarInt::read_from(&mut data[1..].to_vec());
+                let mods: HashMap<&'a str, &'a str> = HashMap::new();
+                // TODO: read mods
+
+                Ok(FmlHs::ModList {
+                    mods,
+                })
+            },
+            _ => panic!("Unhandled FML|HS packet: discriminator={}", discriminator),
+        }
+    }
+
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
 impl<'a> FmlHs<'a> {
     pub fn as_message(&'a self) -> Vec<u8> {
         match self {
@@ -46,45 +89,6 @@ impl<'a> FmlHs<'a> {
                 buf
             },
             _ => unimplemented!()
-        }
-    }
-
-    pub fn from_message(data: &[u8]) -> FmlHs<'a> {
-        // https://wiki.vg/Minecraft_Forge_Handshake
-        let discriminator = data[0];
-
-        match discriminator {
-            0 => {
-                // ServerHello
-                let fml_protocol_version = data[1] as i8;
-                let override_dimension = if fml_protocol_version > 1 {
-                    use byteorder::{BigEndian, ReadBytesExt};
-                    let dimension = (&data[2..2 + 4]).read_i32::<BigEndian>().unwrap();
-                    Some(dimension)
-                } else {
-                    None
-                };
-
-                println!("FML|HS ServerHello: fml_protocol_version={}, override_dimension={:?}", fml_protocol_version, override_dimension);
-
-                FmlHs::ServerHello {
-                    fml_protocol_version,
-                    override_dimension,
-                }
-            },
-            1 => panic!("Received unexpected FML|HS ClientHello from server"),
-            2 => {
-                //TODO let number_of_mods = VarInt::read_from(&mut data[1..].to_vec());
-                let mods: HashMap<&'a str, &'a str> = HashMap::new();
-                // TODO: read mods
-
-                FmlHs::ModList {
-                    mods,
-                }
-            },
-            _ => {
-                panic!("Unhandled FML|HS packet: discriminator={}", discriminator);
-            }
         }
     }
 }

@@ -684,7 +684,8 @@ impl Server {
             // TODO: "REGISTER" => 
             // TODO: "UNREGISTER" =>
             "FML|HS" => {
-                let msg = plugin_messages::FmlHs::from_message(&data);
+                //let msg = plugin_messages::FmlHs::from_message(&data);
+                let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data)).unwrap();
                 println!("FML|HS msg={:?}", msg);
                 match msg {
                     plugin_messages::FmlHs::ServerHello { fml_protocol_version, override_dimension } => {
