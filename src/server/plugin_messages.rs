@@ -9,20 +9,20 @@ use crate::protocol::{Serializable, Error, LenPrefixed, VarInt};
 
 #[derive(Debug, Default)]
 pub struct ForgeMod {
-    name: String,
-    version: String,
+    pub modid: String,
+    pub version: String,
 }
 
 impl Serializable for ForgeMod {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(ForgeMod {
-            name: Serializable::read_from(buf)?,
+            modid: Serializable::read_from(buf)?,
             version: Serializable::read_from(buf)?,
         })
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        self.name.write_to(buf)?;
+        self.modid.write_to(buf)?;
         self.version.write_to(buf)
     }
 }
