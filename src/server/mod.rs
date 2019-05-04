@@ -692,15 +692,24 @@ impl Server {
                         println!("Received FML|HS ServerHello {} {:?}", fml_protocol_version, override_dimension);
 
                         self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
-                        self.write_plugin_message("FML|HS", &plugin_messages::FmlHs::ClientHello { fml_protocol_version }.as_message());
+                        self.write_fmlhs_plugin_message(&plugin_messages::FmlHs::ClientHello { fml_protocol_version });
                         let mods: crate::protocol::LenPrefixed<crate::protocol::VarInt, plugin_messages::Mod> = Default::default();
-                        self.write_plugin_message("FML|HS", &plugin_messages::FmlHs::ModList { mods }.as_message());
+                        self.write_fmlhs_plugin_message(&plugin_messages::FmlHs::ModList { mods });
                     },
                     _ => (),
                 }
             }
             _ => ()
         }
+    }
+
+    fn write_fmlhs_plugin_message(&mut self, msg: &plugin_messages::FmlHs) {
+        use crate::protocol::Serializable;
+
+        let mut buf: Vec<u8> = vec![];
+        msg.write_to(&mut buf).unwrap();
+
+        self.write_plugin_message("FML|HS", &buf);
     }
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {

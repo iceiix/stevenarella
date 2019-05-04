@@ -103,15 +103,6 @@ impl<'a> Serializable for FmlHs<'a> {
     }
 }
 
-impl<'a> FmlHs<'a> {
-    // TODO: remove this wrapper and call write_to directly
-    pub fn as_message(&'a self) -> Vec<u8> {
-        let mut buf: Vec<u8> = vec![];
-        self.write_to(&mut buf).unwrap();
-        buf
-    }
-}
-
 pub struct Brand {
     pub brand: String,
 }
