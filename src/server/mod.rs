@@ -701,6 +701,7 @@ impl Server {
     }
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
+        println!("Sending plugin message: channel={}, data={:?}", channel, data);
         if self.protocol_version >= 47 {
             self.write_packet(packet::play::serverbound::PluginMessageServerbound {
                 channel: channel.to_string(),

@@ -34,7 +34,7 @@ impl<'a> FmlHs<'a> {
     pub fn as_message(&'a self) -> Vec<u8> {
         match self {
             FmlHs::ClientHello { fml_protocol_version } => {
-                vec![*fml_protocol_version as u8]
+                vec![1, *fml_protocol_version as u8]
             },
             _ => unimplemented!()
         }
