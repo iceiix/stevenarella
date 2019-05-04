@@ -1,10 +1,11 @@
 
 use std::collections::HashMap;
 use std::io;
+use byteorder::WriteBytesExt;
 
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
-use crate::protocol::{Serializable, VarInt, Error};
+use crate::protocol::{Serializable, Error};
 
 #[derive(Debug)]
 pub enum FmlHs<'a> {
@@ -70,26 +71,30 @@ impl<'a> Serializable for FmlHs<'a> {
 
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        unimplemented!()
+        match self {
+            FmlHs::ClientHello { fml_protocol_version } => {
+                buf.write_u8(1)?;
+                fml_protocol_version.write_to(buf)
+            },
+            FmlHs::ModList { mods } => {
+                buf.write_u8(2)?;
+                Ok(())
+
+                //let number_of_mods = VarInt(mods.len() as i32);
+                //number_of_mods.write_to(&mut buf).unwrap();
+                // TODO: write mods
+            },
+            _ => unimplemented!()
+        }
     }
 }
 
 impl<'a> FmlHs<'a> {
+    // TODO: remove this wrapper and call write_to directly
     pub fn as_message(&'a self) -> Vec<u8> {
-        match self {
-            FmlHs::ClientHello { fml_protocol_version } => {
-                vec![1, *fml_protocol_version as u8]
-            },
-            FmlHs::ModList { mods } => {
-                let mut buf = vec![2];
-                let number_of_mods = VarInt(mods.len() as i32);
-                number_of_mods.write_to(&mut buf).unwrap();
-                // TODO: write mods
-
-                buf
-            },
-            _ => unimplemented!()
-        }
+        let mut buf: Vec<u8> = vec![];
+        self.write_to(&mut buf).unwrap();
+        buf
     }
 }
 
