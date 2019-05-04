@@ -322,6 +322,14 @@ impl Metadata {
                 }
                 15 => panic!("TODO: particle"),
                 16 => m.put_raw(index, VillagerData::read_from(buf)?),
+                17 => {
+                    if bool::read_from(buf)? {
+                        m.put_raw(index, Option::<protocol::VarInt>::read_from(buf)?);
+                    } else {
+                        m.put_raw::<Option<protocol::VarInt>>(index, None);
+                    }
+                },
+                18 => m.put_raw(index, PoseData::read_from(buf)?),
                 _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
             }
         }
@@ -405,6 +413,14 @@ impl Metadata {
                     u8::write_to(&16, buf)?;
                     val.write_to(buf)?;
                 }
+                Value::OptionalVarInt(ref val) => {
+                    u8::write_to(&17, buf)?;
+                    val.write_to(buf)?;
+                }
+                Value::Pose(ref val) => {
+                    u8::write_to(&18, buf)?;
+                    val.write_to(buf)?;
+                }
                 _ => panic!("unexpected metadata"),
             }
         }
@@ -478,6 +494,8 @@ pub enum Value {
     NBTTag(nbt::NamedTag),
     Particle(ParticleData),
     Villager(VillagerData),
+    OptionalVarInt(Option<protocol::VarInt>),
+    Pose(PoseData),
 }
 
 #[derive(Debug)]
@@ -638,6 +656,38 @@ impl Serializable for VillagerData {
         unimplemented!()
     }
 }
+
+#[derive(Debug)]
+pub enum PoseData {
+    Standing,
+    FallFlying,
+    Sleeping,
+    Swimming,
+    SpinAttack,
+    Sneaking,
+    Dying,
+}
+
+impl Serializable for PoseData {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+        let n = protocol::VarInt::read_from(buf)?;
+        Ok(match n.0 {
+            0 => PoseData::Standing,
+            1 => PoseData::FallFlying,
+            2 => PoseData::Sleeping,
+            3 => PoseData::Swimming,
+            4 => PoseData::SpinAttack,
+            5 => PoseData::Sneaking,
+            6 => PoseData::Dying,
+            _ => panic!("unknown pose data: {}", n.0),
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), protocol::Error> {
+        unimplemented!()
+    }
+}
+
 
 
 pub trait MetaValue {
@@ -861,6 +911,31 @@ impl MetaValue for VillagerData {
         Value::Villager(self)
     }
 }
+
+impl MetaValue for Option<protocol::VarInt> {
+    fn unwrap(value: &Value) -> &Self {
+        match *value {
+            Value::OptionalVarInt(ref val) => val,
+            _ => panic!("incorrect key"),
+        }
+    }
+    fn wrap(self) -> Value {
+        Value::OptionalVarInt(self)
+    }
+}
+
+impl MetaValue for PoseData {
+    fn unwrap(value: &Value) -> &Self {
+        match *value {
+            Value::Pose(ref val) => val,
+            _ => panic!("incorrect key"),
+        }
+    }
+    fn wrap(self) -> Value {
+        Value::Pose(self)
+    }
+}
+
 
 #[cfg(test)]
 mod test {
