@@ -5,7 +5,27 @@ use byteorder::WriteBytesExt;
 
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
-use crate::protocol::{Serializable, Error};
+use crate::protocol::{Serializable, Error, LenPrefixed, VarInt};
+
+#[derive(Debug, Default)]
+pub struct Mod {
+    name: String,
+    version: String,
+}
+
+impl Serializable for Mod {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(Mod {
+            name: Serializable::read_from(buf)?,
+            version: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.name.write_to(buf)?;
+        self.version.write_to(buf)
+    }
+}
 
 #[derive(Debug)]
 pub enum FmlHs<'a> {
@@ -17,7 +37,7 @@ pub enum FmlHs<'a> {
         fml_protocol_version: i8,
     },
     ModList {
-        mods: HashMap<&'a str, &'a str>,
+        mods: LenPrefixed<VarInt, Mod>,
     },
     RegistryData {
         has_more: bool,
@@ -57,9 +77,7 @@ impl<'a> Serializable for FmlHs<'a> {
             },
             1 => panic!("Received unexpected FML|HS ClientHello from server"),
             2 => {
-                //TODO let number_of_mods = VarInt::read_from(&mut data[1..].to_vec());
-                let mods: HashMap<&'a str, &'a str> = HashMap::new();
-                // TODO: read mods
+                let mods: LenPrefixed<VarInt, Mod> = Serializable::read_from(buf)?;
 
                 Ok(FmlHs::ModList {
                     mods,
@@ -78,11 +96,7 @@ impl<'a> Serializable for FmlHs<'a> {
             },
             FmlHs::ModList { mods } => {
                 buf.write_u8(2)?;
-                Ok(())
-
-                //let number_of_mods = VarInt(mods.len() as i32);
-                //number_of_mods.write_to(&mut buf).unwrap();
-                // TODO: write mods
+                mods.write_to(buf)
             },
             _ => unimplemented!()
         }
