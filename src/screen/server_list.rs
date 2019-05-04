@@ -17,7 +17,6 @@ use std::thread;
 use std::sync::mpsc;
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
 
 use crate::ui;
 use crate::render;
@@ -37,7 +36,6 @@ pub struct ServerList {
     disconnect_reason: Option<Component>,
 
     needs_reload: Rc<RefCell<bool>>,
-    server_protocol_versions: HashMap<String, i32>,
 }
 
 struct UIElements {
@@ -70,7 +68,6 @@ struct Server {
 }
 
 struct PingInfo {
-    address: String, 
     motd: format::Component,
     ping: Duration,
     exists: bool,
@@ -98,7 +95,6 @@ impl ServerList {
             elements: None,
             disconnect_reason,
             needs_reload: Rc::new(RefCell::new(false)),
-            server_protocol_versions: HashMap::new(),
         }
     }
 
@@ -276,7 +272,6 @@ impl ServerList {
                             None
                         };
                         drop(send.send(PingInfo {
-                            address,
                             motd: desc,
                             ping: res.1,
                             exists: true,
@@ -293,7 +288,6 @@ impl ServerList {
                         let mut msg = TextComponent::new(&e);
                         msg.modifier.color = Some(format::Color::Red);
                         let _ = send.send(PingInfo {
-                            address,
                             motd: Component::Text(msg),
                             ping: Duration::new(99999, 0),
                             exists: false,
@@ -497,20 +491,13 @@ impl super::Screen for ServerList {
                                     format!("Out of date {}/{}", res.online, res.max)
                                 };
                                 players.text = txt;
-
-                                // TODO: store in memory instead of disk? but where?
-                                self.server_protocol_versions.insert(res.address, res.protocol_version);
-                                if res.forge_mods.len() > 0 {
-                                    println!("Forge mods installed on server: {:?}", res.forge_mods);
-                                }
-                                let mut out = fs::File::create("server_versions.json").unwrap();
-                                serde_json::to_writer_pretty(&mut out, &self.server_protocol_versions).unwrap();
                             }
                             let mut txt = TextComponent::new(&res.protocol_name);
                             txt.modifier.color = Some(format::Color::Yellow);
                             let mut msg = Component::Text(txt);
                             format::convert_legacy(&mut msg);
                             s.version.borrow_mut().set_text(msg);
+                            // TODO: show number of forge_mods
                         }
                         if let Some(favicon) = res.favicon {
                             let name: String = std::iter::repeat(()).map(|()| rand::thread_rng()
