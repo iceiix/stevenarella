@@ -71,8 +71,16 @@ impl<'a> FmlHs<'a> {
                     fml_protocol_version,
                     override_dimension,
                 }
+            },
+            1 => panic!("Received unexpected FML|HS ClientHello from server"),
+            2 => {
+                //TODO let number_of_mods = VarInt::read_from(&mut data[1..].to_vec());
+                let mods: HashMap<&'a str, &'a str> = HashMap::new();
+                // TODO: read mods
 
-                // TODO: send reply
+                FmlHs::ModList {
+                    mods,
+                }
             },
             _ => {
                 panic!("Unhandled FML|HS packet: discriminator={}", discriminator);
