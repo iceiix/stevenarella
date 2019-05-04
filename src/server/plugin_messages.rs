@@ -31,6 +31,15 @@ pub enum FmlHs<'a> {
 }
 
 impl<'a> FmlHs<'a> {
+    pub fn as_message(&'a self) -> Vec<u8> {
+        match self {
+            FmlHs::ClientHello { fml_protocol_version } => {
+                vec![*fml_protocol_version as u8]
+            },
+            _ => unimplemented!()
+        }
+    }
+
     pub fn from_message(data: &[u8]) -> FmlHs<'a> {
         // https://wiki.vg/Minecraft_Forge_Handshake
         let discriminator = data[0];

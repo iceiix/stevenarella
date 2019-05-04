@@ -686,8 +686,31 @@ impl Server {
             "FML|HS" => {
                 let msg = plugin_messages::FmlHs::from_message(&data);
                 println!("FML|HS msg={:?}", msg);
+                match msg {
+                    plugin_messages::FmlHs::ServerHello { fml_protocol_version, override_dimension } => {
+                        println!("Received FML|HS ServerHello {} {:?}", fml_protocol_version, override_dimension);
+
+                        self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
+                        self.write_plugin_message("FML|HS", &plugin_messages::FmlHs::ClientHello { fml_protocol_version }.as_message());
+                    },
+                    _ => (),
+                }
             }
             _ => ()
+        }
+    }
+
+    fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
+        if self.protocol_version >= 47 {
+            self.write_packet(packet::play::serverbound::PluginMessageServerbound {
+                channel: channel.to_string(),
+                data: data.to_vec(),
+            });
+        } else {
+            self.write_packet(packet::play::serverbound::PluginMessageServerbound_i16 {
+                channel: channel.to_string(),
+                data: crate::protocol::LenPrefixedBytes::<i16>::new(data.to_vec()),
+            });
         }
     }
 
@@ -726,6 +749,7 @@ impl Server {
         let brand = plugin_messages::Brand {
                 brand: "Steven".into(),
             };
+        // TODO: refactor with write_plugin_message
         if self.protocol_version >= 47 {
             self.write_packet(brand.as_message());
         } else {
