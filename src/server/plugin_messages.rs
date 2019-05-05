@@ -7,7 +7,7 @@ use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
 use crate::protocol::{Serializable, Error, LenPrefixed, VarInt};
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ForgeMod {
     pub modid: String,
     pub version: String,

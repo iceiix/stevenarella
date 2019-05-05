@@ -110,7 +110,7 @@ impl Game {
             access_token: self.vars.get(auth::AUTH_TOKEN).clone(),
         };
         thread::spawn(move || {
-            tx.send(server::Server::connect(resources, profile, &address, protocol_version)).unwrap();
+            tx.send(server::Server::connect(resources, profile, &address, protocol_version, forge_mods)).unwrap();
         });
     }
 

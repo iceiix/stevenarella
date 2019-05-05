@@ -42,6 +42,7 @@ pub struct Server {
     uuid: protocol::UUID,
     conn: Option<protocol::Conn>,
     protocol_version: i32,
+    forge_mods: Vec<crate::server::plugin_messages::ForgeMod>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub disconnect_reason: Option<format::Component>,
     just_disconnected: bool,
@@ -104,7 +105,7 @@ macro_rules! handle_packet {
 
 impl Server {
 
-    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32) -> Result<Server, protocol::Error> {
+    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32, forge_mods: Vec<crate::server::plugin_messages::ForgeMod>) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
         let host = conn.host.clone();
@@ -147,7 +148,7 @@ impl Server {
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
-                    return Ok(Server::new(protocol_version, protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
+                    return Ok(Server::new(protocol_version, forge_mods, protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
                 }
                 protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
                 val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
@@ -205,7 +206,7 @@ impl Server {
 
         let rx = Self::spawn_reader(read);
 
-        Ok(Server::new(protocol_version, protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
+        Ok(Server::new(protocol_version, forge_mods, protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
     }
 
     fn spawn_reader(mut read: protocol::Conn) -> mpsc::Receiver<Result<packet::Packet, protocol::Error>> {
@@ -226,7 +227,7 @@ impl Server {
     }
 
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>) -> Server {
-        let mut server = Server::new(protocol::SUPPORTED_PROTOCOLS[0], protocol::UUID::default(), resources, None, None);
+        let mut server = Server::new(protocol::SUPPORTED_PROTOCOLS[0], vec![], protocol::UUID::default(), resources, None, None);
         let mut rng = rand::thread_rng();
         for x in -7*16 .. 7*16 {
             for z in -7*16 .. 7*16 {
@@ -263,6 +264,7 @@ impl Server {
 
     fn new(
         protocol_version: i32,
+        forge_mods: Vec<crate::server::plugin_messages::ForgeMod>,
         uuid: protocol::UUID,
         resources: Arc<RwLock<resources::Manager>>,
         conn: Option<protocol::Conn>, read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>
@@ -279,6 +281,7 @@ impl Server {
             uuid,
             conn,
             protocol_version,
+            forge_mods,
             read_queue,
             disconnect_reason: None,
             just_disconnected: false,
@@ -693,7 +696,8 @@ impl Server {
 
                         self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
                         self.write_fmlhs_plugin_message(&plugin_messages::FmlHs::ClientHello { fml_protocol_version });
-                        let mods: crate::protocol::LenPrefixed<crate::protocol::VarInt, plugin_messages::ForgeMod> = Default::default();
+                        // Send stashed mods list received from ping packet, client matching server
+                        let mods = crate::protocol::LenPrefixed::<crate::protocol::VarInt, plugin_messages::ForgeMod>::new(self.forge_mods.clone());
                         self.write_fmlhs_plugin_message(&plugin_messages::FmlHs::ModList { mods });
                     },
                     _ => (),
