@@ -18,6 +18,8 @@ use std::time::{Instant, Duration};
 use log::{info, warn};
 extern crate steven_shared as shared;
 
+use structopt::StructOpt;
+
 #[macro_use]
 pub mod macros;
 
@@ -163,6 +165,14 @@ impl Game {
     }
 }
 
+#[derive(StructOpt, Debug)]
+#[structopt(name = "basic")]
+struct Opt {
+    /// Server to connect to
+    #[structopt(short = "s", long = "server")]
+    server: Option<String>,
+}
+
 cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         extern crate console_error_panic_hook;
@@ -175,6 +185,8 @@ cfg_if! {
 
 #[wasm_bindgen]
 pub fn main() {
+    let opt = Opt::from_args();
+
     set_panic_hook();
     std::env::set_var("RUST_BACKTRACE", "1");
 
@@ -226,14 +238,16 @@ pub fn main() {
     let frame_time = 1e9f64 / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
-    }
+    if opt.server.is_none() {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
+        }
 
-    #[cfg(target_arch = "wasm32")]
-    {
-        screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
+        #[cfg(target_arch = "wasm32")]
+        {
+            screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
+        }
     }
 
     let textures = renderer.get_textures();
@@ -258,6 +272,10 @@ pub fn main() {
         is_fullscreen: false,
     };
     game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
+
+    if opt.server.is_some() {
+        game.connect_to(&opt.server.unwrap());
+    }
 
     let mut last_resource_version = 0;
     while !game.should_close {
