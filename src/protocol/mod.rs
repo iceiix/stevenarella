@@ -836,6 +836,7 @@ impl Conn {
     pub fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
         unsafe {
             CURRENT_PROTOCOL_VERSION = protocol_version;
+            println!("XXX set CURRENT_PROTOCOL_VERSION = {} {}", protocol_version, CURRENT_PROTOCOL_VERSION);
         }
 
         // TODO SRV record support
