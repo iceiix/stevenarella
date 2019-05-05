@@ -78,6 +78,7 @@ pub struct Game {
 
     connect_reply: Option<mpsc::Receiver<Result<server::Server, protocol::Error>>>,
     protocol_version: i32,
+    forge_mods: Vec<crate::server::plugin_messages::ForgeMod>,
 
     dpi_factor: f64,
     last_mouse_x: f64,
@@ -89,17 +90,19 @@ pub struct Game {
 
 impl Game {
     pub fn connect_to(&mut self, address: &str) {
-        let protocol_version = match protocol::Conn::new(&address, protocol::SUPPORTED_PROTOCOLS[0]).and_then(|conn| conn.do_status()) {
-            Ok(res) => {
-                info!("Detected server protocol version {}", res.0.version.protocol);
-                res.0.version.protocol
-            },
-            Err(err) => {
-                warn!("Error pinging server {} to get protocol version: {:?}, defaulting to {}", address, err, protocol::SUPPORTED_PROTOCOLS[0]);
-                protocol::SUPPORTED_PROTOCOLS[0]
-            },
-        };
+        let (protocol_version, forge_mods) = match protocol::Conn::new(&address, protocol::SUPPORTED_PROTOCOLS[0])
+            .and_then(|conn| conn.do_status()) {
+                Ok(res) => {
+                    info!("Detected server protocol version {}", res.0.version.protocol);
+                    (res.0.version.protocol, res.0.forge_mods)
+                },
+                Err(err) => {
+                    warn!("Error pinging server {} to get protocol version: {:?}, defaulting to {}", address, err, protocol::SUPPORTED_PROTOCOLS[0]);
+                    (protocol::SUPPORTED_PROTOCOLS[0], vec![])
+                },
+            };
         self.protocol_version = protocol_version;
+        self.forge_mods = forge_mods;
 
         let (tx, rx) = mpsc::channel();
         self.connect_reply = Some(rx);
@@ -264,6 +267,7 @@ pub fn main() {
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
         protocol_version: protocol::SUPPORTED_PROTOCOLS[0],
+        forge_mods: vec![],
         dpi_factor,
         last_mouse_x: 0.0,
         last_mouse_y: 0.0,
