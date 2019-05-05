@@ -171,10 +171,6 @@ struct Opt {
     /// Server to connect to
     #[structopt(short = "s", long = "server")]
     server: Option<String>,
-
-    /// Server protocol version
-    #[structopt(short = "p", long = "protocol-version")]
-    protocol_version: Option<i32>,
 }
 
 cfg_if! {
@@ -266,7 +262,7 @@ pub fn main() {
         should_close: false,
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
-        protocol_version: opt.protocol_version.unwrap_or(protocol::SUPPORTED_PROTOCOLS[0]),
+        protocol_version: protocol::SUPPORTED_PROTOCOLS[0],
         dpi_factor,
         last_mouse_x: 0.0,
         last_mouse_y: 0.0,
