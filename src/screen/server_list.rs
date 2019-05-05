@@ -492,7 +492,9 @@ impl super::Screen for ServerList {
                                 };
                                 players.text = txt;
                             }
-                            let mut txt = TextComponent::new(&res.protocol_name);
+                            let sm = format!("{} mods + {}", res.forge_mods.len(), res.protocol_name);
+                            let st = if res.forge_mods.len() > 0 { &sm } else { &res.protocol_name };
+                            let mut txt = TextComponent::new(&st);
                             txt.modifier.color = Some(format::Color::Yellow);
                             let mut msg = Component::Text(txt);
                             format::convert_legacy(&mut msg);
