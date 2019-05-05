@@ -7,6 +7,40 @@ use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
 use crate::protocol::{Serializable, Error, LenPrefixed, VarInt};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase {
+    Start,
+    WaitingServerData,
+    WaitingServerComplete,
+    PendingComplete,
+    Complete,
+}
+
+impl Serializable for Phase {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let phase: i8 = Serializable::read_from(buf)?;
+        Ok(match phase {
+            2 => Phase::WaitingServerData,
+            3 => Phase::WaitingServerComplete,
+            4 => Phase::PendingComplete,
+            5 => Phase::Complete,
+            _ => panic!("bad FML|HS phase: {}", phase),
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        buf.write_u8(match self {
+            Phase::Start => panic!("attempted to send FML|HS start unexpectedly soon"),
+            Phase::WaitingServerData => 2,
+            Phase::WaitingServerComplete => 3,
+            Phase::PendingComplete => 4,
+            Phase::Complete => 5,
+        })?;
+        Ok(())
+    }
+}
+
+
 #[derive(Clone, Debug, Default)]
 pub struct ForgeMod {
     pub modid: String,
@@ -47,7 +81,7 @@ pub enum FmlHs<'a> {
         dummies: Vec<&'a str>,
     },
     HandshakeAck {
-        phase: i8,
+        phase: Phase,
     },
     HandshakeReset,
 }
@@ -97,6 +131,10 @@ impl<'a> Serializable for FmlHs<'a> {
             FmlHs::ModList { mods } => {
                 buf.write_u8(2)?;
                 mods.write_to(buf)
+            },
+            FmlHs::HandshakeAck { phase } => {
+                buf.write_u8(255)?;
+                phase.write_to(buf)
             },
             _ => unimplemented!()
         }
