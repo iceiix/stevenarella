@@ -1,5 +1,4 @@
 
-use std::collections::HashMap;
 use std::io;
 use byteorder::WriteBytesExt;
 
@@ -62,7 +61,27 @@ impl Serializable for ForgeMod {
 }
 
 #[derive(Debug)]
-pub enum FmlHs<'a> {
+pub struct Id {
+    pub name: String,
+    pub id: VarInt,
+}
+
+impl Serializable for Id {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(Id {
+            name: Serializable::read_from(buf)?,
+            id: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.name.write_to(buf)?;
+        self.id.write_to(buf)
+    }
+}
+
+#[derive(Debug)]
+pub enum FmlHs {
     ServerHello {
         fml_protocol_version: i8,
         override_dimension: Option<i32>,
@@ -76,9 +95,9 @@ pub enum FmlHs<'a> {
     RegistryData {
         has_more: bool,
         name: String,
-        ids: HashMap<&'a str, i32>,
-        substitutions: Vec<&'a str>,
-        dummies: Vec<&'a str>,
+        ids: LenPrefixed<VarInt, Id>,
+        substitutions: LenPrefixed<VarInt, String>,
+        dummies: LenPrefixed<VarInt, String>,
     },
     HandshakeAck {
         phase: Phase,
@@ -86,7 +105,7 @@ pub enum FmlHs<'a> {
     HandshakeReset,
 }
 
-impl<'a> Serializable for FmlHs<'a> {
+impl Serializable for FmlHs {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         // https://wiki.vg/Minecraft_Forge_Handshake
         let discriminator: u8 = Serializable::read_from(buf)?;
@@ -111,10 +130,17 @@ impl<'a> Serializable for FmlHs<'a> {
             },
             1 => panic!("Received unexpected FML|HS ClientHello from server"),
             2 => {
-                let mods: LenPrefixed<VarInt, ForgeMod> = Serializable::read_from(buf)?;
-
                 Ok(FmlHs::ModList {
-                    mods,
+                    mods: Serializable::read_from(buf)?,
+                })
+            },
+            3 => {
+                Ok(FmlHs::RegistryData {
+                    has_more: Serializable::read_from(buf)?,
+                    name: Serializable::read_from(buf)?,
+                    ids: Serializable::read_from(buf)?,
+                    substitutions: Serializable::read_from(buf)?,
+                    dummies: Serializable::read_from(buf)?, 
                 })
             },
             _ => panic!("Unhandled FML|HS packet: discriminator={}", discriminator),
