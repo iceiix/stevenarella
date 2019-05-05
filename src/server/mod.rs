@@ -716,6 +716,27 @@ impl Server {
 
                         self.fmlhs_state = WaitingServerComplete;
                     },
+                    ModIdData { mappings: _, block_substitutions: _, item_substitutions: _ } => {
+                        assert!(self.fmlhs_state == WaitingServerComplete);
+
+                        self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
+
+                        self.fmlhs_state = PendingComplete;
+                    },
+                    HandshakeAck { phase } => {
+                        match phase {
+                            WaitingCAck => {
+                                assert!(self.fmlhs_state == PendingComplete);
+                                self.write_fmlhs_plugin_message(&HandshakeAck { phase: PendingComplete });
+                                self.fmlhs_state = Complete;
+                            },
+                            Complete => {
+                                assert!(self.fmlhs_state == Complete);
+                                println!("FML|HS handshake complete!");
+                            },
+                            _ => unimplemented!(),
+                        }
+                    },
                     _ => (),
                 }
             }
