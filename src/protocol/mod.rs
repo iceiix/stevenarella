@@ -837,7 +837,6 @@ impl Conn {
         unsafe {
             CURRENT_PROTOCOL_VERSION = protocol_version;
         }
-        println!("XXX set CURRENT_PROTOCOL_VERSION = {}", protocol_version);
 
         // TODO SRV record support
         let mut parts = target.split(':').collect::<Vec<&str>>();
@@ -924,10 +923,7 @@ impl Conn {
             Direction::Serverbound => Direction::Clientbound,
         };
 
-        println!("about to parse id={:x}, dir={:?} state={:?}", id, dir, self.state);
-        std::fs::File::create("/tmp/p")?.write_all(buf.get_ref())?;
         let packet = packet::packet_by_id(self.protocol_version, self.state, dir, id, &mut buf)?;
-        println!("packet = {:?}", packet);
 
         match packet {
             Some(val) => {

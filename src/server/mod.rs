@@ -105,7 +105,6 @@ macro_rules! handle_packet {
 impl Server {
 
     pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32) -> Result<Server, protocol::Error> {
-        println!("XXX connect() called with protocol_version={:?}", protocol_version);
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
         let host = conn.host.clone();

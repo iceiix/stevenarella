@@ -186,7 +186,6 @@ cfg_if! {
 #[wasm_bindgen]
 pub fn main() {
     let opt = Opt::from_args();
-    println!("opt={:?}", opt);
 
     set_panic_hook();
     std::env::set_var("RUST_BACKTRACE", "1");
