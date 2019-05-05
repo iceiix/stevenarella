@@ -8,32 +8,38 @@ use crate::protocol::{Serializable, Error, LenPrefixed, VarInt};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase {
+    // Client handshake states (written)
     Start,
     WaitingServerData,
     WaitingServerComplete,
     PendingComplete,
+
+    // Server handshake states (read)
+    WaitingCAck,
+
+    // Both client and server handshake states (different values on the wire)
     Complete,
 }
 
 impl Serializable for Phase {
+    /// Read server handshake state from server
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         let phase: i8 = Serializable::read_from(buf)?;
         Ok(match phase {
-            2 => Phase::WaitingServerData,
-            3 => Phase::WaitingServerComplete,
-            4 => Phase::PendingComplete,
-            5 => Phase::Complete,
-            _ => panic!("bad FML|HS phase: {}", phase),
+            2 => Phase::WaitingCAck,
+            3 => Phase::Complete,
+            _ => panic!("bad FML|HS server phase: {}", phase),
         })
     }
 
+    /// Send client handshake state from client
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         buf.write_u8(match self {
-            Phase::Start => panic!("attempted to send FML|HS start unexpectedly soon"),
             Phase::WaitingServerData => 2,
             Phase::WaitingServerComplete => 3,
             Phase::PendingComplete => 4,
             Phase::Complete => 5,
+            _ => panic!("bad FML|HS client phase: {:?}", self),
         })?;
         Ok(())
     }
@@ -146,6 +152,11 @@ impl Serializable for FmlHs {
                     mappings: Serializable::read_from(buf)?,
                     block_substitutions: Serializable::read_from(buf)?,
                     item_substitutions: Serializable::read_from(buf)?, 
+                })
+            },
+            255 => {
+                Ok(FmlHs::HandshakeAck {
+                    phase: Serializable::read_from(buf)?,
                 })
             },
             _ => panic!("Unhandled FML|HS packet: discriminator={}", discriminator),
