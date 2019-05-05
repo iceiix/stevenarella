@@ -690,8 +690,9 @@ impl Server {
                 //let msg = plugin_messages::FmlHs::from_message(&data);
                 let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data)).unwrap();
                 println!("FML|HS msg={:?}", msg);
+                use plugin_messages::FmlHs::*;
                 match msg {
-                    plugin_messages::FmlHs::ServerHello { fml_protocol_version, override_dimension } => {
+                    ServerHello { fml_protocol_version, override_dimension } => {
                         println!("Received FML|HS ServerHello {} {:?}", fml_protocol_version, override_dimension);
 
                         self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
@@ -699,6 +700,10 @@ impl Server {
                         // Send stashed mods list received from ping packet, client matching server
                         let mods = crate::protocol::LenPrefixed::<crate::protocol::VarInt, plugin_messages::ForgeMod>::new(self.forge_mods.clone());
                         self.write_fmlhs_plugin_message(&plugin_messages::FmlHs::ModList { mods });
+                    },
+                    ModList { mods } => {
+                        println!("Received FML|HS ModList: {:?}", mods);
+                        // TODO: client sends HandshakeAck
                     },
                     _ => (),
                 }
