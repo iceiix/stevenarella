@@ -42,6 +42,7 @@ pub const SUPPORTED_PROTOCOLS: [i32; 13] = [477, 452, 451, 404, 340, 316, 315, 2
 
 // TODO: switch to using thread_local storage?, see https://doc.rust-lang.org/std/macro.thread_local.html
 pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
+pub static mut NETWORK_DEBUG: bool = false;
 
 /// Helper macro for defining packets
 #[macro_export]
@@ -923,7 +924,18 @@ impl Conn {
             Direction::Serverbound => Direction::Clientbound,
         };
 
+        let network_debug = unsafe { NETWORK_DEBUG };
+
+        if network_debug {
+            println!("about to parse id={:x}, dir={:?} state={:?}", id, dir, self.state);
+            std::fs::File::create("last-packet")?.write_all(buf.get_ref())?;
+        }
+
         let packet = packet::packet_by_id(self.protocol_version, self.state, dir, id, &mut buf)?;
+
+        if network_debug {
+            println!("packet = {:?}", packet);
+        }
 
         match packet {
             Some(val) => {

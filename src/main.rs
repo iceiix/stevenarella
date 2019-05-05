@@ -166,11 +166,15 @@ impl Game {
 }
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "basic")]
+#[structopt(name = "Stevenarella")]
 struct Opt {
     /// Server to connect to
     #[structopt(short = "s", long = "server")]
     server: Option<String>,
+
+    /// Log decoded packets received from network
+    #[structopt(short = "n", long = "network-debug")]
+    network_debug: bool,
 }
 
 cfg_if! {
@@ -272,6 +276,10 @@ pub fn main() {
         is_fullscreen: false,
     };
     game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
+
+    if opt.network_debug {
+        unsafe { protocol::NETWORK_DEBUG = true; }
+    }
 
     if opt.server.is_some() {
         game.connect_to(&opt.server.unwrap());
