@@ -239,14 +239,16 @@ pub fn main() {
     let frame_time = 1e9f64 / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
-    }
+    if opt.server.is_none() {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
+        }
 
-    #[cfg(target_arch = "wasm32")]
-    {
-        screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
+        #[cfg(target_arch = "wasm32")]
+        {
+            screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
+        }
     }
 
     let textures = renderer.get_textures();
