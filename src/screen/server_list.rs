@@ -499,7 +499,6 @@ impl super::Screen for ServerList {
                             let mut msg = Component::Text(txt);
                             format::convert_legacy(&mut msg);
                             s.version.borrow_mut().set_text(msg);
-                            // TODO: show number of forge_mods
                         }
                         if let Some(favicon) = res.favicon {
                             let name: String = std::iter::repeat(()).map(|()| rand::thread_rng()

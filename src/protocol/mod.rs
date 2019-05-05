@@ -1064,7 +1064,7 @@ impl Conn {
         let version = val.get("version").ok_or(invalid_status())?;
         let players = val.get("players").ok_or(invalid_status())?;
 
-        // TODO: Option<> to distinguish non-modded, vs no mods?
+        // For modded servers, get the list of Forge mods installed
         let mut forge_mods: std::vec::Vec<crate::server::plugin_messages::ForgeMod> = vec![];
         if let Some(modinfo) = val.get("modinfo") {
             if let Some(modinfo_type) = modinfo.get("type") {
