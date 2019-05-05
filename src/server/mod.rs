@@ -161,7 +161,10 @@ impl Server {
         let shared_e = rsa_public_encrypt_pkcs1::encrypt(&public_key, &shared).unwrap();
         let token_e = rsa_public_encrypt_pkcs1::encrypt(&public_key, &verify_token).unwrap();
 
-        profile.join_server(&server_id, &shared, &public_key)?;
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            profile.join_server(&server_id, &shared, &public_key)?;
+        }
 
         if protocol_version >= 47 {
             conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse {
@@ -385,6 +388,7 @@ impl Server {
                 match pck {
                     Ok(pck) => handle_packet!{
                         self pck {
+                            JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
                             JoinGame_i8_NoDebug => on_game_join_i8_nodebug,
@@ -661,6 +665,10 @@ impl Server {
         self.write_packet(packet::play::serverbound::KeepAliveServerbound_i32 {
             id: keep_alive.id,
         });
+    }
+
+    fn on_game_join_i32_viewdistance(&mut self, join: packet::play::clientbound::JoinGame_i32_ViewDistance) {
+        self.on_game_join(join.gamemode, join.entity_id)
     }
 
     fn on_game_join_i32(&mut self, join: packet::play::clientbound::JoinGame_i32) {

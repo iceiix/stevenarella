@@ -19,6 +19,7 @@ use aes::Aes128;
 use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use serde_json;
+#[cfg(not(target_arch = "wasm32"))]
 use reqwest;
 
 pub mod mojang;
@@ -37,7 +38,7 @@ use flate2::Compression;
 use std::time::{Instant, Duration};
 use crate::shared::Position;
 
-pub const SUPPORTED_PROTOCOLS: [i32; 12] = [404, 451, 452, 340, 316, 315, 210, 109, 107, 74, 47, 5];
+pub const SUPPORTED_PROTOCOLS: [i32; 13] = [477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
 
 // TODO: switch to using thread_local storage?, see https://doc.rust-lang.org/std/macro.thread_local.html
 pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
@@ -256,8 +257,9 @@ impl Serializable for String {
         let len = VarInt::read_from(buf)?.0;
         debug_assert!(len >= 0, "Negative string length: {}", len);
         debug_assert!(len <= 65536, "String length too big: {}", len);
-        let mut ret = String::new();
-        buf.take(len as u64).read_to_string(&mut ret)?;
+        let mut bytes = Vec::<u8>::new();
+        buf.take(len as u64).read_to_end(&mut bytes)?;
+        let ret = String::from_utf8(bytes).unwrap();
         Result::Ok(ret)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
@@ -764,6 +766,7 @@ pub enum Error {
     Disconnect(format::Component),
     IOError(io::Error),
     Json(serde_json::Error),
+    #[cfg(not(target_arch = "wasm32"))]
     Reqwest(reqwest::Error),
 }
 
@@ -779,6 +782,7 @@ impl convert::From<serde_json::Error> for Error {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl convert::From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Error {
         Error::Reqwest(e)
@@ -792,6 +796,7 @@ impl ::std::error::Error for Error {
             Error::Disconnect(_) => "Disconnect",
             Error::IOError(ref e) => e.description(),
             Error::Json(ref e) => e.description(),
+            #[cfg(not(target_arch = "wasm32"))]
             Error::Reqwest(ref e) => e.description(),
         }
     }
@@ -804,6 +809,7 @@ impl ::std::fmt::Display for Error {
             Error::Disconnect(ref val) => write!(f, "{}", val),
             Error::IOError(ref e) => e.fmt(f),
             Error::Json(ref e) => e.fmt(f),
+            #[cfg(not(target_arch = "wasm32"))]
             Error::Reqwest(ref e) => e.fmt(f),
         }
     }

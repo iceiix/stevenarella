@@ -54,6 +54,7 @@ impl Login {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl super::Screen for Login {
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         let logo = ui::logo::Logo::new(renderer.resources.clone(), ui_container);

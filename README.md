@@ -23,6 +23,7 @@ Join with your favorite IRC client or [Matrix](https://matrix.to/#/#_espernet_#s
 
 | Game version | Protocol version | Supported? |
 | ------ | --- | --- |
+| 1.14 | 477 | ✓ |
 | 19w02a | 452 | ✓ |
 | 18w50a | 451 | ✓ |
 | 1.13.2 | 404 | ✓ |
@@ -68,6 +69,8 @@ Just compile:
 ```bash
 cargo build --release
 ```
+
+For progress on web support, see [www/](./www).
 
 ## Running
 

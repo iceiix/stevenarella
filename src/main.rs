@@ -43,6 +43,8 @@ pub mod auth;
 pub mod model;
 pub mod entity;
 
+use cfg_if::cfg_if;
+use wasm_bindgen::prelude::*;
 use std::sync::{Arc, RwLock, Mutex};
 use std::rc::Rc;
 use std::marker::PhantomData;
@@ -50,7 +52,7 @@ use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
 use glutin;
-use glutin::GlContext;
+use glutin::ContextTrait;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -87,20 +89,15 @@ pub struct Game {
 
 impl Game {
     pub fn connect_to(&mut self, address: &str) {
-        // Read saved server protocol version from ping response TODO: get from memory?
-        use std::fs;
-        let file = match fs::File::open("server_versions.json") {
-            Ok(val) => val,
-            Err(_) => return,
-        };
-        let server_versions_info: serde_json::Value = serde_json::from_reader(file).unwrap();
-        let protocol_version = {
-            if let Some(v) = server_versions_info.get(address) {
-                v.as_i64().unwrap() as i32
-            } else {
-                warn!("Server protocol version not known for {} (no ping response?), defaulting to {}", address, protocol::SUPPORTED_PROTOCOLS[0]);
+        let protocol_version = match protocol::Conn::new(&address, protocol::SUPPORTED_PROTOCOLS[0]).and_then(|conn| conn.do_status()) {
+            Ok(res) => {
+                info!("Detected server protocol version {}", res.0.version.protocol);
+                res.0.version.protocol
+            },
+            Err(err) => {
+                warn!("Error pinging server {} to get protocol version: {:?}, defaulting to {}", address, err, protocol::SUPPORTED_PROTOCOLS[0]);
                 protocol::SUPPORTED_PROTOCOLS[0]
-            }
+            },
         };
 
         self.protocol_version = protocol_version;
@@ -180,9 +177,23 @@ struct Opt {
     protocol_version: Option<i32>,
 }
 
-fn main() {
+cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        extern crate console_error_panic_hook;
+        pub use console_error_panic_hook::set_once as set_panic_hook;
+    } else {
+        #[inline]
+        pub fn set_panic_hook() {}
+    }
+}
+
+#[wasm_bindgen]
+pub fn main() {
     let opt = Opt::from_args();
     println!("opt={:?}", opt);
+
+    set_panic_hook();
+    std::env::set_var("RUST_BACKTRACE", "1");
 
     let con = Arc::new(Mutex::new(console::Console::new()));
     let (vars, vsync) = {
@@ -216,7 +227,7 @@ fn main() {
         .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
         .with_gl_profile(glutin::GlProfile::Core)
         .with_vsync(vsync);
-    let mut window = glutin::GlWindow::new(window_builder, context, &events_loop)
+    let mut window = glutin::WindowedContext::new(window_builder, context, &events_loop)
         .expect("Could not create glutin window.");
 
     unsafe {
@@ -232,7 +243,15 @@ fn main() {
     let frame_time = 1e9f64 / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
-    screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        screen_sys.add_screen(Box::new(screen::Login::new(vars.clone())));
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
+    }
 
     let textures = renderer.get_textures();
     let dpi_factor = window.get_current_monitor().get_hidpi_factor();
@@ -325,7 +344,7 @@ fn main() {
     }
 }
 
-fn handle_window_event(window: &mut glutin::GlWindow,
+fn handle_window_event(window: &mut glutin::WindowedContext,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
                        event: glutin::Event) {

@@ -19,6 +19,7 @@ use std::cell::{RefCell, RefMut};
 use crate::render;
 use crate::format;
 use glutin::VirtualKeyCode;
+#[cfg(not(target_arch = "wasm32"))]
 use clipboard::{ClipboardProvider, ClipboardContext};
 
 const SCALED_WIDTH: f64 = 854.0;
@@ -1322,6 +1323,8 @@ impl UIElement for TextBox {
                 }
                 self.submit_funcs.append(&mut temp);
             },
+            // TODO: wasm clipboard pasting, Clipboard API: https://www.w3.org/TR/clipboard-apis/
+            #[cfg(not(target_arch = "wasm32"))]
             (VirtualKeyCode::V, true) => {
                 if ctrl_pressed {
                     let mut clipboard: ClipboardContext = ClipboardProvider::new().unwrap();

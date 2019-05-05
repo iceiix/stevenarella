@@ -24,6 +24,7 @@ use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use serde_json;
 
+#[cfg(not(target_arch = "wasm32"))]
 use reqwest;
 use zip;
 
@@ -89,8 +90,11 @@ impl Manager {
             })),
         };
         m.add_pack(Box::new(InternalPack));
-        m.download_vanilla();
-        m.download_assets();
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            m.download_vanilla();
+            m.download_assets();
+        }
         (m, ManagerUI { progress_ui: vec!{}, num_tasks: 0 })
     }
 
@@ -274,6 +278,7 @@ impl Manager {
         self.version += 1;
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn download_assets(&mut self) {
         let loc = format!("./index/{}.json", ASSET_VERSION);
         let location = path::Path::new(&loc).to_owned();
@@ -342,6 +347,7 @@ impl Manager {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn download_vanilla(&mut self) {
         let loc = format!("./resources-{}", RESOURCES_VERSION);
         let location = path::Path::new(&loc);
