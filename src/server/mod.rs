@@ -763,7 +763,7 @@ impl Server {
         } else {
             self.write_packet(packet::play::serverbound::PluginMessageServerbound_i16 {
                 channel: channel.to_string(),
-                data: crate::protocol::LenPrefixedBytes::<i16>::new(data.to_vec()),
+                data: crate::protocol::LenPrefixedBytes::<protocol::VarShort>::new(data.to_vec()),
             });
         }
     }

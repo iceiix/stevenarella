@@ -4,7 +4,7 @@ use byteorder::WriteBytesExt;
 
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
-use crate::protocol::{Serializable, Error, LenPrefixed, VarInt};
+use crate::protocol::{Serializable, Error, LenPrefixed, VarInt, VarShort};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase {
@@ -211,7 +211,7 @@ impl Brand {
         Serializable::write_to(&self.brand, &mut data).unwrap();
         PluginMessageServerbound_i16 {
             channel: "MC|Brand".into(),
-            data: crate::protocol::LenPrefixedBytes::<i16>::new(data),
+            data: crate::protocol::LenPrefixedBytes::<VarShort>::new(data),
         }
     }
 

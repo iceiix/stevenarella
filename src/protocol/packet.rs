@@ -161,7 +161,7 @@ state_packets!(
             }
             packet PluginMessageServerbound_i16 {
                 field channel: String =,
-                field data: LenPrefixedBytes<i16> =,
+                field data: LenPrefixedBytes<VarShort> =,
             }
             packet EditBook {
                 field new_book: Option<item::Stack> =,
@@ -875,7 +875,7 @@ state_packets!(
             }
             packet PluginMessageClientbound_i16 {
                 field channel: String =,
-                field data: LenPrefixedBytes<i16> =,
+                field data: LenPrefixedBytes<VarShort> =,
             }
             /// Plays a sound by name on the client
             packet NamedSoundEffect {

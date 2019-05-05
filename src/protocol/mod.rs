@@ -659,6 +659,65 @@ impl fmt::Debug for VarInt {
     }
 }
 
+/// `VarShort` have a variable size (2 or 3 bytes) and are backwards-compatible
+/// with vanilla shorts, used for Forge custom payloads
+#[derive(Clone, Copy)]
+pub struct VarShort(pub i32);
+
+impl Lengthable for VarShort {
+    fn into(self) -> usize {
+        self.0 as usize
+    }
+
+    fn from(u: usize) -> VarShort {
+        VarShort(u as i32)
+    }
+}
+
+impl Serializable for VarShort {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<VarShort, Error> {
+        let low = buf.read_u16::<BigEndian>()? as u32;
+        let val = if (low & 0x8000) != 0 {
+            let high = buf.read_u8()? as u32;
+
+            (high << 15) | (low & 0x7fff)
+        } else {
+            low
+        };
+
+        Result::Ok(VarShort(val as i32))
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        assert!(self.0 >= 0 && self.0 <= 0x7fffff, "VarShort invalid value: {}", self.0);
+        let mut low = self.0 & 0x7fff;
+        let high = (self.0 & 0x7f8000) >> 15;
+        if high != 0 {
+            low |= 0x8000;
+        }
+
+        buf.write_u16::<BigEndian>(low as u16)?;
+
+        if high != 0 {
+            buf.write_u8(high as u8)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl default::Default for VarShort {
+    fn default() -> VarShort {
+        VarShort(0)
+    }
+}
+
+impl fmt::Debug for VarShort {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// `VarLong` have a variable size (between 1 and 10 bytes) when encoded based
 /// on the size of the number
 #[derive(Clone, Copy)]
