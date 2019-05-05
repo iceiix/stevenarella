@@ -1747,6 +1747,9 @@ state_packets!(
                 field id: VarInt =,
                 field trades: LenPrefixed<u8, packet::Trade> =,
             }
+            packet CoFHLib_SendUUID {
+                field player_uuid: UUID =,
+            }
        }
     }
     login Login {
