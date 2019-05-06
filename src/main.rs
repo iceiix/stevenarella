@@ -84,19 +84,20 @@ pub struct Game {
     last_mouse_xrel: f64,
     last_mouse_yrel: f64,
     is_fullscreen: bool,
+    default_protocol_version: i32,
 }
 
 impl Game {
     pub fn connect_to(&mut self, address: &str) {
-        let (protocol_version, forge_mods) = match protocol::Conn::new(&address, protocol::SUPPORTED_PROTOCOLS[0])
+        let (protocol_version, forge_mods) = match protocol::Conn::new(&address, self.default_protocol_version)
             .and_then(|conn| conn.do_status()) {
                 Ok(res) => {
                     info!("Detected server protocol version {}", res.0.version.protocol);
                     (res.0.version.protocol, res.0.forge_mods)
                 },
                 Err(err) => {
-                    warn!("Error pinging server {} to get protocol version: {:?}, defaulting to {}", address, err, protocol::SUPPORTED_PROTOCOLS[0]);
-                    (protocol::SUPPORTED_PROTOCOLS[0], vec![])
+                    warn!("Error pinging server {} to get protocol version: {:?}, defaulting to {}", address, err, self.default_protocol_version);
+                    (self.default_protocol_version, vec![])
                 },
             };
 
@@ -174,6 +175,10 @@ struct Opt {
     /// Log decoded packets received from network
     #[structopt(short = "n", long = "network-debug")]
     network_debug: bool,
+
+    /// Protocol version to use in the autodetection ping
+    #[structopt(short = "p", long = "default-protocol-version")]
+    default_protocol_version: Option<i32>,
 }
 
 cfg_if! {
@@ -272,6 +277,7 @@ pub fn main() {
         last_mouse_xrel: 0.0,
         last_mouse_yrel: 0.0,
         is_fullscreen: false,
+        default_protocol_version: opt.default_protocol_version.unwrap_or(protocol::SUPPORTED_PROTOCOLS[0]),
     };
     game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
 
