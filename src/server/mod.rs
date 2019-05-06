@@ -43,7 +43,6 @@ pub struct Server {
     conn: Option<protocol::Conn>,
     protocol_version: i32,
     forge_mods: Vec<forge::ForgeMod>,
-    fmlhs_state: forge::Phase,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub disconnect_reason: Option<format::Component>,
     just_disconnected: bool,
@@ -283,7 +282,6 @@ impl Server {
             conn,
             protocol_version,
             forge_mods,
-            fmlhs_state: forge::Phase::Start,
             read_queue,
             disconnect_reason: None,
             just_disconnected: false,
@@ -697,40 +695,27 @@ impl Server {
                 match msg {
                     ServerHello { fml_protocol_version, override_dimension } => {
                         println!("Received FML|HS ServerHello {} {:?}", fml_protocol_version, override_dimension);
-                        assert!(self.fmlhs_state == Start);
 
                         self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
                         self.write_fmlhs_plugin_message(&ClientHello { fml_protocol_version });
                         // Send stashed mods list received from ping packet, client matching server
                         let mods = crate::protocol::LenPrefixed::<crate::protocol::VarInt, forge::ForgeMod>::new(self.forge_mods.clone());
                         self.write_fmlhs_plugin_message(&ModList { mods });
-
-                        self.fmlhs_state = WaitingServerData;
                     },
                     ModList { mods } => {
                         println!("Received FML|HS ModList: {:?}", mods);
-                        assert!(self.fmlhs_state == WaitingServerData);
 
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
-
-                        self.fmlhs_state = WaitingServerComplete;
                     },
                     ModIdData { mappings: _, block_substitutions: _, item_substitutions: _ } => {
-                        assert!(self.fmlhs_state == WaitingServerComplete);
-
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
-
-                        self.fmlhs_state = PendingComplete;
                     },
                     HandshakeAck { phase } => {
                         match phase {
                             WaitingCAck => {
-                                assert!(self.fmlhs_state == PendingComplete);
                                 self.write_fmlhs_plugin_message(&HandshakeAck { phase: PendingComplete });
-                                self.fmlhs_state = Complete;
                             },
                             Complete => {
-                                assert!(self.fmlhs_state == Complete);
                                 println!("FML|HS handshake complete!");
                             },
                             _ => unimplemented!(),
