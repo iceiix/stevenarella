@@ -75,7 +75,7 @@ struct PingInfo {
     max: i32,
     protocol_version: i32,
     protocol_name: String,
-    forge_mods: Vec<crate::server::plugin_messages::ForgeMod>,
+    forge_mods: Vec<crate::protocol::forge::ForgeMod>,
     favicon: Option<image::DynamicImage>,
 }
 

@@ -23,6 +23,7 @@ use serde_json;
 use reqwest;
 
 pub mod mojang;
+pub mod forge;
 
 use crate::nbt;
 use crate::format;
@@ -1065,7 +1066,7 @@ impl Conn {
         let players = val.get("players").ok_or(invalid_status())?;
 
         // For modded servers, get the list of Forge mods installed
-        let mut forge_mods: std::vec::Vec<crate::server::plugin_messages::ForgeMod> = vec![];
+        let mut forge_mods: std::vec::Vec<crate::protocol::forge::ForgeMod> = vec![];
         if let Some(modinfo) = val.get("modinfo") {
             if let Some(modinfo_type) = modinfo.get("type") {
                 if modinfo_type == "FML" {
@@ -1076,7 +1077,7 @@ impl Conn {
                                     let modid = obj.get("modid").unwrap().as_str().unwrap().to_string();
                                     let version = obj.get("version").unwrap().as_str().unwrap().to_string();
 
-                                    forge_mods.push(crate::server::plugin_messages::ForgeMod { modid, version });
+                                    forge_mods.push(crate::protocol::forge::ForgeMod { modid, version });
                                 }
                             }
                         }
@@ -1119,7 +1120,7 @@ pub struct Status {
     pub players: StatusPlayers,
     pub description: format::Component,
     pub favicon: Option<String>,
-    pub forge_mods: Vec<crate::server::plugin_messages::ForgeMod>,
+    pub forge_mods: Vec<crate::protocol::forge::ForgeMod>,
 }
 
 #[derive(Debug)]

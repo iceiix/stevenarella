@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::protocol::{self, mojang, packet};
+use crate::protocol::{self, mojang, packet, forge};
 use crate::world;
 use crate::world::block;
 use rand::{self, Rng};
@@ -42,8 +42,8 @@ pub struct Server {
     uuid: protocol::UUID,
     conn: Option<protocol::Conn>,
     protocol_version: i32,
-    forge_mods: Vec<plugin_messages::ForgeMod>,
-    fmlhs_state: plugin_messages::Phase,
+    forge_mods: Vec<forge::ForgeMod>,
+    fmlhs_state: forge::Phase,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub disconnect_reason: Option<format::Component>,
     just_disconnected: bool,
@@ -106,7 +106,7 @@ macro_rules! handle_packet {
 
 impl Server {
 
-    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32, forge_mods: Vec<crate::server::plugin_messages::ForgeMod>) -> Result<Server, protocol::Error> {
+    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32, forge_mods: Vec<forge::ForgeMod>) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
         let host = conn.host.clone();
@@ -265,7 +265,7 @@ impl Server {
 
     fn new(
         protocol_version: i32,
-        forge_mods: Vec<plugin_messages::ForgeMod>,
+        forge_mods: Vec<forge::ForgeMod>,
         uuid: protocol::UUID,
         resources: Arc<RwLock<resources::Manager>>,
         conn: Option<protocol::Conn>, read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>
@@ -283,7 +283,7 @@ impl Server {
             conn,
             protocol_version,
             forge_mods,
-            fmlhs_state: plugin_messages::Phase::Start,
+            fmlhs_state: forge::Phase::Start,
             read_queue,
             disconnect_reason: None,
             just_disconnected: false,
@@ -689,12 +689,11 @@ impl Server {
             // TODO: "REGISTER" => 
             // TODO: "UNREGISTER" =>
             "FML|HS" => {
-                //let msg = plugin_messages::FmlHs::from_message(&data);
                 let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data)).unwrap();
                 println!("FML|HS msg={:?}", msg);
 
-                use plugin_messages::FmlHs::*;
-                use plugin_messages::Phase::*;
+                use forge::FmlHs::*;
+                use forge::Phase::*;
                 match msg {
                     ServerHello { fml_protocol_version, override_dimension } => {
                         println!("Received FML|HS ServerHello {} {:?}", fml_protocol_version, override_dimension);
@@ -703,7 +702,7 @@ impl Server {
                         self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
                         self.write_fmlhs_plugin_message(&ClientHello { fml_protocol_version });
                         // Send stashed mods list received from ping packet, client matching server
-                        let mods = crate::protocol::LenPrefixed::<crate::protocol::VarInt, plugin_messages::ForgeMod>::new(self.forge_mods.clone());
+                        let mods = crate::protocol::LenPrefixed::<crate::protocol::VarInt, forge::ForgeMod>::new(self.forge_mods.clone());
                         self.write_fmlhs_plugin_message(&ModList { mods });
 
                         self.fmlhs_state = WaitingServerData;
@@ -744,7 +743,7 @@ impl Server {
         }
     }
 
-    fn write_fmlhs_plugin_message(&mut self, msg: &plugin_messages::FmlHs) {
+    fn write_fmlhs_plugin_message(&mut self, msg: &forge::FmlHs) {
         use crate::protocol::Serializable;
 
         let mut buf: Vec<u8> = vec![];
