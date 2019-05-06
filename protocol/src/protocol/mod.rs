@@ -23,6 +23,7 @@ use serde_json;
 use reqwest;
 
 pub mod mojang;
+pub mod forge;
 
 use crate::nbt;
 use crate::format;
@@ -660,6 +661,65 @@ impl fmt::Debug for VarInt {
     }
 }
 
+/// `VarShort` have a variable size (2 or 3 bytes) and are backwards-compatible
+/// with vanilla shorts, used for Forge custom payloads
+#[derive(Clone, Copy)]
+pub struct VarShort(pub i32);
+
+impl Lengthable for VarShort {
+    fn into(self) -> usize {
+        self.0 as usize
+    }
+
+    fn from(u: usize) -> VarShort {
+        VarShort(u as i32)
+    }
+}
+
+impl Serializable for VarShort {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<VarShort, Error> {
+        let low = buf.read_u16::<BigEndian>()? as u32;
+        let val = if (low & 0x8000) != 0 {
+            let high = buf.read_u8()? as u32;
+
+            (high << 15) | (low & 0x7fff)
+        } else {
+            low
+        };
+
+        Result::Ok(VarShort(val as i32))
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        assert!(self.0 >= 0 && self.0 <= 0x7fffff, "VarShort invalid value: {}", self.0);
+        let mut low = self.0 & 0x7fff;
+        let high = (self.0 & 0x7f8000) >> 15;
+        if high != 0 {
+            low |= 0x8000;
+        }
+
+        buf.write_u16::<BigEndian>(low as u16)?;
+
+        if high != 0 {
+            buf.write_u8(high as u8)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl default::Default for VarShort {
+    fn default() -> VarShort {
+        VarShort(0)
+    }
+}
+
+impl fmt::Debug for VarShort {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// `VarLong` have a variable size (between 1 and 10 bytes) when encoded based
 /// on the size of the number
 #[derive(Clone, Copy)]
@@ -1005,6 +1065,29 @@ impl Conn {
         let version = val.get("version").ok_or(invalid_status())?;
         let players = val.get("players").ok_or(invalid_status())?;
 
+        // For modded servers, get the list of Forge mods installed
+        let mut forge_mods: std::vec::Vec<crate::protocol::forge::ForgeMod> = vec![];
+        if let Some(modinfo) = val.get("modinfo") {
+            if let Some(modinfo_type) = modinfo.get("type") {
+                if modinfo_type == "FML" {
+                    if let Some(modlist) = modinfo.get("modList") {
+                        if let Value::Array(items) = modlist {
+                            for item in items {
+                                if let Value::Object(obj) = item {
+                                    let modid = obj.get("modid").unwrap().as_str().unwrap().to_string();
+                                    let version = obj.get("version").unwrap().as_str().unwrap().to_string();
+
+                                    forge_mods.push(crate::protocol::forge::ForgeMod { modid, version });
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    panic!("Unrecognized modinfo type in server ping response: {} in {}", modinfo_type, modinfo);
+                }
+            }
+        }
+
         Ok((Status {
             version: StatusVersion {
                 name: version.get("name").and_then(Value::as_str).ok_or(invalid_status())?
@@ -1025,6 +1108,7 @@ impl Conn {
             description: format::Component::from_value(val.get("description")
                                                                .ok_or(invalid_status())?),
             favicon: val.get("favicon").and_then(Value::as_str).map(|v| v.to_owned()),
+            forge_mods,
         },
             ping))
     }
@@ -1036,6 +1120,7 @@ pub struct Status {
     pub players: StatusPlayers,
     pub description: format::Component,
     pub favicon: Option<String>,
+    pub forge_mods: Vec<crate::protocol::forge::ForgeMod>,
 }
 
 #[derive(Debug)]

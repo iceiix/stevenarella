@@ -99,6 +99,7 @@ protocol_packet_ids!(
             0x3e => Teams_NoVisColor
             0x3f => PluginMessageClientbound_i16
             0x40 => Disconnect
+            -0x1a => CoFHLib_SendUUID
         }
     }
     login Login {
