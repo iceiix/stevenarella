@@ -88,16 +88,17 @@ pub struct Game {
 
 impl Game {
     pub fn connect_to(&mut self, address: &str) {
-        let protocol_version = match protocol::Conn::new(&address, protocol::SUPPORTED_PROTOCOLS[0]).and_then(|conn| conn.do_status()) {
-            Ok(res) => {
-                info!("Detected server protocol version {}", res.0.version.protocol);
-                res.0.version.protocol
-            },
-            Err(err) => {
-                warn!("Error pinging server {} to get protocol version: {:?}, defaulting to {}", address, err, protocol::SUPPORTED_PROTOCOLS[0]);
-                protocol::SUPPORTED_PROTOCOLS[0]
-            },
-        };
+        let (protocol_version, forge_mods) = match protocol::Conn::new(&address, protocol::SUPPORTED_PROTOCOLS[0])
+            .and_then(|conn| conn.do_status()) {
+                Ok(res) => {
+                    info!("Detected server protocol version {}", res.0.version.protocol);
+                    (res.0.version.protocol, res.0.forge_mods)
+                },
+                Err(err) => {
+                    warn!("Error pinging server {} to get protocol version: {:?}, defaulting to {}", address, err, protocol::SUPPORTED_PROTOCOLS[0]);
+                    (protocol::SUPPORTED_PROTOCOLS[0], vec![])
+                },
+            };
 
         let (tx, rx) = mpsc::channel();
         self.connect_reply = Some(rx);
@@ -109,7 +110,7 @@ impl Game {
             access_token: self.vars.get(auth::AUTH_TOKEN).clone(),
         };
         thread::spawn(move || {
-            tx.send(server::Server::connect(resources, profile, &address, protocol_version)).unwrap();
+            tx.send(server::Server::connect(resources, profile, &address, protocol_version, forge_mods)).unwrap();
         });
     }
 

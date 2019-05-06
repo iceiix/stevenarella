@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::protocol::{self, mojang, packet};
+use crate::protocol::{self, mojang, packet, forge};
 use crate::world;
 use crate::world::block;
 use rand::{self, Rng};
@@ -42,6 +42,7 @@ pub struct Server {
     uuid: protocol::UUID,
     conn: Option<protocol::Conn>,
     protocol_version: i32,
+    forge_mods: Vec<forge::ForgeMod>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub disconnect_reason: Option<format::Component>,
     just_disconnected: bool,
@@ -104,7 +105,7 @@ macro_rules! handle_packet {
 
 impl Server {
 
-    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32) -> Result<Server, protocol::Error> {
+    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32, forge_mods: Vec<forge::ForgeMod>) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
         let host = conn.host.clone();
@@ -147,7 +148,7 @@ impl Server {
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
-                    return Ok(Server::new(protocol_version, protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
+                    return Ok(Server::new(protocol_version, forge_mods, protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
                 }
                 protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
                 val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
@@ -205,7 +206,7 @@ impl Server {
 
         let rx = Self::spawn_reader(read);
 
-        Ok(Server::new(protocol_version, protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
+        Ok(Server::new(protocol_version, forge_mods, protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
     }
 
     fn spawn_reader(mut read: protocol::Conn) -> mpsc::Receiver<Result<packet::Packet, protocol::Error>> {
@@ -226,7 +227,7 @@ impl Server {
     }
 
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>) -> Server {
-        let mut server = Server::new(protocol::SUPPORTED_PROTOCOLS[0], protocol::UUID::default(), resources, None, None);
+        let mut server = Server::new(protocol::SUPPORTED_PROTOCOLS[0], vec![], protocol::UUID::default(), resources, None, None);
         let mut rng = rand::thread_rng();
         for x in -7*16 .. 7*16 {
             for z in -7*16 .. 7*16 {
@@ -263,6 +264,7 @@ impl Server {
 
     fn new(
         protocol_version: i32,
+        forge_mods: Vec<forge::ForgeMod>,
         uuid: protocol::UUID,
         resources: Arc<RwLock<resources::Manager>>,
         conn: Option<protocol::Conn>, read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>
@@ -279,6 +281,7 @@ impl Server {
             uuid,
             conn,
             protocol_version,
+            forge_mods,
             read_queue,
             disconnect_reason: None,
             just_disconnected: false,
@@ -388,6 +391,8 @@ impl Server {
                 match pck {
                     Ok(pck) => handle_packet!{
                         self pck {
+                            PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
+                            PluginMessageClientbound => on_plugin_message_clientbound_1,
                             JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
@@ -667,6 +672,86 @@ impl Server {
         });
     }
 
+    fn on_plugin_message_clientbound_i16(&mut self, msg: packet::play::clientbound::PluginMessageClientbound_i16) {
+        self.on_plugin_message_clientbound(&msg.channel, msg.data.data.as_slice())
+    }
+
+    fn on_plugin_message_clientbound_1(&mut self, msg: packet::play::clientbound::PluginMessageClientbound) {
+        self.on_plugin_message_clientbound(&msg.channel, &msg.data)
+    }
+
+    fn on_plugin_message_clientbound(&mut self, channel: &str, data: &[u8]) {
+        println!("Received plugin message: channel={}, data={:?}", channel, data);
+
+        match channel {
+            // TODO: "REGISTER" => 
+            // TODO: "UNREGISTER" =>
+            "FML|HS" => {
+                let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data)).unwrap();
+                println!("FML|HS msg={:?}", msg);
+
+                use forge::FmlHs::*;
+                use forge::Phase::*;
+                match msg {
+                    ServerHello { fml_protocol_version, override_dimension } => {
+                        println!("Received FML|HS ServerHello {} {:?}", fml_protocol_version, override_dimension);
+
+                        self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
+                        self.write_fmlhs_plugin_message(&ClientHello { fml_protocol_version });
+                        // Send stashed mods list received from ping packet, client matching server
+                        let mods = crate::protocol::LenPrefixed::<crate::protocol::VarInt, forge::ForgeMod>::new(self.forge_mods.clone());
+                        self.write_fmlhs_plugin_message(&ModList { mods });
+                    },
+                    ModList { mods } => {
+                        println!("Received FML|HS ModList: {:?}", mods);
+
+                        self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
+                    },
+                    ModIdData { mappings: _, block_substitutions: _, item_substitutions: _ } => {
+                        self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
+                    },
+                    HandshakeAck { phase } => {
+                        match phase {
+                            WaitingCAck => {
+                                self.write_fmlhs_plugin_message(&HandshakeAck { phase: PendingComplete });
+                            },
+                            Complete => {
+                                println!("FML|HS handshake complete!");
+                            },
+                            _ => unimplemented!(),
+                        }
+                    },
+                    _ => (),
+                }
+            }
+            _ => ()
+        }
+    }
+
+    fn write_fmlhs_plugin_message(&mut self, msg: &forge::FmlHs) {
+        use crate::protocol::Serializable;
+
+        let mut buf: Vec<u8> = vec![];
+        msg.write_to(&mut buf).unwrap();
+
+        self.write_plugin_message("FML|HS", &buf);
+    }
+
+    fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
+        println!("Sending plugin message: channel={}, data={:?}", channel, data);
+        if self.protocol_version >= 47 {
+            self.write_packet(packet::play::serverbound::PluginMessageServerbound {
+                channel: channel.to_string(),
+                data: data.to_vec(),
+            });
+        } else {
+            self.write_packet(packet::play::serverbound::PluginMessageServerbound_i16 {
+                channel: channel.to_string(),
+                data: crate::protocol::LenPrefixedBytes::<protocol::VarShort>::new(data.to_vec()),
+            });
+        }
+    }
+
     fn on_game_join_i32_viewdistance(&mut self, join: packet::play::clientbound::JoinGame_i32_ViewDistance) {
         self.on_game_join(join.gamemode, join.entity_id)
     }
@@ -702,6 +787,7 @@ impl Server {
         let brand = plugin_messages::Brand {
                 brand: "Steven".into(),
             };
+        // TODO: refactor with write_plugin_message
         if self.protocol_version >= 47 {
             self.write_packet(brand.as_message());
         } else {

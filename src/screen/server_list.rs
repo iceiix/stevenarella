@@ -75,6 +75,7 @@ struct PingInfo {
     max: i32,
     protocol_version: i32,
     protocol_name: String,
+    forge_mods: Vec<crate::protocol::forge::ForgeMod>,
     favicon: Option<image::DynamicImage>,
 }
 
@@ -278,6 +279,7 @@ impl ServerList {
                             max: res.0.players.max,
                             protocol_version: res.0.version.protocol,
                             protocol_name: res.0.version.name,
+                            forge_mods: res.0.forge_mods,
                             favicon,
                         }));
                     }
@@ -293,6 +295,7 @@ impl ServerList {
                             max: 0,
                             protocol_version: 0,
                             protocol_name: "".to_owned(),
+                            forge_mods: vec![],
                             favicon: None,
                         });
                     }
@@ -489,7 +492,9 @@ impl super::Screen for ServerList {
                                 };
                                 players.text = txt;
                             }
-                            let mut txt = TextComponent::new(&res.protocol_name);
+                            let sm = format!("{} mods + {}", res.forge_mods.len(), res.protocol_name);
+                            let st = if res.forge_mods.len() > 0 { &sm } else { &res.protocol_name };
+                            let mut txt = TextComponent::new(&st);
                             txt.modifier.color = Some(format::Color::Yellow);
                             let mut msg = Component::Text(txt);
                             format::convert_legacy(&mut msg);

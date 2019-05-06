@@ -35,7 +35,7 @@ Join with your favorite IRC client or [Matrix](https://matrix.to/#/#_espernet_#s
 | 1.9    | 107 | ✓ |
 | 15w39c | 74  | ✓ |
 | 1.8.9  | 47  | ✓ |
-| 1.7.10 | 5   | ✓ |
+| 1.7.10 + Forge | 5   | ✓ |
 
 Stevenarella is designed to support multiple protocol versions, so that client
 development is not in lock-step with the server version. The level of
