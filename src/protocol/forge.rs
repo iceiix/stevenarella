@@ -1,4 +1,5 @@
 
+/// Implements https://wiki.vg/Minecraft_Forge_Handshake
 use std::io;
 use byteorder::WriteBytesExt;
 
@@ -118,12 +119,10 @@ pub enum FmlHs {
 
 impl Serializable for FmlHs {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        // https://wiki.vg/Minecraft_Forge_Handshake
         let discriminator: u8 = Serializable::read_from(buf)?;
 
         match discriminator {
             0 => {
-                // ServerHello
                 let fml_protocol_version: i8 = Serializable::read_from(buf)?;
                 let override_dimension = if fml_protocol_version > 1 {
                     let dimension: i32 = Serializable::read_from(buf)?;
@@ -161,7 +160,6 @@ impl Serializable for FmlHs {
         }
     }
 
-
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         match self {
             FmlHs::ClientHello { fml_protocol_version } => {
@@ -180,4 +178,3 @@ impl Serializable for FmlHs {
         }
     }
 }
-
