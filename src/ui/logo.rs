@@ -5,8 +5,8 @@ use crate::ui;
 use crate::render;
 use crate::resources;
 use std::time::{SystemTime, UNIX_EPOCH};
-use rand;
-use rand::Rng;
+use rand::{self, seq::SliceRandom};
+use rand_xorshift;
 
 pub struct Logo {
     _shadow: ui::BatchRef,
@@ -101,8 +101,8 @@ impl Logo {
                     text_strings.push(line.to_owned().replace("\r", ""));
                 }
             }
-            let mut r: rand::XorShiftRng = rand::SeedableRng::from_seed([45, 0, 0, 0, 64, 0, 0, 0, 32, 0, 0, 0, 12, 0, 0, 0]);
-            r.shuffle(&mut text_strings[..]);
+            let mut r: rand_xorshift::XorShiftRng = rand::SeedableRng::from_seed([45, 0, 0, 0, 64, 0, 0, 0, 32, 0, 0, 0, 12, 0, 0, 0]);
+            text_strings.shuffle(&mut r);
         }
 
         let txt = ui::TextBuilder::new()

@@ -110,6 +110,7 @@ struct BuildReply {
 
 fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
     use rand::{self, SeedableRng, Rng};
+    use rand_xorshift;
     loop {
         let BuildReq {
             snapshot,
@@ -121,7 +122,7 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
             Err(_) => return,
         };
 
-        let mut rng = rand::XorShiftRng::from_seed([
+        let mut rng = rand_xorshift::XorShiftRng::from_seed([
             ((position.0 as u32) & 0xff) as u8,
             (((position.0 as u32) >> 8) & 0xff) as u8,
             (((position.0 as u32) >> 16) & 0xff) as u8,

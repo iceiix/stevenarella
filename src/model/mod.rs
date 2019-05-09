@@ -18,6 +18,7 @@ use crate::types::hash::FNVHash;
 use log::{error};
 
 use rand::Rng;
+use rand::seq::SliceRandom;
 use image::GenericImageView;
 
 pub struct Factory {
@@ -756,7 +757,7 @@ pub struct Variants {
 impl Variants {
     fn choose_model<R: Rng>(&self, rng: &mut R) -> &Model {
         // TODO: Weighted random
-        rng.choose(&self.models).unwrap()
+        self.models.choose(rng).unwrap()
     }
 }
 
