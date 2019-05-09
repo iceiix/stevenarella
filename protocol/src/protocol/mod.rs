@@ -277,8 +277,7 @@ impl Serializable for format::Component {
         let len = VarInt::read_from(buf)?.0;
         let mut ret = String::new();
         buf.take(len as u64).read_to_string(&mut ret)?;
-        let val: serde_json::Value = serde_json::from_str(&ret[..]).unwrap();
-        Result::Ok(Self::from_value(&val))
+        Result::Ok(Self::from_string(&ret[..]))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         let val = serde_json::to_string(&self.to_value()).unwrap();
