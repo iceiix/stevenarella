@@ -681,7 +681,9 @@ impl Server {
     }
 
     fn on_plugin_message_clientbound(&mut self, channel: &str, data: &[u8]) {
-        println!("Received plugin message: channel={}, data={:?}", channel, data);
+        if unsafe { protocol::NETWORK_DEBUG } {
+            println!("Received plugin message: channel={}, data={:?}", channel, data);
+        }
 
         match channel {
             // TODO: "REGISTER" => 
@@ -738,7 +740,9 @@ impl Server {
     }
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
-        println!("Sending plugin message: channel={}, data={:?}", channel, data);
+        if unsafe { protocol::NETWORK_DEBUG } {
+            println!("Sending plugin message: channel={}, data={:?}", channel, data);
+        }
         if self.protocol_version >= 47 {
             self.write_packet(packet::play::serverbound::PluginMessageServerbound {
                 channel: channel.to_string(),
