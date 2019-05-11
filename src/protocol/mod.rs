@@ -640,6 +640,48 @@ impl<T> fmt::Debug for FixedPoint<T> where T: fmt::Display, f64: convert::From<T
     }
 }
 
+/// `FixedPoint4K` is like `FixedPoint` but the fractional part is 12-bit
+#[derive(Clone, Copy)]
+pub struct FixedPoint4K<T>(T);
+
+impl<T: Serializable> Serializable for FixedPoint4K<T> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(Self(Serializable::read_from(buf)?))
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.0.write_to(buf)
+    }
+}
+
+impl<T: default::Default> default::Default for FixedPoint4K<T> {
+    fn default() -> Self {
+        Self(T::default())
+    }
+}
+
+impl<T: NumCast> convert::From<f64> for FixedPoint4K<T> {
+    fn from(x: f64) -> Self {
+        let n: T = cast(x * 32.0 * 128.0).unwrap();
+        FixedPoint4K::<T>(n)
+    }
+}
+
+impl<T: NumCast> convert::From<FixedPoint4K<T>> for f64 {
+    fn from(x: FixedPoint4K<T>) -> Self {
+        let f: f64 = cast(x.0).unwrap();
+        f / (32.0 * 128.0)
+    }
+}
+
+impl<T> fmt::Debug for FixedPoint4K<T> where T: fmt::Display, f64: convert::From<T>, T: NumCast + Copy {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let x: f64 = (*self).into();
+        write!(f, "FixedPoint4K(#{} = {}f)", self.0, x)
+    }
+}
+
+
 
 /// `VarInt` have a variable size (between 1 and 5 bytes) when encoded based
 /// on the size of the number

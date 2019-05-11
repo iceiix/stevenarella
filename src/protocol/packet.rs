@@ -1159,9 +1159,9 @@ state_packets!(
             /// EntityMove moves the entity with the id by the offsets provided.
             packet EntityMove_i16 {
                 field entity_id: VarInt =,
-                field delta_x: i16 =,
-                field delta_y: i16 =,
-                field delta_z: i16 =,
+                field delta_x: FixedPoint4K<i16> =,
+                field delta_y: FixedPoint4K<i16> =,
+                field delta_z: FixedPoint4K<i16> =,
                 field on_ground: bool =,
             }
             packet EntityMove_i8 {
@@ -1180,9 +1180,9 @@ state_packets!(
             /// EntityLookAndMove is a combination of EntityMove and EntityLook.
             packet EntityLookAndMove_i16 {
                 field entity_id: VarInt =,
-                field delta_x: i16 =,
-                field delta_y: i16 =,
-                field delta_z: i16 =,
+                field delta_x: FixedPoint4K<i16> =,
+                field delta_y: FixedPoint4K<i16> =,
+                field delta_z: FixedPoint4K<i16> =,
                 field yaw: i8 =,
                 field pitch: i8 =,
                 field on_ground: bool =,

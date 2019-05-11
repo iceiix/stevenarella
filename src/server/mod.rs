@@ -880,10 +880,7 @@ impl Server {
     }
 
     fn on_entity_move_i16(&mut self, m: packet::play::clientbound::EntityMove_i16) {
-        self.on_entity_move(m.entity_id.0,
-                            m.delta_x as f64 / (32.0 * 128.0),
-                            m.delta_y as f64 / (32.0 * 128.0),
-                            m.delta_z as f64 / (32.0 * 128.0))
+        self.on_entity_move(m.entity_id.0, f64::from(m.delta_x), f64::from(m.delta_y), f64::from(m.delta_z))
     }
 
     fn on_entity_move_i8(&mut self, m: packet::play::clientbound::EntityMove_i8) {
@@ -923,9 +920,7 @@ impl Server {
 
     fn on_entity_look_and_move_i16(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i16) {
         self.on_entity_look_and_move(lookmove.entity_id.0,
-                                     lookmove.delta_x as f64 / (32.0 * 128.0),
-                                     lookmove.delta_y as f64 / (32.0 * 128.0),
-                                     lookmove.delta_z as f64 / (32.0 * 128.0),
+                                     f64::from(lookmove.delta_x), f64::from(lookmove.delta_y), f64::from(lookmove.delta_z),
                                      lookmove.yaw as f64, lookmove.pitch as f64)
     }
 
