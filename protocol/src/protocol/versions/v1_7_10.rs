@@ -42,7 +42,7 @@ protocol_packet_ids!(
             0x05 => SpawnPosition_i32
             0x06 => UpdateHealth_u16
             0x07 => Respawn
-            0x08 => TeleportPlayer_NoConfirm
+            0x08 => TeleportPlayer_OnGround
             0x09 => SetCurrentHotbarSlot
             0x0a => EntityUsedBed_i32
             0x0b => Animation
