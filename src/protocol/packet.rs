@@ -1310,6 +1310,14 @@ state_packets!(
                 field pitch: f32 =,
                 field flags: u8 =,
             }
+            packet TeleportPlayer_OnGround {
+                field x: f64 =,
+                field eyes_y: f64 =,
+                field z: f64 =,
+                field yaw: f32 =,
+                field pitch: f32 =,
+                field on_ground: bool =,
+            }
             /// EntityUsedBed is sent by the server when a player goes to bed.
             packet EntityUsedBed {
                 field entity_id: VarInt =,

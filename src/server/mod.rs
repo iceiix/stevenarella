@@ -415,6 +415,7 @@ impl Server {
                             MultiBlockChange_u16 => on_multi_block_change_u16,
                             TeleportPlayer_WithConfirm => on_teleport_player_withconfirm,
                             TeleportPlayer_NoConfirm => on_teleport_player_noconfirm,
+                            TeleportPlayer_OnGround => on_teleport_player_onground,
                             TimeUpdate => on_time_update,
                             ChangeGameState => on_game_state_change,
                             UpdateBlockEntity => on_block_entity_update,
@@ -998,6 +999,11 @@ impl Server {
 
     fn on_teleport_player_noconfirm(&mut self, teleport: packet::play::clientbound::TeleportPlayer_NoConfirm) {
         self.on_teleport_player(teleport.x, teleport.y, teleport.z, teleport.yaw as f64, teleport.pitch as f64, teleport.flags, None)
+    }
+
+    fn on_teleport_player_onground(&mut self, teleport: packet::play::clientbound::TeleportPlayer_OnGround) {
+        let flags: u8 = 0; // always absolute
+        self.on_teleport_player(teleport.x, teleport.eyes_y - 1.62, teleport.z, teleport.yaw as f64, teleport.pitch as f64, flags, None)
     }
 
     fn on_teleport_player(&mut self, x: f64, y: f64, z: f64, yaw: f64, pitch: f64, flags: u8, teleport_id: Option<protocol::VarInt>) {
