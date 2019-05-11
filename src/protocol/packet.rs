@@ -1189,18 +1189,18 @@ state_packets!(
             }
             packet EntityLookAndMove_i8 {
                 field entity_id: VarInt =,
-                field delta_x: i8 =,
-                field delta_y: i8 =,
-                field delta_z: i8 =,
+                field delta_x: FixedPoint8 =,
+                field delta_y: FixedPoint8 =,
+                field delta_z: FixedPoint8 =,
                 field yaw: i8 =,
                 field pitch: i8 =,
                 field on_ground: bool =,
             }
             packet EntityLookAndMove_i8_i32_NoGround {
                 field entity_id: i32 =,
-                field delta_x: i8 =,
-                field delta_y: i8 =,
-                field delta_z: i8 =,
+                field delta_x: FixedPoint8 =,
+                field delta_y: FixedPoint8 =,
+                field delta_z: FixedPoint8 =,
                 field yaw: i8 =,
                 field pitch: i8 =,
             }

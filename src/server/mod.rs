@@ -923,19 +923,21 @@ impl Server {
 
     fn on_entity_look_and_move_i16(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i16) {
         self.on_entity_look_and_move(lookmove.entity_id.0,
-                                     lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
+                                     lookmove.delta_x as f64 / (32.0 * 128.0),
+                                     lookmove.delta_y as f64 / (32.0 * 128.0),
+                                     lookmove.delta_z as f64 / (32.0 * 128.0),
                                      lookmove.yaw as f64, lookmove.pitch as f64)
     }
 
     fn on_entity_look_and_move_i8(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i8) {
         self.on_entity_look_and_move(lookmove.entity_id.0,
-                                     lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
+                                     f64::from(lookmove.delta_x), f64::from(lookmove.delta_y), f64::from(lookmove.delta_z),
                                      lookmove.yaw as f64, lookmove.pitch as f64)
     }
 
     fn on_entity_look_and_move_i8_i32_noground(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i8_i32_NoGround) {
         self.on_entity_look_and_move(lookmove.entity_id,
-                                     lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
+                                     f64::from(lookmove.delta_x), f64::from(lookmove.delta_y), f64::from(lookmove.delta_z),
                                      lookmove.yaw as f64, lookmove.pitch as f64)
     }
 
@@ -944,9 +946,9 @@ impl Server {
         if let Some(entity) = self.entity_map.get(&entity_id) {
             let position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
             let rotation = self.entities.get_component_mut(*entity, self.target_rotation).unwrap();
-            position.position.x += delta_x / (32.0 * 128.0);
-            position.position.y += delta_y / (32.0 * 128.0);
-            position.position.z += delta_z / (32.0 * 128.0);
+            position.position.x += delta_x;
+            position.position.y += delta_y;
+            position.position.z += delta_z;
             rotation.yaw = -(yaw / 256.0) * PI * 2.0;
             rotation.pitch = -(pitch / 256.0) * PI * 2.0;
         }
