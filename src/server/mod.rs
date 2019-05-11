@@ -884,11 +884,11 @@ impl Server {
     }
 
     fn on_entity_move_i8(&mut self, m: packet::play::clientbound::EntityMove_i8) {
-        self.on_entity_move(m.entity_id.0, m.delta_x as f64, m.delta_y as f64, m.delta_z as f64)
+        self.on_entity_move(m.entity_id.0, f64::from(m.delta_x), f64::from(m.delta_y), f64::from(m.delta_z))
     }
 
     fn on_entity_move_i8_i32_noground(&mut self, m: packet::play::clientbound::EntityMove_i8_i32_NoGround) {
-        self.on_entity_move(m.entity_id, m.delta_x as f64, m.delta_y as f64, m.delta_z as f64)
+        self.on_entity_move(m.entity_id, f64::from(m.delta_x), f64::from(m.delta_y), f64::from(m.delta_z))
     }
 
 

@@ -600,9 +600,9 @@ impl Lengthable for i32 {
 /// `FixedPoint` has the 5 least-significant bits for the fractional
 /// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
 #[derive(Clone, Copy, Debug)]
-pub struct FixedPoint(i32);
+pub struct FixedPoint32(i32);
 
-impl Serializable for FixedPoint {
+impl Serializable for FixedPoint32 {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(Self(Serializable::read_from(buf)?))
     }
@@ -612,23 +612,57 @@ impl Serializable for FixedPoint {
     }
 }
 
-impl default::Default for FixedPoint {
+impl default::Default for FixedPoint32 {
     fn default() -> Self {
         Self(i32::default())
     }
 }
 
-impl convert::From<f64> for FixedPoint {
+impl convert::From<f64> for FixedPoint32 {
     fn from(x: f64) -> Self {
-        FixedPoint((x * 32.0) as i32)
+        FixedPoint32((x * 32.0) as i32)
     }
 }
 
-impl convert::From<FixedPoint> for f64 {
-    fn from(x: FixedPoint) -> Self {
+impl convert::From<FixedPoint32> for f64 {
+    fn from(x: FixedPoint32) -> Self {
         x.0 as f64 / 32.0
     }
 }
+
+/// FixedPoint with i8 instead of i32
+/// TODO: add a type parameter - but Into/From conflicts with Lengthable methods below
+#[derive(Clone, Copy, Debug)]
+pub struct FixedPoint8(i8);
+
+impl Serializable for FixedPoint8 {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(Self(Serializable::read_from(buf)?))
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.0.write_to(buf)
+    }
+}
+
+impl default::Default for FixedPoint8 {
+    fn default() -> Self {
+        Self(i8::default())
+    }
+}
+
+impl convert::From<f64> for FixedPoint8 {
+    fn from(x: f64) -> Self {
+        FixedPoint8((x * 32.0) as i8)
+    }
+}
+
+impl convert::From<FixedPoint8> for f64 {
+    fn from(x: FixedPoint8) -> Self {
+        x.0 as f64 / 32.0
+    }
+}
+
 
 /// `VarInt` have a variable size (between 1 and 5 bytes) when encoded based
 /// on the size of the number
