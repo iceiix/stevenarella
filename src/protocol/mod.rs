@@ -445,9 +445,7 @@ impl Serializable for UUID {
 }
 
 
-pub trait Lengthable : Serializable + Copy + Default {
-    fn into(self) -> usize;
-    fn from(_: usize) -> Self;
+pub trait Lengthable : Serializable + Copy + Default + From<usize> {
 }
 
 pub struct LenPrefixed<L: Lengthable, V> {
@@ -556,46 +554,52 @@ impl <L: Lengthable> fmt::Debug for LenPrefixedBytes<L> {
     }
 }
 
-impl Lengthable for bool {
-    fn into(self) -> usize {
-        if self  { 1 } else { 0 }
-    }
-
+impl From<usize> for bool {
     fn from(u: usize) -> bool {
         u != 0
     }
 }
-
-
-impl Lengthable for u8 {
-    fn into(self) -> usize {
-        self as usize
+impl From<bool> for usize {
+    fn from(b: bool) -> usize {
+        if b { 1 } else { 0 }
     }
+}
 
+
+impl From<usize> for u8 {
     fn from(u: usize) -> u8 {
         u as u8
     }
 }
-
-impl Lengthable for i16 {
-    fn into(self) -> usize {
-        self as usize
+impl From<u8> for usize {
+    fn from(b: u8) -> usize {
+        b as usize
     }
+}
 
+impl From<usize> for i16 {
     fn from(u: usize) -> i16 {
         u as i16
     }
 }
-
-impl Lengthable for i32 {
-    fn into(self) -> usize {
-        self as usize
+impl From<i16> for usize {
+    fn from(b: i16) -> usize {
+        b as usize
     }
+}
 
+
+impl From<usize> for i32 {
     fn from(u: usize) -> i32 {
         u as i32
     }
 }
+impl From<i32> for usize {
+    fn from(b: i32) -> usize {
+        b as usize
+    }
+}
+
 
 /// `FixedPoint` has the 5 least-significant bits for the fractional
 /// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
@@ -682,15 +686,17 @@ impl fmt::Debug for FixedPoint8 {
 #[derive(Clone, Copy)]
 pub struct VarInt(pub i32);
 
-impl Lengthable for VarInt {
-    fn into(self) -> usize {
-        self.0 as usize
-    }
-
+impl From<usize> for VarInt {
     fn from(u: usize) -> VarInt {
         VarInt(u as i32)
     }
 }
+impl From<VarInt> for usize {
+    fn from(b: VarInt) -> usize {
+        b.0 as usize
+    }
+}
+
 
 impl Serializable for VarInt {
     /// Decodes a `VarInt` from the Reader
@@ -745,15 +751,17 @@ impl fmt::Debug for VarInt {
 #[derive(Clone, Copy)]
 pub struct VarShort(pub i32);
 
-impl Lengthable for VarShort {
-    fn into(self) -> usize {
-        self.0 as usize
-    }
-
+impl From<usize> for VarShort {
     fn from(u: usize) -> VarShort {
         VarShort(u as i32)
     }
 }
+impl From<VarShort> for usize {
+    fn from(b: VarShort) -> usize {
+        b.0 as usize
+    }
+}
+
 
 impl Serializable for VarShort {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<VarShort, Error> {
@@ -804,15 +812,17 @@ impl fmt::Debug for VarShort {
 #[derive(Clone, Copy)]
 pub struct VarLong(pub i64);
 
-impl Lengthable for VarLong {
-    fn into(self) -> usize {
-        self.0 as usize
-    }
-
+impl From<usize> for VarLong {
     fn from(u: usize) -> VarLong {
         VarLong(u as i64)
     }
 }
+impl From<VarLong> for usize {
+    fn from(b: VarLong) -> usize {
+        b.0 as usize
+    }
+}
+
 
 impl Serializable for VarLong {
     /// Decodes a `VarLong` from the Reader
