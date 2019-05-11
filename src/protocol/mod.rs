@@ -598,12 +598,12 @@ impl Lengthable for i32 {
 }
 
 use num_traits::cast::{cast, NumCast};
-/// `FixedPoint` has the 5 least-significant bits for the fractional
+/// `FixedPoint5` has the 5 least-significant bits for the fractional
 /// part, upper for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
 #[derive(Clone, Copy)]
-pub struct FixedPoint<T>(T);
+pub struct FixedPoint5<T>(T);
 
-impl<T: Serializable> Serializable for FixedPoint<T> {
+impl<T: Serializable> Serializable for FixedPoint5<T> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(Self(Serializable::read_from(buf)?))
     }
@@ -613,38 +613,38 @@ impl<T: Serializable> Serializable for FixedPoint<T> {
     }
 }
 
-impl<T: default::Default> default::Default for FixedPoint<T> {
+impl<T: default::Default> default::Default for FixedPoint5<T> {
     fn default() -> Self {
         Self(T::default())
     }
 }
 
-impl<T: NumCast> convert::From<f64> for FixedPoint<T> {
+impl<T: NumCast> convert::From<f64> for FixedPoint5<T> {
     fn from(x: f64) -> Self {
         let n: T = cast(x * 32.0).unwrap();
-        FixedPoint::<T>(n)
+        FixedPoint5::<T>(n)
     }
 }
 
-impl<T: NumCast> convert::From<FixedPoint<T>> for f64 {
-    fn from(x: FixedPoint<T>) -> Self {
+impl<T: NumCast> convert::From<FixedPoint5<T>> for f64 {
+    fn from(x: FixedPoint5<T>) -> Self {
         let f: f64 = cast(x.0).unwrap();
         f / 32.0
     }
 }
 
-impl<T> fmt::Debug for FixedPoint<T> where T: fmt::Display, f64: convert::From<T>, T: NumCast + Copy {
+impl<T> fmt::Debug for FixedPoint5<T> where T: fmt::Display, f64: convert::From<T>, T: NumCast + Copy {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let x: f64 = (*self).into();
-        write!(f, "FixedPoint(#{} = {}f)", self.0, x)
+        write!(f, "FixedPoint5(#{} = {}f)", self.0, x)
     }
 }
 
-/// `FixedPoint4K` is like `FixedPoint` but the fractional part is 12-bit
+/// `FixedPoint12` is like `FixedPoint5` but the fractional part is 12-bit
 #[derive(Clone, Copy)]
-pub struct FixedPoint4K<T>(T);
+pub struct FixedPoint12<T>(T);
 
-impl<T: Serializable> Serializable for FixedPoint4K<T> {
+impl<T: Serializable> Serializable for FixedPoint12<T> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(Self(Serializable::read_from(buf)?))
     }
@@ -654,34 +654,32 @@ impl<T: Serializable> Serializable for FixedPoint4K<T> {
     }
 }
 
-impl<T: default::Default> default::Default for FixedPoint4K<T> {
+impl<T: default::Default> default::Default for FixedPoint12<T> {
     fn default() -> Self {
         Self(T::default())
     }
 }
 
-impl<T: NumCast> convert::From<f64> for FixedPoint4K<T> {
+impl<T: NumCast> convert::From<f64> for FixedPoint12<T> {
     fn from(x: f64) -> Self {
         let n: T = cast(x * 32.0 * 128.0).unwrap();
-        FixedPoint4K::<T>(n)
+        FixedPoint12::<T>(n)
     }
 }
 
-impl<T: NumCast> convert::From<FixedPoint4K<T>> for f64 {
-    fn from(x: FixedPoint4K<T>) -> Self {
+impl<T: NumCast> convert::From<FixedPoint12<T>> for f64 {
+    fn from(x: FixedPoint12<T>) -> Self {
         let f: f64 = cast(x.0).unwrap();
         f / (32.0 * 128.0)
     }
 }
 
-impl<T> fmt::Debug for FixedPoint4K<T> where T: fmt::Display, f64: convert::From<T>, T: NumCast + Copy {
+impl<T> fmt::Debug for FixedPoint12<T> where T: fmt::Display, f64: convert::From<T>, T: NumCast + Copy {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let x: f64 = (*self).into();
-        write!(f, "FixedPoint4K(#{} = {}f)", self.0, x)
+        write!(f, "FixedPoint12(#{} = {}f)", self.0, x)
     }
 }
-
-
 
 /// `VarInt` have a variable size (between 1 and 5 bytes) when encoded based
 /// on the size of the number
