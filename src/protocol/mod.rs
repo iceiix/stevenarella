@@ -632,7 +632,7 @@ impl convert::From<FixedPoint32> for f64 {
 
 impl fmt::Debug for FixedPoint32 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FixedPoint32({} = {})", self.0, self.0 as f64 / 32.0) // TODO: use from:: trait
+        write!(f, "FixedPoint32({} = {})", self.0, f64::from(*self))
     }
 }
 
@@ -671,7 +671,7 @@ impl convert::From<FixedPoint8> for f64 {
 
 impl fmt::Debug for FixedPoint8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FixedPoint8({} = {})", self.0, self.0 as f64 / 32.0) // TODO: use from:: trait
+        write!(f, "FixedPoint8({} = {})", self.0, f64::from(*self))
     }
 }
 
