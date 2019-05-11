@@ -954,15 +954,15 @@ impl Server {
     }
 
     fn on_player_spawn_i32(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32) {
-        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
+        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, f64::from(spawn.x), f64::from(spawn.y), f64::from(spawn.z), spawn.yaw as f64, spawn.pitch as f64)
     }
 
     fn on_player_spawn_i32_helditem(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem) {
-        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
+        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, f64::from(spawn.x), f64::from(spawn.y), f64::from(spawn.z), spawn.yaw as f64, spawn.pitch as f64)
     }
 
     fn on_player_spawn_i32_helditem_string(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_String) {
-        self.on_player_spawn(spawn.entity_id.0, protocol::UUID::from_str(&spawn.uuid), spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
+        self.on_player_spawn(spawn.entity_id.0, protocol::UUID::from_str(&spawn.uuid), f64::from(spawn.x), f64::from(spawn.y), f64::from(spawn.z), spawn.yaw as f64, spawn.pitch as f64)
     }
 
     fn on_player_spawn(&mut self, entity_id: i32, uuid: protocol::UUID, x: f64, y: f64, z: f64, pitch: f64, yaw: f64) {
