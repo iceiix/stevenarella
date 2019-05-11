@@ -547,9 +547,9 @@ state_packets!(
             packet SpawnGlobalEntity_i32 {
                 field entity_id: VarInt =,
                 field ty: u8 =,
-                field x: i32 =,
-                field y: i32 =,
-                field z: i32 =,
+                field x: FixedPoint32 =,
+                field y: FixedPoint32 =,
+                field z: FixedPoint32 =,
             }
             /// SpawnMob is used to spawn a living entity into the world when it is in
             /// range of the client.
@@ -1677,18 +1677,18 @@ state_packets!(
             }
             packet EntityTeleport_i32 {
                 field entity_id: VarInt =,
-                field x: i32 =,
-                field y: i32 =,
-                field z: i32 =,
+                field x: FixedPoint32 =,
+                field y: FixedPoint32 =,
+                field z: FixedPoint32 =,
                 field yaw: i8 =,
                 field pitch: i8 =,
                 field on_ground: bool =,
             }
             packet EntityTeleport_i32_i32_NoGround {
                 field entity_id: i32 =,
-                field x: i32 =,
-                field y: i32 =,
-                field z: i32 =,
+                field x: FixedPoint32 =,
+                field y: FixedPoint32 =,
+                field z: FixedPoint32 =,
                 field yaw: i8 =,
                 field pitch: i8 =,
             }

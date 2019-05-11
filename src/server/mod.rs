@@ -857,12 +857,12 @@ impl Server {
     }
 
     fn on_entity_teleport_i32(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_i32) {
-        self.on_entity_teleport(entity_telport.entity_id.0, entity_telport.x as f64, entity_telport.y as f64, entity_telport.z as f64, entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
+        self.on_entity_teleport(entity_telport.entity_id.0, f64::from(entity_telport.x), f64::from(entity_telport.y), f64::from(entity_telport.z), entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
     }
 
     fn on_entity_teleport_i32_i32_noground(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_i32_i32_NoGround) {
         let on_ground = true; // TODO: how is this supposed to be set? (for 1.7)
-        self.on_entity_teleport(entity_telport.entity_id, entity_telport.x as f64, entity_telport.y as f64, entity_telport.z as f64, entity_telport.yaw as f64, entity_telport.pitch as f64, on_ground)
+        self.on_entity_teleport(entity_telport.entity_id, f64::from(entity_telport.x), f64::from(entity_telport.y), f64::from(entity_telport.z), entity_telport.yaw as f64, entity_telport.pitch as f64, on_ground)
     }
 
 
