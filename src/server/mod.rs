@@ -711,8 +711,18 @@ impl Server {
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
                     },
                     ModIdData { mappings: _, block_substitutions: _, item_substitutions: _ } => {
+                        println!("Received FML|HS ModIdData");
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
+                        // TODO: dynamically register mod blocks
                     },
+                    RegistryData { has_more, name, ids: _, substitutions: _, dummies: _ } => {
+                        println!("Received FML|HS RegistryData for {}", name);
+                        if !has_more {
+                            self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
+                        }
+                        // TODO: dynamically register mod blocks
+                    },
+
                     HandshakeAck { phase } => {
                         match phase {
                             WaitingCAck => {
