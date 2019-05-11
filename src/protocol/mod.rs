@@ -599,7 +599,7 @@ impl Lengthable for i32 {
 
 /// `FixedPoint` has the 5 least-significant bits for the fractional
 /// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct FixedPoint32(i32);
 
 impl Serializable for FixedPoint32 {
@@ -630,9 +630,15 @@ impl convert::From<FixedPoint32> for f64 {
     }
 }
 
+impl fmt::Debug for FixedPoint32 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "FixedPoint32({} = {})", self.0, self.0 as f64 / 32.0) // TODO: use from:: trait
+    }
+}
+
 /// FixedPoint with i8 instead of i32
 /// TODO: add a type parameter - but Into/From conflicts with Lengthable methods below
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct FixedPoint8(i8);
 
 impl Serializable for FixedPoint8 {
@@ -662,6 +668,13 @@ impl convert::From<FixedPoint8> for f64 {
         x.0 as f64 / 32.0
     }
 }
+
+impl fmt::Debug for FixedPoint8 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "FixedPoint8({} = {})", self.0, self.0 as f64 / 32.0) // TODO: use from:: trait
+    }
+}
+
 
 
 /// `VarInt` have a variable size (between 1 and 5 bytes) when encoded based
