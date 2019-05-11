@@ -446,8 +446,8 @@ impl Serializable for UUID {
 
 
 pub trait Lengthable : Serializable + Copy + Default {
-    fn into(self) -> usize;
-    fn from(_: usize) -> Self;
+    fn into_len(self) -> usize;
+    fn from_len(_: usize) -> Self;
 }
 
 pub struct LenPrefixed<L: Lengthable, V> {
@@ -467,7 +467,7 @@ impl <L: Lengthable, V: Default>  LenPrefixed<L, V> {
 impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<LenPrefixed<L, V>, Error> {
         let len_data: L = Serializable::read_from(buf)?;
-        let len: usize = len_data.into();
+        let len: usize = len_data.into_len();
         let mut data: Vec<V> = Vec::with_capacity(len);
         for _ in 0..len {
             data.push(Serializable::read_from(buf)?);
@@ -479,7 +479,7 @@ impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        let len_data: L = L::from(self.data.len());
+        let len_data: L = L::from_len(self.data.len());
         len_data.write_to(buf)?;
         let data = &self.data;
         for val in data {
@@ -523,7 +523,7 @@ impl <L: Lengthable>  LenPrefixedBytes<L> {
 impl <L: Lengthable>  Serializable for LenPrefixedBytes<L> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<LenPrefixedBytes<L>, Error> {
         let len_data: L = Serializable::read_from(buf)?;
-        let len: usize = len_data.into();
+        let len: usize = len_data.into_len();
         let mut data: Vec<u8> = Vec::with_capacity(len);
         buf.take(len as u64).read_to_end(&mut data)?;
         Result::Ok(LenPrefixedBytes {
@@ -533,7 +533,7 @@ impl <L: Lengthable>  Serializable for LenPrefixedBytes<L> {
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        let len_data: L = L::from(self.data.len());
+        let len_data: L = L::from_len(self.data.len());
         len_data.write_to(buf)?;
         buf.write_all(&self.data[..])?;
         Result::Ok(())
@@ -557,42 +557,42 @@ impl <L: Lengthable> fmt::Debug for LenPrefixedBytes<L> {
 }
 
 impl Lengthable for bool {
-    fn into(self) -> usize {
+    fn into_len(self) -> usize {
         if self  { 1 } else { 0 }
     }
 
-    fn from(u: usize) -> bool {
+    fn from_len(u: usize) -> bool {
         u != 0
     }
 }
 
 
 impl Lengthable for u8 {
-    fn into(self) -> usize {
+    fn into_len(self) -> usize {
         self as usize
     }
 
-    fn from(u: usize) -> u8 {
+    fn from_len(u: usize) -> u8 {
         u as u8
     }
 }
 
 impl Lengthable for i16 {
-    fn into(self) -> usize {
+    fn into_len(self) -> usize {
         self as usize
     }
 
-    fn from(u: usize) -> i16 {
+    fn from_len(u: usize) -> i16 {
         u as i16
     }
 }
 
 impl Lengthable for i32 {
-    fn into(self) -> usize {
+    fn into_len(self) -> usize {
         self as usize
     }
 
-    fn from(u: usize) -> i32 {
+    fn from_len(u: usize) -> i32 {
         u as i32
     }
 }
@@ -683,11 +683,11 @@ impl fmt::Debug for FixedPoint8 {
 pub struct VarInt(pub i32);
 
 impl Lengthable for VarInt {
-    fn into(self) -> usize {
+    fn into_len(self) -> usize {
         self.0 as usize
     }
 
-    fn from(u: usize) -> VarInt {
+    fn from_len(u: usize) -> VarInt {
         VarInt(u as i32)
     }
 }
@@ -746,11 +746,11 @@ impl fmt::Debug for VarInt {
 pub struct VarShort(pub i32);
 
 impl Lengthable for VarShort {
-    fn into(self) -> usize {
+    fn into_len(self) -> usize {
         self.0 as usize
     }
 
-    fn from(u: usize) -> VarShort {
+    fn from_len(u: usize) -> VarShort {
         VarShort(u as i32)
     }
 }
@@ -805,11 +805,11 @@ impl fmt::Debug for VarShort {
 pub struct VarLong(pub i64);
 
 impl Lengthable for VarLong {
-    fn into(self) -> usize {
+    fn into_len(self) -> usize {
         self.0 as usize
     }
 
-    fn from(u: usize) -> VarLong {
+    fn from_len(u: usize) -> VarLong {
         VarLong(u as i64)
     }
 }
