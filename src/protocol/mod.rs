@@ -448,7 +448,7 @@ impl Serializable for UUID {
 pub trait Lengthable : Serializable + Copy + Default + From<usize> {
 }
 
-pub struct LenPrefixed<L: From<usize>, V> {
+pub struct LenPrefixed<L: Lengthable, V> {
     len: L,
     pub data: Vec<V>,
 }
