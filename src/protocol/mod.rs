@@ -554,6 +554,52 @@ impl <L: Lengthable> fmt::Debug for LenPrefixedBytes<L> {
     }
 }
 
+impl From<usize> for bool {
+    fn from(u: usize) -> bool {
+        u != 0
+    }
+}
+impl From<bool> for usize {
+    fn from(b: bool) -> usize {
+        if b { 1 } else { 0 }
+    }
+}
+
+
+impl From<usize> for u8 {
+    fn from(u: usize) -> u8 {
+        u as u8
+    }
+}
+impl From<u8> for usize {
+    fn from(b: u8) -> usize {
+        b as usize
+    }
+}
+
+impl From<usize> for i16 {
+    fn from(u: usize) -> i16 {
+        u as i16
+    }
+}
+impl From<i16> for usize {
+    fn from(b: i16) -> usize {
+        b as usize
+    }
+}
+
+
+impl From<usize> for i32 {
+    fn from(u: usize) -> i32 {
+        u as i32
+    }
+}
+impl From<i32> for usize {
+    fn from(b: i32) -> usize {
+        b as usize
+    }
+}
+
 
 /// `FixedPoint` has the 5 least-significant bits for the fractional
 /// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
