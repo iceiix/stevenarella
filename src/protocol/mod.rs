@@ -600,9 +600,9 @@ impl Lengthable for i32 {
 /// `FixedPoint` has the 5 least-significant bits for the fractional
 /// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
 #[derive(Clone, Copy)]
-pub struct FixedPoint32(i32);
+pub struct FixedPoint<T: Serializable + Default + From<f64>>(T);
 
-impl Serializable for FixedPoint32 {
+impl<T: Serializable + Default + From<f64>> Serializable for FixedPoint<T> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(Self(Serializable::read_from(buf)?))
     }
@@ -612,27 +612,27 @@ impl Serializable for FixedPoint32 {
     }
 }
 
-impl default::Default for FixedPoint32 {
+impl<T: Serializable + Default + From<f64>> default::Default for FixedPoint<T> {
     fn default() -> Self {
-        Self(i32::default())
+        Self(T::default())
     }
 }
 
-impl convert::From<f64> for FixedPoint32 {
+impl<T: Serializable + Default + From<f64>> convert::From<f64> for FixedPoint<T> {
     fn from(x: f64) -> Self {
-        FixedPoint32((x * 32.0) as i32)
+        FixedPoint(T::from(x * 32.0))
     }
 }
 
-impl convert::From<FixedPoint32> for f64 {
-    fn from(x: FixedPoint32) -> Self {
-        x.0 as f64 / 32.0
+impl<T: Serializable + Default + From<f64>> convert::From<FixedPoint<T>> for f64 {
+    fn from(x: FixedPoint<T>) -> Self {
+        f64::from(x.0) / 32.0
     }
 }
 
-impl fmt::Debug for FixedPoint32 {
+impl<T: Serializable + Default + From<f64>> fmt::Debug for FixedPoint<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FixedPoint32({} = {})", self.0, self.0 as f64 / 32.0) // TODO: use from:: trait
+        write!(f, "FixedPoint({} = {})", self.0, f64::from(self.0) / 32.0)
     }
 }
 
