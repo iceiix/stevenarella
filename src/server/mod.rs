@@ -857,12 +857,12 @@ impl Server {
     }
 
     fn on_entity_teleport_i32(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_i32) {
-        self.on_entity_teleport(entity_telport.entity_id.0, entity_telport.x as f64, entity_telport.y as f64, entity_telport.z as f64, entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
+        self.on_entity_teleport(entity_telport.entity_id.0, f64::from(entity_telport.x), f64::from(entity_telport.y), f64::from(entity_telport.z), entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
     }
 
     fn on_entity_teleport_i32_i32_noground(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_i32_i32_NoGround) {
         let on_ground = true; // TODO: how is this supposed to be set? (for 1.7)
-        self.on_entity_teleport(entity_telport.entity_id, entity_telport.x as f64, entity_telport.y as f64, entity_telport.z as f64, entity_telport.yaw as f64, entity_telport.pitch as f64, on_ground)
+        self.on_entity_teleport(entity_telport.entity_id, f64::from(entity_telport.x), f64::from(entity_telport.y), f64::from(entity_telport.z), entity_telport.yaw as f64, entity_telport.pitch as f64, on_ground)
     }
 
 
@@ -880,24 +880,24 @@ impl Server {
     }
 
     fn on_entity_move_i16(&mut self, m: packet::play::clientbound::EntityMove_i16) {
-        self.on_entity_move(m.entity_id.0, m.delta_x as f64, m.delta_y as f64, m.delta_z as f64)
+        self.on_entity_move(m.entity_id.0, f64::from(m.delta_x), f64::from(m.delta_y), f64::from(m.delta_z))
     }
 
     fn on_entity_move_i8(&mut self, m: packet::play::clientbound::EntityMove_i8) {
-        self.on_entity_move(m.entity_id.0, m.delta_x as f64, m.delta_y as f64, m.delta_z as f64)
+        self.on_entity_move(m.entity_id.0, f64::from(m.delta_x), f64::from(m.delta_y), f64::from(m.delta_z))
     }
 
     fn on_entity_move_i8_i32_noground(&mut self, m: packet::play::clientbound::EntityMove_i8_i32_NoGround) {
-        self.on_entity_move(m.entity_id, m.delta_x as f64, m.delta_y as f64, m.delta_z as f64)
+        self.on_entity_move(m.entity_id, f64::from(m.delta_x), f64::from(m.delta_y), f64::from(m.delta_z))
     }
 
 
     fn on_entity_move(&mut self, entity_id: i32, delta_x: f64, delta_y: f64, delta_z: f64) {
         if let Some(entity) = self.entity_map.get(&entity_id) {
             let position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
-            position.position.x += delta_x / (32.0 * 128.0);
-            position.position.y += delta_y / (32.0 * 128.0);
-            position.position.z += delta_z / (32.0 * 128.0);
+            position.position.x += delta_x;
+            position.position.y += delta_y;
+            position.position.z += delta_z;
         }
     }
 
@@ -920,19 +920,19 @@ impl Server {
 
     fn on_entity_look_and_move_i16(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i16) {
         self.on_entity_look_and_move(lookmove.entity_id.0,
-                                     lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
+                                     f64::from(lookmove.delta_x), f64::from(lookmove.delta_y), f64::from(lookmove.delta_z),
                                      lookmove.yaw as f64, lookmove.pitch as f64)
     }
 
     fn on_entity_look_and_move_i8(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i8) {
         self.on_entity_look_and_move(lookmove.entity_id.0,
-                                     lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
+                                     f64::from(lookmove.delta_x), f64::from(lookmove.delta_y), f64::from(lookmove.delta_z),
                                      lookmove.yaw as f64, lookmove.pitch as f64)
     }
 
     fn on_entity_look_and_move_i8_i32_noground(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i8_i32_NoGround) {
         self.on_entity_look_and_move(lookmove.entity_id,
-                                     lookmove.delta_x as f64, lookmove.delta_y as f64, lookmove.delta_z as f64,
+                                     f64::from(lookmove.delta_x), f64::from(lookmove.delta_y), f64::from(lookmove.delta_z),
                                      lookmove.yaw as f64, lookmove.pitch as f64)
     }
 
@@ -941,9 +941,9 @@ impl Server {
         if let Some(entity) = self.entity_map.get(&entity_id) {
             let position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
             let rotation = self.entities.get_component_mut(*entity, self.target_rotation).unwrap();
-            position.position.x += delta_x / (32.0 * 128.0);
-            position.position.y += delta_y / (32.0 * 128.0);
-            position.position.z += delta_z / (32.0 * 128.0);
+            position.position.x += delta_x;
+            position.position.y += delta_y;
+            position.position.z += delta_z;
             rotation.yaw = -(yaw / 256.0) * PI * 2.0;
             rotation.pitch = -(pitch / 256.0) * PI * 2.0;
         }
@@ -954,15 +954,15 @@ impl Server {
     }
 
     fn on_player_spawn_i32(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32) {
-        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
+        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, f64::from(spawn.x), f64::from(spawn.y), f64::from(spawn.z), spawn.yaw as f64, spawn.pitch as f64)
     }
 
     fn on_player_spawn_i32_helditem(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem) {
-        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
+        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, f64::from(spawn.x), f64::from(spawn.y), f64::from(spawn.z), spawn.yaw as f64, spawn.pitch as f64)
     }
 
     fn on_player_spawn_i32_helditem_string(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_String) {
-        self.on_player_spawn(spawn.entity_id.0, protocol::UUID::from_str(&spawn.uuid), spawn.x as f64, spawn.y as f64, spawn.z as f64, spawn.yaw as f64, spawn.pitch as f64)
+        self.on_player_spawn(spawn.entity_id.0, protocol::UUID::from_str(&spawn.uuid), f64::from(spawn.x), f64::from(spawn.y), f64::from(spawn.z), spawn.yaw as f64, spawn.pitch as f64)
     }
 
     fn on_player_spawn(&mut self, entity_id: i32, uuid: protocol::UUID, x: f64, y: f64, z: f64, pitch: f64, yaw: f64) {
