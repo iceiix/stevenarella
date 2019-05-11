@@ -712,7 +712,7 @@ impl Server {
                     },
                     ModIdData { mappings: _, block_substitutions: _, item_substitutions: _ } => {
                         println!("Received FML|HS ModIdData");
-                        self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
+                        self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
                         // TODO: dynamically register mod blocks
                     },
                     RegistryData { has_more, name, ids: _, substitutions: _, dummies: _ } => {
