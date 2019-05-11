@@ -597,13 +597,13 @@ impl Lengthable for i32 {
     }
 }
 
-/// `FixedPointNumber` has the 5 least-significant bits for the fractional
+/// `FixedPoint` has the 5 least-significant bits for the fractional
 /// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
 #[derive(Clone, Copy, Debug)]
 // Serialized on the wire as an i32, but we store in memory as floating-point
-pub struct FixedPointNumber(pub f64);
+pub struct FixedPoint(pub f64);
 
-impl Serializable for FixedPointNumber {
+impl Serializable for FixedPoint {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         let abs_int: i32 = Serializable::read_from(buf)?;
         Ok(Self(abs_int as f64 * 32.0f64))
@@ -615,20 +615,20 @@ impl Serializable for FixedPointNumber {
     }
 }
 
-impl default::Default for FixedPointNumber {
+impl default::Default for FixedPoint {
     fn default() -> Self {
         Self(0.0)
     }
 }
 
-impl convert::From<f64> for FixedPointNumber {
+impl convert::From<f64> for FixedPoint {
     fn from(x: f64) -> Self {
-        FixedPointNumber(x)
+        FixedPoint(x)
     }
 }
 
-impl convert::From<FixedPointNumber> for f64 {
-    fn from(x: FixedPointNumber) -> Self {
+impl convert::From<FixedPoint> for f64 {
+    fn from(x: FixedPoint) -> Self {
         x.0
     }
 }
