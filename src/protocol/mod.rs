@@ -597,8 +597,9 @@ impl Lengthable for i32 {
     }
 }
 
+use num_traits::cast::{cast, NumCast};
 /// `FixedPoint` has the 5 least-significant bits for the fractional
-/// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
+/// part, upper for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
 #[derive(Clone, Copy)]
 pub struct FixedPoint<T>(T);
 
@@ -618,104 +619,26 @@ impl<T: default::Default> default::Default for FixedPoint<T> {
     }
 }
 
-impl<T: convert::From<f64>> convert::From<f64> for FixedPoint<T> {
+impl<T: NumCast> convert::From<f64> for FixedPoint<T> {
     fn from(x: f64) -> Self {
-        FixedPoint::<T>(T::from(x * 32.0))
+        let n: T = cast(x * 32.0).unwrap();
+        FixedPoint::<T>(n)
     }
 }
 
-impl<T: convert::From<f64>> convert::From<FixedPoint<T>> for f64 where f64: std::convert::From<T> {
+impl<T: NumCast> convert::From<FixedPoint<T>> for f64 {
     fn from(x: FixedPoint<T>) -> Self {
-        f64::from(x.0) / 32.0
+        let f: f64 = cast(x.0).unwrap();
+        f / 32.0
     }
 }
 
-/* TODO: fix expected type parameter, found struct `protocol::FixedPoint
-impl<T: fmt::Display> fmt::Debug for FixedPoint<T> where T: convert::From<f64>, f64: convert::From<T> {
+impl<T> fmt::Debug for FixedPoint<T> where T: fmt::Display, f64: convert::From<T>, T: NumCast + Copy {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FixedPoint<T>({} = {})", self.0, f64::from(*self))
+        let x: f64 = (*self).into();
+        write!(f, "FixedPoint({} = {})", self.0, x)
     }
 }
-*/
-
-/// `FixedPoint` has the 5 least-significant bits for the fractional
-/// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
-#[derive(Clone, Copy)]
-pub struct FixedPoint32(i32);
-
-impl Serializable for FixedPoint32 {
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        Ok(Self(Serializable::read_from(buf)?))
-    }
-
-    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        self.0.write_to(buf)
-    }
-}
-
-impl default::Default for FixedPoint32 {
-    fn default() -> Self {
-        Self(i32::default())
-    }
-}
-
-impl convert::From<f64> for FixedPoint32 {
-    fn from(x: f64) -> Self {
-        FixedPoint32((x * 32.0) as i32)
-    }
-}
-
-impl convert::From<FixedPoint32> for f64 {
-    fn from(x: FixedPoint32) -> Self {
-        x.0 as f64 / 32.0
-    }
-}
-
-impl fmt::Debug for FixedPoint32 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FixedPoint32({} = {})", self.0, f64::from(*self))
-    }
-}
-
-/// FixedPoint with i8 instead of i32
-/// TODO: add a type parameter - but Into/From conflicts with Lengthable methods below
-#[derive(Clone, Copy)]
-pub struct FixedPoint8(i8);
-
-impl Serializable for FixedPoint8 {
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        Ok(Self(Serializable::read_from(buf)?))
-    }
-
-    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        self.0.write_to(buf)
-    }
-}
-
-impl default::Default for FixedPoint8 {
-    fn default() -> Self {
-        Self(i8::default())
-    }
-}
-
-impl convert::From<f64> for FixedPoint8 {
-    fn from(x: f64) -> Self {
-        FixedPoint8((x * 32.0) as i8)
-    }
-}
-
-impl convert::From<FixedPoint8> for f64 {
-    fn from(x: FixedPoint8) -> Self {
-        x.0 as f64 / 32.0
-    }
-}
-
-impl fmt::Debug for FixedPoint8 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FixedPoint8({} = {})", self.0, f64::from(*self))
-    }
-}
-
 
 
 /// `VarInt` have a variable size (between 1 and 5 bytes) when encoded based
