@@ -636,7 +636,7 @@ impl<T: NumCast> convert::From<FixedPoint<T>> for f64 {
 impl<T> fmt::Debug for FixedPoint<T> where T: fmt::Display, f64: convert::From<T>, T: NumCast + Copy {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let x: f64 = (*self).into();
-        write!(f, "FixedPoint({} = {})", self.0, x)
+        write!(f, "FixedPoint(#{} = {}f)", self.0, x)
     }
 }
 
