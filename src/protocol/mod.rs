@@ -33,6 +33,7 @@ use std::net::TcpStream;
 use std::io;
 use std::io::{Write, Read};
 use std::convert;
+use num_traits::cast::FromPrimitive;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
@@ -600,9 +601,9 @@ impl Lengthable for i32 {
 /// `FixedPoint` has the 5 least-significant bits for the fractional
 /// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
 #[derive(Clone, Copy)]
-pub struct FixedPoint<T: Serializable + Default + From<f64>>(T);
+pub struct FixedPoint<T: Serializable + Default + FromPrimitive>(T);
 
-impl<T: Serializable + Default + From<f64>> Serializable for FixedPoint<T> {
+impl<T: Serializable + Default + FromPrimitive> Serializable for FixedPoint<T> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         Ok(Self(Serializable::read_from(buf)?))
     }
@@ -612,27 +613,27 @@ impl<T: Serializable + Default + From<f64>> Serializable for FixedPoint<T> {
     }
 }
 
-impl<T: Serializable + Default + From<f64>> default::Default for FixedPoint<T> {
+impl<T: Serializable + Default + FromPrimitive> default::Default for FixedPoint<T> {
     fn default() -> Self {
         Self(T::default())
     }
 }
 
-impl<T: Serializable + Default + From<f64>> convert::From<f64> for FixedPoint<T> {
-    fn from(x: f64) -> Self {
-        FixedPoint(T::from(x * 32.0))
+impl<T: Serializable + Default + FromPrimitive> FromPrimitive for FixedPoint<T> {
+    fn from_f64(x: f64) -> Self {
+        FixedPoint((x * 32.0) as T)
     }
 }
 
-impl<T: Serializable + Default + From<f64>> convert::From<FixedPoint<T>> for f64 {
+impl<T: Serializable + Default + FromPrimitive> convert::From<FixedPoint<T>> for f64 {
     fn from(x: FixedPoint<T>) -> Self {
-        f64::from(x.0) / 32.0
+        FromPrimitive::from_f64(x.0) / 32.0
     }
 }
 
-impl<T: Serializable + Default + From<f64>> fmt::Debug for FixedPoint<T> {
+impl<T: Serializable + Default + FromPrimitive> fmt::Debug for FixedPoint<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FixedPoint({} = {})", self.0, f64::from(self.0) / 32.0)
+        write!(f, "FixedPoint({} = {})", self.0, FromPrimitive::from_f64(self.0) / 32.0)
     }
 }
 
