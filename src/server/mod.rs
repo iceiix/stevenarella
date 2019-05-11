@@ -718,7 +718,7 @@ impl Server {
                     RegistryData { has_more, name, ids: _, substitutions: _, dummies: _ } => {
                         println!("Received FML|HS RegistryData for {}", name);
                         if !has_more {
-                            self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
+                            self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
                         }
                         // TODO: dynamically register mod blocks
                     },
