@@ -600,6 +600,47 @@ impl Lengthable for i32 {
 /// `FixedPoint` has the 5 least-significant bits for the fractional
 /// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
 #[derive(Clone, Copy)]
+pub struct FixedPoint<T>(T);
+
+impl<T: Serializable> Serializable for FixedPoint<T> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(Self(Serializable::read_from(buf)?))
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.0.write_to(buf)
+    }
+}
+
+impl<T: default::Default> default::Default for FixedPoint<T> {
+    fn default() -> Self {
+        Self(T::default())
+    }
+}
+
+impl<T: convert::From<f64>> convert::From<f64> for FixedPoint<T> {
+    fn from(x: f64) -> Self {
+        FixedPoint::<T>(T::from(x * 32.0))
+    }
+}
+
+impl<T: convert::From<f64>> convert::From<FixedPoint<T>> for f64 where f64: std::convert::From<T> {
+    fn from(x: FixedPoint<T>) -> Self {
+        f64::from(x.0) / 32.0
+    }
+}
+
+/* TODO: fix expected type parameter, found struct `protocol::FixedPoint
+impl<T: fmt::Display> fmt::Debug for FixedPoint<T> where T: convert::From<f64>, f64: convert::From<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "FixedPoint<T>({} = {})", self.0, f64::from(*self))
+    }
+}
+*/
+
+/// `FixedPoint` has the 5 least-significant bits for the fractional
+/// part, upper 27 for integer part: https://wiki.vg/Data_types#Fixed-point_numbers
+#[derive(Clone, Copy)]
 pub struct FixedPoint32(i32);
 
 impl Serializable for FixedPoint32 {
