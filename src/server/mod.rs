@@ -551,8 +551,8 @@ impl Server {
             } else {
                 let packet = packet::play::serverbound::PlayerPositionLook_HeadY {
                     x: position.position.x,
-                    feet_y: position.position.y - 1.62,
-                    head_y: position.position.y,
+                    feet_y: position.position.y,
+                    head_y: position.position.y + 1.62,
                     z: position.position.z,
                     yaw: -(rotation.yaw as f32) * (180.0 / PI),
                     pitch: (-rotation.pitch as f32) * (180.0 / PI) + 180.0,
