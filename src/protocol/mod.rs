@@ -973,7 +973,6 @@ pub struct Conn {
 
     compression_threshold: i32,
     compression_read: Option<ZlibDecoder<io::Cursor<Vec<u8>>>>,
-    compression_write: Option<ZlibEncoder<io::Cursor<Vec<u8>>>>,
 }
 
 impl Conn {
@@ -1001,7 +1000,6 @@ impl Conn {
             cipher: Option::None,
             compression_threshold: -1,
             compression_read: Option::None,
-            compression_write: Option::None,
         })
     }
 
@@ -1016,18 +1014,11 @@ impl Conn {
             0
         };
         if self.compression_threshold >= 0 && buf.len() as i32 > self.compression_threshold {
-            /*
-            if self.compression_write.is_none() {
-                self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), Compression::default()));
-            }
-            */
             extra = 0;
             let uncompressed_size = buf.len();
             let mut new = Vec::new();
             VarInt(uncompressed_size as i32).write_to(&mut new)?;
-            //let write = self.compression_write.as_mut().unwrap();
-            //write.reset(io::Cursor::new(buf));
-            let mut write = ZlibEncoder::new(buf.as_slice(), Compression::default());
+            let mut write = ZlibEncoder::new(io::Cursor::new(buf), Compression::default());
             write.read_to_end(&mut new)?;
             buf = new;
         }
@@ -1278,7 +1269,6 @@ impl Clone for Conn {
             cipher: Option::None,
             compression_threshold: self.compression_threshold,
             compression_read: Option::None,
-            compression_write: Option::None,
         }
     }
 }
