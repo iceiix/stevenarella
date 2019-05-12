@@ -972,8 +972,6 @@ pub struct Conn {
     cipher: Option<Aes128Cfb>,
 
     compression_threshold: i32,
-    compression_read: Option<ZlibDecoder<io::Cursor<Vec<u8>>>>,
-    compression_write: Option<ZlibEncoder<io::Cursor<Vec<u8>>>>,
 }
 
 impl Conn {
@@ -1000,8 +998,6 @@ impl Conn {
             protocol_version,
             cipher: Option::None,
             compression_threshold: -1,
-            compression_read: Option::None,
-            compression_write: Option::None,
         })
     }
 
@@ -1016,16 +1012,18 @@ impl Conn {
             0
         };
         if self.compression_threshold >= 0 && buf.len() as i32 > self.compression_threshold {
-            if self.compression_write.is_none() {
-                self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), Compression::default()));
-            }
             extra = 0;
             let uncompressed_size = buf.len();
             let mut new = Vec::new();
             VarInt(uncompressed_size as i32).write_to(&mut new)?;
-            let write = self.compression_write.as_mut().unwrap();
-            write.reset(io::Cursor::new(buf));
+            let mut write = ZlibEncoder::new(io::Cursor::new(buf), Compression::default());
             write.read_to_end(&mut new)?;
+            let network_debug = unsafe { NETWORK_DEBUG };
+            if network_debug {
+                println!("Compressed for sending {} bytes to {} since > threshold {}, new={:?}",
+                         uncompressed_size, new.len(), self.compression_threshold,
+                         new);
+            }
             buf = new;
         }
 
@@ -1039,6 +1037,7 @@ impl Conn {
     }
 
     pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
+        let network_debug = unsafe { NETWORK_DEBUG };
         let len = VarInt::read_from(self)?.0 as usize;
         let mut ibuf = vec![0; len];
         self.read_exact(&mut ibuf)?;
@@ -1046,16 +1045,16 @@ impl Conn {
         let mut buf = io::Cursor::new(ibuf);
 
         if self.compression_threshold >= 0 {
-            if self.compression_read.is_none() {
-                self.compression_read = Some(ZlibDecoder::new(io::Cursor::new(Vec::new())));
-            }
             let uncompressed_size = VarInt::read_from(&mut buf)?.0;
             if uncompressed_size != 0 {
                 let mut new = Vec::with_capacity(uncompressed_size as usize);
                 {
-                    let reader = self.compression_read.as_mut().unwrap();
-                    reader.reset(buf);
+                    let mut reader = ZlibDecoder::new(buf);
                     reader.read_to_end(&mut new)?;
+                }
+                if network_debug {
+                    println!("Decompressed threshold={} len={} uncompressed_size={} to {} bytes",
+                        self.compression_threshold, len, uncompressed_size, new.len());
                 }
                 buf = io::Cursor::new(new);
             }
@@ -1066,8 +1065,6 @@ impl Conn {
             Direction::Clientbound => Direction::Serverbound,
             Direction::Serverbound => Direction::Clientbound,
         };
-
-        let network_debug = unsafe { NETWORK_DEBUG };
 
         if network_debug {
             println!("about to parse id={:x}, dir={:?} state={:?}", id, dir, self.state);
@@ -1274,8 +1271,6 @@ impl Clone for Conn {
             protocol_version: self.protocol_version,
             cipher: Option::None,
             compression_threshold: self.compression_threshold,
-            compression_read: Option::None,
-            compression_write: Option::None,
         }
     }
 }
