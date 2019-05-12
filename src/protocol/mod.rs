@@ -1041,9 +1041,21 @@ impl Conn {
     }
 
     pub fn write_packet<T: PacketType>(&mut self, packet: T) -> Result<(), Error> {
+        let network_debug = unsafe { NETWORK_DEBUG };
+
+        /* TODO: debug printing packets to send
+        if network_debug {
+            println!("about to send {:?}", packet);
+        }
+        */
+
         let mut buf = Vec::new();
         VarInt(packet.packet_id(self.protocol_version)).write_to(&mut buf)?;
         packet.write(&mut buf)?;
+
+        if network_debug  {
+            println!("sent bytes {:?}", buf);
+        }
 
         let mut extra = if self.compression_threshold >= 0 {
             1
