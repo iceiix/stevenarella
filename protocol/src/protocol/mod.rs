@@ -275,8 +275,9 @@ impl Serializable for String {
 impl Serializable for format::Component {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         let len = VarInt::read_from(buf)?.0;
-        let mut ret = String::new();
-        buf.take(len as u64).read_to_string(&mut ret)?;
+        let mut bytes = Vec::<u8>::new();
+        buf.take(len as u64).read_to_end(&mut bytes)?;
+        let ret = String::from_utf8(bytes).unwrap();
         Result::Ok(Self::from_string(&ret[..]))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
