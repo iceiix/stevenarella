@@ -1020,6 +1020,12 @@ impl Conn {
             VarInt(uncompressed_size as i32).write_to(&mut new)?;
             let mut write = ZlibEncoder::new(io::Cursor::new(buf), Compression::default());
             write.read_to_end(&mut new)?;
+            let network_debug = unsafe { NETWORK_DEBUG };
+            if network_debug {
+                println!("Compressed {} bytes to {} since > threshold {}, new={:?}",
+                         uncompressed_size, new.len(), self.compression_threshold,
+                         new);
+            }
             buf = new;
         }
 
