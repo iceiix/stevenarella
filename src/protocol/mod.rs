@@ -1170,6 +1170,23 @@ impl Conn {
                 }
             }
         }
+        // Forge 1.13+
+        if let Some(forge_data) = val.get("forgeData") {
+            if let Some(mods) = forge_data.get("mods") {
+                if let Value::Array(items) = mods {
+                    for item in items {
+                        if let Value::Object(obj) = item {
+                            let modid = obj.get("modId").unwrap().as_str().unwrap().to_string();
+                            let modmarker = obj.get("modmarker").unwrap().as_str().unwrap().to_string();
+
+                            let version = modmarker;
+
+                            forge_mods.push(crate::protocol::forge::ForgeMod { modid, version });
+                        }
+                    }
+                }
+            }
+        }
 
         Ok((Status {
             version: StatusVersion {
