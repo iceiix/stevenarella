@@ -1016,15 +1016,18 @@ impl Conn {
             0
         };
         if self.compression_threshold >= 0 && buf.len() as i32 > self.compression_threshold {
+            /*
             if self.compression_write.is_none() {
                 self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), Compression::default()));
             }
+            */
             extra = 0;
             let uncompressed_size = buf.len();
             let mut new = Vec::new();
             VarInt(uncompressed_size as i32).write_to(&mut new)?;
-            let write = self.compression_write.as_mut().unwrap();
-            write.reset(io::Cursor::new(buf));
+            //let write = self.compression_write.as_mut().unwrap();
+            //write.reset(io::Cursor::new(buf));
+            let mut write = ZlibEncoder::new(buf.as_slice(), Compression::default());
             write.read_to_end(&mut new)?;
             buf = new;
         }
