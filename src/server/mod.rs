@@ -108,7 +108,8 @@ impl Server {
     pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32, forge_mods: Vec<forge::ForgeMod>) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
-        let host = conn.host.clone();
+        let tag = if forge_mods.len() != 0 { "\0FML\0" } else { "" };
+        let host = conn.host.clone() + tag;
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
              protocol_version: protocol::VarInt(protocol_version),
