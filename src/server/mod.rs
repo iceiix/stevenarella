@@ -108,7 +108,8 @@ impl Server {
     pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32, forge_mods: Vec<forge::ForgeMod>) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
-        let host = conn.host.clone();
+        let tag = if forge_mods.len() != 0 { "\0FML\0" } else { "" };
+        let host = conn.host.clone() + tag;
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
              protocol_version: protocol::VarInt(protocol_version),
@@ -711,7 +712,16 @@ impl Server {
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
                     },
                     ModIdData { mappings: _, block_substitutions: _, item_substitutions: _ } => {
-                        self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
+                        println!("Received FML|HS ModIdData");
+                        self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
+                        // TODO: dynamically register mod blocks
+                    },
+                    RegistryData { has_more, name, ids: _, substitutions: _, dummies: _ } => {
+                        println!("Received FML|HS RegistryData for {}", name);
+                        if !has_more {
+                            self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
+                        }
+                        // TODO: dynamically register mod blocks
                     },
                     HandshakeAck { phase } => {
                         match phase {

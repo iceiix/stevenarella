@@ -97,7 +97,6 @@ pub enum FmlHs {
     ModList {
         mods: LenPrefixed<VarInt, ForgeMod>,
     },
-    /* TODO: 1.8+ https://wiki.vg/Minecraft_Forge_Handshake#Differences_from_Forge_1.7.10
     RegistryData {
         has_more: bool,
         name: String,
@@ -105,7 +104,6 @@ pub enum FmlHs {
         substitutions: LenPrefixed<VarInt, String>,
         dummies: LenPrefixed<VarInt, String>,
     },
-    */
     ModIdData {
         mappings: LenPrefixed<VarInt, ModIdMapping>,
         block_substitutions: LenPrefixed<VarInt, String>,
@@ -145,11 +143,23 @@ impl Serializable for FmlHs {
                 })
             },
             3 => {
-                Ok(FmlHs::ModIdData {
-                    mappings: Serializable::read_from(buf)?,
-                    block_substitutions: Serializable::read_from(buf)?,
-                    item_substitutions: Serializable::read_from(buf)?, 
-                })
+                let protocol_version = unsafe { crate::protocol::CURRENT_PROTOCOL_VERSION };
+
+                if protocol_version >= 47 {
+                    Ok(FmlHs::RegistryData {
+                        has_more: Serializable::read_from(buf)?,
+                        name: Serializable::read_from(buf)?,
+                        ids: Serializable::read_from(buf)?,
+                        substitutions: Serializable::read_from(buf)?,
+                        dummies: Serializable::read_from(buf)?,
+                    })
+                } else {
+                    Ok(FmlHs::ModIdData {
+                        mappings: Serializable::read_from(buf)?,
+                        block_substitutions: Serializable::read_from(buf)?,
+                        item_substitutions: Serializable::read_from(buf)?, 
+                    })
+                }
             },
             255 => {
                 Ok(FmlHs::HandshakeAck {
