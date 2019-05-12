@@ -183,7 +183,6 @@ impl Tag {
     }
 
     fn read_type<R: io::Read>(id: u8, buf: &mut R) -> Result<Tag, protocol::Error> {
-        println!("NBT about to read_tag id={}", id);
         match id {
             0 => unreachable!(),
             1 => Ok(Tag::Byte(buf.read_i8()?)),

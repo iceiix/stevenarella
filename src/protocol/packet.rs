@@ -2050,24 +2050,18 @@ pub struct Advancement {
 
 impl Serializable for Advancement {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        println!("reading Advancement");
         let id: String = Serializable::read_from(buf)?;
-        println!("id={}", id);
         let parent_id = {
             let has_parent: u8 = Serializable::read_from(buf)?;
-            println!("has_parent? {}", has_parent);
             if has_parent != 0 {
                 let parent_id: String = Serializable::read_from(buf)?;
-                println!("parent_id {}",parent_id);
                 Some(parent_id)
             } else {
                 None
             }
         };
-        println!("parent_id={:?}", parent_id);
 
         let has_display: u8 = Serializable::read_from(buf)?;
-        println!("has_display {}", has_display);
         let display_data = {
             if has_display != 0 {
                 let display_data: AdvancementDisplay = Serializable::read_from(buf)?;
@@ -2076,12 +2070,9 @@ impl Serializable for Advancement {
                 None
             }
         };
-        println!("display_data {:?}", display_data);
 
         let criteria: LenPrefixed<VarInt, String> = Serializable::read_from(buf)?;
-        println!("criteria {:?}", criteria);
         let requirements: LenPrefixed<VarInt, LenPrefixed<VarInt, String>> = Serializable::read_from(buf)?;
-        println!("requirements {:?}", requirements);
         Ok(Advancement {
             id,
             parent_id,
@@ -2115,27 +2106,18 @@ pub struct AdvancementDisplay {
 
 impl Serializable for AdvancementDisplay {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        println!("reading AdvancementDisplay");
         let title: String = Serializable::read_from(buf)?;
-        println!("title {}", title);
         let description: String = Serializable::read_from(buf)?;
-        println!("description {}", description);
         let icon: Option<crate::item::Stack> = Serializable::read_from(buf)?;
-        println!("icon {:?}", icon);
         let frame_type: VarInt = Serializable::read_from(buf)?;
-        println!("frame_type {:?}", frame_type);
         let flags: i32 = Serializable::read_from(buf)?;
-        println!("flags {}", flags);
         let background_texture: Option<String> = if flags & 1 != 0 {
             Serializable::read_from(buf)?
         } else {
             None
         };
-        println!("background_texture {:?}", background_texture);
         let x_coord: f32 = Serializable::read_from(buf)?;
-        println!("x_coord {:?}", x_coord);
         let y_coord: f32 = Serializable::read_from(buf)?;
-        println!("y_coord {:?}", y_coord);
 
         Ok(AdvancementDisplay {
             title,
@@ -2192,17 +2174,13 @@ pub struct CriterionProgress {
 
 impl Serializable for CriterionProgress {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        println!("read CriterionProgress");
         let id = Serializable::read_from(buf)?;
-        println!("id {:?}", id);
         let achieved: u8 = Serializable::read_from(buf)?;
-        println!("achieved {:?}", achieved);
         let date_of_achieving: Option<i64> = if achieved != 0 {
             Serializable::read_from(buf)?
         } else {
             None
         };
-        println!("date {:?}", date_of_achieving);
 
         Ok(CriterionProgress {
             id,
