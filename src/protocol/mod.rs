@@ -1016,31 +1016,16 @@ impl Conn {
             0
         };
         if self.compression_threshold >= 0 && buf.len() as i32 > self.compression_threshold {
-            println!("Compressing since threshold={} > len={}", self.compression_threshold, buf.len());
             if self.compression_write.is_none() {
                 self.compression_write = Some(ZlibEncoder::new(io::Cursor::new(Vec::new()), Compression::default()));
-                println!("Initialized self.compression_write");
-            } else {
-                println!("Not initializing self.compression_write, was already");
             }
-
             extra = 0;
             let uncompressed_size = buf.len();
             let mut new = Vec::new();
-            //VarInt(uncompressed_size as i32).write_to(&mut new)?;
+            VarInt(uncompressed_size as i32).write_to(&mut new)?;
             let write = self.compression_write.as_mut().unwrap();
-            println!("Compressing buf={:?}", buf);
             write.reset(io::Cursor::new(buf));
             write.read_to_end(&mut new)?;
-            println!("Compressed bytes={:?}", new);
-            println!("About to decompress");
-            {
-                let mut reader = ZlibDecoder::new(&new[..]);
-                let mut check = Vec::new();
-                reader.read_to_end(&mut check).unwrap();
-                println!("Decompressed bytes={:?}", check);
-            }
-
             buf = new;
         }
 
