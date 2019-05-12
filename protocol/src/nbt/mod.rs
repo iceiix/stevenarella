@@ -304,7 +304,8 @@ pub fn write_string<W: io::Write>(buf: &mut W, s: &str) -> Result<(), protocol::
 
 pub fn read_string<R: io::Read>(buf: &mut R) -> Result<String, protocol::Error> {
     let len: i16 = buf.read_i16::<BigEndian>()?;
-    let mut ret = String::new();
-    buf.take(len as u64).read_to_string(&mut ret)?;
+    let mut bytes = Vec::<u8>::new();
+    buf.take(len as u64).read_to_end(&mut bytes)?;
+    let ret = String::from_utf8(bytes).unwrap();
     Result::Ok(ret)
 }
