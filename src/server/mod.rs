@@ -723,7 +723,6 @@ impl Server {
                         }
                         // TODO: dynamically register mod blocks
                     },
-
                     HandshakeAck { phase } => {
                         match phase {
                             WaitingCAck => {
