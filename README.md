@@ -43,7 +43,7 @@ development is not in lock-step with the server version. The level of
 support varies, but the goal is to support major versions from 1.7.10
 up to the current latest major version. Occasionally, snapshots are also supported.
 
-Forge servers are supported on 1.7.10 - 1.12.2.
+Forge servers are currently supported on 1.7.10 - 1.12.2.
 
 Support for older protocols will _not_ be dropped as newer protocols are added.
 

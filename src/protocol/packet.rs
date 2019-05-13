@@ -131,7 +131,7 @@ state_packets!(
                 field id: u8 =,
                 field enchantment: u8 =,
             }
-            /// ClickWindowButton is used for clicking a enchantment, lectern, stonecutter, or loom.
+            /// ClickWindowButton is used for clicking an enchantment, lectern, stonecutter, or loom.
             packet ClickWindowButton {
                 field id: u8 =,
                 field button: u8 =,
