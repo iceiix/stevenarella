@@ -178,7 +178,7 @@ struct Opt {
 
     /// Protocol version to use in the autodetection ping
     #[structopt(short = "p", long = "default-protocol-version")]
-    default_protocol_version: Option<i32>,
+    default_protocol_version: Option<String>,
 }
 
 cfg_if! {
@@ -260,6 +260,8 @@ pub fn main() {
 
     let textures = renderer.get_textures();
     let dpi_factor = window.get_current_monitor().get_hidpi_factor();
+    let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
+        opt.default_protocol_version.unwrap_or("".to_string()));
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
         focused: false,
@@ -277,7 +279,7 @@ pub fn main() {
         last_mouse_xrel: 0.0,
         last_mouse_yrel: 0.0,
         is_fullscreen: false,
-        default_protocol_version: opt.default_protocol_version.unwrap_or(protocol::SUPPORTED_PROTOCOLS[0]),
+        default_protocol_version,
     };
     game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
 
