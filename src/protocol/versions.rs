@@ -1,5 +1,6 @@
 use crate::protocol::*;
 
+mod v1_14_1;
 mod v1_14;
 mod v19w02a;
 mod v18w50a;
@@ -18,6 +19,10 @@ pub fn translate_internal_packet_id_for_version(version: i32, state: State, dir:
         // https://wiki.vg/Protocol_History
         // https://wiki.vg/Protocol_version_numbers#Versions_after_the_Netty_rewrite
 
+        // 1.14.1
+        480 => v1_14_1::translate_internal_packet_id(state, dir, id, to_internal),
+
+        // 1.14
         477 => v1_14::translate_internal_packet_id(state, dir, id, to_internal),
        
         // 19w02a
