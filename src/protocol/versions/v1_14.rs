@@ -16,8 +16,7 @@ protocol_packet_ids!(
             0x05 => ClientSettings
             0x06 => TabComplete
             0x07 => ConfirmTransactionServerbound
-            //0x08 => EnchantItem
-            //0x08 => ClickWindowButton
+            0x08 => ClickWindowButton
             0x09 => ClickWindow
             0x0a => CloseWindow
             0x0b => PluginMessageServerbound
