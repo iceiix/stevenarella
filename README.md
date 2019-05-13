@@ -23,6 +23,8 @@ Join with your favorite IRC client or [Matrix](https://matrix.to/#/#_espernet_#s
 
 | Game version | Protocol version | Supported? |
 | ------ | --- | --- |
+| 1.14.1 | 480 | ✓ |
+| 1.14.1 | 477 | ✓ |
 | 1.14 | 477 | ✓ |
 | 19w02a | 452 | ✓ |
 | 18w50a | 451 | ✓ |
@@ -35,12 +37,14 @@ Join with your favorite IRC client or [Matrix](https://matrix.to/#/#_espernet_#s
 | 1.9    | 107 | ✓ |
 | 15w39c | 74  | ✓ |
 | 1.8.9  | 47  | ✓ |
-| 1.7.10 + Forge | 5   | ✓ |
+| 1.7.10 | 5   | ✓ |
 
 Stevenarella is designed to support multiple protocol versions, so that client
 development is not in lock-step with the server version. The level of
 support varies, but the goal is to support major versions from 1.7.10
 up to the current latest major version. Occasionally, snapshots are also supported.
+
+Forge servers are currently supported on 1.7.10 - 1.12.2.
 
 Support for older protocols will _not_ be dropped as newer protocols are added.
 
