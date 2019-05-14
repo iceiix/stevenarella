@@ -137,6 +137,12 @@ macro_rules! define_blocks {
                 if protocol_version >= 404 {
                     VANILLA_ID_MAP.flat.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
                 } else {
+                    // rockwool -> wool
+                    // TODO: avoid hardcoding ids, lookup from ModIdData
+                    if id >> 4 == 3731 {
+                        return VANILLA_ID_MAP.hier.get((35 << 4) | (id & 0xf)).and_then(|v| *v).unwrap()
+                    }
+
                     VANILLA_ID_MAP.hier.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
                 }
             }
