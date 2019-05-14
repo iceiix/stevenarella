@@ -1706,10 +1706,14 @@ state_packets!(
                 field pitch: i8 =,
             }
             packet Advancements {
+                field data: Vec<u8> =,
+                /* TODO: fix parsing modded advancements 1.12.2 (e.g. SevTech Ages)
+                 * see https://github.com/iceiix/stevenarella/issues/148
                 field reset_clear: bool =,
                 field mapping: LenPrefixed<VarInt, packet::Advancement> =,
                 field identifiers: LenPrefixed<VarInt, String> =,
                 field progress: LenPrefixed<VarInt, packet::AdvancementProgress> =,
+                */
             }
             /// EntityProperties updates the properties for an entity.
             packet EntityProperties {
