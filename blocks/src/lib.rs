@@ -157,7 +157,8 @@ macro_rules! define_blocks {
                     // rockwool -> wool
                     // TODO: avoid hardcoding ids, lookup from ModIdData
                     if id >> 4 == 3731 {
-                        return VANILLA_ID_MAP.hier.get((35 << 4) | (id & 0xf)).and_then(|v| *v).unwrap()
+                        // TODO: correct variant from id & 0xf
+                        return Block::Rockwool { color: ColoredVariant::Orange }
                     }
 
                     VANILLA_ID_MAP.hier.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
