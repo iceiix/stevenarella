@@ -43,7 +43,7 @@ pub struct Server {
     conn: Option<protocol::Conn>,
     protocol_version: i32,
     forge_mods: Vec<forge::ForgeMod>,
-    modded_block_ids: HashMap<i32, String>,
+    modded_block_ids: HashMap<usize, String>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub disconnect_reason: Option<format::Component>,
     just_disconnected: bool,
@@ -716,7 +716,7 @@ impl Server {
                     ModIdData { mappings, block_substitutions: _, item_substitutions: _ } => {
                         println!("Received FML|HS ModIdData");
                         for m in mappings.data {
-                            self.modded_block_ids.insert(m.id.0, m.name);
+                            self.modded_block_ids.insert(m.id.0 as usize, m.name);
                         }
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
                         // TODO: dynamically register mod blocks
@@ -725,7 +725,7 @@ impl Server {
                         println!("Received FML|HS RegistryData for {}", name);
                         if name == "minecraft:blocks" {
                             for m in ids.data {
-                                self.modded_block_ids.insert(m.id.0, m.name);
+                                self.modded_block_ids.insert(m.id.0 as usize, m.name);
                             }
                         }
                         if !has_more {
@@ -1294,7 +1294,7 @@ impl Server {
     }
 
     fn on_block_change(&mut self, location: Position, id: i32) {
-        self.world.set_block(location, block::Block::by_vanilla_id(id as usize, self.protocol_version))
+        self.world.set_block(location, block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids))
     }
 
     fn on_block_change_varint(&mut self, block_change: packet::play::clientbound::BlockChange_VarInt) {
@@ -1318,7 +1318,7 @@ impl Server {
                     record.y as i32,
                     oz + (record.xz & 0xF) as i32
                 ),
-                block::Block::by_vanilla_id(record.block_id.0 as usize, self.protocol_version)
+                block::Block::by_vanilla_id(record.block_id.0 as usize, self.protocol_version, &self.modded_block_ids)
             );
         }
     }
@@ -1341,7 +1341,7 @@ impl Server {
 
             self.world.set_block(
                 Position::new(x, y, z),
-                block::Block::by_vanilla_id(id as usize, self.protocol_version)
+                block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids)
             );
         }
     }
