@@ -45,8 +45,7 @@ macro_rules! create_ids {
 struct VanillaIDMap {
     flat: Vec<Option<Block>>,
     hier: Vec<Option<Block>>,
-    //modded: HashMap<&'static str, [Option<Block>; 16]>, // TODO: fixed-size array?
-    modded: HashMap<String, Vec<Option<Block>>>,
+    modded: HashMap<String, [Option<Block>; 16]>,
 }
 
 macro_rules! define_blocks {
@@ -296,7 +295,7 @@ macro_rules! define_blocks {
             static ref VANILLA_ID_MAP: VanillaIDMap = {
                 let mut blocks_flat = vec![];
                 let mut blocks_hier = vec![];
-                let mut blocks_modded: HashMap<String, Vec<Option<Block>>> = HashMap::new();
+                let mut blocks_modded: HashMap<String, [Option<Block>; 16]> = HashMap::new();
                 let mut flat_id = 0;
                 let mut last_internal_id = 0;
                 let mut hier_block_id = 0;
@@ -396,7 +395,7 @@ macro_rules! define_blocks {
                         if let Some(modid) = block.get_modid() {
                             let hier_data = hier_data.unwrap();
                             if !blocks_modded.contains_key(modid) {
-                                blocks_modded.insert(modid.to_string(), vec![None; 16]);
+                                blocks_modded.insert(modid.to_string(), [None; 16]);
                             }
                             let block_from_data = blocks_modded.get_mut(modid).unwrap();
                             block_from_data[hier_data] = Some(block);
