@@ -43,6 +43,7 @@ pub struct Server {
     conn: Option<protocol::Conn>,
     protocol_version: i32,
     forge_mods: Vec<forge::ForgeMod>,
+    modded_block_ids: HashMap<i32, String>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub disconnect_reason: Option<format::Component>,
     just_disconnected: bool,
@@ -283,6 +284,7 @@ impl Server {
             conn,
             protocol_version,
             forge_mods,
+            modded_block_ids: HashMap::new(),
             read_queue,
             disconnect_reason: None,
             just_disconnected: false,
@@ -711,17 +713,24 @@ impl Server {
 
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
                     },
-                    ModIdData { mappings: _, block_substitutions: _, item_substitutions: _ } => {
+                    ModIdData { mappings, block_substitutions: _, item_substitutions: _ } => {
                         println!("Received FML|HS ModIdData");
+                        for m in mappings.data {
+                            self.modded_block_ids.insert(m.id.0, m.name);
+                        }
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
                         // TODO: dynamically register mod blocks
                     },
-                    RegistryData { has_more, name, ids: _, substitutions: _, dummies: _ } => {
+                    RegistryData { has_more, name, ids, substitutions: _, dummies: _ } => {
                         println!("Received FML|HS RegistryData for {}", name);
+                        if name == "minecraft:blocks" {
+                            for m in ids.data {
+                                self.modded_block_ids.insert(m.id.0, m.name);
+                            }
+                        }
                         if !has_more {
                             self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
                         }
-                        // TODO: dynamically register mod blocks
                     },
                     HandshakeAck { phase } => {
                         match phase {
