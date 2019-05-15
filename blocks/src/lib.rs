@@ -1060,7 +1060,7 @@ define_blocks! {
         data Some(color.data()),
         model { ("minecraft", format!("{}_wool", color.as_string()) ) },
     }
-    Rockwool {
+    ThermalExpansionRockwool {
         modid "ThermalExpansion:Rockwool",
         props {
             color: ColoredVariant = [
@@ -1085,7 +1085,31 @@ define_blocks! {
         data Some(color.data()),
         model { ("minecraft", format!("{}_wool", color.as_string()) ) },
     }
-
+    ThermalFoundationRockwool {
+        modid "thermalfoundation:rockwool",
+        props {
+            color: ColoredVariant = [
+                ColoredVariant::White,
+                ColoredVariant::Orange,
+                ColoredVariant::Magenta,
+                ColoredVariant::LightBlue,
+                ColoredVariant::Yellow,
+                ColoredVariant::Lime,
+                ColoredVariant::Pink,
+                ColoredVariant::Gray,
+                ColoredVariant::Silver,
+                ColoredVariant::Cyan,
+                ColoredVariant::Purple,
+                ColoredVariant::Blue,
+                ColoredVariant::Brown,
+                ColoredVariant::Green,
+                ColoredVariant::Red,
+                ColoredVariant::Black
+            ],
+        },
+        data Some(color.data()),
+        model { ("minecraft", format!("{}_wool", color.as_string()) ) },
+    }
     PistonExtension {
         props {
             facing: Direction = [
