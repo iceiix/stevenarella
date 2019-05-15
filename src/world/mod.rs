@@ -45,6 +45,7 @@ pub struct World {
     block_entity_actions: VecDeque<BlockEntityAction>,
 
     protocol_version: i32,
+    pub modded_block_ids: HashMap<usize, String>,
 }
 
 #[derive(Clone, Debug)]
@@ -619,7 +620,7 @@ impl World {
 
                 for bi in 0 .. 4096 {
                     let id = data.read_u16::<byteorder::LittleEndian>()?;
-                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize, self.protocol_version));
+                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids));
 
                     // Spawn block entities
                     let b = section.blocks.get(bi);
@@ -805,7 +806,7 @@ impl World {
 
                 for bi in 0 .. 4096 {
                     let id = ((block_add[i].get(bi) as u16) << 12) | ((block_types[i][bi] as u16) << 4) | (block_meta[i].get(bi) as u16);
-                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize, self.protocol_version));
+                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids));
 
                     // Spawn block entities
                     let b = section.blocks.get(bi);
@@ -882,7 +883,7 @@ impl World {
                     let count = VarInt::read_from(&mut data)?.0;
                     for i in 0 .. count {
                         let id = VarInt::read_from(&mut data)?.0;
-                        let bl = block::Block::by_vanilla_id(id as usize, self.protocol_version);
+                        let bl = block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids);
                         mappings.insert(i as usize, bl);
                     }
                 }
@@ -892,7 +893,7 @@ impl World {
 
                 for bi in 0 .. 4096 {
                     let id = m.get(bi);
-                    section.blocks.set(bi, mappings.get(&id).cloned().unwrap_or(block::Block::by_vanilla_id(id, self.protocol_version)));
+                    section.blocks.set(bi, mappings.get(&id).cloned().unwrap_or(block::Block::by_vanilla_id(id, self.protocol_version, &self.modded_block_ids)));
                     // Spawn block entities
                     let b = section.blocks.get(bi);
                     if block_entity::BlockEntityType::get_block_entity(b).is_some() {

@@ -7,6 +7,7 @@ use crate::shared::{Axis, Direction, Position};
 use collision::Aabb3;
 use cgmath::Point3;
 use lazy_static::lazy_static;
+use std::collections::HashMap;
 
 pub mod material;
 pub use self::material::Material;
@@ -44,12 +45,14 @@ macro_rules! create_ids {
 struct VanillaIDMap {
     flat: Vec<Option<Block>>,
     hier: Vec<Option<Block>>,
+    modded: HashMap<String, [Option<Block>; 16]>,
 }
 
 macro_rules! define_blocks {
     (
         $(
             $name:ident {
+                $(modid $modid:expr,)*
                 props {
                     $(
                         $fname:ident : $ftype:ty = [$($val:expr),+],
@@ -133,11 +136,43 @@ macro_rules! define_blocks {
                 }
             }
 
-            pub fn by_vanilla_id(id: usize, protocol_version: i32) -> Block {
+            #[allow(unused_variables, unreachable_code)]
+            pub fn get_modid(&self) -> Option<&str> {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)*
+                        } => {
+                            $(
+                                return Some($modid);
+                            )*
+                            None
+                        }
+                    )+
+                }
+            }
+
+            pub fn by_vanilla_id(id: usize, protocol_version: i32, modded_block_ids: &HashMap<usize, String>) -> Block {
                 if protocol_version >= 404 {
                     VANILLA_ID_MAP.flat.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
+                    // TODO: support modded 1.13.2+ blocks after https://github.com/iceiix/stevenarella/pull/145
                 } else {
-                    VANILLA_ID_MAP.hier.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
+                    if let Some(block) = VANILLA_ID_MAP.hier.get(id).and_then(|v| *v) {
+                        block
+                    } else {
+                        let data = id & 0xf;
+
+                        if let Some(name) = modded_block_ids.get(&(id >> 4)) {
+                            if let Some(blocks_by_data) = VANILLA_ID_MAP.modded.get(name) {
+                                blocks_by_data[data].unwrap_or(Block::Missing{})
+                            } else {
+                                //println!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
+                                Block::Missing{}
+                            }
+                        } else {
+                            Block::Missing{}
+                        }
+                    }
                 }
             }
 
@@ -257,6 +292,7 @@ macro_rules! define_blocks {
             static ref VANILLA_ID_MAP: VanillaIDMap = {
                 let mut blocks_flat = vec![];
                 let mut blocks_hier = vec![];
+                let mut blocks_modded: HashMap<String, [Option<Block>; 16]> = HashMap::new();
                 let mut flat_id = 0;
                 let mut last_internal_id = 0;
                 let mut hier_block_id = 0;
@@ -353,6 +389,16 @@ macro_rules! define_blocks {
                     for block in iter {
                         let internal_id = block.get_internal_id();
                         let hier_data: Option<usize> = block.get_hierarchical_data();
+                        if let Some(modid) = block.get_modid() {
+                            let hier_data = hier_data.unwrap();
+                            if !blocks_modded.contains_key(modid) {
+                                blocks_modded.insert(modid.to_string(), [None; 16]);
+                            }
+                            let block_from_data = blocks_modded.get_mut(modid).unwrap();
+                            block_from_data[hier_data] = Some(block);
+                            continue
+                        }
+
                         let vanilla_id =
                             if let Some(hier_data) = hier_data {
                                 if internal_id != last_internal_id {
@@ -422,7 +468,7 @@ macro_rules! define_blocks {
                     }
                 })+
 
-                VanillaIDMap { flat: blocks_flat, hier: blocks_hier }
+                VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded }
             };
         }
     );
@@ -991,6 +1037,56 @@ define_blocks! {
         },
     }
     Wool {
+        props {
+            color: ColoredVariant = [
+                ColoredVariant::White,
+                ColoredVariant::Orange,
+                ColoredVariant::Magenta,
+                ColoredVariant::LightBlue,
+                ColoredVariant::Yellow,
+                ColoredVariant::Lime,
+                ColoredVariant::Pink,
+                ColoredVariant::Gray,
+                ColoredVariant::Silver,
+                ColoredVariant::Cyan,
+                ColoredVariant::Purple,
+                ColoredVariant::Blue,
+                ColoredVariant::Brown,
+                ColoredVariant::Green,
+                ColoredVariant::Red,
+                ColoredVariant::Black
+            ],
+        },
+        data Some(color.data()),
+        model { ("minecraft", format!("{}_wool", color.as_string()) ) },
+    }
+    ThermalExpansionRockwool {
+        modid "ThermalExpansion:Rockwool",
+        props {
+            color: ColoredVariant = [
+                ColoredVariant::White,
+                ColoredVariant::Orange,
+                ColoredVariant::Magenta,
+                ColoredVariant::LightBlue,
+                ColoredVariant::Yellow,
+                ColoredVariant::Lime,
+                ColoredVariant::Pink,
+                ColoredVariant::Gray,
+                ColoredVariant::Silver,
+                ColoredVariant::Cyan,
+                ColoredVariant::Purple,
+                ColoredVariant::Blue,
+                ColoredVariant::Brown,
+                ColoredVariant::Green,
+                ColoredVariant::Red,
+                ColoredVariant::Black
+            ],
+        },
+        data Some(color.data()),
+        model { ("minecraft", format!("{}_wool", color.as_string()) ) },
+    }
+    ThermalFoundationRockwool {
+        modid "thermalfoundation:rockwool",
         props {
             color: ColoredVariant = [
                 ColoredVariant::White,
