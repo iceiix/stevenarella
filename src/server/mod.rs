@@ -721,7 +721,6 @@ impl Server {
                             self.world.modded_block_ids.insert(m.id.0 as usize, m.name);
                         }
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
-                        // TODO: dynamically register mod blocks
                     },
                     RegistryData { has_more, name, ids, substitutions: _, dummies: _ } => {
                         println!("Received FML|HS RegistryData for {}", name);
