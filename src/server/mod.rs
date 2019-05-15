@@ -717,9 +717,11 @@ impl Server {
                     ModIdData { mappings, block_substitutions: _, item_substitutions: _ } => {
                         println!("Received FML|HS ModIdData");
                         for m in mappings.data {
-                            if m.namespace == protocol::forge::BLOCK_NAMESPACE {
-                                self.modded_block_ids.insert(m.id.0 as usize, m.name.clone()); // TODO: avoid unnecessary clone
-                                self.world.modded_block_ids.insert(m.id.0 as usize, m.name);
+                            let (namespace, name) = m.name.split_at(1);
+                            if namespace == protocol::forge::BLOCK_NAMESPACE {
+                                // TODO: avoid unnecessary clone()
+                                self.modded_block_ids.insert(m.id.0 as usize, name.to_string().clone());
+                                self.world.modded_block_ids.insert(m.id.0 as usize, name.to_string());
                             }
                         }
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });

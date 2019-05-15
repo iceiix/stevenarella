@@ -1061,7 +1061,7 @@ define_blocks! {
         model { ("minecraft", format!("{}_wool", color.as_string()) ) },
     }
     Rockwool {
-        modid "\u{2}ThermalExpansion:Rockwool",
+        modid "ThermalExpansion:Rockwool",
         props {
             color: ColoredVariant = [
                 ColoredVariant::White,
