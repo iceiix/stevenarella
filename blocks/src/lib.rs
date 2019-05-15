@@ -161,15 +161,12 @@ macro_rules! define_blocks {
                         block
                     } else {
                         let data = id & 0xf;
-                        //println!("Looking up custom block id {}:{}", id >> 4, data); // could be unimplemented vanilla
 
                         if let Some(name) = modded_block_ids.get(&(id >> 4)) {
-                            //println!("Resolved modded block id {}:{} -> {:?}", id >> 4, data, name);
-                            //println!("modded = {:?}", VANILLA_ID_MAP.modded);
                             if let Some(blocks_by_data) = VANILLA_ID_MAP.modded.get(name) {
                                 blocks_by_data[data].unwrap_or(Block::Missing{})
                             } else {
-                                println!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
+                                //println!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
                                 Block::Missing{}
                             }
                         } else {
