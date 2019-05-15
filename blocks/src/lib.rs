@@ -165,7 +165,8 @@ macro_rules! define_blocks {
                         //println!("Looking up custom block id {}:{}", id >> 4, data); // could be unimplemented vanilla
 
                         if let Some(name) = modded_block_ids.get(&(id >> 4)) {
-                            //println!("Resolved modded block id {}:{} -> {}", id >> 4, data, name);
+                            //println!("Resolved modded block id {}:{} -> {:?}", id >> 4, data, name);
+                            //println!("modded = {:?}", VANILLA_ID_MAP.modded);
                             if let Some(blocks_by_data) = VANILLA_ID_MAP.modded.get(name) {
                                 blocks_by_data[data].unwrap_or(Block::Missing{})
                             } else {
@@ -1065,7 +1066,7 @@ define_blocks! {
         model { ("minecraft", format!("{}_wool", color.as_string()) ) },
     }
     Rockwool {
-        modid "\u{1}ThermalExpansion:Rockwool",
+        modid "\u{2}ThermalExpansion:Rockwool",
         props {
             color: ColoredVariant = [
                 ColoredVariant::White,
