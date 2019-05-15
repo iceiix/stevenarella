@@ -7,6 +7,7 @@ use crate::shared::{Axis, Direction, Position};
 use collision::Aabb3;
 use cgmath::Point3;
 use lazy_static::lazy_static;
+use std::collections::HashMap;
 
 pub mod material;
 pub use self::material::Material;
@@ -44,6 +45,8 @@ macro_rules! create_ids {
 struct VanillaIDMap {
     flat: Vec<Option<Block>>,
     hier: Vec<Option<Block>>,
+    //modded: HashMap<&'static str, [Option<Block>; 16]>, // TODO: fixed-size array?
+    modded: HashMap<String, Vec<Option<Block>>>,
 }
 
 macro_rules! define_blocks {
@@ -157,8 +160,11 @@ macro_rules! define_blocks {
                     // rockwool -> wool
                     // TODO: avoid hardcoding ids, lookup from ModIdData
                     if id >> 4 == 3731 {
-                        // TODO: correct variant from id & 0xf
-                        return Block::Rockwool { color: ColoredVariant::Orange }
+                        let data = id & 0xf;
+                        return VANILLA_ID_MAP.modded
+                            .get("\u{1}ThermalExpansion:Rockwool")
+                            .unwrap()[data]
+                            .unwrap_or(Block::Missing{})
                     }
 
                     VANILLA_ID_MAP.hier.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
@@ -281,6 +287,7 @@ macro_rules! define_blocks {
             static ref VANILLA_ID_MAP: VanillaIDMap = {
                 let mut blocks_flat = vec![];
                 let mut blocks_hier = vec![];
+                let mut blocks_modded: HashMap<String, Vec<Option<Block>>> = HashMap::new();
                 let mut flat_id = 0;
                 let mut last_internal_id = 0;
                 let mut hier_block_id = 0;
@@ -377,7 +384,14 @@ macro_rules! define_blocks {
                     for block in iter {
                         let internal_id = block.get_internal_id();
                         let hier_data: Option<usize> = block.get_hierarchical_data();
-                        if let Some(_modid) = block.get_modid() {
+                        if let Some(modid) = block.get_modid() {
+                            println!("Mod id: {}, hier_data {:?}", modid, hier_data);
+                            let hier_data = hier_data.unwrap();
+                            if !blocks_modded.contains_key(modid) {
+                                blocks_modded.insert(modid.to_string(), vec![None; 16]);
+                            }
+                            let block_from_data = blocks_modded.get_mut(modid).unwrap();
+                            block_from_data[hier_data] = Some(block);
                             continue
                         }
 
@@ -450,7 +464,7 @@ macro_rules! define_blocks {
                     }
                 })+
 
-                VanillaIDMap { flat: blocks_flat, hier: blocks_hier }
+                VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded }
             };
         }
     );
