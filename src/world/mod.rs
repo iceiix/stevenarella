@@ -88,10 +88,6 @@ impl World {
         }
     }
 
-    pub fn by_vanilla_id(&self, id: usize) -> block::Block {
-        block::Block::by_vanilla_id(id, self.protocol_version)
-    }
-
     pub fn is_chunk_loaded(&self, x: i32, z: i32) -> bool {
         self.chunks.contains_key(&CPos(x, z))
     }
@@ -623,7 +619,7 @@ impl World {
 
                 for bi in 0 .. 4096 {
                     let id = data.read_u16::<byteorder::LittleEndian>()?;
-                    section.blocks.set(bi, self.by_vanilla_id(id as usize));
+                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize, self.protocol_version));
 
                     // Spawn block entities
                     let b = section.blocks.get(bi);
@@ -809,7 +805,7 @@ impl World {
 
                 for bi in 0 .. 4096 {
                     let id = ((block_add[i].get(bi) as u16) << 12) | ((block_types[i][bi] as u16) << 4) | (block_meta[i].get(bi) as u16);
-                    section.blocks.set(bi, self.by_vanilla_id(id as usize));
+                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize, self.protocol_version));
 
                     // Spawn block entities
                     let b = section.blocks.get(bi);
@@ -886,7 +882,7 @@ impl World {
                     let count = VarInt::read_from(&mut data)?.0;
                     for i in 0 .. count {
                         let id = VarInt::read_from(&mut data)?.0;
-                        let bl = self.by_vanilla_id(id as usize);
+                        let bl = block::Block::by_vanilla_id(id as usize, self.protocol_version);
                         mappings.insert(i as usize, bl);
                     }
                 }
@@ -896,7 +892,7 @@ impl World {
 
                 for bi in 0 .. 4096 {
                     let id = m.get(bi);
-                    section.blocks.set(bi, mappings.get(&id).cloned().unwrap_or(self.by_vanilla_id(id)));
+                    section.blocks.set(bi, mappings.get(&id).cloned().unwrap_or(block::Block::by_vanilla_id(id, self.protocol_version)));
                     // Spawn block entities
                     let b = section.blocks.get(bi);
                     if block_entity::BlockEntityType::get_block_entity(b).is_some() {

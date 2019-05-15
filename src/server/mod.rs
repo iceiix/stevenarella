@@ -1294,7 +1294,7 @@ impl Server {
     }
 
     fn on_block_change(&mut self, location: Position, id: i32) {
-        self.world.set_block(location, self.world.by_vanilla_id(id as usize))
+        self.world.set_block(location, block::Block::by_vanilla_id(id as usize, self.protocol_version))
     }
 
     fn on_block_change_varint(&mut self, block_change: packet::play::clientbound::BlockChange_VarInt) {
@@ -1318,7 +1318,7 @@ impl Server {
                     record.y as i32,
                     oz + (record.xz & 0xF) as i32
                 ),
-                self.world.by_vanilla_id(record.block_id.0 as usize)
+                block::Block::by_vanilla_id(record.block_id.0 as usize, self.protocol_version)
             );
         }
     }
@@ -1341,7 +1341,7 @@ impl Server {
 
             self.world.set_block(
                 Position::new(x, y, z),
-                self.world.by_vanilla_id(id as usize)
+                block::Block::by_vanilla_id(id as usize, self.protocol_version)
             );
         }
     }
