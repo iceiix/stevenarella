@@ -85,6 +85,32 @@ impl Serializable for ModIdMapping {
     }
 }
 
+pub static BLOCK_NAMESPACE: u8 = 1;
+pub static ITEM_NAMESPACE: u8 = 2;
+
+#[derive(Debug)]
+pub struct NamespacedModIdMapping {
+    pub namespace: u8,
+    pub name: String,
+    pub id: VarInt,
+}
+
+impl Serializable for NamespacedModIdMapping {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(NamespacedModIdMapping {
+            namespace: Serializable::read_from(buf)?,
+            name: Serializable::read_from(buf)?,
+            id: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.namespace.write_to(buf)?;
+        self.name.write_to(buf)?;
+        self.id.write_to(buf)
+    }
+}
+
 #[derive(Debug)]
 pub enum FmlHs {
     ServerHello {
@@ -105,7 +131,7 @@ pub enum FmlHs {
         dummies: LenPrefixed<VarInt, String>,
     },
     ModIdData {
-        mappings: LenPrefixed<VarInt, ModIdMapping>,
+        mappings: LenPrefixed<VarInt, NamespacedModIdMapping>,
         block_substitutions: LenPrefixed<VarInt, String>,
         item_substitutions: LenPrefixed<VarInt, String>,
     },
