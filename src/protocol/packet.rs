@@ -2480,7 +2480,7 @@ pub struct Recipe {
 
 impl Serializable for Recipe {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        let (id, ty, namespace) = {
+        let (id, ty) = {
             let a = String::read_from(buf)?;
             let b = String::read_from(buf)?;
 
@@ -2492,32 +2492,25 @@ impl Serializable for Recipe {
                 let id = b;
 
                 if let Some(at) = ty.find(':') {
-                    let (namespace, ty) = ty.split_at(at + 1);
-                    let ty: String = ty.into();
-                    let namespace: String = namespace.into();
-                    (id, ty, namespace)
+                    (id, ty)
                 } else {
-                    (id, ty, "minecraft:".to_string())
+                    (id, format!("minecraft:{}", ty))
                 }
             } else {
                 let ty = b;
                 let id = a;
-                (id, ty, "minecraft:".to_string())
+                (id, format!("minecraft:{}", ty))
             }
         };
 
-        if namespace != "minecraft:" {
-            panic!("unrecognized recipe type namespace: {}", namespace);
-        }
-
         let data =
         match ty.as_ref() {
-            "crafting_shapeless" => RecipeData::Shapeless {
+            "minecraft:crafting_shapeless" => RecipeData::Shapeless {
                 group: Serializable::read_from(buf)?,
                 ingredients: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
             },
-            "crafting_shaped" => {
+            "minecraft:crafting_shaped" => {
                 let width: VarInt = Serializable::read_from(buf)?;
                 let height: VarInt = Serializable::read_from(buf)?;
                 let group: String = Serializable::read_from(buf)?;
@@ -2532,49 +2525,49 @@ impl Serializable for Recipe {
 
                 RecipeData::Shaped { width, height, group, ingredients, result }
             }
-            "crafting_special_armordye" => RecipeData::ArmorDye,
-            "crafting_special_bookcloning" => RecipeData::BookCloning,
-            "crafting_special_mapcloning" => RecipeData::MapCloning,
-            "crafting_special_mapextending" => RecipeData::MapExtending,
-            "crafting_special_firework_rocket" => RecipeData::FireworkRocket,
-            "crafting_special_firework_star" => RecipeData::FireworkStar,
-            "crafting_special_firework_star_fade" => RecipeData::FireworkStarFade,
-            "crafting_special_repairitem" => RecipeData::RepairItem,
-            "crafting_special_tippedarrow" => RecipeData::TippedArrow,
-            "crafting_special_bannerduplicate" => RecipeData::BannerDuplicate,
-            "crafting_special_banneraddpattern" => RecipeData::BannerAddPattern,
-            "crafting_special_shielddecoration" => RecipeData::ShieldDecoration,
-            "crafting_special_shulkerboxcoloring" => RecipeData::ShulkerBoxColoring,
-            "crafting_special_suspiciousstew" => RecipeData::SuspiciousStew,
-            "smelting" => RecipeData::Smelting {
+            "minecraft:crafting_special_armordye" => RecipeData::ArmorDye,
+            "minecraft:crafting_special_bookcloning" => RecipeData::BookCloning,
+            "minecraft:crafting_special_mapcloning" => RecipeData::MapCloning,
+            "minecraft:crafting_special_mapextending" => RecipeData::MapExtending,
+            "minecraft:crafting_special_firework_rocket" => RecipeData::FireworkRocket,
+            "minecraft:crafting_special_firework_star" => RecipeData::FireworkStar,
+            "minecraft:crafting_special_firework_star_fade" => RecipeData::FireworkStarFade,
+            "minecraft:crafting_special_repairitem" => RecipeData::RepairItem,
+            "minecraft:crafting_special_tippedarrow" => RecipeData::TippedArrow,
+            "minecraft:crafting_special_bannerduplicate" => RecipeData::BannerDuplicate,
+            "minecraft:crafting_special_banneraddpattern" => RecipeData::BannerAddPattern,
+            "minecraft:crafting_special_shielddecoration" => RecipeData::ShieldDecoration,
+            "minecraft:crafting_special_shulkerboxcoloring" => RecipeData::ShulkerBoxColoring,
+            "minecraft:crafting_special_suspiciousstew" => RecipeData::SuspiciousStew,
+            "minecraft:smelting" => RecipeData::Smelting {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
             },
-            "blasting" => RecipeData::Blasting {
+            "minecraft:blasting" => RecipeData::Blasting {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
             },
-            "smoking" => RecipeData::Smoking {
+            "minecraft:smoking" => RecipeData::Smoking {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
             },
-            "campfire" | "campfire_cooking" => RecipeData::Campfire {
+            "minecraft:campfire" | "minecraft:campfire_cooking" => RecipeData::Campfire {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
                 experience: Serializable::read_from(buf)?,
                 cooking_time: Serializable::read_from(buf)?,
             },
-            "stonecutting" => RecipeData::Stonecutting {
+            "minecraft:stonecutting" => RecipeData::Stonecutting {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
