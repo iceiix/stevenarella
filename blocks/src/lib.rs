@@ -394,7 +394,6 @@ macro_rules! define_blocks {
                         let internal_id = block.get_internal_id();
                         let hier_data: Option<usize> = block.get_hierarchical_data();
                         if let Some(modid) = block.get_modid() {
-                            println!("Mod id: {}, hier_data {:?}", modid, hier_data);
                             let hier_data = hier_data.unwrap();
                             if !blocks_modded.contains_key(modid) {
                                 blocks_modded.insert(modid.to_string(), vec![None; 16]);
