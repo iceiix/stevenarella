@@ -43,7 +43,6 @@ pub struct Server {
     conn: Option<protocol::Conn>,
     protocol_version: i32,
     forge_mods: Vec<forge::ForgeMod>,
-    modded_block_ids: HashMap<usize, String>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     pub disconnect_reason: Option<format::Component>,
     just_disconnected: bool,
@@ -279,13 +278,11 @@ impl Server {
         entities.add_component(world_entity, game_info, entity::GameInfo::new());
 
         let version = resources.read().unwrap().version();
-        let modded_block_ids = HashMap::new();
         Server {
             uuid,
             conn,
             protocol_version,
             forge_mods,
-            modded_block_ids,
             read_queue,
             disconnect_reason: None,
             just_disconnected: false,
@@ -719,8 +716,6 @@ impl Server {
                         for m in mappings.data {
                             let (namespace, name) = m.name.split_at(1);
                             if namespace == protocol::forge::BLOCK_NAMESPACE {
-                                // TODO: avoid unnecessary clone()
-                                self.modded_block_ids.insert(m.id.0 as usize, name.to_string().clone());
                                 self.world.modded_block_ids.insert(m.id.0 as usize, name.to_string());
                             }
                         }
@@ -730,7 +725,6 @@ impl Server {
                         println!("Received FML|HS RegistryData for {}", name);
                         if name == "minecraft:blocks" {
                             for m in ids.data {
-                                self.modded_block_ids.insert(m.id.0 as usize, m.name.clone());
                                 self.world.modded_block_ids.insert(m.id.0 as usize, m.name);
                             }
                         }
@@ -1300,7 +1294,7 @@ impl Server {
     }
 
     fn on_block_change(&mut self, location: Position, id: i32) {
-        self.world.set_block(location, block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids))
+        self.world.set_block(location, block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.world.modded_block_ids))
     }
 
     fn on_block_change_varint(&mut self, block_change: packet::play::clientbound::BlockChange_VarInt) {
@@ -1324,7 +1318,7 @@ impl Server {
                     record.y as i32,
                     oz + (record.xz & 0xF) as i32
                 ),
-                block::Block::by_vanilla_id(record.block_id.0 as usize, self.protocol_version, &self.modded_block_ids)
+                block::Block::by_vanilla_id(record.block_id.0 as usize, self.protocol_version, &self.world.modded_block_ids)
             );
         }
     }
@@ -1347,7 +1341,7 @@ impl Server {
 
             self.world.set_block(
                 Position::new(x, y, z),
-                block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids)
+                block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.world.modded_block_ids)
             );
         }
     }
