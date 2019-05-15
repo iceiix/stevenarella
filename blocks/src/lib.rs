@@ -50,6 +50,7 @@ macro_rules! define_blocks {
     (
         $(
             $name:ident {
+                $(modid $modid:expr,)*
                 props {
                     $(
                         $fname:ident : $ftype:ty = [$($val:expr),+],
@@ -103,6 +104,10 @@ macro_rules! define_blocks {
                             $($fname,)*
                         } => {
                             $(
+                                $modid;
+                                return None;
+                            )*
+                            $(
                                 let data: Option<usize> = ($datafunc).map(|v| v);
                                 return data;
                             )*
@@ -119,6 +124,10 @@ macro_rules! define_blocks {
                         Block::$name {
                             $($fname,)*
                         } => {
+                            $(
+                                $modid;
+                                return None;
+                            )*
                             $(
                                 let offset: Option<usize> = ($offsetfunc).map(|v| v);
                                 return offset;
@@ -1020,6 +1029,32 @@ define_blocks! {
         data Some(color.data()),
         model { ("minecraft", format!("{}_wool", color.as_string()) ) },
     }
+    Rockwool {
+        modid "\u{1}ThermalExpansion:Rockwool",
+        props {
+            color: ColoredVariant = [
+                ColoredVariant::White,
+                ColoredVariant::Orange,
+                ColoredVariant::Magenta,
+                ColoredVariant::LightBlue,
+                ColoredVariant::Yellow,
+                ColoredVariant::Lime,
+                ColoredVariant::Pink,
+                ColoredVariant::Gray,
+                ColoredVariant::Silver,
+                ColoredVariant::Cyan,
+                ColoredVariant::Purple,
+                ColoredVariant::Blue,
+                ColoredVariant::Brown,
+                ColoredVariant::Green,
+                ColoredVariant::Red,
+                ColoredVariant::Black
+            ],
+        },
+        data Some(color.data()),
+        model { ("minecraft", format!("{}_wool", color.as_string()) ) },
+    }
+
     PistonExtension {
         props {
             facing: Direction = [
