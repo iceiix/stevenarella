@@ -104,10 +104,6 @@ macro_rules! define_blocks {
                             $($fname,)*
                         } => {
                             $(
-                                $modid;
-                                return None;
-                            )*
-                            $(
                                 let data: Option<usize> = ($datafunc).map(|v| v);
                                 return data;
                             )*
@@ -124,10 +120,6 @@ macro_rules! define_blocks {
                         Block::$name {
                             $($fname,)*
                         } => {
-                            $(
-                                $modid;
-                                return None;
-                            )*
                             $(
                                 let offset: Option<usize> = ($offsetfunc).map(|v| v);
                                 return offset;
@@ -384,6 +376,10 @@ macro_rules! define_blocks {
                     for block in iter {
                         let internal_id = block.get_internal_id();
                         let hier_data: Option<usize> = block.get_hierarchical_data();
+                        if let Some(_modid) = block.get_modid() {
+                            continue
+                        }
+
                         let vanilla_id =
                             if let Some(hier_data) = hier_data {
                                 if internal_id != last_internal_id {
