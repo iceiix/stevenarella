@@ -156,18 +156,23 @@ macro_rules! define_blocks {
             pub fn by_vanilla_id(id: usize, protocol_version: i32) -> Block {
                 if protocol_version >= 404 {
                     VANILLA_ID_MAP.flat.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
+                    // TODO: support modded 1.13.2+ blocks after https://github.com/iceiix/stevenarella/pull/145
                 } else {
-                    // rockwool -> wool
-                    // TODO: avoid hardcoding ids, lookup from ModIdData
-                    if id >> 4 == 3731 {
-                        let data = id & 0xf;
-                        return VANILLA_ID_MAP.modded
-                            .get("\u{1}ThermalExpansion:Rockwool")
-                            .unwrap()[data]
-                            .unwrap_or(Block::Missing{})
+                    if let Some(block) = VANILLA_ID_MAP.hier.get(id).and_then(|v| *v) {
+                        block
+                    } else {
+                        // rockwool -> wool
+                        // TODO: avoid hardcoding ids, lookup from ModIdData
+                        if id >> 4 == 3731 {
+                            let data = id & 0xf;
+                            return VANILLA_ID_MAP.modded
+                                .get("\u{1}ThermalExpansion:Rockwool")
+                                .unwrap()[data]
+                                .unwrap_or(Block::Missing{})
+                        } else {
+                            Block::Missing{}
+                        }
                     }
-
-                    VANILLA_ID_MAP.hier.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
                 }
             }
 
