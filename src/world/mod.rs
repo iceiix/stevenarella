@@ -45,7 +45,7 @@ pub struct World {
     block_entity_actions: VecDeque<BlockEntityAction>,
 
     protocol_version: i32,
-    pub modded_block_ids: HashMap<usize, String>, // TODO: reference with lifetime parameter to avoid copying from server module
+    pub modded_block_ids: HashMap<usize, String>,
 }
 
 #[derive(Clone, Debug)]
