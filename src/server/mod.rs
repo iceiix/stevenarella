@@ -279,12 +279,13 @@ impl Server {
         entities.add_component(world_entity, game_info, entity::GameInfo::new());
 
         let version = resources.read().unwrap().version();
+        let modded_block_ids = HashMap::new();
         Server {
             uuid,
             conn,
             protocol_version,
             forge_mods,
-            modded_block_ids: HashMap::new(),
+            modded_block_ids,
             read_queue,
             disconnect_reason: None,
             just_disconnected: false,
@@ -716,7 +717,8 @@ impl Server {
                     ModIdData { mappings, block_substitutions: _, item_substitutions: _ } => {
                         println!("Received FML|HS ModIdData");
                         for m in mappings.data {
-                            self.modded_block_ids.insert(m.id.0 as usize, m.name);
+                            self.modded_block_ids.insert(m.id.0 as usize, m.name.clone()); // TODO: avoid unnecessary clone
+                            self.world.modded_block_ids.insert(m.id.0 as usize, m.name);
                         }
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
                         // TODO: dynamically register mod blocks
@@ -725,7 +727,8 @@ impl Server {
                         println!("Received FML|HS RegistryData for {}", name);
                         if name == "minecraft:blocks" {
                             for m in ids.data {
-                                self.modded_block_ids.insert(m.id.0 as usize, m.name);
+                                self.modded_block_ids.insert(m.id.0 as usize, m.name.clone());
+                                self.world.modded_block_ids.insert(m.id.0 as usize, m.name);
                             }
                         }
                         if !has_more {
