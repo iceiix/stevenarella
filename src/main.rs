@@ -354,10 +354,10 @@ pub fn main() {
     }
 }
 
-fn handle_window_event(window: &mut glutin::WindowedContext,
+fn handle_window_event<T>(window: &mut glutin::WindowedContext<T>,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
-                       event: glutin::Event) {
+                       event: glutin::Event) where T: glutin::ContextCurrentState {
     use glutin::*;
     match event {
         Event::DeviceEvent{event, ..} => match event {

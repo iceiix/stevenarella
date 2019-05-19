@@ -21,7 +21,7 @@ use std::ptr;
 use std::ops::{Deref, DerefMut};
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(vid: & glutin::WindowedContext) {
+pub fn init<T>(vid: & glutin::WindowedContext<T>) where T: glutin::ContextCurrentState {
     gl::load_with(|s| vid.get_proc_address(s) as *const _);
 }
 
