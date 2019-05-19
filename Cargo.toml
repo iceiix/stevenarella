@@ -21,7 +21,8 @@ opt-level = 1
 cfg-if = "0.1.9"
 wasm-bindgen = "0.2.44"
 sha-1 = "0.8.1"
-glutin = "0.21.0"
+#glutin = { git = "https://github.com/iceiix/glutin", branch = "wasm_stub" }
+glutin = { git = "https://github.com/iceiix/glutin", rev = "5f490a9ffec1e1facbdad2264585301e8a5927cd" }
 byteorder = "1.2.7"
 serde = "1.0.91"
 serde_json = "1.0.39"
