@@ -407,7 +407,7 @@ fn handle_window_event(window: &mut glutin::WindowedContext<glutin::PossiblyCurr
             WindowEvent::CloseRequested => game.should_close = true,
             WindowEvent::Resized(logical_size) => {
                 game.dpi_factor = window.window().get_hidpi_factor();
-                window.window().resize(logical_size.to_physical(game.dpi_factor));
+                window.resize(logical_size.to_physical(game.dpi_factor));
             },
 
             WindowEvent::ReceivedCharacter(codepoint) => {
