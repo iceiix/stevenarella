@@ -483,7 +483,7 @@ fn handle_window_event(window: &mut glutin::WindowedContext,
                         game.console.lock().unwrap().toggle();
                     },
                     (ElementState::Pressed, Some(VirtualKeyCode::F11)) => {
-                        if game.is_fullscreen {
+                        if !game.is_fullscreen {
                             window.set_fullscreen(Some(window.get_current_monitor()));
                         } else {
                             window.set_fullscreen(None);
