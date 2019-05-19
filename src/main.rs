@@ -52,7 +52,6 @@ use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
 use glutin;
-use glutin::ContextTrait;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,

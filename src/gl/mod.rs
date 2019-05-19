@@ -13,7 +13,6 @@
 // limitations under the License.
 
 extern crate steven_gl as gl;
-use glutin::ContextTrait;
 
 use std::ops::BitOr;
 use std::ffi;
