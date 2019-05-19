@@ -232,7 +232,7 @@ pub fn main() {
         .build_windowed(window_builder, &events_loop)
         .expect("Could not create glutin window.");
 
-    let window = unsafe {
+    let mut window = unsafe {
         window.make_current().expect("Could not set current context.")
     };
 
