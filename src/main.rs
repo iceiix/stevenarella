@@ -258,7 +258,7 @@ pub fn main() {
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = window.get_current_monitor().get_hidpi_factor();
+    let dpi_factor = window.window().get_current_monitor().get_hidpi_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
         opt.default_protocol_version.unwrap_or("".to_string()));
     let mut game = Game {
@@ -297,8 +297,8 @@ pub fn main() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.get_inner_size().unwrap().into();
-        let (physical_width, physical_height) = window.get_inner_size().unwrap().to_physical(game.dpi_factor).into();
+        let (width, height) = window.window().get_inner_size().unwrap().into();
+        let (physical_width, physical_height) = window.window().get_inner_size().unwrap().to_physical(game.dpi_factor).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -381,8 +381,8 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<T>,
                 use std::f64::consts::PI;
 
                 if game.focused {
-                    window.grab_cursor(true).unwrap();
-                    window.hide_cursor(true);
+                    window.window().grab_cursor(true).unwrap();
+                    window.window().hide_cursor(true);
                     if let Some(player) = game.server.player {
                         let rotation = game.server.entities.get_component_mut(player, game.server.rotation).unwrap();
                         rotation.yaw -= rx;
@@ -395,8 +395,8 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<T>,
                         }
                     }
                 } else {
-                    window.grab_cursor(false).unwrap();
-                    window.hide_cursor(false);
+                    window.window().grab_cursor(false).unwrap();
+                    window.window().hide_cursor(false);
                 }
             },
 
@@ -406,8 +406,8 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<T>,
         Event::WindowEvent{event, ..} => match event {
             WindowEvent::CloseRequested => game.should_close = true,
             WindowEvent::Resized(logical_size) => {
-                game.dpi_factor = window.get_hidpi_factor();
-                window.resize(logical_size.to_physical(game.dpi_factor));
+                game.dpi_factor = window.window().get_hidpi_factor();
+                window.window().resize(logical_size.to_physical(game.dpi_factor));
             },
 
             WindowEvent::ReceivedCharacter(codepoint) => {
@@ -419,17 +419,17 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<T>,
             WindowEvent::MouseInput{device_id: _, state, button, modifiers: _} => {
                 match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let (width, height) = window.get_inner_size().unwrap().into();
+                        let (width, height) = window.window().get_inner_size().unwrap().into();
 
                         if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
                             game.focused = true;
-                            window.grab_cursor(true).unwrap();
-                            window.hide_cursor(true);
+                            window.window().grab_cursor(true).unwrap();
+                            window.window().hide_cursor(true);
                             return;
                         }
                         if !game.focused {
-                            window.grab_cursor(false).unwrap();
-                            window.hide_cursor(false);
+                            window.window().grab_cursor(false).unwrap();
+                            window.window().hide_cursor(false);
                             ui_container.click_at(game, game.last_mouse_x, game.last_mouse_y, width, height);
                         }
                     },
@@ -447,7 +447,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<T>,
                 game.last_mouse_y = y;
 
                 if !game.focused {
-                    let (width, height) = window.get_inner_size().unwrap().into();
+                    let (width, height) = window.window().get_inner_size().unwrap().into();
                     ui_container.hover_at(game, x, y, width, height);
                 }
             },
@@ -467,13 +467,13 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<T>,
                 match (input.state, input.virtual_keycode) {
                     (ElementState::Released, Some(VirtualKeyCode::Escape)) => {
                         if game.focused {
-                            window.grab_cursor(false).unwrap();
-                            window.hide_cursor(false);
+                            window.window().grab_cursor(false).unwrap();
+                            window.window().hide_cursor(false);
                             game.focused = false;
                             game.screen_sys.replace_screen(Box::new(screen::SettingsMenu::new(game.vars.clone(), true)));
                         } else if game.screen_sys.is_current_closable() {
-                            window.grab_cursor(true).unwrap();
-                            window.hide_cursor(true);
+                            window.window().grab_cursor(true).unwrap();
+                            window.window().hide_cursor(true);
                             game.focused = true;
                             game.screen_sys.pop_screen();
                         }
@@ -483,9 +483,9 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<T>,
                     },
                     (ElementState::Pressed, Some(VirtualKeyCode::F11)) => {
                         if !game.is_fullscreen {
-                            window.set_fullscreen(Some(window.get_current_monitor()));
+                            window.window().set_fullscreen(Some(window.window().get_current_monitor()));
                         } else {
-                            window.set_fullscreen(None);
+                            window.window().set_fullscreen(None);
                         }
 
                         game.is_fullscreen = !game.is_fullscreen;
