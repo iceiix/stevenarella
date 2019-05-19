@@ -223,7 +223,7 @@ pub fn main() {
     let window_builder = glutin::WindowBuilder::new()
         .with_title("Stevenarella")
         .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
-    let mut window = glutin::ContextBuilder::new()
+    let window = glutin::ContextBuilder::new()
         .with_stencil_buffer(0)
         .with_depth_buffer(24)
         .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
@@ -232,9 +232,9 @@ pub fn main() {
         .build_windowed(window_builder, &events_loop)
         .expect("Could not create glutin window.");
 
-    unsafe {
-        window.make_current().expect("Could not set current context.");
-    }
+    let window = unsafe {
+        window.make_current().expect("Could not set current context.")
+    };
 
     gl::init(&window);
 
@@ -354,10 +354,10 @@ pub fn main() {
     }
 }
 
-fn handle_window_event<T>(window: &mut glutin::WindowedContext<T>,
+fn handle_window_event(window: &mut glutin::WindowedContext<glutin::PossiblyCurrent>,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
-                       event: glutin::Event) where T: glutin::ContextCurrentState {
+                       event: glutin::Event) {
     use glutin::*;
     match event {
         Event::DeviceEvent{event, ..} => match event {
