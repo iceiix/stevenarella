@@ -52,7 +52,6 @@ use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
 use glutin;
-use glutin::ContextTrait;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -224,18 +223,18 @@ pub fn main() {
     let window_builder = glutin::WindowBuilder::new()
         .with_title("Stevenarella")
         .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
-    let context = glutin::ContextBuilder::new()
+    let window = glutin::ContextBuilder::new()
         .with_stencil_buffer(0)
         .with_depth_buffer(24)
         .with_gl(glutin::GlRequest::GlThenGles{opengl_version: (3, 2), opengles_version: (2, 0)})
         .with_gl_profile(glutin::GlProfile::Core)
-        .with_vsync(vsync);
-    let mut window = glutin::WindowedContext::new(window_builder, context, &events_loop)
+        .with_vsync(vsync)
+        .build_windowed(window_builder, &events_loop)
         .expect("Could not create glutin window.");
 
-    unsafe {
-        window.make_current().expect("Could not set current context.");
-    }
+    let mut window = unsafe {
+        window.make_current().expect("Could not set current context.")
+    };
 
     gl::init(&window);
 
@@ -259,7 +258,7 @@ pub fn main() {
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = window.get_current_monitor().get_hidpi_factor();
+    let dpi_factor = window.window().get_current_monitor().get_hidpi_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
         opt.default_protocol_version.unwrap_or("".to_string()));
     let mut game = Game {
@@ -298,8 +297,8 @@ pub fn main() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.get_inner_size().unwrap().into();
-        let (physical_width, physical_height) = window.get_inner_size().unwrap().to_physical(game.dpi_factor).into();
+        let (width, height) = window.window().get_inner_size().unwrap().into();
+        let (physical_width, physical_height) = window.window().get_inner_size().unwrap().to_physical(game.dpi_factor).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -355,7 +354,7 @@ pub fn main() {
     }
 }
 
-fn handle_window_event(window: &mut glutin::WindowedContext,
+fn handle_window_event(window: &mut glutin::WindowedContext<glutin::PossiblyCurrent>,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
                        event: glutin::Event) {
@@ -382,8 +381,8 @@ fn handle_window_event(window: &mut glutin::WindowedContext,
                 use std::f64::consts::PI;
 
                 if game.focused {
-                    window.grab_cursor(true).unwrap();
-                    window.hide_cursor(true);
+                    window.window().grab_cursor(true).unwrap();
+                    window.window().hide_cursor(true);
                     if let Some(player) = game.server.player {
                         let rotation = game.server.entities.get_component_mut(player, game.server.rotation).unwrap();
                         rotation.yaw -= rx;
@@ -396,8 +395,8 @@ fn handle_window_event(window: &mut glutin::WindowedContext,
                         }
                     }
                 } else {
-                    window.grab_cursor(false).unwrap();
-                    window.hide_cursor(false);
+                    window.window().grab_cursor(false).unwrap();
+                    window.window().hide_cursor(false);
                 }
             },
 
@@ -407,7 +406,7 @@ fn handle_window_event(window: &mut glutin::WindowedContext,
         Event::WindowEvent{event, ..} => match event {
             WindowEvent::CloseRequested => game.should_close = true,
             WindowEvent::Resized(logical_size) => {
-                game.dpi_factor = window.get_hidpi_factor();
+                game.dpi_factor = window.window().get_hidpi_factor();
                 window.resize(logical_size.to_physical(game.dpi_factor));
             },
 
@@ -420,17 +419,17 @@ fn handle_window_event(window: &mut glutin::WindowedContext,
             WindowEvent::MouseInput{device_id: _, state, button, modifiers: _} => {
                 match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let (width, height) = window.get_inner_size().unwrap().into();
+                        let (width, height) = window.window().get_inner_size().unwrap().into();
 
                         if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
                             game.focused = true;
-                            window.grab_cursor(true).unwrap();
-                            window.hide_cursor(true);
+                            window.window().grab_cursor(true).unwrap();
+                            window.window().hide_cursor(true);
                             return;
                         }
                         if !game.focused {
-                            window.grab_cursor(false).unwrap();
-                            window.hide_cursor(false);
+                            window.window().grab_cursor(false).unwrap();
+                            window.window().hide_cursor(false);
                             ui_container.click_at(game, game.last_mouse_x, game.last_mouse_y, width, height);
                         }
                     },
@@ -448,7 +447,7 @@ fn handle_window_event(window: &mut glutin::WindowedContext,
                 game.last_mouse_y = y;
 
                 if !game.focused {
-                    let (width, height) = window.get_inner_size().unwrap().into();
+                    let (width, height) = window.window().get_inner_size().unwrap().into();
                     ui_container.hover_at(game, x, y, width, height);
                 }
             },
@@ -468,13 +467,13 @@ fn handle_window_event(window: &mut glutin::WindowedContext,
                 match (input.state, input.virtual_keycode) {
                     (ElementState::Released, Some(VirtualKeyCode::Escape)) => {
                         if game.focused {
-                            window.grab_cursor(false).unwrap();
-                            window.hide_cursor(false);
+                            window.window().grab_cursor(false).unwrap();
+                            window.window().hide_cursor(false);
                             game.focused = false;
                             game.screen_sys.replace_screen(Box::new(screen::SettingsMenu::new(game.vars.clone(), true)));
                         } else if game.screen_sys.is_current_closable() {
-                            window.grab_cursor(true).unwrap();
-                            window.hide_cursor(true);
+                            window.window().grab_cursor(true).unwrap();
+                            window.window().hide_cursor(true);
                             game.focused = true;
                             game.screen_sys.pop_screen();
                         }
@@ -484,9 +483,9 @@ fn handle_window_event(window: &mut glutin::WindowedContext,
                     },
                     (ElementState::Pressed, Some(VirtualKeyCode::F11)) => {
                         if !game.is_fullscreen {
-                            window.set_fullscreen(Some(window.get_current_monitor()));
+                            window.window().set_fullscreen(Some(window.window().get_current_monitor()));
                         } else {
-                            window.set_fullscreen(None);
+                            window.window().set_fullscreen(None);
                         }
 
                         game.is_fullscreen = !game.is_fullscreen;

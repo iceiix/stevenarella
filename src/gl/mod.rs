@@ -13,7 +13,6 @@
 // limitations under the License.
 
 extern crate steven_gl as gl;
-use glutin::ContextTrait;
 
 use std::ops::BitOr;
 use std::ffi;
@@ -22,7 +21,7 @@ use std::ptr;
 use std::ops::{Deref, DerefMut};
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(vid: & glutin::WindowedContext) {
+pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
     gl::load_with(|s| vid.get_proc_address(s) as *const _);
 }
 
