@@ -19,7 +19,7 @@ opt-level = 1
 
 [dependencies]
 cfg-if = "0.1.9"
-wasm-bindgen = "0.2.44"
+wasm-bindgen = "0.2.45"
 sha-1 = "0.8.1"
 glutin = { git = "https://github.com/iceiix/glutin", rev = "5ff18dec039f6854091685980d7213858a8aaa4c" }
 byteorder = "1.2.7"
