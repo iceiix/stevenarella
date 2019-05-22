@@ -190,8 +190,16 @@ cfg_if! {
     }
 }
 
+use web_sys;
+macro_rules! println {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 #[wasm_bindgen]
 pub fn main() {
+    println!("entering main");
     let opt = Opt::from_args();
 
     set_panic_hook();
