@@ -209,23 +209,23 @@ pub fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
 
     let con = Arc::new(Mutex::new(console::Console::new()));
-    let (vars, vsync) = {
-        let mut vars = console::Vars::new();
-        vars.register(CL_BRAND);
-        auth::register_vars(&mut vars);
-        settings::register_vars(&mut vars);
-        //TODO vars.load_config();
-        //TODO vars.save_config();
-        let vsync = *vars.get(settings::R_VSYNC);
-        (Rc::new(vars), vsync)
-    };
-
     let proxy = console::ConsoleProxy::new(con.clone());
 
     log::set_boxed_logger(Box::new(proxy)).unwrap();
     log::set_max_level(log::LevelFilter::Trace);
 
     info!("Starting steven");
+
+    let (vars, vsync) = {
+        let mut vars = console::Vars::new();
+        vars.register(CL_BRAND);
+        auth::register_vars(&mut vars);
+        settings::register_vars(&mut vars);
+        vars.load_config();
+        vars.save_config();
+        let vsync = *vars.get(settings::R_VSYNC);
+        (Rc::new(vars), vsync)
+    };
 
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
