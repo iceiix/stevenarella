@@ -166,7 +166,7 @@ macro_rules! define_blocks {
                             if let Some(blocks_by_data) = VANILLA_ID_MAP.modded.get(name) {
                                 blocks_by_data[data].unwrap_or(Block::Missing{})
                             } else {
-                                //println!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
+                                //info!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
                                 Block::Missing{}
                             }
                         } else {
@@ -415,9 +415,9 @@ macro_rules! define_blocks {
                             let id = flat_id + offset;
                             /*
                             if let Some(vanilla_id) = vanilla_id {
-                                println!("{} block state = {:?} hierarchical {}:{} offset={}", id, block, vanilla_id >> 4, vanilla_id & 0xF, offset);
+                                debug!("{} block state = {:?} hierarchical {}:{} offset={}", id, block, vanilla_id >> 4, vanilla_id & 0xF, offset);
                             } else {
-                                println!("{} block state = {:?} hierarchical none, offset={}", id, block, offset);
+                                debug!("{} block state = {:?} hierarchical none, offset={}", id, block, offset);
                             }
                             */
                             if offset as isize > last_offset {
@@ -442,7 +442,7 @@ macro_rules! define_blocks {
                         if let Some(vanilla_id) = vanilla_id {
                             /*
                             if offset.is_none() {
-                                println!("(no flat) block state = {:?} hierarchical {}:{}", block, vanilla_id >> 4, vanilla_id & 0xF);
+                                debug!("(no flat) block state = {:?} hierarchical {}:{}", block, vanilla_id >> 4, vanilla_id & 0xF);
                             }
                             */
 

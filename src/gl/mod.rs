@@ -19,6 +19,7 @@ use std::ffi;
 use std::mem;
 use std::ptr;
 use std::ops::{Deref, DerefMut};
+use log::{error, info};
 
 /// Inits the gl library. This should be called once a context is ready.
 pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
@@ -373,7 +374,7 @@ impl Texture {
             gl::GetIntegerv(gl::MAX_SAMPLES, &mut result[0]);
             let use_samples =
                 if samples > result[0] {
-                    println!("glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}", samples, result[0]);
+                    info!("glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}", samples, result[0]);
                     result[0]
                 } else {
                     samples
@@ -848,7 +849,6 @@ pub fn check_framebuffer_status() {
         };
 
         if status != gl::FRAMEBUFFER_COMPLETE {
-            println!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
             panic!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
         }
     }
@@ -862,7 +862,7 @@ pub fn check_gl_error() {
                 break
             }
 
-            println!("glGetError = {}", err);
+            error!("glGetError = {}", err);
         }
     }
 }

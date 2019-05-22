@@ -2,6 +2,7 @@
 /// Implements https://wiki.vg/Minecraft_Forge_Handshake
 use std::io;
 use byteorder::WriteBytesExt;
+use log::debug;
 
 use crate::protocol::{Serializable, Error, LenPrefixed, VarInt};
 
@@ -132,7 +133,7 @@ impl Serializable for FmlHs {
                     None
                 };
 
-                println!("FML|HS ServerHello: fml_protocol_version={}, override_dimension={:?}", fml_protocol_version, override_dimension);
+                debug!("FML|HS ServerHello: fml_protocol_version={}, override_dimension={:?}", fml_protocol_version, override_dimension);
 
                 Ok(FmlHs::ServerHello {
                     fml_protocol_version,

@@ -545,7 +545,7 @@ impl ecs::System for MovementHandler {
                         let dt = movement.when_last_jump_pressed.unwrap() - movement.when_last_jump_released.unwrap();
                         if dt.as_secs() == 0 && dt.subsec_millis() <= crate::settings::DOUBLE_JUMP_MS {
                             movement.want_to_fly = !movement.want_to_fly;
-                            //println!("double jump! dt={:?} toggle want_to_fly = {}", dt, movement.want_to_fly);
+                            //info!("double jump! dt={:?} toggle want_to_fly = {}", dt, movement.want_to_fly);
 
                             if gamemode.can_fly() && !gamemode.always_fly() {
                                 movement.flying = movement.want_to_fly;
