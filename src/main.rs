@@ -184,7 +184,7 @@ cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         extern crate console_error_panic_hook;
         pub use console_error_panic_hook::set_once as set_panic_hook;
-        fn init_log() {
+        fn init_log(con: Arc<Mutex<console::Console>>) {
             use log::Level;
             use console_log;
             console_log::init_with_level(Level::Trace).expect("error initializing log");
@@ -194,7 +194,13 @@ cfg_if! {
         pub fn set_panic_hook() {}
 
         #[inline]
-        fn init_log() {}
+        fn init_log(con: Arc<Mutex<console::Console>>) {
+            let proxy = console::ConsoleProxy::new(con.clone());
+
+            // TODO: fix SetLoggerError on wasm to use custom boxed proxy?
+            log::set_boxed_logger(Box::new(proxy)).unwrap();
+            log::set_max_level(log::LevelFilter::Trace);
+        }
     }
 }
 
@@ -210,7 +216,6 @@ macro_rules! println {
 #[wasm_bindgen]
 pub fn main() {
     println!("entering main");
-    init_log();
     info!("info main");
     let opt = Opt::from_args();
 
@@ -218,6 +223,11 @@ pub fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
 
     let con = Arc::new(Mutex::new(console::Console::new()));
+    init_log(con.clone());
+    println!("logging set");
+
+    info!("Starting steven");
+
     let (vars, vsync) = {
         let mut vars = console::Vars::new();
         vars.register(CL_BRAND);
@@ -228,13 +238,6 @@ pub fn main() {
         let vsync = *vars.get(settings::R_VSYNC);
         (Rc::new(vars), vsync)
     };
-
-    let proxy = console::ConsoleProxy::new(con.clone());
-
-    log::set_boxed_logger(Box::new(proxy)).unwrap();
-    log::set_max_level(log::LevelFilter::Trace);
-
-    info!("Starting steven");
 
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
