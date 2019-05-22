@@ -25,6 +25,15 @@ use crate::ui;
 use crate::render;
 use crate::format::{Component, TextComponent, Color};
 
+#[cfg(target_arch = "wasm32")]
+use web_sys;
+#[cfg(target_arch = "wasm32")]
+macro_rules! println {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 const FILTERED_CRATES: &[&str] = &[
     //"reqwest", // TODO: needed?
     "mime",
