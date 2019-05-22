@@ -184,9 +184,17 @@ cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         extern crate console_error_panic_hook;
         pub use console_error_panic_hook::set_once as set_panic_hook;
+        fn init_log() {
+            use log::Level;
+            use console_log;
+            console_log::init_with_level(Level::Trace).expect("error initializing log");
+        }
     } else {
         #[inline]
         pub fn set_panic_hook() {}
+
+        #[inline]
+        fn init_log() {}
     }
 }
 
@@ -202,6 +210,8 @@ macro_rules! println {
 #[wasm_bindgen]
 pub fn main() {
     println!("entering main");
+    init_log();
+    info!("info main");
     let opt = Opt::from_args();
 
     set_panic_hook();
