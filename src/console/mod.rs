@@ -30,8 +30,13 @@ use web_sys;
 #[cfg(target_arch = "wasm32")]
 fn println_level(level: log::Level, s: String) {
     let value = &wasm_bindgen::JsValue::from_str(&s);
+    use log::Level::*;
     match level {
-        _ => web_sys::console::log_1(value),
+        Trace => web_sys::console::debug_1(value),
+        Debug => web_sys::console::log_1(value),
+        Info => web_sys::console::info_1(value),
+        Warn => web_sys::console::warn_1(value),
+        Error => web_sys::console::error_1(value),
     }
 }
 #[cfg(not(target_arch = "wasm32"))]

@@ -15,7 +15,7 @@
 #![recursion_limit="300"]
 
 use std::time::{Instant, Duration};
-use log::{info, warn};
+use log::{info, warn, trace, debug, error};
 extern crate steven_shared as shared;
 
 use structopt::StructOpt;
@@ -204,6 +204,10 @@ pub fn main() {
     log::set_max_level(log::LevelFilter::Trace);
 
     info!("Starting steven");
+    trace!("trace test");
+    debug!("debug test");
+    warn!("warn test");
+    error!("error test");
 
     let (vars, vsync) = {
         let mut vars = console::Vars::new();
