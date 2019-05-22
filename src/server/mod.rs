@@ -684,7 +684,7 @@ impl Server {
 
     fn on_plugin_message_clientbound(&mut self, channel: &str, data: &[u8]) {
         if unsafe { protocol::NETWORK_DEBUG } {
-            println!("Received plugin message: channel={}, data={:?}", channel, data);
+            debug!("Received plugin message: channel={}, data={:?}", channel, data);
         }
 
         match channel {
@@ -692,13 +692,13 @@ impl Server {
             // TODO: "UNREGISTER" =>
             "FML|HS" => {
                 let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data)).unwrap();
-                println!("FML|HS msg={:?}", msg);
+                //debug!("FML|HS msg={:?}", msg);
 
                 use forge::FmlHs::*;
                 use forge::Phase::*;
                 match msg {
                     ServerHello { fml_protocol_version, override_dimension } => {
-                        println!("Received FML|HS ServerHello {} {:?}", fml_protocol_version, override_dimension);
+                        debug!("Received FML|HS ServerHello {} {:?}", fml_protocol_version, override_dimension);
 
                         self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
                         self.write_fmlhs_plugin_message(&ClientHello { fml_protocol_version });
@@ -707,12 +707,12 @@ impl Server {
                         self.write_fmlhs_plugin_message(&ModList { mods });
                     },
                     ModList { mods } => {
-                        println!("Received FML|HS ModList: {:?}", mods);
+                        debug!("Received FML|HS ModList: {:?}", mods);
 
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
                     },
                     ModIdData { mappings, block_substitutions: _, item_substitutions: _ } => {
-                        println!("Received FML|HS ModIdData");
+                        debug!("Received FML|HS ModIdData");
                         for m in mappings.data {
                             let (namespace, name) = m.name.split_at(1);
                             if namespace == protocol::forge::BLOCK_NAMESPACE {
@@ -722,7 +722,7 @@ impl Server {
                         self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
                     },
                     RegistryData { has_more, name, ids, substitutions: _, dummies: _ } => {
-                        println!("Received FML|HS RegistryData for {}", name);
+                        debug!("Received FML|HS RegistryData for {}", name);
                         if name == "minecraft:blocks" {
                             for m in ids.data {
                                 self.world.modded_block_ids.insert(m.id.0 as usize, m.name);
@@ -738,7 +738,7 @@ impl Server {
                                 self.write_fmlhs_plugin_message(&HandshakeAck { phase: PendingComplete });
                             },
                             Complete => {
-                                println!("FML|HS handshake complete!");
+                                debug!("FML|HS handshake complete!");
                             },
                             _ => unimplemented!(),
                         }
@@ -761,7 +761,7 @@ impl Server {
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
         if unsafe { protocol::NETWORK_DEBUG } {
-            println!("Sending plugin message: channel={}, data={:?}", channel, data);
+            debug!("Sending plugin message: channel={}, data={:?}", channel, data);
         }
         if self.protocol_version >= 47 {
             self.write_packet(packet::play::serverbound::PluginMessageServerbound {

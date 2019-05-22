@@ -38,6 +38,7 @@ use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
 use std::time::{Instant, Duration};
 use crate::shared::Position;
+use log::debug;
 
 pub const SUPPORTED_PROTOCOLS: [i32; 14] = [480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
 
@@ -1021,7 +1022,7 @@ impl Conn {
             write.read_to_end(&mut new)?;
             let network_debug = unsafe { NETWORK_DEBUG };
             if network_debug {
-                println!("Compressed for sending {} bytes to {} since > threshold {}, new={:?}",
+                debug!("Compressed for sending {} bytes to {} since > threshold {}, new={:?}",
                          uncompressed_size, new.len(), self.compression_threshold,
                          new);
             }
@@ -1054,7 +1055,7 @@ impl Conn {
                     reader.read_to_end(&mut new)?;
                 }
                 if network_debug {
-                    println!("Decompressed threshold={} len={} uncompressed_size={} to {} bytes",
+                    debug!("Decompressed threshold={} len={} uncompressed_size={} to {} bytes",
                         self.compression_threshold, len, uncompressed_size, new.len());
                 }
                 buf = io::Cursor::new(new);
@@ -1068,14 +1069,14 @@ impl Conn {
         };
 
         if network_debug {
-            println!("about to parse id={:x}, dir={:?} state={:?}", id, dir, self.state);
+            debug!("about to parse id={:x}, dir={:?} state={:?}", id, dir, self.state);
             std::fs::File::create("last-packet")?.write_all(buf.get_ref())?;
         }
 
         let packet = packet::packet_by_id(self.protocol_version, self.state, dir, id, &mut buf)?;
 
         if network_debug {
-            println!("packet = {:?}", packet);
+            debug!("packet = {:?}", packet);
         }
 
         match packet {

@@ -15,7 +15,7 @@
 #![recursion_limit="300"]
 
 use std::time::{Instant, Duration};
-use log::{info, warn};
+use log::{info, warn, error};
 extern crate steven_shared as shared;
 
 use structopt::StructOpt;
@@ -316,7 +316,7 @@ pub fn main() {
 
         let vsync_changed = *game.vars.get(settings::R_VSYNC);
         if vsync != vsync_changed {
-            println!("Changing vsync currently requires restarting");
+            error!("Changing vsync currently requires restarting");
             break;
             // TODO: after https://github.com/tomaka/glutin/issues/693 Allow changing vsync on a Window
             //vsync = vsync_changed;

@@ -5,6 +5,7 @@ use cgmath::{Point3, Matrix4};
 use byteorder::{WriteBytesExt, NativeEndian};
 use crate::gl;
 use super::glsl;
+use log::error;
 
 pub struct Clouds {
     program: gl::Program,
@@ -47,13 +48,13 @@ impl Clouds {
         v.compile();
 
         if v.get_parameter(gl::COMPILE_STATUS) == 0 {
-            println!("Src: {}", vertex);
+            error!("Src: {}", vertex);
             panic!("Shader error: {}", v.get_info_log());
         } else {
             let log = v.get_info_log();
             let log = log.trim().trim_matches('\u{0}');
             if !log.is_empty() {
-                println!("{}", log);
+                error!("{}", log);
             }
         }
 
@@ -62,13 +63,13 @@ impl Clouds {
         g.compile();
 
         if g.get_parameter(gl::COMPILE_STATUS) == 0 {
-            println!("Src: {}", geo);
+            error!("Src: {}", geo);
             panic!("Shader error: {}", g.get_info_log());
         } else {
             let log = g.get_info_log();
             let log = log.trim().trim_matches('\u{0}');
             if !log.is_empty() {
-                println!("{}", log);
+                error!("{}", log);
             }
         }
 
@@ -77,13 +78,13 @@ impl Clouds {
         f.compile();
 
         if f.get_parameter(gl::COMPILE_STATUS) == 0 {
-            println!("Src: {}", fragment);
+            error!("Src: {}", fragment);
             panic!("Shader error: {}", f.get_info_log());
         } else {
             let log = f.get_info_log();
             let log = log.trim().trim_matches('\u{0}');
             if !log.is_empty() {
-                println!("{}", log);
+                error!("{}", log);
             }
         }
 
