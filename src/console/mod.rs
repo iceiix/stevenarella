@@ -25,6 +25,25 @@ use crate::ui;
 use crate::render;
 use crate::format::{Component, TextComponent, Color};
 
+#[cfg(target_arch = "wasm32")]
+use web_sys;
+#[cfg(target_arch = "wasm32")]
+fn println_level(level: log::Level, s: String) {
+    let value = &wasm_bindgen::JsValue::from_str(&s);
+    use log::Level::*;
+    match level {
+        Trace => web_sys::console::debug_1(value),
+        Debug => web_sys::console::log_1(value),
+        Info => web_sys::console::info_1(value),
+        Warn => web_sys::console::warn_1(value),
+        Error => web_sys::console::error_1(value),
+    }
+}
+#[cfg(not(target_arch = "wasm32"))]
+fn println_level(_level: log::Level, s: String) {
+    println!("{}", s);
+}
+
 const FILTERED_CRATES: &[&str] = &[
     //"reqwest", // TODO: needed?
     "mime",
@@ -285,11 +304,11 @@ impl Console {
             file = &file[pos + 4..];
         }
 
-        println!("[{}:{}][{}] {}",
+        println_level(record.level(), format!("[{}:{}][{}] {}",
                  file,
                  record.line().unwrap_or(0),
                  record.level(),
-                 record.args());
+                 record.args()));
         self.history.remove(0);
         let mut msg = TextComponent::new("");
         msg.modifier.extra = Some(vec![
