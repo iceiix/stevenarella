@@ -233,8 +233,8 @@ pub fn main() {
         vars.register(CL_BRAND);
         auth::register_vars(&mut vars);
         settings::register_vars(&mut vars);
-        vars.load_config();
-        vars.save_config();
+        //TODO vars.load_config();
+        //TODO vars.save_config();
         let vsync = *vars.get(settings::R_VSYNC);
         (Rc::new(vars), vsync)
     };
