@@ -42,7 +42,6 @@ rsa_public_encrypt_pkcs1 = "0.2.0"
 structopt = "0.2.14"
 num-traits = "0.2.6"
 clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", rev = "07d080be58a361a5bbdb548fafe9449843d968be" }
-web-sys = { version = "0.3.22", features = [ "console" ]}
 # clippy = "*"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -50,6 +49,7 @@ reqwest = "0.9.17"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.1"
+web-sys = { version = "0.3.22", features = [ "console" ]}
 
 [dependencies.steven_gl]
 path = "./gl"
