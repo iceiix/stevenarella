@@ -190,7 +190,9 @@ cfg_if! {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 use web_sys;
+#[cfg(target_arch = "wasm32")]
 macro_rules! println {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
