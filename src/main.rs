@@ -44,7 +44,6 @@ pub mod model;
 pub mod entity;
 
 use cfg_if::cfg_if;
-use wasm_bindgen::prelude::*;
 use std::sync::{Arc, RwLock, Mutex};
 use std::rc::Rc;
 use std::marker::PhantomData;
@@ -190,8 +189,19 @@ cfg_if! {
     }
 }
 
-#[wasm_bindgen]
-pub fn main() {
+cfg_if! {
+    if #[cfg(target_os = "unknown")] {
+        use wasm_bindgen::prelude::*;
+
+        #[wasm_bindgen]
+        pub fn main() { main2(); }
+    } else {
+        #[inline]
+        pub fn main() { main2(); }
+    }
+}
+
+fn main2() {
     let opt = Opt::from_args();
 
     set_panic_hook();
