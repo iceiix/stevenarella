@@ -14,7 +14,7 @@
 
 extern crate steven_resources as internal;
 
-use steven_std::fs;
+use std_or_web::fs;
 use std::thread;
 use std::path;
 use std::io;

@@ -19,7 +19,7 @@ use aes::Aes128;
 use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use serde_json;
-use steven_std::fs;
+use std_or_web::fs;
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest;
 

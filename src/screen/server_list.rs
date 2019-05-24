@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use steven_std::fs;
+use std_or_web::fs;
 use std::thread;
 use std::sync::mpsc;
 use std::rc::Rc;
