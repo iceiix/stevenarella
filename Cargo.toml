@@ -66,3 +66,7 @@ version = "0"
 [dependencies.steven_shared]
 path = "./shared"
 version = "0"
+
+[dependencies.steven_std]
+path = "./std"
+version = "0"

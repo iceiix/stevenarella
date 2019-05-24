@@ -1895,6 +1895,13 @@ name = "steven_shared"
 version = "0.0.1"
 
 [[package]]
+name = "steven_std"
+version = "0.0.1"
+dependencies = [
+ "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "stevenarella"
 version = "0.0.1"
 dependencies = [
@@ -1925,6 +1932,7 @@ dependencies = [
  "steven_gl 0.0.1",
  "steven_resources 0.1.0",
  "steven_shared 0.0.1",
+ "steven_std 0.0.1",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.45 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
