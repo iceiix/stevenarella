@@ -1,3 +1,7 @@
+use cfg_if::cfg_if;
+
+cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
 pub mod fs {
     use log::info;
     use std::io::{Result, Read, Write};
@@ -34,5 +38,9 @@ pub mod fs {
         fn flush(&mut self) -> Result<()> {
             Ok(())
         }
+    }
+}
+    } else {
+        pub use std::fs;
     }
 }

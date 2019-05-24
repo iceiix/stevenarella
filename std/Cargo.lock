@@ -17,6 +17,7 @@ dependencies = [
 name = "steven_std"
 version = "0.0.1"
 dependencies = [
+ "cfg-if 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

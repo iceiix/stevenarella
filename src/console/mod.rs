@@ -17,14 +17,7 @@ use std::collections::HashMap;
 use std::any::Any;
 use std::cell::{RefCell, Ref};
 use std::sync::{Arc, Mutex};
-use cfg_if::cfg_if;
-cfg_if! {
-    if #[cfg(target_arch = "wasm32")] {
-        use steven_std::fs;
-    } else {
-        use std::fs;
-    }
-}
+use steven_std::fs;
 use std::io::{BufWriter, Write, BufRead, BufReader};
 use log;
 

@@ -19,15 +19,9 @@ use aes::Aes128;
 use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use serde_json;
-use cfg_if::cfg_if;
-cfg_if! {
-    if #[cfg(target_arch = "wasm32")] {
-        use steven_std::fs;
-    } else {
-        use std::fs;
-        use reqwest;
-    }
-}
+use steven_std::fs;
+#[cfg(not(target_arch = "wasm32"))]
+use reqwest;
 
 pub mod mojang;
 pub mod forge;

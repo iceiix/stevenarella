@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 log = { version = "0.4.6", features = ["std"] }
+cfg-if = "0.1.9"
