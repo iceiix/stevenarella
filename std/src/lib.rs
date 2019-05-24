@@ -15,11 +15,18 @@ pub mod fs {
             Ok(File{})
         }
     }
+
     impl Read for File {
         fn read(&mut self, _buf: &mut [u8]) -> Result<usize> {
             Ok(0)
         }
     }
+    impl Read for &File {
+        fn read(&mut self, _buf: &mut [u8]) -> Result<usize> {
+            Ok(0)
+        }
+    }
+
     impl Write for File {
         fn write(&mut self, _buf: &[u8]) -> Result<usize> {
             Ok(0)
