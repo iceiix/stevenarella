@@ -1,15 +1,17 @@
-use log::info;
-use std::io::{Result, Read, Write};
-
 pub mod fs {
+    use log::info;
+    use std::io::{Result, Read, Write};
+    use std::path::Path;
+    use std::convert::AsRef;
+
     pub struct File {}
     impl File {
-        pub fn open(path: &str) -> Result<File> {
-            info!("fs open {}", path);
+        pub fn open<P: AsRef<Path>>(path: P) -> Result<File> {
+            info!("fs open {:?}", path.as_ref().to_str());
             Ok(File{})
         }
-        pub fn create(path: &str) -> Result<File> {
-            info!("fs create {}", path);
+        pub fn create<P: AsRef<Path>>(path: P) -> Result<File> {
+            info!("fs create {:?}", path.as_ref().to_str());
             Ok(File{})
         }
     }
