@@ -14,10 +14,17 @@
 
 extern crate steven_resources as internal;
 
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        use steven_std::fs;
+    } else {
+        use std::fs;
+    }
+}
 use std::thread;
 use std::path;
 use std::io;
-use std::fs;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;

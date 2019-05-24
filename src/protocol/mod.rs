@@ -19,8 +19,15 @@ use aes::Aes128;
 use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use serde_json;
-#[cfg(not(target_arch = "wasm32"))]
-use reqwest;
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        use steven_std::fs;
+    } else {
+        use std::fs;
+        use reqwest;
+    }
+}
 
 pub mod mojang;
 pub mod forge;
@@ -1070,7 +1077,7 @@ impl Conn {
 
         if network_debug {
             debug!("about to parse id={:x}, dir={:?} state={:?}", id, dir, self.state);
-            std::fs::File::create("last-packet")?.write_all(buf.get_ref())?;
+            fs::File::create("last-packet")?.write_all(buf.get_ref())?;
         }
 
         let packet = packet::packet_by_id(self.protocol_version, self.state, dir, id, &mut buf)?;

@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fs;
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        use steven_std::fs;
+    } else {
+        use std::fs;
+    }
+}
 use std::thread;
 use std::sync::mpsc;
 use std::rc::Rc;

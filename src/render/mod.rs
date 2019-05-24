@@ -865,7 +865,14 @@ impl TextureManager {
     #[cfg(not(target_arch = "wasm32"))]
     fn obtain_skin(client: &::reqwest::Client, hash: &str) -> Result<image::DynamicImage, ::std::io::Error> {
         use std::io::Read;
-        use std::fs;
+        use cfg_if::cfg_if;
+        cfg_if! {
+            if #[cfg(target_arch = "wasm32")] {
+                use steven_std::fs;
+            } else {
+                use std::fs;
+            }
+        }
         use std::path::Path;
         use std::io::{Error, ErrorKind};
         let path = format!("skin-cache/{}/{}.png", &hash[..2], hash);
