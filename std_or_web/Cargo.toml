@@ -7,3 +7,6 @@ edition = "2018"
 [dependencies]
 log = { version = "0.4.6", features = ["std"] }
 cfg-if = "0.1.9"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+stdweb = { git = "https://github.com/iceiix/stdweb", rev = "5f9ef949ab29e495b648ab9af79845f327ab1ed6" }
