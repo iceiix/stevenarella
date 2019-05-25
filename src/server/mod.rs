@@ -30,7 +30,7 @@ use crate::entity;
 use cgmath::prelude::*;
 use crate::types::Gamemode;
 use crate::shared::{Axis, Position};
-use crate::format;
+use crate::protocol::format;
 use rsa_public_encrypt_pkcs1;
 use log::{error, debug, warn};
 
@@ -1072,7 +1072,7 @@ impl Server {
             },
             Some(nbt) => {
                 if block_update.action == 9 {
-                    use crate::format;
+                    use crate::protocol::format;
                     let line1 = format::Component::from_string(nbt.1.get("Text1").unwrap().as_str().unwrap());
                     let line2 = format::Component::from_string(nbt.1.get("Text2").unwrap().as_str().unwrap());
                     let line3 = format::Component::from_string(nbt.1.get("Text3").unwrap().as_str().unwrap());
@@ -1094,7 +1094,7 @@ impl Server {
     }
 
     fn on_sign_update(&mut self, mut update_sign: packet::play::clientbound::UpdateSign) {
-        use crate::format;
+        use crate::protocol::format;
         format::convert_legacy(&mut update_sign.line1);
         format::convert_legacy(&mut update_sign.line2);
         format::convert_legacy(&mut update_sign.line3);
@@ -1109,7 +1109,7 @@ impl Server {
     }
 
     fn on_sign_update_u16(&mut self, mut update_sign: packet::play::clientbound::UpdateSign_u16) {
-        use crate::format;
+        use crate::protocol::format;
         format::convert_legacy(&mut update_sign.line1);
         format::convert_legacy(&mut update_sign.line2);
         format::convert_legacy(&mut update_sign.line3);

@@ -20,8 +20,8 @@ use std::cell::RefCell;
 
 use crate::ui;
 use crate::render;
-use crate::format;
-use crate::format::{Component, TextComponent};
+use crate::protocol::format;
+use crate::protocol::format::{Component, TextComponent};
 use crate::protocol;
 
 use serde_json;

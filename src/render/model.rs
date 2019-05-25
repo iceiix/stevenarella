@@ -11,7 +11,7 @@ use crate::types::hash::FNVHash;
 use crate::shared::Direction;
 use byteorder::{WriteBytesExt, NativeEndian};
 use crate::model::BlockVertex;
-use crate::format::{self, Component};
+use crate::protocol::format::{self, Component};
 
 pub struct Manager {
     collections: Vec<Collection>,

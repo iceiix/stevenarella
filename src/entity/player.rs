@@ -23,7 +23,7 @@ use std::time::Instant;
 use crate::types::hash::FNVHash;
 use crate::settings::Stevenkey;
 use crate::shared::Position as BPosition;
-use crate::format;
+use crate::protocol::format;
 
 pub fn add_systems(m: &mut ecs::Manager) {
     let sys = MovementHandler::new(m);

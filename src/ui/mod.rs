@@ -17,7 +17,7 @@ pub mod logo;
 use std::rc::{Rc, Weak};
 use std::cell::{RefCell, RefMut};
 use crate::render;
-use crate::format;
+use crate::protocol::format;
 use glutin::VirtualKeyCode;
 #[cfg(not(target_arch = "wasm32"))]
 use clipboard::{ClipboardProvider, ClipboardContext};

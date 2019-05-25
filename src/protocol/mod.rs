@@ -25,8 +25,8 @@ use reqwest;
 pub mod mojang;
 pub mod forge;
 pub mod nbt;
+pub mod format;
 
-use crate::format;
 use std::fmt;
 use std::default;
 use std::net::TcpStream;
@@ -81,7 +81,7 @@ macro_rules! state_packets {
                 #![allow(unused_imports)]
                 use crate::protocol::*;
                 use std::io;
-                use crate::format;
+                use crate::protocol::format;
                 use crate::protocol::nbt;
                 use crate::types;
                 use crate::item;

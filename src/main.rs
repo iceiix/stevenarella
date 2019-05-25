@@ -25,7 +25,6 @@ pub mod macros;
 
 pub mod ecs;
 pub mod protocol;
-pub mod format;
 pub mod item;
 pub mod gl;
 pub mod types;
@@ -49,6 +48,7 @@ use std::marker::PhantomData;
 use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
+use crate::protocol::format;
 use glutin;
 
 const CL_BRAND: console::CVar<String> = console::CVar {

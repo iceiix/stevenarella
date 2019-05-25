@@ -23,7 +23,7 @@ use log;
 
 use crate::ui;
 use crate::render;
-use crate::format::{Component, TextComponent, Color};
+use crate::protocol::format::{Component, TextComponent, Color};
 
 #[cfg(target_arch = "wasm32")]
 use web_sys;

@@ -27,7 +27,7 @@ use cgmath::prelude::*;
 use crate::chunk_builder;
 use crate::ecs;
 use crate::entity::block_entity;
-use crate::format;
+use crate::protocol::format;
 use flate2::read::ZlibDecoder;
 use std::io::Read;
 
