@@ -215,6 +215,26 @@ fn main2() {
 
     info!("Starting steven");
 
+    {
+        use std_or_web::fs;
+        use std::io::{Read, Write};
+        {
+            info!("creating");
+            let mut f = fs::File::create("foo.txt").unwrap();
+            info!("writing");
+            f.write_all(b"Hello, world!").unwrap();
+        }
+        {
+            info!("opening");
+            let mut f = fs::File::open("foo.txt").unwrap();
+            let mut contents = String::new();
+            info!("reading");
+            f.read_to_string(&mut contents).unwrap();
+            info!("read data = {:?}", contents);
+        }
+    }
+
+
     let (vars, vsync) = {
         let mut vars = console::Vars::new();
         vars.register(CL_BRAND);
