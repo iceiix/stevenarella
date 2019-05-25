@@ -17,8 +17,6 @@
 
 #![recursion_limit="300"]
 
-extern crate steven_shared as shared;
-
 use aes::Aes128;
 use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
@@ -33,6 +31,15 @@ pub mod format;
 pub mod item;
 pub mod types;
 
+pub mod axis;
+pub use self::axis::Axis;
+
+pub mod direction;
+pub use self::direction::Direction;
+
+pub mod position;
+pub use self::position::Position;
+
 use std::fmt;
 use std::default;
 use std::net::TcpStream;
@@ -43,7 +50,6 @@ use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
 use std::time::{Instant, Duration};
-use crate::shared::Position;
 use log::debug;
 
 pub const SUPPORTED_PROTOCOLS: [i32; 14] = [480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
@@ -109,11 +115,6 @@ macro_rules! state_packets {
                 #![allow(unused_imports)]
                 use crate::*;
                 use std::io;
-                use crate::format;
-                use crate::nbt;
-                use crate::types;
-                use crate::item;
-                use crate::shared::Position;
 
                 #[allow(non_upper_case_globals)]
                 pub mod internal_ids {

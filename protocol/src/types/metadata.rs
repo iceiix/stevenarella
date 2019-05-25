@@ -21,7 +21,7 @@ use crate::Serializable;
 use crate::LenPrefixed;
 use crate::format;
 use crate::item;
-use crate::shared::Position;
+use crate::Position;
 use crate::nbt;
 
 pub struct MetadataKey<T: MetaValue> {

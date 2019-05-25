@@ -2,7 +2,7 @@
 pub mod sign;
 
 use crate::world::block::Block;
-use crate::shared::Position;
+use crate::protocol::Position;
 use crate::ecs;
 
 pub fn add_systems(m: &mut ecs::Manager) {

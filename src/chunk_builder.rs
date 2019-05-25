@@ -8,7 +8,7 @@ use crate::render;
 use crate::resources;
 use crate::model;
 use crate::protocol::types::bit::Set;
-use crate::shared::Direction;
+use crate::protocol::Direction;
 
 const NUM_WORKERS: usize = 8;
 

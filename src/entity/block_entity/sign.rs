@@ -1,7 +1,7 @@
 
 use crate::ecs;
 use crate::protocol::format::{self, Component};
-use crate::shared::{Direction, Position};
+use crate::protocol::{Direction, Position};
 use crate::world;
 use crate::world::block::Block;
 use crate::render;

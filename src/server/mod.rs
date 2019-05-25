@@ -29,7 +29,7 @@ use crate::ecs;
 use crate::entity;
 use cgmath::prelude::*;
 use crate::protocol::types::Gamemode;
-use crate::shared::{Axis, Position};
+use crate::protocol::{Axis, Position};
 use crate::protocol::format;
 use rsa_public_encrypt_pkcs1;
 use log::{error, debug, warn};
@@ -574,7 +574,7 @@ impl Server {
     }
 
     pub fn on_right_click(&mut self, renderer: &mut render::Renderer) {
-        use crate::shared::Direction;
+        use crate::protocol::Direction;
         if self.player.is_some() {
             if let Some((pos, _, face, at)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast().unwrap(), target::test_block) {
                 if self.protocol_version >= 315 {
@@ -1303,7 +1303,7 @@ impl Server {
 
     fn on_block_change_u8(&mut self, block_change: packet::play::clientbound::BlockChange_u8) {
         self.on_block_change(
-            crate::shared::Position::new(block_change.x, block_change.y as i32, block_change.z),
+            crate::protocol::Position::new(block_change.x, block_change.y as i32, block_change.z),
             (block_change.block_id.0 << 4) | (block_change.block_metadata as i32)
         );
     }

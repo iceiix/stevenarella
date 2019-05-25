@@ -10,7 +10,7 @@ use crate::resources;
 use crate::render;
 use crate::world;
 use crate::world::block::{Block, TintType};
-use crate::shared::Direction;
+use crate::protocol::Direction;
 use serde_json;
 
 use std::hash::BuildHasherDefault;

@@ -10,6 +10,6 @@ cgmath = "0.17.0"
 collision = "0.20.1"
 
 
-[dependencies.steven_shared]
-path = "../shared"
+[dependencies.steven_protocol]
+path = "../protocol"
 version = "0"

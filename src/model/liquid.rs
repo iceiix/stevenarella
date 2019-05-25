@@ -2,7 +2,7 @@
 use std::io::Write;
 use std::sync::{Arc, RwLock};
 use crate::world::{self, block};
-use crate::shared::Direction;
+use crate::protocol::Direction;
 use crate::model::BlockVertex;
 use crate::render;
 

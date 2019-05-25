@@ -14,7 +14,6 @@
 
 use std::time::{Instant, Duration};
 use log::{info, warn, error};
-extern crate steven_shared as shared;
 extern crate steven_protocol as protocol;
 
 use structopt::StructOpt;

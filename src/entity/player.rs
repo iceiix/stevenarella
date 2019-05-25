@@ -22,7 +22,7 @@ use std::hash::BuildHasherDefault;
 use std::time::Instant;
 use crate::protocol::types::hash::FNVHash;
 use crate::settings::Stevenkey;
-use crate::shared::Position as BPosition;
+use crate::protocol::Position as BPosition;
 use crate::protocol::format;
 
 pub fn add_systems(m: &mut ecs::Manager) {

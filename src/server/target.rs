@@ -1,7 +1,7 @@
 
 use crate::world;
 use crate::world::block;
-use crate::shared::{Position, Direction};
+use crate::protocol::{Position, Direction};
 use cgmath;
 use crate::render;
 use crate::render::model;

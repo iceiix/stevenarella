@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::hash::BuildHasherDefault;
 use crate::protocol::types::{bit, nibble};
-use crate::shared::{Position, Direction};
+use crate::protocol::{Position, Direction};
 use crate::protocol::types::hash::FNVHash;
 use crate::protocol;
 use crate::render;

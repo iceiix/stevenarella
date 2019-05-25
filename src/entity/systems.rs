@@ -3,7 +3,7 @@ use super::*;
 use crate::ecs;
 use crate::world;
 use crate::render;
-use crate::shared::Position as BPos;
+use crate::protocol::Position as BPos;
 use cgmath::InnerSpace;
 
 pub struct ApplyVelocity {

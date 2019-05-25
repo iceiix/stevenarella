@@ -1,9 +1,9 @@
 
 #![recursion_limit="600"]
 
-extern crate steven_shared as shared;
+extern crate steven_protocol as protocol;
 
-use crate::shared::{Axis, Direction, Position};
+use crate::protocol::{Axis, Direction, Position};
 use collision::Aabb3;
 use cgmath::Point3;
 use lazy_static::lazy_static;

@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::sync::{Arc, RwLock};
 use crate::protocol::types::hash::FNVHash;
-use crate::shared::Direction;
+use crate::protocol::Direction;
 use byteorder::{WriteBytesExt, NativeEndian};
 use crate::model::BlockVertex;
 use crate::protocol::format::{self, Component};
