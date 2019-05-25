@@ -4,7 +4,7 @@ use std::io;
 use byteorder::WriteBytesExt;
 use log::debug;
 
-use crate::protocol::{Serializable, Error, LenPrefixed, VarInt};
+use super::{Serializable, Error, LenPrefixed, VarInt};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase {
@@ -147,7 +147,7 @@ impl Serializable for FmlHs {
                 })
             },
             3 => {
-                let protocol_version = unsafe { crate::protocol::CURRENT_PROTOCOL_VERSION };
+                let protocol_version = unsafe { super::CURRENT_PROTOCOL_VERSION };
 
                 if protocol_version >= 47 {
                     Ok(FmlHs::RegistryData {
