@@ -19,9 +19,6 @@ extern crate steven_protocol as protocol;
 
 use structopt::StructOpt;
 
-#[macro_use]
-pub mod macros;
-
 pub mod ecs;
 pub mod gl;
 pub mod resources;

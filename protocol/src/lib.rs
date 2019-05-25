@@ -52,7 +52,6 @@ pub const SUPPORTED_PROTOCOLS: [i32; 14] = [480, 477, 452, 451, 404, 340, 316, 3
 pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
 pub static mut NETWORK_DEBUG: bool = false;
 
-// TODO: remove copy from ../../src/macros.rs
 macro_rules! create_ids {
     ($t:ty, ) => ();
     ($t:ty, prev($prev:ident), $name:ident) => (
