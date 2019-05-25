@@ -25,7 +25,6 @@ pub mod macros;
 
 pub mod ecs;
 pub mod protocol;
-pub mod item;
 pub mod gl;
 pub mod types;
 pub mod resources;

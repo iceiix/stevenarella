@@ -20,7 +20,7 @@ use crate::protocol;
 use crate::protocol::Serializable;
 use crate::protocol::LenPrefixed;
 use crate::protocol::format;
-use crate::item;
+use crate::protocol::item;
 use crate::shared::Position;
 use crate::protocol::nbt;
 
