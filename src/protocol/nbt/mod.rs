@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::io;
 use std::io::Read;
 
-use crate::protocol::Serializable;
+use super::Serializable;
 use crate::protocol;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
