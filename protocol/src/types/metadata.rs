@@ -16,13 +16,13 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::io;
 use std::fmt;
-use crate::protocol;
-use crate::protocol::Serializable;
-use crate::protocol::LenPrefixed;
-use crate::protocol::format;
-use crate::protocol::item;
+use crate::*;
+use crate::Serializable;
+use crate::LenPrefixed;
+use crate::format;
+use crate::item;
 use crate::shared::Position;
-use crate::protocol::nbt;
+use crate::nbt;
 
 pub struct MetadataKey<T: MetaValue> {
     index: i32,
@@ -60,7 +60,7 @@ impl Metadata {
         self.map.insert(index, val.wrap());
     }
 
-    fn read_from18<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+    fn read_from18<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         let mut m = Self::new();
         loop {
             let ty_index = u8::read_from(buf)? as i32;
@@ -85,13 +85,13 @@ impl Metadata {
                                [f32::read_from(buf)?,
                                 f32::read_from(buf)?,
                                 f32::read_from(buf)?]),
-                _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
+                _ => return Err(Error::Err("unknown metadata type".to_owned())),
             }
         }
         Ok(m)
     }
 
-    fn write_to18<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to18<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         for (k, v) in &self.map {
             if (*k as u8) > 0x1f {
                 panic!("write metadata index {:x} > 0x1f", *k as u8);
@@ -149,17 +149,17 @@ impl Metadata {
         Ok(())
     }
 
-    fn read_from19<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+    fn read_from19<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         let mut m = Self::new();
         loop {
             let index = u8::read_from(buf)? as i32;
             if index == 0xFF {
                 break;
             }
-            let ty = protocol::VarInt::read_from(buf)?.0;
+            let ty = VarInt::read_from(buf)?.0;
             match ty {
                 0 => m.put_raw(index, i8::read_from(buf)?),
-                1 => m.put_raw(index, protocol::VarInt::read_from(buf)?.0),
+                1 => m.put_raw(index, VarInt::read_from(buf)?.0),
                 2 => m.put_raw(index, f32::read_from(buf)?),
                 3 => m.put_raw(index, String::read_from(buf)?),
                 4 => m.put_raw(index, format::Component::read_from(buf)?),
@@ -177,15 +177,15 @@ impl Metadata {
                         m.put_raw::<Option<Position>>(index, None);
                     }
                 }
-                10 => m.put_raw(index, protocol::VarInt::read_from(buf)?),
+                10 => m.put_raw(index, VarInt::read_from(buf)?),
                 11 => {
                     if bool::read_from(buf)? {
-                        m.put_raw(index, Option::<protocol::UUID>::read_from(buf)?);
+                        m.put_raw(index, Option::<UUID>::read_from(buf)?);
                     } else {
-                        m.put_raw::<Option<protocol::UUID>>(index, None);
+                        m.put_raw::<Option<UUID>>(index, None);
                     }
                 }
-                12 => m.put_raw(index, protocol::VarInt::read_from(buf)?.0 as u16),
+                12 => m.put_raw(index, VarInt::read_from(buf)?.0 as u16),
                 13 => {
                     let ty = u8::read_from(buf)?;
                     if ty != 0 {
@@ -195,13 +195,13 @@ impl Metadata {
                         m.put_raw(index, nbt::NamedTag(name, tag));
                     }
                 }
-                _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
+                _ => return Err(Error::Err("unknown metadata type".to_owned())),
             }
         }
         Ok(m)
     }
 
-    fn write_to19<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to19<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         for (k, v) in &self.map {
             (*k as u8).write_to(buf)?;
             match *v {
@@ -211,7 +211,7 @@ impl Metadata {
                 }
                 Value::Int(ref val) => {
                     u8::write_to(&1, buf)?;
-                    protocol::VarInt(*val).write_to(buf)?;
+                    VarInt(*val).write_to(buf)?;
                 }
                 Value::Float(ref val) => {
                     u8::write_to(&2, buf)?;
@@ -259,7 +259,7 @@ impl Metadata {
                 }
                 Value::Block(ref val) => {
                     u8::write_to(&11, buf)?;
-                    protocol::VarInt(*val as i32).write_to(buf)?;
+                    VarInt(*val as i32).write_to(buf)?;
                 }
                 Value::NBTTag(ref _val) => {
                     u8::write_to(&13, buf)?;
@@ -273,17 +273,17 @@ impl Metadata {
         Ok(())
     }
 
-    fn read_from113<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
+    fn read_from113<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         let mut m = Self::new();
         loop {
             let index = u8::read_from(buf)? as i32;
             if index == 0xFF {
                 break;
             }
-            let ty = protocol::VarInt::read_from(buf)?.0;
+            let ty = VarInt::read_from(buf)?.0;
             match ty {
                 0 => m.put_raw(index, i8::read_from(buf)?),
-                1 => m.put_raw(index, protocol::VarInt::read_from(buf)?.0),
+                1 => m.put_raw(index, VarInt::read_from(buf)?.0),
                 2 => m.put_raw(index, f32::read_from(buf)?),
                 3 => m.put_raw(index, String::read_from(buf)?),
                 4 => m.put_raw(index, format::Component::read_from(buf)?),
@@ -302,15 +302,15 @@ impl Metadata {
                         m.put_raw::<Option<Position>>(index, None);
                     }
                 }
-                11 => m.put_raw(index, protocol::VarInt::read_from(buf)?),
+                11 => m.put_raw(index, VarInt::read_from(buf)?),
                 12 => {
                     if bool::read_from(buf)? {
-                        m.put_raw(index, Option::<protocol::UUID>::read_from(buf)?);
+                        m.put_raw(index, Option::<UUID>::read_from(buf)?);
                     } else {
-                        m.put_raw::<Option<protocol::UUID>>(index, None);
+                        m.put_raw::<Option<UUID>>(index, None);
                     }
                 }
-                13 => m.put_raw(index, protocol::VarInt::read_from(buf)?.0 as u16),
+                13 => m.put_raw(index, VarInt::read_from(buf)?.0 as u16),
                 14 => {
                     let ty = u8::read_from(buf)?;
                     if ty != 0 {
@@ -324,19 +324,19 @@ impl Metadata {
                 16 => m.put_raw(index, VillagerData::read_from(buf)?),
                 17 => {
                     if bool::read_from(buf)? {
-                        m.put_raw(index, Option::<protocol::VarInt>::read_from(buf)?);
+                        m.put_raw(index, Option::<VarInt>::read_from(buf)?);
                     } else {
-                        m.put_raw::<Option<protocol::VarInt>>(index, None);
+                        m.put_raw::<Option<VarInt>>(index, None);
                     }
                 },
                 18 => m.put_raw(index, PoseData::read_from(buf)?),
-                _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
+                _ => return Err(Error::Err("unknown metadata type".to_owned())),
             }
         }
         Ok(m)
     }
 
-    fn write_to113<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to113<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         for (k, v) in &self.map {
             (*k as u8).write_to(buf)?;
             match *v {
@@ -346,7 +346,7 @@ impl Metadata {
                 }
                 Value::Int(ref val) => {
                     u8::write_to(&1, buf)?;
-                    protocol::VarInt(*val).write_to(buf)?;
+                    VarInt(*val).write_to(buf)?;
                 }
                 Value::Float(ref val) => {
                     u8::write_to(&2, buf)?;
@@ -398,7 +398,7 @@ impl Metadata {
                 }
                 Value::Block(ref val) => {
                     u8::write_to(&13, buf)?;
-                    protocol::VarInt(*val as i32).write_to(buf)?;
+                    VarInt(*val as i32).write_to(buf)?;
                 }
                 Value::NBTTag(ref _val) => {
                     u8::write_to(&14, buf)?;
@@ -432,8 +432,8 @@ impl Metadata {
 }
 
 impl Serializable for Metadata {
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
-        let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let protocol_version = unsafe { CURRENT_PROTOCOL_VERSION };
 
         if protocol_version >= 404 {
             Metadata::read_from113(buf)
@@ -444,8 +444,8 @@ impl Serializable for Metadata {
         }
     }
 
-    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
-        let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        let protocol_version = unsafe { CURRENT_PROTOCOL_VERSION };
 
         if protocol_version >= 404 {
             self.write_to113(buf)
@@ -488,13 +488,13 @@ pub enum Value {
     Rotation([i32; 3]),
     Position(Position),
     OptionalPosition(Option<Position>),
-    Direction(protocol::VarInt), // TODO: Proper type
-    OptionalUUID(Option<protocol::UUID>),
+    Direction(VarInt), // TODO: Proper type
+    OptionalUUID(Option<UUID>),
     Block(u16), // TODO: Proper type
     NBTTag(nbt::NamedTag),
     Particle(ParticleData),
     Villager(VillagerData),
-    OptionalVarInt(Option<protocol::VarInt>),
+    OptionalVarInt(Option<VarInt>),
     Pose(PoseData),
 }
 
@@ -504,7 +504,7 @@ pub enum ParticleData {
     AngryVillager,
     Barrier,
     Block {
-        block_state: protocol::VarInt,
+        block_state: VarInt,
     },
     Bubble,
     Cloud,
@@ -528,7 +528,7 @@ pub enum ParticleData {
     ExplosionEmitter,
     Explosion,
     FallingDust {
-        block_state: protocol::VarInt,
+        block_state: VarInt,
     },
     Firework,
     Fishing,
@@ -564,8 +564,8 @@ pub enum ParticleData {
 }
 
 impl Serializable for ParticleData {
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
-        let id = protocol::VarInt::read_from(buf)?.0;
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let id = VarInt::read_from(buf)?.0;
         Ok(match id {
             0 => ParticleData::AmbientEntityEffect,
             1 => ParticleData::AngryVillager,
@@ -632,27 +632,27 @@ impl Serializable for ParticleData {
         })
     }
 
-    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), Error> {
         unimplemented!()
     }
 }
 
 #[derive(Debug)]
 pub struct VillagerData {
-    villager_type: protocol::VarInt,
-    profession: protocol::VarInt,
-    level: protocol::VarInt,
+    villager_type: VarInt,
+    profession: VarInt,
+    level: VarInt,
 }
 
 impl Serializable for VillagerData {
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
-        let villager_type = protocol::VarInt::read_from(buf)?;
-        let profession = protocol::VarInt::read_from(buf)?;
-        let level = protocol::VarInt::read_from(buf)?;
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let villager_type = VarInt::read_from(buf)?;
+        let profession = VarInt::read_from(buf)?;
+        let level = VarInt::read_from(buf)?;
         Ok(VillagerData { villager_type, profession, level })
     }
 
-    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), Error> {
         unimplemented!()
     }
 }
@@ -669,8 +669,8 @@ pub enum PoseData {
 }
 
 impl Serializable for PoseData {
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
-        let n = protocol::VarInt::read_from(buf)?;
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let n = VarInt::read_from(buf)?;
         Ok(match n.0 {
             0 => PoseData::Standing,
             1 => PoseData::FallFlying,
@@ -683,7 +683,7 @@ impl Serializable for PoseData {
         })
     }
 
-    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), Error> {
         unimplemented!()
     }
 }
@@ -852,7 +852,7 @@ impl MetaValue for Option<Position> {
     }
 }
 
-impl MetaValue for protocol::VarInt {
+impl MetaValue for VarInt {
     fn unwrap(value: &Value) -> &Self {
         match *value {
             Value::Direction(ref val) => val,
@@ -864,7 +864,7 @@ impl MetaValue for protocol::VarInt {
     }
 }
 
-impl MetaValue for Option<protocol::UUID> {
+impl MetaValue for Option<UUID> {
     fn unwrap(value: &Value) -> &Self {
         match *value {
             Value::OptionalUUID(ref val) => val,
@@ -912,7 +912,7 @@ impl MetaValue for VillagerData {
     }
 }
 
-impl MetaValue for Option<protocol::VarInt> {
+impl MetaValue for Option<VarInt> {
     fn unwrap(value: &Value) -> &Self {
         match *value {
             Value::OptionalVarInt(ref val) => val,

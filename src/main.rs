@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![recursion_limit="300"]
-
 use std::time::{Instant, Duration};
 use log::{info, warn, error};
 extern crate steven_shared as shared;
+extern crate steven_protocol as protocol;
 
 use structopt::StructOpt;
 
@@ -24,7 +23,6 @@ use structopt::StructOpt;
 pub mod macros;
 
 pub mod ecs;
-pub mod protocol;
 pub mod gl;
 pub mod resources;
 pub mod render;

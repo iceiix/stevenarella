@@ -17,7 +17,7 @@ use std::io;
 use std::io::Read;
 
 use super::Serializable;
-use crate::protocol;
+use crate::*;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
 #[derive(Debug, Clone)]
@@ -182,7 +182,7 @@ impl Tag {
         }
     }
 
-    fn read_type<R: io::Read>(id: u8, buf: &mut R) -> Result<Tag, protocol::Error> {
+    fn read_type<R: io::Read>(id: u8, buf: &mut R) -> Result<Tag, Error> {
         match id {
             0 => unreachable!(),
             1 => Ok(Tag::Byte(buf.read_i8()?)),
@@ -235,17 +235,17 @@ impl Tag {
                 }
                 data
             })),
-            _ => Err(protocol::Error::Err("invalid tag".to_owned())),
+            _ => Err(Error::Err("invalid tag".to_owned())),
         }
     }
 }
 
 impl Serializable for Tag {
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Tag, protocol::Error> {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Tag, Error> {
         Tag::read_type(10, buf)
     }
 
-    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         match *self {
             Tag::End => {}
             Tag::Byte(val) => buf.write_i8(val)?,
@@ -296,13 +296,13 @@ impl Serializable for Tag {
     }
 }
 
-pub fn write_string<W: io::Write>(buf: &mut W, s: &str) -> Result<(), protocol::Error> {
+pub fn write_string<W: io::Write>(buf: &mut W, s: &str) -> Result<(), Error> {
     let data = s.as_bytes();
     (data.len() as i16).write_to(buf)?;
     buf.write_all(data).map_err(|v| v.into())
 }
 
-pub fn read_string<R: io::Read>(buf: &mut R) -> Result<String, protocol::Error> {
+pub fn read_string<R: io::Read>(buf: &mut R) -> Result<String, Error> {
     let len: i16 = buf.read_i16::<BigEndian>()?;
     let mut bytes = Vec::<u8>::new();
     buf.take(len as u64).read_to_end(&mut bytes)?;

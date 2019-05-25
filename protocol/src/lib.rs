@@ -15,6 +15,10 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
+#![recursion_limit="300"]
+
+extern crate steven_shared as shared;
+
 use aes::Aes128;
 use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
@@ -48,6 +52,29 @@ pub const SUPPORTED_PROTOCOLS: [i32; 14] = [480, 477, 452, 451, 404, 340, 316, 3
 pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
 pub static mut NETWORK_DEBUG: bool = false;
 
+// TODO: remove copy from ../../src/macros.rs
+macro_rules! create_ids {
+    ($t:ty, ) => ();
+    ($t:ty, prev($prev:ident), $name:ident) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = $prev + 1;
+    );
+    ($t:ty, prev($prev:ident), $name:ident, $($n:ident),+) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = $prev + 1;
+        create_ids!($t, prev($name), $($n),+);
+    );
+    ($t:ty, $name:ident, $($n:ident),+) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = 0;
+        create_ids!($t, prev($name), $($n),+);
+    );
+    ($t:ty, $name:ident) => (
+        #[allow(non_upper_case_globals)]
+        pub const $name: $t = 0;
+    );
+}
+
 /// Helper macro for defining packets
 #[macro_export]
 macro_rules! state_packets {
@@ -61,7 +88,7 @@ macro_rules! state_packets {
             )*
         })+
     })+) => {
-        use crate::protocol::*;
+        use crate::*;
         use std::io;
 
         #[derive(Debug)]
@@ -81,14 +108,13 @@ macro_rules! state_packets {
             $(
             pub mod $dir {
                 #![allow(unused_imports)]
-                use crate::protocol::*;
+                use crate::*;
                 use std::io;
-                use crate::protocol::format;
-                use crate::protocol::nbt;
-                use crate::protocol::types;
-                use crate::protocol::item;
+                use crate::format;
+                use crate::nbt;
+                use crate::types;
+                use crate::item;
                 use crate::shared::Position;
-
 
                 #[allow(non_upper_case_globals)]
                 pub mod internal_ids {
@@ -168,7 +194,7 @@ macro_rules! protocol_packet_ids {
            )*
        })+
     })+) => {
-        use crate::protocol::*;
+        use crate::*;
 
         pub fn translate_internal_packet_id(state: State, dir: Direction, id: i32, to_internal: bool) -> i32 {
             match state {
@@ -180,14 +206,14 @@ macro_rules! protocol_packet_ids {
                                     if to_internal {
                                         match id {
                                         $(
-                                            $id => crate::protocol::packet::$state::$dir::internal_ids::$name,
+                                            $id => crate::packet::$state::$dir::internal_ids::$name,
                                         )*
                                             _ => panic!("bad packet id 0x{:x} in {:?} {:?}", id, dir, state),
                                         }
                                     } else {
                                         match id {
                                         $(
-                                            crate::protocol::packet::$state::$dir::internal_ids::$name => $id,
+                                            crate::packet::$state::$dir::internal_ids::$name => $id,
                                         )*
                                             _ => panic!("bad packet internal id 0x{:x} in {:?} {:?}", id, dir, state),
                                         }
@@ -1150,7 +1176,7 @@ impl Conn {
         let players = val.get("players").ok_or(invalid_status())?;
 
         // For modded servers, get the list of Forge mods installed
-        let mut forge_mods: std::vec::Vec<crate::protocol::forge::ForgeMod> = vec![];
+        let mut forge_mods: std::vec::Vec<crate::forge::ForgeMod> = vec![];
         if let Some(modinfo) = val.get("modinfo") {
             if let Some(modinfo_type) = modinfo.get("type") {
                 if modinfo_type == "FML" {
@@ -1161,7 +1187,7 @@ impl Conn {
                                     let modid = obj.get("modid").unwrap().as_str().unwrap().to_string();
                                     let version = obj.get("version").unwrap().as_str().unwrap().to_string();
 
-                                    forge_mods.push(crate::protocol::forge::ForgeMod { modid, version });
+                                    forge_mods.push(crate::forge::ForgeMod { modid, version });
                                 }
                             }
                         }
@@ -1204,7 +1230,7 @@ pub struct Status {
     pub players: StatusPlayers,
     pub description: format::Component,
     pub favicon: Option<String>,
-    pub forge_mods: Vec<crate::protocol::forge::ForgeMod>,
+    pub forge_mods: Vec<crate::forge::ForgeMod>,
 }
 
 #[derive(Debug)]

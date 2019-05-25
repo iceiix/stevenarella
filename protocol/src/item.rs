@@ -14,7 +14,7 @@
 
 use super::nbt;
 use super::Serializable;
-use crate::protocol;
+use crate::*;
 use std::io;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
@@ -39,8 +39,8 @@ impl Default for Stack {
 }
 
 impl Serializable for Option<Stack> {
-    fn read_from<R: io::Read>(buf: &mut R) -> Result<Option<Stack>, protocol::Error> {
-        let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Option<Stack>, Error> {
+        let protocol_version = unsafe { CURRENT_PROTOCOL_VERSION };
 
         if protocol_version >= 404 {
             let present = buf.read_u8()? != 0;
@@ -50,7 +50,7 @@ impl Serializable for Option<Stack> {
         }
 
         let id = if protocol_version >= 404 {
-            protocol::VarInt::read_from(buf)?.0 as isize
+            VarInt::read_from(buf)?.0 as isize
         } else {
             buf.read_i16::<BigEndian>()? as isize
         };
@@ -89,7 +89,7 @@ impl Serializable for Option<Stack> {
             tag,
         }))
     }
-    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         match *self {
             Some(ref val) => {
                 // TODO: if protocol_version >= 404, send present and id varint, no damage, for 1.13.2
