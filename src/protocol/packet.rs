@@ -2484,7 +2484,7 @@ impl Serializable for Recipe {
             let a = String::read_from(buf)?;
             let b = String::read_from(buf)?;
 
-            let protocol_version = unsafe { crate::protocol::CURRENT_PROTOCOL_VERSION };
+            let protocol_version = unsafe { super::CURRENT_PROTOCOL_VERSION };
 
             // 1.14+ swaps recipe identifier and type, and adds namespace to type
             if protocol_version >= 477 {
