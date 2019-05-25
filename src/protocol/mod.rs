@@ -24,8 +24,8 @@ use reqwest;
 
 pub mod mojang;
 pub mod forge;
+pub mod nbt;
 
-use crate::nbt;
 use crate::format;
 use std::fmt;
 use std::default;
@@ -82,7 +82,7 @@ macro_rules! state_packets {
                 use crate::protocol::*;
                 use std::io;
                 use crate::format;
-                use crate::nbt;
+                use crate::protocol::nbt;
                 use crate::types;
                 use crate::item;
                 use crate::shared::Position;

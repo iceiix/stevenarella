@@ -22,7 +22,7 @@ use crate::protocol::LenPrefixed;
 use crate::format;
 use crate::item;
 use crate::shared::Position;
-use crate::nbt;
+use crate::protocol::nbt;
 
 pub struct MetadataKey<T: MetaValue> {
     index: i32,

@@ -1211,7 +1211,7 @@ impl Server {
         }
     }
 
-    fn load_block_entities(&mut self, block_entities: Vec<Option<crate::nbt::NamedTag>>) {
+    fn load_block_entities(&mut self, block_entities: Vec<Option<crate::protocol::nbt::NamedTag>>) {
         for optional_block_entity in block_entities {
             if let Some(block_entity) = optional_block_entity {
                 let x = block_entity.1.get("x").unwrap().as_int().unwrap();

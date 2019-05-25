@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::nbt;
+use crate::protocol::nbt;
 use crate::protocol::{self, Serializable};
 use std::io;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
