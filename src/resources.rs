@@ -28,7 +28,7 @@ use serde_json;
 use reqwest;
 use zip;
 
-use crate::types::hash::FNVHash;
+use crate::protocol::types::hash::FNVHash;
 use crate::ui;
 
 const RESOURCES_VERSION: &str = "1.12.2";

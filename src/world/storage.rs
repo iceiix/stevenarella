@@ -1,6 +1,6 @@
 
-use crate::types::bit;
-use crate::types::hash::FNVHash;
+use crate::protocol::types::bit;
+use crate::protocol::types::hash::FNVHash;
 use crate::world::block;
 
 use std::collections::HashMap;

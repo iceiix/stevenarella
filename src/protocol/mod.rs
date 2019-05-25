@@ -27,6 +27,7 @@ pub mod forge;
 pub mod nbt;
 pub mod format;
 pub mod item;
+pub mod types;
 
 use std::fmt;
 use std::default;
@@ -84,7 +85,7 @@ macro_rules! state_packets {
                 use std::io;
                 use crate::protocol::format;
                 use crate::protocol::nbt;
-                use crate::types;
+                use crate::protocol::types;
                 use crate::protocol::item;
                 use crate::shared::Position;
 

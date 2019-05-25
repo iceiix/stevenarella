@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::types::bit::Set as BSet;
+use crate::protocol::types::bit::Set as BSet;
 use std::collections::{HashMap, HashSet};
 use std::hash::BuildHasherDefault;
-use crate::types::hash::FNVHash;
+use crate::protocol::types::hash::FNVHash;
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::marker::PhantomData;

@@ -35,7 +35,7 @@ use collision;
 use log::{error, trace};
 
 use std::hash::BuildHasherDefault;
-use crate::types::hash::FNVHash;
+use crate::protocol::types::hash::FNVHash;
 use std::sync::atomic::{AtomicIsize, Ordering};
 use std::thread;
 use std::sync::mpsc;

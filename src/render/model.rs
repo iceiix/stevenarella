@@ -7,7 +7,7 @@ use collision::{self, Frustum, Sphere};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::sync::{Arc, RwLock};
-use crate::types::hash::FNVHash;
+use crate::protocol::types::hash::FNVHash;
 use crate::shared::Direction;
 use byteorder::{WriteBytesExt, NativeEndian};
 use crate::model::BlockVertex;

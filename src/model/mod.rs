@@ -14,7 +14,7 @@ use crate::shared::Direction;
 use serde_json;
 
 use std::hash::BuildHasherDefault;
-use crate::types::hash::FNVHash;
+use crate::protocol::types::hash::FNVHash;
 use log::{error};
 
 use rand::Rng;

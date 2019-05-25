@@ -17,9 +17,9 @@ pub use steven_blocks as block;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::hash::BuildHasherDefault;
-use crate::types::{bit, nibble};
+use crate::protocol::types::{bit, nibble};
 use crate::shared::{Position, Direction};
-use crate::types::hash::FNVHash;
+use crate::protocol::types::hash::FNVHash;
 use crate::protocol;
 use crate::render;
 use collision;
@@ -706,7 +706,7 @@ impl World {
 
     fn load_uncompressed_chunk17(&mut self, x: i32, z: i32, new: bool, skylight: bool, mask: u16, mask_add: u16, data: &mut std::io::Cursor<Vec<u8>>) -> Result<(), protocol::Error> {
         use std::io::Read;
-        use crate::types::nibble;
+        use crate::protocol::types::nibble;
 
         let cpos = CPos(x, z);
         {

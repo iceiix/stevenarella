@@ -14,13 +14,13 @@ use super::{
 use crate::world;
 use crate::render;
 use crate::render::model::{self, FormatState};
-use crate::types::Gamemode;
+use crate::protocol::types::Gamemode;
 use collision::{Aabb, Aabb3};
 use cgmath::{self, Point3, Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::time::Instant;
-use crate::types::hash::FNVHash;
+use crate::protocol::types::hash::FNVHash;
 use crate::settings::Stevenkey;
 use crate::shared::Position as BPosition;
 use crate::protocol::format;
