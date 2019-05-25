@@ -44,7 +44,7 @@ pub fn protocol_name_to_protocol_version(s: String) -> i32 {
     }
 }
 
-pub fn translate_internal_packet_id_for_version(version: i32, state: State, dir: Direction, id: i32, to_internal: bool) -> i32 {
+pub fn translate_internal_packet_id_for_version(version: i32, state: State, dir: PacketDirection, id: i32, to_internal: bool) -> i32 {
     match version {
         480 => v1_14_1::translate_internal_packet_id(state, dir, id, to_internal),
         477 => v1_14::translate_internal_packet_id(state, dir, id, to_internal),

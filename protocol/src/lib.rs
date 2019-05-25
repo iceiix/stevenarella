@@ -129,7 +129,7 @@ macro_rules! state_packets {
                     impl PacketType for $name {
 
                         fn packet_id(&self, version: i32) -> i32 {
-                            packet::versions::translate_internal_packet_id_for_version(version, State::$stateName, Direction::$dirName, internal_ids::$name, false)
+                            packet::versions::translate_internal_packet_id_for_version(version, State::$stateName, PacketDirection::$dirName, internal_ids::$name, false)
                         }
 
                         fn write<W: io::Write>(self, buf: &mut W) -> Result<(), Error> {
@@ -150,13 +150,13 @@ macro_rules! state_packets {
 
         /// Returns the packet for the given state, direction and id after parsing the fields
         /// from the buffer.
-        pub fn packet_by_id<R: io::Read>(version: i32, state: State, dir: Direction, id: i32, mut buf: &mut R) -> Result<Option<Packet>, Error> {
+        pub fn packet_by_id<R: io::Read>(version: i32, state: State, dir: PacketDirection, id: i32, mut buf: &mut R) -> Result<Option<Packet>, Error> {
             match state {
                 $(
                     State::$stateName => {
                         match dir {
                             $(
-                                Direction::$dirName => {
+                                PacketDirection::$dirName => {
                                     let internal_id = packet::versions::translate_internal_packet_id_for_version(version, state, dir, id, true);
                                     match internal_id {
                                     $(
@@ -195,13 +195,13 @@ macro_rules! protocol_packet_ids {
     })+) => {
         use crate::*;
 
-        pub fn translate_internal_packet_id(state: State, dir: Direction, id: i32, to_internal: bool) -> i32 {
+        pub fn translate_internal_packet_id(state: State, dir: PacketDirection, id: i32, to_internal: bool) -> i32 {
             match state {
                 $(
                     State::$stateName => {
                         match dir {
                             $(
-                                Direction::$dirName => {
+                                PacketDirection::$dirName => {
                                     if to_internal {
                                         match id {
                                         $(
@@ -914,10 +914,10 @@ impl Serializable for Position {
 }
 
 
-/// Direction is used to define whether packets are going to the
+/// PacketDirection is used to define whether packets are going to the
 /// server or the client.
 #[derive(Clone, Copy, Debug)]
-pub enum Direction {
+pub enum PacketDirection {
     Serverbound,
     Clientbound,
 }
@@ -994,7 +994,7 @@ pub struct Conn {
     stream: TcpStream,
     pub host: String,
     pub port: u16,
-    direction: Direction,
+    direction: PacketDirection,
     pub protocol_version: i32,
     pub state: State,
 
@@ -1022,7 +1022,7 @@ impl Conn {
             stream,
             host: parts[0].to_owned(),
             port: parts[1].parse().unwrap(),
-            direction: Direction::Serverbound,
+            direction: PacketDirection::Serverbound,
             state: State::Handshaking,
             protocol_version,
             cipher: Option::None,
@@ -1091,8 +1091,8 @@ impl Conn {
         let id = VarInt::read_from(&mut buf)?.0;
 
         let dir = match self.direction {
-            Direction::Clientbound => Direction::Serverbound,
-            Direction::Serverbound => Direction::Clientbound,
+            PacketDirection::Clientbound => PacketDirection::Serverbound,
+            PacketDirection::Serverbound => PacketDirection::Clientbound,
         };
 
         if network_debug {
