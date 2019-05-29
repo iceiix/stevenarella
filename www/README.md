@@ -6,7 +6,7 @@ Status: very incomplete. It currently compiles, but **does not run** due to
 missing web support from critical dependencies, at least:
 
 * [glutin](https://github.com/rust-windowing/glutin) (temporary stub: [#1](https://github.com/iceiix/glutin/pull/1))
-* [winit](https://github.com/rust-windowing/winit), watch for [stdweb support](https://github.com/tomaka/winit/pull/797)or [wasm_bindgen backend for eventloop-2.0](https://github.com/rust-windowing/winit/pull/845) (temporary stub: [#2](https://github.com/iceiix/winit/pull/2))
+* [winit](https://github.com/rust-windowing/winit), watch for [stdweb](https://github.com/tomaka/winit/pull/797) or [wasm_bindgen](https://github.com/rust-windowing/winit/pull/845) support (temporary stub: [#2](https://github.com/iceiix/winit/pull/2))
 
 ## Building
 
