@@ -23,8 +23,8 @@ Join with your favorite IRC client or [Matrix](https://matrix.to/#/#_espernet_#s
 
 | Game version | Protocol version | Supported? |
 | ------ | --- | --- |
+| 1.14.2 | 485 | ✓ |
 | 1.14.1 | 480 | ✓ |
-| 1.14.1 | 477 | ✓ |
 | 1.14 | 477 | ✓ |
 | 19w02a | 452 | ✓ |
 | 18w50a | 451 | ✓ |
