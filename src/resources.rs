@@ -14,10 +14,10 @@
 
 extern crate steven_resources as internal;
 
-use std_or_web::fs;
 use std::thread;
 use std::path;
 use std::io;
+use std_or_web::fs;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
