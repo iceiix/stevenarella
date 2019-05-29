@@ -1,0 +1,11 @@
+[package]
+name = "std_or_web"
+version = "0.0.1"
+authors = [ "iceiix <ice_ix@protonmail.ch>" ]
+edition = "2018"
+
+[dependencies]
+cfg-if = "0.1.9"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+localstoragefs = "0.1.0"
