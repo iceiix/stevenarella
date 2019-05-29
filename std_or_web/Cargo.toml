@@ -8,4 +8,4 @@ edition = "2018"
 cfg-if = "0.1.9"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-localstoragefs = { path = "../../localstoragefs" }
+localstoragefs = "0.1.0"

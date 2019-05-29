@@ -990,6 +990,7 @@ dependencies = [
 [[package]]
 name = "localstoragefs"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "stdweb 0.4.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1895,7 +1896,7 @@ name = "std_or_web"
 version = "0.0.1"
 dependencies = [
  "cfg-if 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "localstoragefs 0.1.0",
+ "localstoragefs 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2780,6 +2781,7 @@ dependencies = [
 "checksum libflate 0.1.22 (registry+https://github.com/rust-lang/crates.io-index)" = "c52384aeb22d0ce82a10d8ddf35f7fb4717d1b23eac5b94cd38d2050fb53766a"
 "checksum libloading 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9c3ad660d7cb8c5822cd83d10897b0f1f1526792737a179e73896152f85b88c2"
 "checksum line_drawing 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5cc7ad3d82c845bdb5dde34ffdcc7a5fb4d2996e1e1ee0f19c33bc80e15196b9"
+"checksum localstoragefs 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6ba6cbee6bbe7e6ea61ad375952239a9678624f216a0f442ae04a90260e76cdf"
 "checksum lock_api 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "62ebf1391f6acad60e5c8b43706dde4582df75c06698ab44511d15016bc2442c"
 "checksum log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c84ec4b527950aa83a329754b01dbe3f58361d1c5efacd1f6d68c494d08a17c6"
 "checksum lzw 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7d947cbb889ed21c2a84be6ffbaebf5b4e0f4340638cba0444907e38b56be084"
