@@ -21,6 +21,7 @@ use aes::Aes128;
 use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use serde_json;
+use std_or_web::fs;
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest;
 
@@ -52,7 +53,7 @@ use flate2::Compression;
 use std::time::{Instant, Duration};
 use log::debug;
 
-pub const SUPPORTED_PROTOCOLS: [i32; 14] = [480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
+pub const SUPPORTED_PROTOCOLS: [i32; 15] = [485, 480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
 
 // TODO: switch to using thread_local storage?, see https://doc.rust-lang.org/std/macro.thread_local.html
 pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
@@ -1098,7 +1099,7 @@ impl Conn {
 
         if network_debug {
             debug!("about to parse id={:x}, dir={:?} state={:?}", id, dir, self.state);
-            std::fs::File::create("last-packet")?.write_all(buf.get_ref())?;
+            fs::File::create("last-packet")?.write_all(buf.get_ref())?;
         }
 
         let packet = packet::packet_by_id(self.protocol_version, self.state, dir, id, &mut buf)?;

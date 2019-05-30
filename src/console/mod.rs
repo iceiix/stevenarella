@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use std::any::Any;
 use std::cell::{RefCell, Ref};
 use std::sync::{Arc, Mutex};
-use std::fs;
+use std_or_web::fs;
 use std::io::{BufWriter, Write, BufRead, BufReader};
 use log;
 

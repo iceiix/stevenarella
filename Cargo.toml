@@ -5,7 +5,7 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>", "iceiix <ice_ix@protonma
 edition = "2018"
 description = "Multi-protocol multi-platform Minecraft-compatible client"
 repository = "https://github.com/iceiix/stevenarella"
-license = "(MIT OR Apache-2.0)"
+license = "MIT/Apache-2.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -60,4 +60,8 @@ version = "0"
 
 [dependencies.steven_protocol]
 path = "./protocol"
+version = "0"
+
+[dependencies.std_or_web]
+path = "./std_or_web"
 version = "0"

@@ -1,5 +1,6 @@
 use super::*;
 
+mod v1_14_2;
 mod v1_14_1;
 mod v1_14;
 mod v19w02a;
@@ -20,6 +21,7 @@ mod v1_7_10;
 pub fn protocol_name_to_protocol_version(s: String) -> i32 {
     match s.as_ref() {
         "" => SUPPORTED_PROTOCOLS[0],
+        "1.14.2" => 485,
         "1.14.1" => 480,
         "1.14" => 477,
         "19w02a" => 452,
@@ -46,6 +48,7 @@ pub fn protocol_name_to_protocol_version(s: String) -> i32 {
 
 pub fn translate_internal_packet_id_for_version(version: i32, state: State, dir: PacketDirection, id: i32, to_internal: bool) -> i32 {
     match version {
+        485 => v1_14_2::translate_internal_packet_id(state, dir, id, to_internal),
         480 => v1_14_1::translate_internal_packet_id(state, dir, id, to_internal),
         477 => v1_14::translate_internal_packet_id(state, dir, id, to_internal),
         452 => v19w02a::translate_internal_packet_id(state, dir, id, to_internal),
