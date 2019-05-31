@@ -24,7 +24,7 @@ jobs:
             - run:
                 name: Build
                 command: |
-                    if [ "<<parameters.release" == "true" ]; then
+                    if [ "<< parameters.release >>" == "true" ]; then
                         cargo build --release
                         cargo test --release
                     else
