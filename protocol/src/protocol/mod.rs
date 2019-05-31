@@ -22,6 +22,7 @@ use serde_json;
 use std_or_web::fs;
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest;
+use hex;
 
 pub mod mojang;
 pub mod forge;
@@ -409,7 +410,6 @@ pub struct UUID(u64, u64);
 
 impl UUID {
     pub fn from_str(s: &str) -> UUID {
-        use hex;
         // TODO: Panics aren't the best idea here
         if s.len() != 36 {
             panic!("Invalid UUID format");
