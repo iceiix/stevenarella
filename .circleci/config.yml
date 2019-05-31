@@ -1,11 +1,18 @@
 version: 2.1
 executors:
     docker:
+        parameters:
+            version:
+                type: string
         docker:
-            - image: circleci/rust:1.35.0
+            - image: circleci/rust:<< parameters.version >>
 jobs:
     build:
         executor: docker
+        parameters:
+            version:
+                type: string
+                default: 1.35.0
         steps:
             - run:
                 name: The First Step
