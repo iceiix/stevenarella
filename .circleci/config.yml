@@ -23,6 +23,7 @@ jobs:
                     - cargo-cache-v1-{{ arch }}
             - run:
                 name: Build
+                no_output_timeout: 30m
                 command: |
                     rustc --version --verbose
                     cargo --version --verbose
