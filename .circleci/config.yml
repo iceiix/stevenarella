@@ -37,10 +37,10 @@ jobs:
                     - ./target
 commands:
     install_deps:
-    steps:
-        - run:
-            name: Install deps
-            command: |
-                apt-get update -qq
-                apt-get install -y gcc libegl1-mesa-dev libgles2-mesa-dev
+        steps:
+            - run:
+                name: Install deps
+                command: |
+                    apt-get update -qq
+                    apt-get install -y gcc libegl1-mesa-dev libgles2-mesa-dev
 
