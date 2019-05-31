@@ -24,6 +24,8 @@ jobs:
             - run:
                 name: Build
                 command: |
+                    rustc --version --verbose
+                    cargo --version --verbose
                     if [ "<< parameters.release >>" == "true" ]; then
                         cargo build --release
                         cargo test --release
