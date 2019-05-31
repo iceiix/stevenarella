@@ -327,8 +327,6 @@ impl World {
     }
 
     pub fn compute_render_list(&mut self, renderer: &mut render::Renderer) {
-        use crate::chunk_builder;
-        use std::collections::VecDeque;
         self.render_list.clear();
 
         let mut valid_dirs = [false; 6];
@@ -587,7 +585,6 @@ impl World {
     }
 
     pub fn load_chunk18(&mut self, x: i32, z: i32, new: bool, _skylight: bool, mask: u16, data: &mut std::io::Cursor<Vec<u8>>) -> Result<(), protocol::Error> {
-        use std::io::Read;
         use byteorder::ReadBytesExt;
 
         let cpos = CPos(x, z);
@@ -705,9 +702,6 @@ impl World {
     }
 
     fn load_uncompressed_chunk17(&mut self, x: i32, z: i32, new: bool, skylight: bool, mask: u16, mask_add: u16, data: &mut std::io::Cursor<Vec<u8>>) -> Result<(), protocol::Error> {
-        use std::io::Read;
-        use crate::types::nibble;
-
         let cpos = CPos(x, z);
         {
             let chunk = if new {
@@ -836,7 +830,7 @@ impl World {
     }
 
     pub fn load_chunk19(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
-        use std::io::{Cursor, Read};
+        use std::io::Cursor;
         use byteorder::ReadBytesExt;
         use crate::protocol::{VarInt, Serializable, LenPrefixed};
 
