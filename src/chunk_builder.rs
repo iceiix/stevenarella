@@ -9,6 +9,8 @@ use crate::resources;
 use crate::model;
 use crate::types::bit::Set;
 use crate::shared::Direction;
+use rand::{self, SeedableRng, Rng};
+use rand_xorshift;
 
 const NUM_WORKERS: usize = 8;
 
@@ -109,8 +111,6 @@ struct BuildReply {
 }
 
 fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
-    use rand::{self, SeedableRng, Rng};
-    use rand_xorshift;
     loop {
         let BuildReq {
             snapshot,

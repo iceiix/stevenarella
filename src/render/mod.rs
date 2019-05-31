@@ -40,6 +40,9 @@ use std::sync::atomic::{AtomicIsize, Ordering};
 use std::thread;
 use std::sync::mpsc;
 
+#[cfg(not(target_arch = "wasm32"))]
+use reqwest;
+
 const ATLAS_SIZE: usize = 1024;
 
 // TEMP
@@ -843,7 +846,6 @@ impl TextureManager {
 
     #[cfg(not(target_arch = "wasm32"))]
     fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
-        use reqwest;
         let client = reqwest::Client::new();
         loop {
             let hash = match recv.recv() {
