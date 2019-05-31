@@ -4,16 +4,12 @@ executors:
         parameters:
             version:
                 type: string
-                default: latest
+                default: 1.35.0
         docker:
             - image: circleci/rust:<< parameters.version >>
 jobs:
     build:
         executor: docker
-        parameters:
-            version:
-                type: string
-                default: 1.35.0
         steps:
             - run:
                 name: The First Step
