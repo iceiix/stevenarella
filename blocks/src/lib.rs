@@ -52,21 +52,21 @@ macro_rules! define_blocks {
     (
         $(
             $name:ident {
-                $(modid $modid:expr,)*
+                $(modid $modid:expr,)?
                 props {
                     $(
                         $fname:ident : $ftype:ty = [$($val:expr),+],
                     )*
                 },
-                $(data $datafunc:expr,)*
-                $(offset $offsetfunc:expr,)*
-                $(material $mat:expr,)*
+                $(data $datafunc:expr,)?
+                $(offset $offsetfunc:expr,)?
+                $(material $mat:expr,)?
                 model $model:expr,
-                $(variant $variant:expr,)*
-                $(tint $tint:expr,)*
-                $(collision $collision:expr,)*
-                $(update_state ($world:ident, $pos:ident) => $update_state:expr,)*
-                $(multipart ($mkey:ident, $mval:ident) => $multipart:expr,)*
+                $(variant $variant:expr,)?
+                $(tint $tint:expr,)?
+                $(collision $collision:expr,)?
+                $(update_state ($world:ident, $pos:ident) => $update_state:expr,)?
+                $(multipart ($mkey:ident, $mval:ident) => $multipart:expr,)?
             }
         )+
     ) => (
@@ -76,7 +76,7 @@ macro_rules! define_blocks {
                 $name {
                     $(
                         $fname : $ftype,
-                    )*
+                    )?
                 },
             )+
         }
@@ -90,7 +90,7 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             internal_ids::$name
                         }
@@ -103,12 +103,12 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(
                                 let data: Option<usize> = ($datafunc).map(|v| v);
                                 return data;
-                            )*
+                            )?
                             Some(0)
                         }
                     )+
@@ -120,16 +120,16 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(
                                 let offset: Option<usize> = ($offsetfunc).map(|v| v);
                                 return offset;
-                            )*
+                            )?
                             $(
                                 let data: Option<usize> = ($datafunc).map(|v| v);
                                 return data;
-                            )*
+                            )?
                             Some(0)
                         }
                     )+
@@ -141,11 +141,11 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(
                                 return Some($modid);
-                            )*
+                            )?
                             None
                         }
                     )+
@@ -181,9 +181,9 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
-                            $(return $mat;)*
+                            $(return $mat;)?
                             material::SOLID
                         }
                     )+
@@ -195,7 +195,7 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             let parts = $model;
                             (String::from(parts.0), String::from(parts.1))
@@ -209,9 +209,9 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
-                            $(return String::from($variant);)*
+                            $(return String::from($variant);)?
                             "normal".to_owned()
                         }
                     )+
@@ -223,9 +223,9 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
-                            $(return $tint;)*
+                            $(return $tint;)?
                             TintType::Default
                         }
                     )+
@@ -237,9 +237,9 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
-                            $(return $collision;)*
+                            $(return $collision;)?
                             vec![Aabb3::new(
                                 Point3::new(0.0, 0.0, 0.0),
                                 Point3::new(1.0, 1.0, 1.0)
@@ -254,15 +254,15 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(
                                 let $world = world;
                                 let $pos = pos;
                                 return $update_state;
-                            )*
+                            )?
                             Block::$name {
-                                $($fname: $fname,)*
+                                $($fname: $fname,)?
                             }
                         }
                     )+
@@ -274,13 +274,13 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(
                                 let $mkey = key;
                                 let $mval = val;
                                 return $multipart;
-                            )*
+                            )?
                             false
                         }
                     )+
@@ -307,15 +307,15 @@ macro_rules! define_blocks {
                     }
                     #[allow(non_camel_case_types)]
                     struct CombinationIterState<$($fname),*> {
-                        $($fname: $fname,)*
+                        $($fname: $fname,)?
                     }
                     #[allow(non_camel_case_types)]
                     struct CombinationIterOrig<$($fname),*> {
-                        $($fname: $fname,)*
+                        $($fname: $fname,)?
                     }
                     #[allow(non_camel_case_types)]
                     struct CombinationIterCurrent {
-                        $($fname: $ftype,)*
+                        $($fname: $ftype,)?
                     }
 
                     #[allow(non_camel_case_types)]
@@ -332,7 +332,7 @@ macro_rules! define_blocks {
                                 return Some(Block::$name {
                                     $(
                                         $fname: self.current.$fname,
-                                    )*
+                                    )?
                                 });
                             }
                             let mut has_value = false;
@@ -345,7 +345,7 @@ macro_rules! define_blocks {
                                     }
                                     self.state.$fname = self.orig.$fname.clone();
                                     self.current.$fname = self.state.$fname.next().unwrap();
-                                )*
+                                )?
                                 self.finished = true;
                                 return None;
                             }
@@ -353,7 +353,7 @@ macro_rules! define_blocks {
                                 Some(Block::$name {
                                     $(
                                         $fname: self.current.$fname,
-                                    )*
+                                    )?
                                 })
                             } else {
                                 None
@@ -368,13 +368,13 @@ macro_rules! define_blocks {
                                 finished: false,
                                 first: true,
                                 orig: CombinationIterOrig {
-                                    $($fname: $fname.clone(),)*
+                                    $($fname: $fname.clone(),)?
                                 },
                                 current: CombinationIterCurrent {
-                                    $($fname: $fname.next().unwrap(),)*
+                                    $($fname: $fname.next().unwrap(),)?
                                 },
                                 state: CombinationIterState {
-                                    $($fname: $fname,)*
+                                    $($fname: $fname,)?
                                 }
                             }
                         }
