@@ -4,6 +4,7 @@ executors:
         parameters:
             version:
                 type: string
+                default: latest
         docker:
             - image: circleci/rust:<< parameters.version >>
 jobs:
