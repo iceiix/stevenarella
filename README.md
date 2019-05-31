@@ -1,5 +1,5 @@
 # Stevenarella
-[![Build Status](https://travis-ci.org/iceiix/stevenarella.svg?branch=master)](https://travis-ci.org/iceiix/stevenarella)
+[![builds.sr.ht status](https://builds.sr.ht/~iceiix/stevenarella.svg)](https://builds.sr.ht/~iceiix/stevenarella?)
 
 Multi-protocol Minecraft-compatible client written in Rust
 
