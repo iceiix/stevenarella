@@ -1,8 +1,11 @@
 version: 2.1
+executors:
+    docker:
+        docker:
+            - image: circleci/rust:1.35.0
 jobs:
     build:
-        docker:
-            - image: alpine:3.7
+        executor: docker
         steps:
             - run:
                 name: The First Step
