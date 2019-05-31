@@ -10,10 +10,37 @@ executors:
 jobs:
     build:
         executor: docker
+        parameters:
+            release:
+                type: boolean
+                default: false
         steps:
+            - install_deps
+            - checkout
+            - restore_cache:
+                keys:
+                    - cargo-cache-v1-{{ arch }}-{{ checksum "./Cargo.lock" }}
+                    - cargo-cache-v1-{{ arch }}
             - run:
-                name: The First Step
+                name: Build
                 command: |
-                    echo 'Hello world!'
-                    echo 'This is the delivery pipeline'
+                    if [ "<<parameters.release" == "true" ]; then
+                        cargo build --release
+                        cargo test --release
+                    else
+                        cargo build
+                        cargo test
+                    fi
+            - save_cache:
+                key: cargo-cache-v1-{{ arch }}-{{ .Branch }}-{{ checksum "./Cargo.lock" }}
+                paths:
+                    - ./target
+commands:
+    install_deps:
+    steps:
+        - run:
+            name: Install deps
+            command: |
+                apt-get update -qq
+                apt-get install -y gcc libegl1-mesa-dev libgles2-mesa-dev
 
