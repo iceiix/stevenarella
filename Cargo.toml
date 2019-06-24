@@ -25,7 +25,7 @@ glutin = { git = "https://github.com/iceiix/glutin", rev = "1e48d3216ed692596983
 byteorder = "1.3.2"
 serde = "1.0.92"
 serde_json = "1.0.39"
-flate2 = { version = "1.0.7", features = ["rust_backend"], default-features = false }
+flate2 = { version = "1.0.9", features = ["rust_backend"], default-features = false }
 zip = { version = "0.5.2", features = ["deflate"], default-features = false }
 image = "0.21.2"
 rand = "0.6.5"
