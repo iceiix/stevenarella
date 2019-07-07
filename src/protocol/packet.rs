@@ -1763,6 +1763,9 @@ state_packets!(
             packet TradeList {
                 field id: VarInt =,
                 field trades: LenPrefixed<u8, packet::Trade> =,
+                field villager_level: VarInt =,
+                field experience: VarInt =,
+                field is_regular_villager: bool =,
             }
             packet CoFHLib_SendUUID {
                 field player_uuid: UUID =,
@@ -2611,6 +2614,9 @@ pub struct Trade {
     pub trades_disabled: bool,
     pub tool_uses: i32,
     pub max_trade_uses: i32,
+    pub xp: i32,
+    pub special_price: i32,
+    pub price_multiplier: f32,
 }
 
 impl Serializable for Trade {
@@ -2623,6 +2629,9 @@ impl Serializable for Trade {
             trades_disabled: Serializable::read_from(buf)?,
             tool_uses: Serializable::read_from(buf)?,
             max_trade_uses: Serializable::read_from(buf)?,
+            xp: Serializable::read_from(buf)?,
+            special_price: Serializable::read_from(buf)?,
+            price_multiplier: Serializable::read_from(buf)?,
         })
     }
 
