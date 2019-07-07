@@ -95,7 +95,7 @@ protocol_packet_ids!(
             0x24 => UpdateLight
             0x25 => JoinGame_i32_ViewDistance
             0x26 => Maps
-            0x27 => TradeList
+            0x27 => TradeList_WithRestock
             0x28 => EntityMove_i16
             0x29 => EntityLookAndMove_i16
             0x2a => EntityLook_VarInt

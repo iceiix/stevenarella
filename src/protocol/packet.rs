@@ -1760,12 +1760,20 @@ state_packets!(
                 field empty_sky_light_mask: VarInt =,
                 field light_arrays: Vec<u8> =,
             }
-            packet TradeList {
+            packet TradeList_WithoutRestock {
                 field id: VarInt =,
                 field trades: LenPrefixed<u8, packet::Trade> =,
                 field villager_level: VarInt =,
                 field experience: VarInt =,
                 field is_regular_villager: bool =,
+            }
+            packet TradeList_WithRestock {
+                field id: VarInt =,
+                field trades: LenPrefixed<u8, packet::Trade> =,
+                field villager_level: VarInt =,
+                field experience: VarInt =,
+                field is_regular_villager: bool =,
+                field can_restock: bool =,
             }
             packet CoFHLib_SendUUID {
                 field player_uuid: UUID =,
