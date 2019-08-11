@@ -2631,10 +2631,13 @@ pub struct Trade {
     pub xp: i32,
     pub special_price: i32,
     pub price_multiplier: f32,
+    pub demand: Option<i32>,
 }
 
 impl Serializable for Trade {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let protocol_version = unsafe { super::CURRENT_PROTOCOL_VERSION };
+
         Ok(Trade {
             input_item_1: Serializable::read_from(buf)?,
             output_item: Serializable::read_from(buf)?,
@@ -2646,6 +2649,7 @@ impl Serializable for Trade {
             xp: Serializable::read_from(buf)?,
             special_price: Serializable::read_from(buf)?,
             price_multiplier: Serializable::read_from(buf)?,
+            demand: if protocol_version >= 498 { Some(Serializable::read_from(buf)?) } else { None },
         })
     }
 
