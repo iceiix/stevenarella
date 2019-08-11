@@ -506,7 +506,7 @@ fn handle_window_event(window: &mut glutin::WindowedContext<glutin::PossiblyCurr
                                 game.server.key_press(true, steven_key);
                             }
                         } else {
-                            let ctrl_pressed = input.modifiers.ctrl;
+                            let ctrl_pressed = input.modifiers.ctrl || input.modifiers.logo;
                             ui_container.key_press(game, key, true, ctrl_pressed);
                         }
                     },
