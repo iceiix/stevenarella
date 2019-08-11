@@ -1752,6 +1752,12 @@ state_packets!(
                 field fluid_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field entity_tags: LenPrefixed<VarInt, packet::Tags> =,
             }
+            packet AcknowledgePlayerDigging {
+                field location: Position =,
+                field block: VarInt =,
+                field status: VarInt =,
+                field successful: bool =,
+            }
             packet UpdateLight {
                 field chunk_x: VarInt =,
                 field chunk_z: VarInt =,

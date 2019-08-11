@@ -148,6 +148,7 @@ protocol_packet_ids!(
             0x59 => EntityEffect
             0x5a => DeclareRecipes
             0x5b => TagsWithEntities
+            0x5c => AcknowledgePlayerDigging
         }
     }
     login Login {
