@@ -98,7 +98,7 @@ protocol_packet_ids!(
             0x3b => ScoreboardObjective
             0x3c => UpdateScore
             0x3d => ScoreboardDisplay
-            0x3e => Teams
+            0x3e => Teams_u8
             0x3f => PluginMessageClientbound
             0x40 => Disconnect
             0x41 => ServerDifficulty
