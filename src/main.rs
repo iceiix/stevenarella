@@ -201,6 +201,8 @@ cfg_if! {
     }
 }
 
+use std::fs;
+use std::io::Read;
 fn main2() {
     let opt = Opt::from_args();
 
@@ -214,6 +216,15 @@ fn main2() {
     log::set_max_level(log::LevelFilter::Trace);
 
     info!("Starting steven");
+
+    println!("open");
+    let mut file = fs::File::open("last-packet").unwrap();
+    //let mut buf = vec![];
+    //file.read_to_end(&mut buf).unwrap();
+    println!("about to parse");
+    let packet = crate::protocol::packet::packet_by_id(490, crate::protocol::State::Play, crate::protocol::Direction::Clientbound, 0x4b, &mut file);
+    println!("packet = {:?}", packet);
+    return;
 
     let (vars, vsync) = {
         let mut vars = console::Vars::new();
