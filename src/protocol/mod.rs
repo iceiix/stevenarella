@@ -42,7 +42,7 @@ use std::time::{Instant, Duration};
 use crate::shared::Position;
 use log::debug;
 
-pub const SUPPORTED_PROTOCOLS: [i32; 16] = [490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
+pub const SUPPORTED_PROTOCOLS: [i32; 17] = [498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
 
 // TODO: switch to using thread_local storage?, see https://doc.rust-lang.org/std/macro.thread_local.html
 pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
