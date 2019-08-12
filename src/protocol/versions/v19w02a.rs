@@ -125,7 +125,7 @@ protocol_packet_ids!(
             0x45 => UpdateHealth
             0x46 => ScoreboardObjective
             0x47 => SetPassengers
-            0x48 => Teams
+            0x48 => Teams_u8
             0x49 => UpdateScore
             0x4a => SpawnPosition
             0x4b => TimeUpdate
