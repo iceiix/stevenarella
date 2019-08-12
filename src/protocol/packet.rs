@@ -1529,17 +1529,30 @@ state_packets!(
                 field passengers: LenPrefixed<VarInt, VarInt> =,
             }
             /// Teams creates and updates teams
-            packet Teams {
+            packet Teams_VarInt {
                 field name: String =,
                 field mode: u8 =,
-                field display_name: Option<String> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
-                field prefix: Option<String> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
-                field suffix: Option<String> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
-                field flags: Option<u8> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
-                field name_tag_visibility: Option<String> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
-                field collision_rule: Option<String> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
-                field color: Option<i8> = when(|p: &Teams| p.mode == 0 || p.mode == 2),
-                field players: Option<LenPrefixed<VarInt, String>> = when(|p: &Teams| p.mode == 0 || p.mode == 3 || p.mode == 4),
+                field display_name: Option<String> = when(|p: &Teams_VarInt| p.mode == 0 || p.mode == 2),
+                field flags: Option<u8> = when(|p: &Teams_VarInt| p.mode == 0 || p.mode == 2),
+                field name_tag_visibility: Option<String> = when(|p: &Teams_VarInt| p.mode == 0 || p.mode == 2),
+                field collision_rule: Option<String> = when(|p: &Teams_VarInt| p.mode == 0 || p.mode == 2),
+                field formatting: Option<VarInt> = when(|p: &Teams_VarInt| p.mode == 0 || p.mode == 2),
+                field prefix: Option<String> = when(|p: &Teams_VarInt| p.mode == 0 || p.mode == 2),
+                field suffix: Option<String> = when(|p: &Teams_VarInt| p.mode == 0 || p.mode == 2),
+                field players: Option<LenPrefixed<VarInt, String>> = when(|p: &Teams_VarInt| p.mode == 0 || p.mode == 3 || p.mode == 4),
+            }
+            packet Teams_u8 {
+                field name: String =,
+                field mode: u8 =,
+                field data: Vec<u8> =,
+                field display_name: Option<String> = when(|p: &Teams_u8| p.mode == 0 || p.mode == 2),
+                field prefix: Option<String> = when(|p: &Teams_u8| p.mode == 0 || p.mode == 2),
+                field suffix: Option<String> = when(|p: &Teams_u8| p.mode == 0 || p.mode == 2),
+                field flags: Option<u8> = when(|p: &Teams_u8| p.mode == 0 || p.mode == 2),
+                field name_tag_visibility: Option<String> = when(|p: &Teams_u8| p.mode == 0 || p.mode == 2),
+                field collision_rule: Option<String> = when(|p: &Teams_u8| p.mode == 0 || p.mode == 2),
+                field color: Option<i8> = when(|p: &Teams_u8| p.mode == 0 || p.mode == 2),
+                field players: Option<LenPrefixed<VarInt, String>> = when(|p: &Teams_u8| p.mode == 0 || p.mode == 3 || p.mode == 4),
             }
             packet Teams_NoVisColor {
                 field name: String =,
