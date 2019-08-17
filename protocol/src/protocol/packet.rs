@@ -619,7 +619,14 @@ state_packets!(
             }
             /// SpawnPainting spawns a painting into the world when it is in range of
             /// the client. The title effects the size and the texture of the painting.
-            packet SpawnPainting {
+            packet SpawnPainting_VarInt {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field motive: VarInt =,
+                field location: Position =,
+                field direction: u8 =,
+            }
+            packet SpawnPainting_String {
                 field entity_id: VarInt =,
                 field uuid: UUID =,
                 field title: String =,
