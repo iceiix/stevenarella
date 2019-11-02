@@ -37,11 +37,11 @@ const ASSET_VERSION: &str = "1.12";
 const ASSET_INDEX_URL: &str = "https://launchermeta.mojang.com/mc/assets/1.12/67e29e024e664064c1f04c728604f83c24cbc218/1.12.json";
 
 pub trait Pack: Sync + Send {
-    fn open(&self, name: &str) -> Option<Box<io::Read>>;
+    fn open(&self, name: &str) -> Option<Box<dyn io::Read>>;
 }
 
 pub struct Manager {
-    packs: Vec<Box<Pack>>,
+    packs: Vec<Box<dyn Pack>>,
     version: usize,
 
     vanilla_chan: Option<mpsc::Receiver<bool>>,
@@ -104,7 +104,7 @@ impl Manager {
         self.version
     }
 
-    pub fn open(&self, plugin: &str, name: &str) -> Option<Box<io::Read>> {
+    pub fn open(&self, plugin: &str, name: &str) -> Option<Box<dyn io::Read>> {
         let path = format!("assets/{}/{}", plugin, name);
         for pack in self.packs.iter().rev() {
             if let Some(val) = pack.open(&path) {
@@ -114,7 +114,7 @@ impl Manager {
         None
     }
 
-    pub fn open_all(&self, plugin: &str, name: &str) -> Vec<Box<io::Read>> {
+    pub fn open_all(&self, plugin: &str, name: &str) -> Vec<Box<dyn io::Read>> {
         let mut ret = Vec::new();
         let path = format!("assets/{}/{}", plugin, name);
         for pack in self.packs.iter().rev() {
@@ -261,7 +261,7 @@ impl Manager {
         mui.progress_ui.retain(|v| v.position >= -UI_HEIGHT || !v.closing);
     }
 
-    fn add_pack(&mut self, pck: Box<Pack>) {
+    fn add_pack(&mut self, pck: Box<dyn Pack>) {
         self.packs.push(pck);
         self.version += 1;
     }
@@ -433,7 +433,7 @@ struct DirPack {
 }
 
 impl Pack for DirPack {
-    fn open(&self, name: &str) -> Option<Box<io::Read>> {
+    fn open(&self, name: &str) -> Option<Box<dyn io::Read>> {
         match fs::File::open(self.root.join(name)) {
             Ok(val) => Some(Box::new(val)),
             Err(_) => None,
@@ -444,7 +444,7 @@ impl Pack for DirPack {
 struct InternalPack;
 
 impl Pack for InternalPack {
-    fn open(&self, name: &str) -> Option<Box<io::Read>> {
+    fn open(&self, name: &str) -> Option<Box<dyn io::Read>> {
         match internal::get_file(name) {
             Some(val) => Some(Box::new(io::Cursor::new(val))),
             None => None,
@@ -474,7 +474,7 @@ impl ObjectPack {
 }
 
 impl Pack for ObjectPack {
-    fn open(&self, name: &str) -> Option<Box<io::Read>> {
+    fn open(&self, name: &str) -> Option<Box<dyn io::Read>> {
         if !name.starts_with("assets/") {
             return None;
         }

@@ -160,7 +160,7 @@ impl super::Screen for SettingsMenu {
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<dyn super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
         {
             let mode = ui_container.mode;
@@ -309,7 +309,7 @@ impl super::Screen for VideoSettingsMenu {
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<dyn super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
         {
             let mode = ui_container.mode;
@@ -394,7 +394,7 @@ impl super::Screen for AudioSettingsMenu {
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<dyn super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
         {
             let mode = ui_container.mode;

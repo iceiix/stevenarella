@@ -500,9 +500,9 @@ macro_rules! element {
             data: Vec<u8>,
             needs_rebuild: bool,
 
-            hover_funcs: Vec<Box<Fn(&mut $name, bool, &mut crate::Game) -> bool>>,
+            hover_funcs: Vec<Box<dyn Fn(&mut $name, bool, &mut crate::Game) -> bool>>,
             hover_state: bool,
-            click_funcs: Vec<Box<Fn(&mut $name, &mut crate::Game) -> bool>>,
+            click_funcs: Vec<Box<dyn Fn(&mut $name, &mut crate::Game) -> bool>>,
 
             focused: bool,
 
@@ -1287,7 +1287,7 @@ element! {
         priv text: Option<TextRef>,
         priv was_focused: bool,
         priv cursor_tick: f64,
-        priv submit_funcs: Vec<Box<Fn(&mut TextBox, &mut crate::Game)>>,
+        priv submit_funcs: Vec<Box<dyn Fn(&mut TextBox, &mut crate::Game)>>,
     }
     builder TextBoxBuilder {
         hardcode button = None,

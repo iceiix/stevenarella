@@ -77,7 +77,7 @@ impl super::Screen for Connecting {
     fn tick(&mut self,
             _delta: f64,
             renderer: &mut render::Renderer,
-            _ui_container: &mut ui::Container) -> Option<Box<super::Screen>>{
+            _ui_container: &mut ui::Container) -> Option<Box<dyn super::Screen>>{
         let elements = self.elements.as_mut().unwrap();
 
         elements.logo.tick(renderer);

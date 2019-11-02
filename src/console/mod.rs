@@ -55,15 +55,15 @@ pub struct CVar<T: Sized + Any + 'static> {
     pub description: &'static str,
     pub mutable: bool,
     pub serializable: bool,
-    pub default: &'static Fn() -> T,
+    pub default: &'static dyn Fn() -> T,
 }
 
 impl Var for CVar<i64> {
-    fn serialize(&self, val: &Box<Any>) -> String {
+    fn serialize(&self, val: &Box<dyn Any>) -> String {
         val.downcast_ref::<i64>().unwrap().to_string()
     }
 
-    fn deserialize(&self, input: &str) -> Box<Any> {
+    fn deserialize(&self, input: &str) -> Box<dyn Any> {
         Box::new(input.parse::<i64>().unwrap())
     }
 
@@ -77,11 +77,11 @@ impl Var for CVar<i64> {
 }
 
 impl Var for CVar<bool> {
-    fn serialize(&self, val: &Box<Any>) -> String {
+    fn serialize(&self, val: &Box<dyn Any>) -> String {
         val.downcast_ref::<bool>().unwrap().to_string()
     }
 
-    fn deserialize(&self, input: &str) -> Box<Any> {
+    fn deserialize(&self, input: &str) -> Box<dyn Any> {
         Box::new(input.parse::<bool>().unwrap())
     }
 
@@ -95,11 +95,11 @@ impl Var for CVar<bool> {
 }
 
 impl Var for CVar<String> {
-    fn serialize(&self, val: &Box<Any>) -> String {
+    fn serialize(&self, val: &Box<dyn Any>) -> String {
         format!("\"{}\"", val.downcast_ref::<String>().unwrap())
     }
 
-    fn deserialize(&self, input: &str) -> Box<Any> {
+    fn deserialize(&self, input: &str) -> Box<dyn Any> {
         Box::new((&input[1..input.len() - 1]).to_owned())
     }
 
@@ -112,8 +112,8 @@ impl Var for CVar<String> {
 }
 
 pub trait Var {
-    fn serialize(&self, val: &Box<Any>) -> String;
-    fn deserialize(&self, input: &str) -> Box<Any>;
+    fn serialize(&self, val: &Box<dyn Any>) -> String;
+    fn deserialize(&self, input: &str) -> Box<dyn Any>;
     fn description(&self) -> &'static str;
     fn can_serialize(&self) -> bool;
 }
@@ -121,8 +121,8 @@ pub trait Var {
 #[derive(Default)]
 pub struct Vars {
     names: HashMap<String, &'static str>,
-    vars: HashMap<&'static str, Box<Var>>,
-    var_values: HashMap<&'static str, RefCell<Box<Any>>>,
+    vars: HashMap<&'static str, Box<dyn Var>>,
+    var_values: HashMap<&'static str, RefCell<Box<dyn Any>>>,
 }
 
 impl Vars {
