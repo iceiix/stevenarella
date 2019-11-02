@@ -41,7 +41,7 @@ pub trait Screen {
     fn tick(&mut self,
             delta: f64,
             renderer: &mut render::Renderer,
-            ui_container: &mut ui::Container) -> Option<Box<Screen>>;
+            ui_container: &mut ui::Container) -> Option<Box<dyn Screen>>;
 
     // Events
     fn on_scroll(&mut self, _x: f64, _y: f64) {
@@ -53,7 +53,7 @@ pub trait Screen {
 }
 
 struct ScreenInfo {
-    screen: Box<Screen>,
+    screen: Box<dyn Screen>,
     init: bool,
     active: bool,
 }
@@ -67,7 +67,7 @@ pub struct ScreenSystem {
 impl ScreenSystem {
     pub fn new() -> ScreenSystem { Default::default() }
 
-    pub fn add_screen(&mut self, screen: Box<Screen>) {
+    pub fn add_screen(&mut self, screen: Box<dyn Screen>) {
         self.screens.push(ScreenInfo {
             screen,
             init: false,
@@ -81,7 +81,7 @@ impl ScreenSystem {
         }
     }
 
-    pub fn replace_screen(&mut self, screen: Box<Screen>) {
+    pub fn replace_screen(&mut self, screen: Box<dyn Screen>) {
         self.pop_screen();
         self.add_screen(screen);
     }

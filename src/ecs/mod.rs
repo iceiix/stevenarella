@@ -99,8 +99,8 @@ pub struct Manager {
 
     component_ids: RefCell<HashMap<TypeId, usize, BuildHasherDefault<FNVHash>>>,
 
-    systems: Option<Vec<Box<System + Send>>>,
-    render_systems: Option<Vec<Box<System + Send>>>,
+    systems: Option<Vec<Box<dyn System + Send>>>,
+    render_systems: Option<Vec<Box<dyn System + Send>>>,
 
     changed_entity_components: HashSet<Entity, BuildHasherDefault<FNVHash>>,
 }
@@ -471,7 +471,7 @@ const COMPONENTS_PER_BLOCK: usize = 64;
 struct ComponentMem {
     data: Vec<Option<(Vec<u8>, BSet, usize)>>,
     component_size: usize,
-    drop_func: Box<Fn(*mut u8) + Send>,
+    drop_func: Box<dyn Fn(*mut u8) + Send>,
 }
 
 impl ComponentMem {
