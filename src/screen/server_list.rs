@@ -470,11 +470,11 @@ impl super::Screen for ServerList {
                         // TODO: switch to as_millis() experimental duration_as_u128 #50202 once available?
                         let ping_ms = (res.ping.subsec_nanos() as f64)/1000000.0 + (res.ping.as_secs() as f64)*1000.0;
                         let y = match ping_ms.round() as u64 {
-                            _x @ 0 ... 75 => 16.0 / 256.0,
-                            _x @ 76 ... 150 => 24.0 / 256.0,
-                            _x @ 151 ... 225 => 32.0 / 256.0,
-                            _x @ 226 ... 350 => 40.0 / 256.0,
-                            _x @ 351 ... 999 => 48.0 / 256.0,
+                            _x @ 0 ..= 75 => 16.0 / 256.0,
+                            _x @ 76 ..= 150 => 24.0 / 256.0,
+                            _x @ 151 ..= 225 => 32.0 / 256.0,
+                            _x @ 226 ..= 350 => 40.0 / 256.0,
+                            _x @ 351 ..= 999 => 48.0 / 256.0,
                             _ => 56.0 / 256.0,
                         };
                         s.ping.borrow_mut().texture_coords.1 = y;
