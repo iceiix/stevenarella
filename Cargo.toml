@@ -31,7 +31,7 @@ image = "0.21.3"
 rand = "0.6.5"
 rand_xorshift = "0.1.1"
 hex = "0.4.0"
-base64 = "0.10.1"
+base64 = "0.11.0"
 log = { version = "0.4.8", features = ["std"] }
 cgmath = "0.17.0"
 lazy_static = "1.4.0"
