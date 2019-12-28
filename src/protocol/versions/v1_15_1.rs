@@ -94,7 +94,7 @@ protocol_packet_ids!(
             0x23 => Effect
             0x24 => Particle_f64
             0x25 => UpdateLight
-            0x26 => JoinGame_i32_ViewDistance
+            0x26 => JoinGame_HashedSeed_Respawn
             0x27 => Maps
             0x28 => TradeList_WithRestock
             0x29 => EntityMove_i16
@@ -115,7 +115,7 @@ protocol_packet_ids!(
             0x38 => EntityDestroy
             0x39 => EntityRemoveEffect
             0x3a => ResourcePackSend
-            0x3b => Respawn
+            0x3b => Respawn_HashedSeed
             0x3c => EntityHeadLook
             0x3d => SelectAdvancementTab
             0x3e => WorldBorder

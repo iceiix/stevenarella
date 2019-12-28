@@ -1134,6 +1134,27 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
+            packet JoinGame_HashedSeed_Respawn {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The dimension the client is starting in
+                field dimension: i32 =,
+                /// Truncated SHA-256 hash of world's seed
+                field hashed_seed: i64 =,
+                /// The max number of players on the server
+                field max_players: u8 =,
+                /// The level type of the server
+                field level_type: String =,
+                /// The render distance (2-32)
+                field view_distance: VarInt =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+                /// Whether to prompt or immediately respawn
+                field enable_respawn_screen: bool =,
+            }
             packet JoinGame_i32_ViewDistance {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -1434,6 +1455,13 @@ state_packets!(
             /// Respawn is sent to respawn the player after death or when they move worlds.
             packet Respawn {
                 field dimension: i32 =,
+                field difficulty: u8 =,
+                field gamemode: u8 =,
+                field level_type: String =,
+            }
+            packet Respawn_HashedSeed {
+                field dimension: i32 =,
+                field hashed_seed: i64 =,
                 field difficulty: u8 =,
                 field gamemode: u8 =,
                 field level_type: String =,
