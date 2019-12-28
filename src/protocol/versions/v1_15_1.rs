@@ -90,7 +90,7 @@ protocol_packet_ids!(
             0x1f => ChangeGameState
             0x20 => WindowOpenHorse
             0x21 => KeepAliveClientbound_i64
-            0x22 => ChunkData_HeightMap
+            0x22 => ChunkData_Biomes3D
             0x23 => Effect
             0x24 => Particle_Data
             0x25 => UpdateLight

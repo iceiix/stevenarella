@@ -447,6 +447,43 @@ impl Serializable for UUID {
     }
 }
 
+pub struct Biomes3D {
+    pub data: [i32; 1024],
+}
+
+impl fmt::Debug for Biomes3D {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Biomes3D(")?;
+        for i in 0..1024 {
+            write!(f, "{}, ", self.data[i])?;
+        }
+        write!(f, ")")
+    }
+}
+
+impl Default for Biomes3D {
+    fn default() -> Self {
+        Biomes3D { data: [0; 1024] }
+    }
+}
+
+impl Serializable for Biomes3D {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Biomes3D, Error> {
+        let mut data: [i32; 1024] = [0; 1024];
+
+        // Non-length-prefixed three-dimensional biome data
+        for i in 0..1024 {
+            let b: i32 = Serializable::read_from(buf)?;
+            data[i] = b;
+        }
+
+        Result::Ok(Biomes3D { data })
+    }
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
 
 pub trait Lengthable : Serializable + Copy + Default {
     fn into_len(self) -> usize;
