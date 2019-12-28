@@ -1071,6 +1071,24 @@ state_packets!(
             }
             /// Particle spawns particles at the target location with the various
             /// modifiers.
+            packet Particle_f64 {
+                field particle_id: i32 =,
+                field long_distance: bool =,
+                field x: f64 =,
+                field y: f64=,
+                field z: f64 =,
+                field offset_x: f32 =,
+                field offset_y: f32 =,
+                field offset_z: f32 =,
+                field speed: f32 =,
+                field count: i32 =,
+                field block_state: VarInt = when(|p: &Particle_f64| p.particle_id == 3 || p.particle_id == 20),
+                field red: f32 = when(|p: &Particle_f64| p.particle_id == 11),
+                field green: f32 = when(|p: &Particle_f64| p.particle_id == 11),
+                field blue: f32 = when(|p: &Particle_f64| p.particle_id == 11),
+                field scale: f32 = when(|p: &Particle_f64| p.particle_id == 11),
+                field item: Option<nbt::NamedTag> = when(|p: &Particle_f64| p.particle_id == 27),
+            }
             packet Particle_Data {
                 field particle_id: i32 =,
                 field long_distance: bool =,

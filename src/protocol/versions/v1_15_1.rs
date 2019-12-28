@@ -92,7 +92,7 @@ protocol_packet_ids!(
             0x21 => KeepAliveClientbound_i64
             0x22 => ChunkData_Biomes3D
             0x23 => Effect
-            0x24 => Particle_Data
+            0x24 => Particle_f64
             0x25 => UpdateLight
             0x26 => JoinGame_i32_ViewDistance
             0x27 => Maps
