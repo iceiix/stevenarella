@@ -1073,7 +1073,17 @@ impl Server {
                 ));
             },
             Some(nbt) => {
-                if block_update.action == 9 {
+                match block_update.action {
+                    // TODO: support more block update actions
+                    //1 => // Mob spawner
+                    //2 => // Command block text
+                    //3 => // Beacon
+                    //4 => // Mob head
+                    //5 => // Conduit
+                    //6 => // Banner
+                    //7 => // Structure
+                    //8 => // Gateway
+                    9 => { // Sign
                     let line1 = format::Component::from_string(nbt.1.get("Text1").unwrap().as_str().unwrap());
                     let line2 = format::Component::from_string(nbt.1.get("Text2").unwrap().as_str().unwrap());
                     let line3 = format::Component::from_string(nbt.1.get("Text3").unwrap().as_str().unwrap());
@@ -1085,6 +1095,14 @@ impl Server {
                         line3,
                         line4,
                     ));
+                    },
+                    //10 => // Unused
+                    //11 => // Jigsaw
+                    //12 => // Campfire
+                    //14 => // Beehive
+                    _ => {
+                        debug!("Unsupported block entity action: {}", block_update.action);
+                    },
                 }
             }
         }
