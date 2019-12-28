@@ -61,7 +61,7 @@ protocol_packet_ids!(
             0x02 => SpawnGlobalEntity
             0x03 => SpawnMob_NoMeta
             0x04 => SpawnPainting_VarInt
-            0x05 => SpawnPlayer_f64
+            0x05 => SpawnPlayer_f64_NoMeta
             0x06 => Animation
             0x07 => Statistics
             0x08 => AcknowledgePlayerDigging
