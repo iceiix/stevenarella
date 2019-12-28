@@ -396,11 +396,13 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_HashedSeed_Respawn => on_game_join_hashedseed_respawn,
                             JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
                             JoinGame_i8_NoDebug => on_game_join_i8_nodebug,
                             Respawn => on_respawn,
+                            Respawn_HashedSeed => on_respawn_hashedseed,
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
@@ -779,6 +781,10 @@ impl Server {
         }
     }
 
+    fn on_game_join_hashedseed_respawn(&mut self, join: packet::play::clientbound::JoinGame_HashedSeed_Respawn) {
+        self.on_game_join(join.gamemode, join.entity_id)
+    }
+
     fn on_game_join_i32_viewdistance(&mut self, join: packet::play::clientbound::JoinGame_i32_ViewDistance) {
         self.on_game_join(join.gamemode, join.entity_id)
     }
@@ -822,9 +828,17 @@ impl Server {
         }
     }
 
+    fn on_respawn_hashedseed(&mut self, respawn: packet::play::clientbound::Respawn_HashedSeed) {
+        self.respawn(respawn.gamemode)
+    }
+
     fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
+        self.respawn(respawn.gamemode)
+    }
+
+    fn respawn(&mut self, gamemode_u8: u8) {
         self.world = world::World::new(self.protocol_version);
-        let gamemode = Gamemode::from_int((respawn.gamemode & 0x7) as i32);
+        let gamemode = Gamemode::from_int((gamemode_u8 & 0x7) as i32);
 
         if let Some(player) = self.player {
             *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
