@@ -558,7 +558,21 @@ state_packets!(
             }
             /// SpawnMob is used to spawn a living entity into the world when it is in
             /// range of the client.
-            packet SpawnMob {
+            packet SpawnMob_NoMeta {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field ty: VarInt =,
+                field x: f64 =,
+                field y: f64 =,
+                field z: f64 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+                field head_pitch: i8 =,
+                field velocity_x: i16 =,
+                field velocity_y: i16 =,
+                field velocity_z: i16 =,
+            }
+            packet SpawnMob_WithMeta {
                 field entity_id: VarInt =,
                 field uuid: UUID =,
                 field ty: VarInt =,
