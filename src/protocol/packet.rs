@@ -998,7 +998,7 @@ state_packets!(
                 field new: bool =,
                 field bitmask: VarInt =,
                 field heightmaps: Option<nbt::NamedTag> =,
-                field biomes: Option<Biomes3D> = when(|p: &ChunkData_Biomes3D| p.new),
+                field biomes: Biomes3D = when(|p: &ChunkData_Biomes3D| p.new),
                 field data: LenPrefixedBytes<VarInt> =,
                 field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =,
             }
