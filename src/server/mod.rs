@@ -1264,8 +1264,8 @@ impl Server {
         }
     }
 
-    fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
-        self.world.load_chunk19(
+    fn on_chunk_data_biomes3d(&mut self, chunk_data: packet::play::clientbound::ChunkData_Biomes3D) {
+        self.world.load_chunk115(
             chunk_data.chunk_x,
             chunk_data.chunk_z,
             chunk_data.new,
@@ -1275,7 +1275,8 @@ impl Server {
         self.load_block_entities(chunk_data.block_entities.data);
     }
 
-    fn on_chunk_data_biomes3d(&mut self, chunk_data: packet::play::clientbound::ChunkData_Biomes3D) {
+
+    fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
         self.world.load_chunk19(
             chunk_data.chunk_x,
             chunk_data.chunk_z,
