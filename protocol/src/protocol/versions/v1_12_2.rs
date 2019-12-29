@@ -46,7 +46,7 @@ protocol_packet_ids!(
             0x00 => SpawnObject
             0x01 => SpawnExperienceOrb
             0x02 => SpawnGlobalEntity
-            0x03 => SpawnMob
+            0x03 => SpawnMob_WithMeta
             0x04 => SpawnPainting_VarInt
             0x05 => SpawnPlayer_f64
             0x06 => Animation
