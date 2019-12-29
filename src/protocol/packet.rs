@@ -558,7 +558,21 @@ state_packets!(
             }
             /// SpawnMob is used to spawn a living entity into the world when it is in
             /// range of the client.
-            packet SpawnMob {
+            packet SpawnMob_NoMeta {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field ty: VarInt =,
+                field x: f64 =,
+                field y: f64 =,
+                field z: f64 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+                field head_pitch: i8 =,
+                field velocity_x: i16 =,
+                field velocity_y: i16 =,
+                field velocity_z: i16 =,
+            }
+            packet SpawnMob_WithMeta {
                 field entity_id: VarInt =,
                 field uuid: UUID =,
                 field ty: VarInt =,
@@ -650,6 +664,15 @@ state_packets!(
             /// SpawnPlayer is used to spawn a player when they are in range of the client.
             /// This packet alone isn't enough to display the player as the skin and username
             /// information is in the player information packet.
+            packet SpawnPlayer_f64_NoMeta {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field x: f64 =,
+                field y: f64 =,
+                field z: f64 =,
+                field yaw: i8 =,
+                field pitch: i8 =,
+            }
             packet SpawnPlayer_f64 {
                 field entity_id: VarInt =,
                 field uuid: UUID =,
@@ -969,6 +992,16 @@ state_packets!(
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
+            packet ChunkData_Biomes3D {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field new: bool =,
+                field bitmask: VarInt =,
+                field heightmaps: Option<nbt::NamedTag> =,
+                field biomes: Biomes3D = when(|p: &ChunkData_Biomes3D| p.new),
+                field data: LenPrefixedBytes<VarInt> =,
+                field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =,
+            }
             packet ChunkData_HeightMap {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,
@@ -1038,6 +1071,24 @@ state_packets!(
             }
             /// Particle spawns particles at the target location with the various
             /// modifiers.
+            packet Particle_f64 {
+                field particle_id: i32 =,
+                field long_distance: bool =,
+                field x: f64 =,
+                field y: f64=,
+                field z: f64 =,
+                field offset_x: f32 =,
+                field offset_y: f32 =,
+                field offset_z: f32 =,
+                field speed: f32 =,
+                field count: i32 =,
+                field block_state: VarInt = when(|p: &Particle_f64| p.particle_id == 3 || p.particle_id == 20),
+                field red: f32 = when(|p: &Particle_f64| p.particle_id == 11),
+                field green: f32 = when(|p: &Particle_f64| p.particle_id == 11),
+                field blue: f32 = when(|p: &Particle_f64| p.particle_id == 11),
+                field scale: f32 = when(|p: &Particle_f64| p.particle_id == 11),
+                field item: Option<nbt::NamedTag> = when(|p: &Particle_f64| p.particle_id == 27),
+            }
             packet Particle_Data {
                 field particle_id: i32 =,
                 field long_distance: bool =,
@@ -1083,6 +1134,27 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
+            packet JoinGame_HashedSeed_Respawn {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The dimension the client is starting in
+                field dimension: i32 =,
+                /// Truncated SHA-256 hash of world's seed
+                field hashed_seed: i64 =,
+                /// The max number of players on the server
+                field max_players: u8 =,
+                /// The level type of the server
+                field level_type: String =,
+                /// The render distance (2-32)
+                field view_distance: VarInt =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+                /// Whether to prompt or immediately respawn
+                field enable_respawn_screen: bool =,
+            }
             packet JoinGame_i32_ViewDistance {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -1383,6 +1455,13 @@ state_packets!(
             /// Respawn is sent to respawn the player after death or when they move worlds.
             packet Respawn {
                 field dimension: i32 =,
+                field difficulty: u8 =,
+                field gamemode: u8 =,
+                field level_type: String =,
+            }
+            packet Respawn_HashedSeed {
+                field dimension: i32 =,
+                field hashed_seed: i64 =,
                 field difficulty: u8 =,
                 field gamemode: u8 =,
                 field level_type: String =,

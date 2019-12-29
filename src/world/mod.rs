@@ -830,6 +830,14 @@ impl World {
     }
 
     pub fn load_chunk19(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
+        self.load_chunk19_or_115(true, x, z, new, mask, data)
+    }
+
+    pub fn load_chunk115(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
+        self.load_chunk19_or_115(false, x, z, new, mask, data)
+    }
+
+    fn load_chunk19_or_115(&mut self, read_biomes: bool, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
         use std::io::Cursor;
         use byteorder::ReadBytesExt;
         use crate::protocol::{VarInt, Serializable, LenPrefixed};
@@ -911,7 +919,7 @@ impl World {
                 }
             }
 
-            if new {
+            if read_biomes && new {
                 data.read_exact(&mut chunk.biomes)?;
             }
 

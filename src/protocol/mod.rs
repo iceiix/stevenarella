@@ -42,7 +42,7 @@ use std::time::{Instant, Duration};
 use crate::shared::Position;
 use log::debug;
 
-pub const SUPPORTED_PROTOCOLS: [i32; 17] = [498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
+pub const SUPPORTED_PROTOCOLS: [i32; 18] = [575, 498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
 
 // TODO: switch to using thread_local storage?, see https://doc.rust-lang.org/std/macro.thread_local.html
 pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
@@ -444,6 +444,43 @@ impl Serializable for UUID {
         buf.write_u64::<BigEndian>(self.0)?;
         buf.write_u64::<BigEndian>(self.1)?;
         Result::Ok(())
+    }
+}
+
+pub struct Biomes3D {
+    pub data: [i32; 1024],
+}
+
+impl fmt::Debug for Biomes3D {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Biomes3D(")?;
+        for i in 0..1024 {
+            write!(f, "{}, ", self.data[i])?;
+        }
+        write!(f, ")")
+    }
+}
+
+impl Default for Biomes3D {
+    fn default() -> Self {
+        Biomes3D { data: [0; 1024] }
+    }
+}
+
+impl Serializable for Biomes3D {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Biomes3D, Error> {
+        let mut data: [i32; 1024] = [0; 1024];
+
+        // Non-length-prefixed three-dimensional biome data
+        for i in 0..1024 {
+            let b: i32 = Serializable::read_from(buf)?;
+            data[i] = b;
+        }
+
+        Result::Ok(Biomes3D { data })
+    }
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), Error> {
+        unimplemented!()
     }
 }
 

@@ -396,15 +396,18 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_HashedSeed_Respawn => on_game_join_hashedseed_respawn,
                             JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
                             JoinGame_i8_NoDebug => on_game_join_i8_nodebug,
                             Respawn => on_respawn,
+                            Respawn_HashedSeed => on_respawn_hashedseed,
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
                             ChunkData => on_chunk_data,
+                            ChunkData_Biomes3D => on_chunk_data_biomes3d,
                             ChunkData_HeightMap => on_chunk_data_heightmap,
                             ChunkData_NoEntities => on_chunk_data_no_entities,
                             ChunkData_NoEntities_u16 => on_chunk_data_no_entities_u16,
@@ -778,6 +781,10 @@ impl Server {
         }
     }
 
+    fn on_game_join_hashedseed_respawn(&mut self, join: packet::play::clientbound::JoinGame_HashedSeed_Respawn) {
+        self.on_game_join(join.gamemode, join.entity_id)
+    }
+
     fn on_game_join_i32_viewdistance(&mut self, join: packet::play::clientbound::JoinGame_i32_ViewDistance) {
         self.on_game_join(join.gamemode, join.entity_id)
     }
@@ -821,9 +828,17 @@ impl Server {
         }
     }
 
+    fn on_respawn_hashedseed(&mut self, respawn: packet::play::clientbound::Respawn_HashedSeed) {
+        self.respawn(respawn.gamemode)
+    }
+
     fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
+        self.respawn(respawn.gamemode)
+    }
+
+    fn respawn(&mut self, gamemode_u8: u8) {
         self.world = world::World::new(self.protocol_version);
-        let gamemode = Gamemode::from_int((respawn.gamemode & 0x7) as i32);
+        let gamemode = Gamemode::from_int((gamemode_u8 & 0x7) as i32);
 
         if let Some(player) = self.player {
             *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
@@ -1073,7 +1088,17 @@ impl Server {
                 ));
             },
             Some(nbt) => {
-                if block_update.action == 9 {
+                match block_update.action {
+                    // TODO: support more block update actions
+                    //1 => // Mob spawner
+                    //2 => // Command block text
+                    //3 => // Beacon
+                    //4 => // Mob head
+                    //5 => // Conduit
+                    //6 => // Banner
+                    //7 => // Structure
+                    //8 => // Gateway
+                    9 => { // Sign
                     let line1 = format::Component::from_string(nbt.1.get("Text1").unwrap().as_str().unwrap());
                     let line2 = format::Component::from_string(nbt.1.get("Text2").unwrap().as_str().unwrap());
                     let line3 = format::Component::from_string(nbt.1.get("Text3").unwrap().as_str().unwrap());
@@ -1085,6 +1110,14 @@ impl Server {
                         line3,
                         line4,
                     ));
+                    },
+                    //10 => // Unused
+                    //11 => // Jigsaw
+                    //12 => // Campfire
+                    //14 => // Beehive
+                    _ => {
+                        debug!("Unsupported block entity action: {}", block_update.action);
+                    },
                 }
             }
         }
@@ -1230,6 +1263,18 @@ impl Server {
             }
         }
     }
+
+    fn on_chunk_data_biomes3d(&mut self, chunk_data: packet::play::clientbound::ChunkData_Biomes3D) {
+        self.world.load_chunk115(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            chunk_data.new,
+            chunk_data.bitmask.0 as u16,
+            chunk_data.data.data
+        ).unwrap();
+        self.load_block_entities(chunk_data.block_entities.data);
+    }
+
 
     fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
         self.world.load_chunk19(
