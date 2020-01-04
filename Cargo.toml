@@ -17,9 +17,6 @@ path = "src/main.rs"
 # Use an -O1 optimization level strikes a good compromise between build and program performance.
 opt-level = 1
 
-[profile.release]
-opt-level = 1
-
 [dependencies]
 cfg-if = "0.1.9"
 wasm-bindgen = "0.2.44"
