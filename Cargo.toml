@@ -40,7 +40,7 @@ aes = "0.3.2"
 cfb8 = "0.3.2"
 rsa_public_encrypt_pkcs1 = "0.2.0"
 structopt = "0.3.3"
-num-traits = "0.2.8"
+num-traits = "0.2.10"
 clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", rev = "07d080be58a361a5bbdb548fafe9449843d968be" }
 # clippy = "*"
 
