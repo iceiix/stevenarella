@@ -160,20 +160,6 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
                         continue;
                     }
 
-                    match block {
-                        block::Block::Water{..} | block::Block::FlowingWater{..} => {
-                            let tex = models.read().unwrap().textures.clone();
-                            trans_count += model::liquid::render_liquid(tex, false, &snapshot, x, y, z, &mut trans_buffer);
-                            continue;
-                        },
-                        block::Block::Lava{..} | block::Block::FlowingLava{..} => {
-                            let tex = models.read().unwrap().textures.clone();
-                            solid_count += model::liquid::render_liquid(tex, true, &snapshot, x, y, z, &mut solid_buffer);
-                            continue;
-                        },
-                        _ => {},
-                    }
-
                     if mat.transparent {
                         trans_count += model::Factory::get_state_model(
                             &models, block, &mut rng, &snapshot, x, y, z, &mut trans_buffer

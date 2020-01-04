@@ -26,13 +26,7 @@ pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lav
         )
     };
 
-    let tex = match snapshot.get_block(x, y, z) {
-        block::Block::Water{..} => render::Renderer::get_texture(&textures, "minecraft:blocks/water_still"),
-        block::Block::FlowingWater{..} => render::Renderer::get_texture(&textures, "minecraft:blocks/water_flow"),
-        block::Block::Lava{..} => render::Renderer::get_texture(&textures, "minecraft:blocks/lava_still"),
-        block::Block::FlowingLava{..} => render::Renderer::get_texture(&textures, "minecraft:blocks/lava_flow"),
-        _ => unreachable!(),
-    };
+    let tex = render::Renderer::get_texture(&textures, "minecraft:blocks/water_still");
     let ux1 = 0i16;
     let ux2 = 16i16 * tex.get_width() as i16;
     let uy1 = 0i16;
@@ -126,15 +120,9 @@ fn average_liquid_level(
 }
 
 fn get_water_level(snapshot: &world::Snapshot, x: i32, y: i32, z: i32) -> Option<i32> {
-    match snapshot.get_block(x, y, z) {
-        block::Block::Water{level} | block::Block::FlowingWater{level} => Some(level as i32),
-        _ => None,
-    }
+    None
 }
 
 fn get_lava_level(snapshot: &world::Snapshot, x: i32, y: i32, z: i32) -> Option<i32> {
-    match snapshot.get_block(x, y, z) {
-        block::Block::Lava{level} | block::Block::FlowingLava{level} => Some(level as i32),
-        _ => None,
-    }
+    None
 }

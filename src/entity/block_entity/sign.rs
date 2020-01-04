@@ -91,24 +91,6 @@ impl ecs::System for SignRenderer {
         let position = *m.get_component(e, self.position).unwrap();
         let info = m.get_component_mut(e, self.sign_info).unwrap();
         info.dirty = false;
-        match world.get_block(position) {
-            Block::WallSign{facing, ..} => {
-                info.offset_z = 7.5 / 16.0;
-                match facing {
-                    Direction::North => {},
-                    Direction::South => info.rotation = PI,
-                    Direction::West => info.rotation = PI / 2.0,
-                    Direction::East => info.rotation = -PI / 2.0,
-                    _ => unreachable!(),
-                }
-            },
-            Block::StandingSign{rotation, ..} => {
-                info.offset_y = 5.0 / 16.0;
-                info.has_stand = true;
-                info.rotation = -(rotation.data() as f64 / 16.0) * PI * 2.0 + PI;
-            }
-            _ => return,
-        }
         let tex = render::Renderer::get_texture(renderer.get_textures_ref(), "entity/sign");
 
         macro_rules! rel {
