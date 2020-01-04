@@ -1,4 +1,4 @@
-#![feature(trace_macros)]
+
 #![recursion_limit="600"]
 
 extern crate steven_shared as shared;
@@ -482,7 +482,6 @@ pub enum TintType {
     Foliage,
 }
 
-trace_macros!(true);
 define_blocks! {
     Air {
         props {},
@@ -5600,7 +5599,6 @@ define_blocks! {
         model { ("steven", "missing_block") },
     }
 }
-trace_macros!(false);
 
 fn can_burn<W: WorldAccess>(world: &W, pos: Position) -> bool {
     match world.get_block(pos) {
