@@ -5603,53 +5603,11 @@ define_blocks! {
 trace_macros!(false);
 
 fn can_burn<W: WorldAccess>(world: &W, pos: Position) -> bool {
-    match world.get_block(pos) {
-        Block::Planks{..} |
-        Block::DoubleWoodenSlab{..} |
-        Block::WoodenSlab{..} |
-        Block::FenceGate{..} |
-        Block::SpruceFenceGate{..} |
-        Block::BirchFenceGate{..} |
-        Block::JungleFenceGate{..} |
-        Block::DarkOakFenceGate{..} |
-        Block::AcaciaFenceGate{..} |
-        Block::Fence{..} |
-        Block::SpruceFence{..} |
-        Block::BirchFence{..} |
-        Block::JungleFence{..} |
-        Block::DarkOakFence{..} |
-        Block::AcaciaFence{..} |
-        Block::OakStairs{..} |
-        Block::BirchStairs{..} |
-        Block::SpruceStairs{..} |
-        Block::JungleStairs{..} |
-        Block::AcaciaStairs{..} |
-        Block::DarkOakStairs{..} |
-        Block::Log{..} |
-        Block::Log2{..} |
-        Block::Leaves{..} |
-        Block::Leaves2{..} |
-        Block::BookShelf{..} |
-        Block::TNT{..} |
-        Block::TallGrass{..} |
-        Block::DoublePlant{..} |
-        Block::YellowFlower{..} |
-        Block::RedFlower{..} |
-        Block::DeadBush{..} |
-        Block::Wool{..} |
-        Block::Vine{..} |
-        Block::CoalBlock{..} |
-        Block::HayBlock{..} |
-        Block::Carpet{..} => true,
-        _ => false,
-    }
+    false
 }
 
 fn is_snowy<W: WorldAccess>(world: &W, pos: Position) -> bool {
-    match world.get_block(pos.shift(Direction::Up)) {
-        Block::Snow{..} | Block::SnowLayer{..} => true,
-        _ => false,
-    }
+    false
 }
 
 fn can_connect_sides<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f: &F) -> (bool, bool, bool, bool) {
@@ -5665,52 +5623,14 @@ fn can_connect<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f
 }
 
 fn can_connect_fence(block: Block) -> bool {
-    match block {
-        Block::Fence{..} |
-        Block::SpruceFence{..} |
-        Block::BirchFence{..} |
-        Block::JungleFence{..} |
-        Block::DarkOakFence{..} |
-        Block::AcaciaFence{..} |
-        Block::FenceGate{..} |
-        Block::SpruceFenceGate{..} |
-        Block::BirchFenceGate{..} |
-        Block::JungleFenceGate{..} |
-        Block::DarkOakFenceGate{..} |
-        Block::AcaciaFenceGate{..} => true,
-        _ => false,
-    }
+    false
 }
 
 fn can_connect_glasspane(block: Block) -> bool {
-    match block {
-        Block::Glass{..} |
-        Block::StainedGlass{..} |
-        Block::GlassPane{..} |
-        Block::StainedGlassPane{..} => true,
-        _ => false,
-    }
+    false
 }
 
 fn can_connect_redstone<W: WorldAccess>(world: &W, pos: Position, dir: Direction) -> RedstoneSide {
-    let shift_pos = pos.shift(dir);
-    let block = world.get_block(shift_pos);
-
-    if block.get_material().should_cull_against {
-        let side_up = world.get_block(shift_pos.shift(Direction::Up));
-        let up = world.get_block(pos.shift(Direction::Up));
-
-        if match side_up { Block::RedstoneWire{..} => true, _ => false,} && !up.get_material().should_cull_against {
-            return RedstoneSide::Up;
-        }
-
-        return RedstoneSide::None;
-    }
-
-    let side_down = world.get_block(shift_pos.shift(Direction::Down));
-    if match block { Block::RedstoneWire{..} => true, _ => false,} || match side_down { Block::RedstoneWire{..} => true, _ => false,} {
-        return RedstoneSide::Side;
-    }
     RedstoneSide::None
 }
 
@@ -5751,14 +5671,6 @@ fn fence_gate_collision(facing: Direction, in_wall: bool, open: bool) -> Vec<Aab
 }
 
 fn fence_gate_update_state<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> bool {
-    if let Block::CobblestoneWall{..} = world.get_block(pos.shift(facing.clockwise())) {
-        return true;
-    }
-
-    if let Block::CobblestoneWall{..} = world.get_block(pos.shift(facing.counter_clockwise())) {
-        return true;
-    }
-
     false
 }
 
@@ -5794,25 +5706,6 @@ fn door_offset(facing: Direction, half: DoorHalf, hinge: Side, open: bool, power
 
 fn update_door_state<W: WorldAccess>(world: &W, pos: Position, ohalf: DoorHalf, ofacing: Direction, ohinge: Side, oopen: bool, opowered: bool) -> (Direction, Side, bool, bool) {
     let oy = if ohalf == DoorHalf::Upper { -1 } else { 1 };
-
-    match world.get_block(pos + (0, oy, 0)) {
-        Block::WoodenDoor{half, facing, hinge, open, powered} |
-        Block::SpruceDoor{half, facing, hinge, open, powered} |
-        Block::BirchDoor{half, facing, hinge, open, powered} |
-        Block::JungleDoor{half, facing, hinge, open, powered} |
-        Block::AcaciaDoor{half, facing, hinge, open, powered} |
-        Block::DarkOakDoor{half, facing, hinge, open, powered} |
-        Block::IronDoor{half, facing, hinge, open, powered} => {
-            if half != ohalf {
-                if ohalf == DoorHalf::Upper {
-                    return (facing, ohinge, open, opowered);
-                } else {
-                    return (ofacing, hinge, oopen, powered);
-                }
-            }
-        },
-        _ => {},
-    }
 
     (ofacing, ohinge, oopen, opowered)
 }
@@ -5852,23 +5745,13 @@ fn door_collision(facing: Direction, hinge: Side, open: bool) -> Vec<Aabb3<f64>>
 }
 
 fn update_repeater_state<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> bool {
-    let f = |dir| {
-        match world.get_block(pos.shift(dir)) {
-            Block::RepeaterPowered{..} => true,
-            _ => false,
-        }
-    };
-
-    f(facing.clockwise()) || f(facing.counter_clockwise())
+    false
 }
 
 fn update_double_plant_state<W: WorldAccess>(world: &W, pos: Position, ohalf: BlockHalf, ovariant: DoublePlantVariant) -> (BlockHalf, DoublePlantVariant) {
     if ohalf != BlockHalf::Upper { return (ohalf, ovariant); }
 
-    match world.get_block(pos.shift(Direction::Down)) {
-        Block::DoublePlant{variant, ..} => (ohalf, variant),
-        _ => (ohalf, ovariant),
-    }
+    (ohalf, ovariant)
 }
 
 fn piston_collision(extended: bool, facing: Direction) -> Vec<Aabb3<f64>> {
@@ -5990,23 +5873,7 @@ fn pane_collision(north: bool, south: bool, east: bool, west: bool) -> Vec<Aabb3
 }
 
 fn get_stair_info<W: WorldAccess>(world: &W, pos: Position) -> Option<(Direction, BlockHalf)> {
-    match world.get_block(pos) {
-        Block::OakStairs{facing, half, ..} |
-        Block::StoneStairs{facing, half, ..} |
-        Block::BrickStairs{facing, half, ..} |
-        Block::StoneBrickStairs{facing, half, ..} |
-        Block::NetherBrickStairs{facing, half, ..} |
-        Block::SandstoneStairs{facing, half, ..} |
-        Block::SpruceStairs{facing, half, ..} |
-        Block::BirchStairs{facing, half, ..} |
-        Block::JungleStairs{facing, half, ..} |
-        Block::QuartzStairs{facing, half, ..} |
-        Block::AcaciaStairs{facing, half, ..} |
-        Block::DarkOakStairs{facing, half, ..} |
-        Block::RedSandstoneStairs{facing, half, ..} |
-        Block::PurpurStairs{facing, half, ..} => Some((facing, half)),
-        _ => None,
-    }
+    None
 }
 
 fn update_stair_shape<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> StairShape {
