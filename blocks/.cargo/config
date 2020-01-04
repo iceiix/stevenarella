@@ -1,0 +1,2 @@
+[profile.release]
+opt-level = 1
