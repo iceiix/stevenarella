@@ -5,8 +5,6 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 edition = "2018"
 
 [profile.release]
-# steven_blocks define_blocks! macro takes ~4 hours to fully optimize
-# Reduce optimization level to basic optimizations
 opt-level = 1
 
 [dependencies]
