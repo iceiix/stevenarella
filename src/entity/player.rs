@@ -360,7 +360,7 @@ impl ecs::System for PlayerRenderer {
             [0.0, 16.0, 0.0, 32.0], // Right Leg
             [32.0, 48.0, 48.0, 48.0], // Left arm
             [40.0, 16.0, 40.0, 32.0], // Right arm
-        ].into_iter().enumerate() {
+        ].iter().enumerate() {
             let (ox, oy) = (offsets[0], offsets[1]);
             model::append_box(&mut part_verts[i], -2.0/16.0, -12.0/16.0, -2.0/16.0, 4.0/16.0, 12.0/16.0, 4.0/16.0, [
                 srel!(ox + 8.0, oy + 0.0, 4.0, 4.0), // Down

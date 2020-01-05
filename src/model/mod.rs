@@ -965,9 +965,9 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
     let dy = (oy as f64) * 0.6;
     let dz = (oz as f64) * 0.6;
 
-    for ox in [-0.6, 0.0].into_iter() {
-        for oy in [-0.6, 0.0].into_iter() {
-            for oz in [-0.6, 0.0].into_iter() {
+    for ox in [-0.6, 0.0].iter() {
+        for oy in [-0.6, 0.0].iter() {
+            for oz in [-0.6, 0.0].iter() {
                 let lx = (x + ox + dx).round() as i32;
                 let ly = (y + oy + dy).round() as i32;
                 let lz = (z + oz + dz).round() as i32;

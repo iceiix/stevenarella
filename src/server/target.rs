@@ -50,7 +50,7 @@ impl Info {
                 (bound.min.x, bound.max.z),
                 (bound.max.x, bound.min.z),
                 (bound.max.x, bound.max.z),
-            ].into_iter() {
+            ].iter() {
                 model::append_box(&mut parts,
                     (point.0-LINE_SIZE) as f32, (bound.min.y-LINE_SIZE) as f32, (point.1-LINE_SIZE) as f32,
                     (LINE_SIZE*2.0) as f32, ((bound.max.y-bound.min.y)+LINE_SIZE*2.0) as f32, (LINE_SIZE*2.0) as f32,
@@ -69,7 +69,7 @@ impl Info {
                 (bound.min.x, bound.max.z, bound.max.x, bound.max.z),
                 (bound.min.x, bound.min.z, bound.min.x, bound.max.z),
                 (bound.max.x, bound.min.z, bound.max.x, bound.max.z),
-            ].into_iter() {
+            ].iter() {
                 model::append_box(&mut parts,
                     (point.0-LINE_SIZE) as f32, (bound.min.y-LINE_SIZE) as f32, (point.1-LINE_SIZE) as f32,
                     ((point.2-point.0)+(LINE_SIZE*2.0)) as f32, (LINE_SIZE*2.0) as f32, ((point.3-point.1)+(LINE_SIZE*2.0)) as f32,
