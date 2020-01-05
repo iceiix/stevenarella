@@ -481,7 +481,7 @@ impl ComponentMem {
             component_size: mem::size_of::<T>(),
             drop_func: Box::new(|data| {
                 unsafe {
-                    let mut val: T = mem::uninitialized();
+                    let mut val: T = mem::MaybeUninit::uninit().assume_init();
                     ptr::copy(data as *mut T, &mut val, 1);
                     mem::drop(val);
                 }
