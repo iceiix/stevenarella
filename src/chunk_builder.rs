@@ -10,7 +10,7 @@ use crate::model;
 use crate::types::bit::Set;
 use crate::shared::Direction;
 use rand::{self, SeedableRng, Rng};
-use rand_xorshift;
+use rand_pcg;
 
 const NUM_WORKERS: usize = 8;
 
@@ -122,7 +122,7 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
             Err(_) => return,
         };
 
-        let mut rng = rand_xorshift::XorShiftRng::from_seed([
+        let mut rng = rand_pcg::Pcg32::from_seed([
             ((position.0 as u32) & 0xff) as u8,
             (((position.0 as u32) >> 8) & 0xff) as u8,
             (((position.0 as u32) >> 16) & 0xff) as u8,
