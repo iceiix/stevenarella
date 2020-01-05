@@ -48,10 +48,10 @@ clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", rev = "07
 # clippy = "*"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-reqwest = "0.9.22"
+reqwest = { version = "0.10.0", features = [ "blocking" ]}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-console_error_panic_hook = "0.1.1"
+console_error_panic_hook = "0.1.6"
 web-sys = { version = "0.3.33", features = [ "console" ]}
 
 [dependencies.steven_gl]

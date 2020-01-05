@@ -846,7 +846,7 @@ impl TextureManager {
 
     #[cfg(not(target_arch = "wasm32"))]
     fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
         loop {
             let hash = match recv.recv() {
                 Ok(val) => val,
@@ -865,7 +865,7 @@ impl TextureManager {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn obtain_skin(client: &::reqwest::Client, hash: &str) -> Result<image::DynamicImage, ::std::io::Error> {
+    fn obtain_skin(client: &::reqwest::blocking::Client, hash: &str) -> Result<image::DynamicImage, ::std::io::Error> {
         use std::io::Read;
         use std_or_web::fs;
         use std::path::Path;
