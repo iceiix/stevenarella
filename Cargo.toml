@@ -1,5 +1,3 @@
-cargo-features = ["profile-overrides"]
-
 [package]
 name = "stevenarella"
 version = "0.0.1"
