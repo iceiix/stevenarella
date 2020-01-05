@@ -232,7 +232,7 @@ fn main2() {
     let mut events_loop = glutin::event_loop::EventLoop::new();
     let window_builder = glutin::window::WindowBuilder::new()
         .with_title("Stevenarella")
-        .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
+        .with_inner_size(glutin::dpi::LogicalSize::new(854.0, 480.0));
     let window = glutin::ContextBuilder::new()
         .with_stencil_buffer(0)
         .with_depth_buffer(24)
