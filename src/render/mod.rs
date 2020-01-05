@@ -359,7 +359,7 @@ impl Renderer {
         gl::clear_buffer(gl::COLOR, 1, &[0.0, 0.0, 0.0, 0.0]);
         gl::blend_func_separate(gl::ONE_FACTOR, gl::ONE_FACTOR, gl::ZERO_FACTOR, gl::ONE_MINUS_SRC_ALPHA);
 
-        for (pos, info) in world.get_render_list().into_iter().rev() {
+        for (pos, info) in world.get_render_list().iter().rev() {
             if let Some(trans) = info.trans.as_ref() {
                 if trans.count > 0 {
                     self.chunk_shader_alpha.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
@@ -737,7 +737,7 @@ impl TransInfo {
         buffer.bind(gl::ARRAY_BUFFER);
 
         let mut data = vec![];
-        for f in [-1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0].into_iter() {
+        for f in [-1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0].iter() {
             data.write_f32::<NativeEndian>(*f).unwrap();
         }
         buffer.set_data(gl::ARRAY_BUFFER, &data, gl::STATIC_DRAW);
@@ -938,7 +938,7 @@ impl TextureManager {
             (32, 48, 16, 16),
             (40, 16, 16, 16),
         ];
-        for bl in blacklist.into_iter() {
+        for bl in blacklist.iter() {
             for x in bl.0 .. (bl.0 + bl.2) {
                 for y in bl.1 .. (bl.1 + bl.3) {
                     let mut col = img.get_pixel(x, y);

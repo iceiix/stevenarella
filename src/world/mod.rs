@@ -574,7 +574,7 @@ impl World {
             for pos in [
                 (-1, 0, 0), (1, 0, 0),
                 (0, -1, 0), (0, 1, 0),
-                (0, 0, -1), (0, 0, 1)].into_iter() {
+                (0, 0, -1), (0, 0, 1)].iter() {
                 self.flag_section_dirty(x + pos.0, i as i32 + pos.1, z + pos.2);
             }
             self.update_range(
