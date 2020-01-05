@@ -475,7 +475,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                     },
                 }
             },
-            WindowEvent::KeyboardInput{device_id: _, input} => {
+            WindowEvent::KeyboardInput{device_id: _, input, is_synthetic: _} => {
                 match (input.state, input.virtual_keycode) {
                     (ElementState::Released, Some(VirtualKeyCode::Escape)) => {
                         if game.focused {
