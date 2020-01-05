@@ -942,7 +942,7 @@ impl TextureManager {
             for x in bl.0 .. (bl.0 + bl.2) {
                 for y in bl.1 .. (bl.1 + bl.3) {
                     let mut col = img.get_pixel(x, y);
-                    col.data[3] = 255;
+                    col.0[3] = 255;
                     img.put_pixel(x, y, col);
                 }
             }

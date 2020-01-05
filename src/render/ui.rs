@@ -273,7 +273,7 @@ impl UIState {
                     let mut start = true;
                     'x_loop: for x in 0..sw {
                         for y in 0..sh {
-                            let a = img.get_pixel(cx + x, cy + y).data[3];
+                            let a = img.get_pixel(cx + x, cy + y).0[3];
                             if start && a != 0 {
                                 self.font_character_info[i as usize].0 = x as i32;
                                 start = false;

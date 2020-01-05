@@ -933,9 +933,9 @@ fn calculate_biome(snapshot: &world::Snapshot, x: i32, z: i32, img: &image::Dyna
 
             let col = img.get_pixel(ix as u32, iy as u32);
             let col = bi.process_color(col);
-            r += col.data[0] as u32;
-            g += col.data[1] as u32;
-            b += col.data[2] as u32;
+            r += col.0[0] as u32;
+            g += col.0[1] as u32;
+            b += col.0[2] as u32;
             count += 1;
         }
     }

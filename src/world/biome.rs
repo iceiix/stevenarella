@@ -30,14 +30,14 @@ impl Biome {
 
     pub fn process_color(self, col: Rgba<u8>) -> Rgba<u8> {
         if self.id == ROOFED_FOREST.id || self.id == ROOFED_FOREST_MOUNTAINS.id {
-            Rgba {
-                data: [
-                    ((col.data[0] as u32 + 0x28) / 2) as u8,
-                    ((col.data[1] as u32 + 0x34) / 2) as u8,
-                    ((col.data[2] as u32 + 0x0A) / 2) as u8,
+            Rgba (
+                [
+                    ((col.0[0] as u32 + 0x28) / 2) as u8,
+                    ((col.0[1] as u32 + 0x34) / 2) as u8,
+                    ((col.0[2] as u32 + 0x0A) / 2) as u8,
                     255
                 ]
-            }
+            )
         } else {
             col
         }
