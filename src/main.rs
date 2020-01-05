@@ -301,8 +301,7 @@ fn main2() {
     }
 
     let mut last_resource_version = 0;
-    while !game.should_close {
-
+    events_loop.run(move |event, _event_loop, control_flow| {
         let now = Instant::now();
         let diff = now.duration_since(last_frame);
         last_frame = now;
@@ -327,7 +326,7 @@ fn main2() {
         let vsync_changed = *game.vars.get(settings::R_VSYNC);
         if vsync != vsync_changed {
             error!("Changing vsync currently requires restarting");
-            break;
+            game.should_close = true;
             // TODO: after https://github.com/tomaka/glutin/issues/693 Allow changing vsync on a Window
             //vsync = vsync_changed;
         }
@@ -358,14 +357,12 @@ fn main2() {
         }
         window.swap_buffers().expect("Failed to swap GL buffers");
 
-        // TODO: switch to run(move |...), for web compatibility
-        use glutin::platform::desktop::EventLoopExtDesktop;
-        events_loop.run_return(|event, _event_loop, control_flow| {
-            *control_flow = glutin::event_loop::ControlFlow::Exit;
+        handle_window_event(&mut window, &mut game, &mut ui_container, event);
 
-            handle_window_event(&mut window, &mut game, &mut ui_container, event);
-        });
-    }
+        if game.should_close {
+            *control_flow = glutin::event_loop::ControlFlow::Exit;
+        }
+    });
 }
 
 fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyCurrent>,
