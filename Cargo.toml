@@ -1,3 +1,5 @@
+cargo-features = ["profile-overrides"]
+
 [package]
 name = "stevenarella"
 version = "0.0.1"
@@ -15,6 +17,9 @@ path = "src/main.rs"
 # Steven runs horrendously slow with no optimizations, and often freezes.
 # However, building with full -O3 optimizations takes too long for a debug build.
 # Use an -O1 optimization level strikes a good compromise between build and program performance.
+opt-level = 1
+
+[profile.release.package.steven_blocks]
 opt-level = 1
 
 [dependencies]
