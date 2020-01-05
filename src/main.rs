@@ -358,7 +358,9 @@ fn main2() {
         }
         window.swap_buffers().expect("Failed to swap GL buffers");
 
-        events_loop.poll_events(|event| {
+        events_loop.run(|event, _event_loop, control_flow| {
+            *control_flow = glutin::event_loop::ControlFlow::Wait;
+
             handle_window_event(&mut window, &mut game, &mut ui_container, event);
         });
     }
