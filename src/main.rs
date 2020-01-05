@@ -495,7 +495,9 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                     },
                     (ElementState::Pressed, Some(VirtualKeyCode::F11)) => {
                         if !game.is_fullscreen {
-                            window.window().set_fullscreen(Some(window.window().current_monitor()));
+                            // TODO: support options for exclusive and simple fullscreen
+                            // see https://docs.rs/glutin/0.22.0-alpha5/glutin/window/struct.Window.html#method.set_fullscreen
+                            window.window().set_fullscreen(Some(glutin::window::Fullscreen::Borderless(window.window().current_monitor())));
                         } else {
                             window.window().set_fullscreen(None);
                         }
