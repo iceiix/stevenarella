@@ -32,7 +32,7 @@ flate2 = { version = "1.0.13", features = ["rust_backend"], default-features = f
 zip = { version = "0.5.3", features = ["deflate"], default-features = false }
 image = "0.22.3"
 rand = "0.6.5"
-rand_xorshift = "0.1.1"
+rand_xorshift = "0.2.0"
 hex = "0.4.0"
 base64 = "0.11.0"
 log = { version = "0.4.8", features = ["std"] }
