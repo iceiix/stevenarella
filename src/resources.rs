@@ -290,7 +290,7 @@ impl Manager {
             self.vanilla_assets_chan = Some(recv);
         }
         thread::spawn(move || {
-            let client = reqwest::Client::new();
+            let client = reqwest::blocking::Client::new();
             if fs::metadata(&location).is_err(){
                 fs::create_dir_all(location.parent().unwrap()).unwrap();
                 let res = client.get(ASSET_INDEX_URL)
@@ -360,7 +360,7 @@ impl Manager {
 
         let progress_info = self.vanilla_progress.clone();
         thread::spawn(move || {
-            let client = reqwest::Client::new();
+            let client = reqwest::blocking::Client::new();
             let res = client.get(VANILLA_CLIENT_URL)
                             .send()
                             .unwrap();

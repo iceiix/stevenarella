@@ -42,7 +42,7 @@ impl Profile {
             }});
         let req = serde_json::to_string(&req_msg)?;
 
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
         let res = client.post(LOGIN_URL)
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(req)
@@ -70,7 +70,7 @@ impl Profile {
             });
         let req = serde_json::to_string(&req_msg)?;
 
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
         let res = client.post(VALIDATE_URL)
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(req)
@@ -129,7 +129,7 @@ impl Profile {
         });
         let join = serde_json::to_string(&join_msg).unwrap();
 
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
         let res = client.post(JOIN_URL)
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(join)
