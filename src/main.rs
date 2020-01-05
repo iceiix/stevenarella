@@ -268,7 +268,7 @@ fn main2() {
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = window.window().current_monitor().get_hidpi_factor();
+    let dpi_factor = window.window().current_monitor().hidpi_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
         opt.default_protocol_version.unwrap_or("".to_string()));
     let mut game = Game {
@@ -416,7 +416,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
         Event::WindowEvent{event, ..} => match event {
             WindowEvent::CloseRequested => game.should_close = true,
             WindowEvent::Resized(logical_size) => {
-                game.dpi_factor = window.window().get_hidpi_factor();
+                game.dpi_factor = window.window().hidpi_factor();
                 window.resize(logical_size.to_physical(game.dpi_factor));
             },
 
