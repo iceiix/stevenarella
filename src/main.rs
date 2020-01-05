@@ -396,7 +396,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
 
                 if game.focused {
                     window.window().set_cursor_grab(true).unwrap();
-                    window.window().set_cursor_visible(true);
+                    window.window().set_cursor_visible(false);
                     if let Some(player) = game.server.player {
                         let rotation = game.server.entities.get_component_mut(player, game.server.rotation).unwrap();
                         rotation.yaw -= rx;
@@ -410,7 +410,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                     }
                 } else {
                     window.window().set_cursor_grab(false).unwrap();
-                    window.window().set_cursor_visible(false);
+                    window.window().set_cursor_visible(true);
                 }
             },
 
@@ -438,12 +438,12 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                         if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
                             game.focused = true;
                             window.window().set_cursor_grab(true).unwrap();
-                            window.window().set_cursor_visible(true);
+                            window.window().set_cursor_visible(false);
                             return;
                         }
                         if !game.focused {
                             window.window().set_cursor_grab(false).unwrap();
-                            window.window().set_cursor_visible(false);
+                            window.window().set_cursor_visible(true);
                             ui_container.click_at(game, game.last_mouse_x, game.last_mouse_y, width, height);
                         }
                     },
@@ -482,12 +482,12 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                     (ElementState::Released, Some(VirtualKeyCode::Escape)) => {
                         if game.focused {
                             window.window().set_cursor_grab(false).unwrap();
-                            window.window().set_cursor_visible(false);
+                            window.window().set_cursor_visible(true);
                             game.focused = false;
                             game.screen_sys.replace_screen(Box::new(screen::SettingsMenu::new(game.vars.clone(), true)));
                         } else if game.screen_sys.is_current_closable() {
                             window.window().set_cursor_grab(true).unwrap();
-                            window.window().set_cursor_visible(true);
+                            window.window().set_cursor_visible(false);
                             game.focused = true;
                             game.screen_sys.pop_screen();
                         }
