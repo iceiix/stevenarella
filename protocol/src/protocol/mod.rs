@@ -973,18 +973,7 @@ impl convert::From<reqwest::Error> for Error {
     }
 }
 
-impl ::std::error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::Err(ref val) => &val[..],
-            Error::Disconnect(_) => "Disconnect",
-            Error::IOError(ref e) => e.description(),
-            Error::Json(ref e) => e.description(),
-            #[cfg(not(target_arch = "wasm32"))]
-            Error::Reqwest(ref e) => e.description(),
-        }
-    }
-}
+impl ::std::error::Error for Error {}
 
 impl ::std::fmt::Display for Error {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
