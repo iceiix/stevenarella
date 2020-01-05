@@ -229,8 +229,8 @@ fn main2() {
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
 
-    let mut events_loop = glutin::EventsLoop::new();
-    let window_builder = glutin::WindowBuilder::new()
+    let mut events_loop = glutin::event_loop::EventLoop::new();
+    let window_builder = glutin::window::WindowBuilder::new()
         .with_title("Stevenarella")
         .with_dimensions(glutin::dpi::LogicalSize::new(854.0, 480.0));
     let window = glutin::ContextBuilder::new()
@@ -268,7 +268,7 @@ fn main2() {
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = window.window().get_current_monitor().get_hidpi_factor();
+    let dpi_factor = window.window().current_monitor().get_hidpi_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
         opt.default_protocol_version.unwrap_or("".to_string()));
     let mut game = Game {
@@ -307,8 +307,8 @@ fn main2() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.window().get_inner_size().unwrap().into();
-        let (physical_width, physical_height) = window.window().get_inner_size().unwrap().to_physical(game.dpi_factor).into();
+        let (width, height) = window.window().inner_size().unwrap().into();
+        let (physical_width, physical_height) = window.window().inner_size().unwrap().to_physical(game.dpi_factor).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -367,8 +367,8 @@ fn main2() {
 fn handle_window_event(window: &mut glutin::WindowedContext<glutin::PossiblyCurrent>,
                        game: &mut Game,
                        ui_container: &mut ui::Container,
-                       event: glutin::Event) {
-    use glutin::*;
+                       event: glutin::event::Event) {
+    use glutin::event::*;
     match event {
         Event::DeviceEvent{event, ..} => match event {
             DeviceEvent::MouseMotion{delta:(xrel, yrel)} => {
@@ -429,7 +429,7 @@ fn handle_window_event(window: &mut glutin::WindowedContext<glutin::PossiblyCurr
             WindowEvent::MouseInput{device_id: _, state, button, modifiers: _} => {
                 match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let (width, height) = window.window().get_inner_size().unwrap().into();
+                        let (width, height) = window.window().inner_size().unwrap().into();
 
                         if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
                             game.focused = true;
@@ -457,7 +457,7 @@ fn handle_window_event(window: &mut glutin::WindowedContext<glutin::PossiblyCurr
                 game.last_mouse_y = y;
 
                 if !game.focused {
-                    let (width, height) = window.window().get_inner_size().unwrap().into();
+                    let (width, height) = window.window().inner_size().unwrap().into();
                     ui_container.hover_at(game, x, y, width, height);
                 }
             },
@@ -493,7 +493,7 @@ fn handle_window_event(window: &mut glutin::WindowedContext<glutin::PossiblyCurr
                     },
                     (ElementState::Pressed, Some(VirtualKeyCode::F11)) => {
                         if !game.is_fullscreen {
-                            window.window().set_fullscreen(Some(window.window().get_current_monitor()));
+                            window.window().set_fullscreen(Some(window.window().current_monitor()));
                         } else {
                             window.window().set_fullscreen(None);
                         }

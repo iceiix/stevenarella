@@ -1,6 +1,6 @@
 use crate::console;
 use std::marker::PhantomData;
-use glutin::VirtualKeyCode;
+use glutin::event::VirtualKeyCode;
 // Might just rename this to settings.rs
 
 pub const R_MAX_FPS: console::CVar<i64> = console::CVar {
