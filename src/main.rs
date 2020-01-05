@@ -307,8 +307,8 @@ fn main2() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.window().inner_size().unwrap().into();
-        let (physical_width, physical_height) = window.window().inner_size().unwrap().to_physical(game.dpi_factor).into();
+        let (width, height) = window.window().inner_size().into();
+        let (physical_width, physical_height) = window.window().inner_size().to_physical(game.dpi_factor).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -429,7 +429,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
             WindowEvent::MouseInput{device_id: _, state, button, modifiers: _} => {
                 match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let (width, height) = window.window().inner_size().unwrap().into();
+                        let (width, height) = window.window().inner_size().into();
 
                         if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
                             game.focused = true;
@@ -457,7 +457,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                 game.last_mouse_y = y;
 
                 if !game.focused {
-                    let (width, height) = window.window().inner_size().unwrap().into();
+                    let (width, height) = window.window().inner_size().into();
                     ui_container.hover_at(game, x, y, width, height);
                 }
             },
