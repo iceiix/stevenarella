@@ -358,8 +358,10 @@ fn main2() {
         }
         window.swap_buffers().expect("Failed to swap GL buffers");
 
-        events_loop.run(move |event, _event_loop, control_flow| {
-            *control_flow = glutin::event_loop::ControlFlow::Wait;
+        // TODO: switch to run(move |...), for web compatibility
+        use glutin::platform::desktop::EventLoopExtDesktop;
+        events_loop.run_return(|event, _event_loop, control_flow| {
+            *control_flow = glutin::event_loop::ControlFlow::Exit;
 
             handle_window_event(&mut window, &mut game, &mut ui_container, event);
         });
