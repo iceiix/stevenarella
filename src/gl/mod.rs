@@ -510,7 +510,7 @@ impl Program {
         let u = unsafe {
             glow_context().get_uniform_location(self.0, name)
         };
-        if u != -1 {
+        if let Some(u) = u {
             Some(Uniform(u))
         } else {
             None
