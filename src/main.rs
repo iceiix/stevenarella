@@ -81,6 +81,8 @@ pub struct Game {
     last_mouse_y: f64,
     last_mouse_xrel: f64,
     last_mouse_yrel: f64,
+    is_ctrl_pressed: bool,
+    is_logo_pressed: bool,
     is_fullscreen: bool,
     default_protocol_version: i32,
 }
@@ -287,6 +289,8 @@ fn main2() {
         last_mouse_y: 0.0,
         last_mouse_xrel: 0.0,
         last_mouse_yrel: 0.0,
+        is_ctrl_pressed: false,
+        is_logo_pressed: false,
         is_fullscreen: false,
         default_protocol_version,
     };
@@ -372,6 +376,11 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
     use glutin::event::*;
     match event {
         Event::DeviceEvent{event, ..} => match event {
+            DeviceEvent::ModifiersChanged(modifiers_state) => {
+                game.is_ctrl_pressed = modifiers_state.ctrl();
+                game.is_logo_pressed = modifiers_state.logo();
+            },
+
             DeviceEvent::MouseMotion{delta:(xrel, yrel)} => {
                 let (rx, ry) =
                     if xrel > 1000.0 || yrel > 1000.0 {
@@ -509,7 +518,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                                 game.server.key_press(true, steven_key);
                             }
                         } else {
-                            let ctrl_pressed = input.modifiers.ctrl() || input.modifiers.logo();
+                            let ctrl_pressed = game.is_ctrl_pressed || game.is_logo_pressed;
                             ui_container.key_press(game, key, true, ctrl_pressed);
                         }
                     },
@@ -519,7 +528,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                                 game.server.key_press(false, steven_key);
                             }
                         } else {
-                            let ctrl_pressed = input.modifiers.ctrl();
+                            let ctrl_pressed = game.is_ctrl_pressed;
                             ui_container.key_press(game, key, false, ctrl_pressed);
                         }
                     },
