@@ -21,6 +21,7 @@ use std::ptr;
 use std::ops::{Deref, DerefMut};
 use log::{error, info};
 use glow as gl;
+use glow::HasContext;
 
 static mut context: Option<glow::Context> = None;
 
