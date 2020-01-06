@@ -332,7 +332,7 @@ impl Texture {
                     ty: Type,
                     pix: &[u8]) {
         unsafe {
-            glow_context().tex_sub_image_2d(target,
+            glow_context().tex_sub_image_2d_u8_slice(target,
                            level,
                            x as i32,
                            y as i32,
@@ -340,7 +340,7 @@ impl Texture {
                            height as i32,
                            format,
                            ty,
-                           pix
+                           Some(pix)
             );
         }
     }
@@ -432,7 +432,7 @@ impl Texture {
                         ty: Type,
                         pix: &[u8]) {
         unsafe {
-            glow_context().tex_sub_image_3d(target,
+            glow_context().tex_sub_image_3d_u8_slice(target,
                               level,
                               x as i32,
                               y as i32,
@@ -442,7 +442,7 @@ impl Texture {
                               depth as i32,
                               format,
                               ty,
-                              pix);
+                              Some(pix));
         }
     }
 
