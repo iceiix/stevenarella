@@ -2,11 +2,8 @@
 
 Web app for running Stevenarella as WebAssembly
 
-Status: very incomplete. It currently compiles, but **does not run** due to
-missing web support from critical dependencies, at least:
-
-* [glutin](https://github.com/rust-windowing/glutin) (temporary stub: [#1](https://github.com/iceiix/glutin/pull/1))
-* [winit](https://github.com/rust-windowing/winit), watch for [stdweb](https://github.com/tomaka/winit/pull/797) or [wasm_bindgen](https://github.com/rust-windowing/winit/pull/845) support (temporary stub: [#2](https://github.com/iceiix/winit/pull/2))
+Status: very incomplete. It does not currently compile, due to required modifications to adapt to the web,
+for progress see: [https://github.com/iceiix/stevenarella/issues/171](https://github.com/iceiix/stevenarella/issues/171).
 
 ## Building
 
@@ -16,6 +13,12 @@ To build for wasm32-unknown-unknown, run in the top-level directory (not www):
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli
 wasm-pack build
+```
+
+or:
+
+```sh
+cargo web start --target wasm32-unknown-unknown
 ```
 
 ## Running

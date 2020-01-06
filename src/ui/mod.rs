@@ -18,7 +18,7 @@ use std::rc::{Rc, Weak};
 use std::cell::{RefCell, RefMut};
 use crate::render;
 use crate::format;
-use glutin::VirtualKeyCode;
+use glutin::event::VirtualKeyCode;
 #[cfg(not(target_arch = "wasm32"))]
 use clipboard::{ClipboardProvider, ClipboardContext};
 
