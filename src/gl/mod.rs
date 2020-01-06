@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-extern crate steven_gl as gl;
+//extern crate steven_gl as gl;
 
 use std::ops::BitOr;
 use std::ffi;
@@ -20,10 +20,20 @@ use std::mem;
 use std::ptr;
 use std::ops::{Deref, DerefMut};
 use log::{error, info};
+use glow as gl;
+
+static mut context: Option<glow::Context> = None;
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
-    gl::load_with(|s| vid.get_proc_address(s) as *const _);
+pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) -> glow::Context {
+    context = gl::Context::from_loader_function(|s| {
+        vid.get_proc_address(s) as *const _
+    });
+    context
+}
+
+fn gl::-> glow::Context {
+    context.unwrap()
 }
 
 /// Dsed to specify how the vertices will be handled
