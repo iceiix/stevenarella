@@ -119,7 +119,7 @@ pub fn clear(flags: ClearFlags) {
 }
 
 pub fn depth_mask(f: bool) {
-    unsafe { glow_context().depth_mask(f as u8); }
+    unsafe { glow_context().depth_mask(f); }
 }
 
 /// `Func` is a function to be preformed on two values.
@@ -278,7 +278,7 @@ impl Texture {
     /// Binds the texture to the passed target.
     pub fn bind(&self, target: TextureTarget) {
         unsafe {
-            glow_context().bind_texture(target, self.0);
+            glow_context().bind_texture(target, Some(self.0));
         }
     }
 
@@ -485,7 +485,7 @@ pub struct Program(u32);
 
 impl Program {
     pub fn new() -> Program {
-        Program(unsafe { glow_context().create_program() })
+        Program(unsafe { glow_context().create_program().expect("program creation failed") })
     }
 
     pub fn attach_shader(&self, shader: Shader) {
@@ -502,13 +502,13 @@ impl Program {
 
     pub fn use_program(&self) {
         unsafe {
-            glow_context().use_program(self.0);
+            glow_context().use_program(Some(self.0));
         }
     }
 
     pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
         let u = unsafe {
-            glow_context().get_uniform_location(self.0, ffi::CString::new(name).unwrap().as_ptr())
+            glow_context().get_uniform_location(self.0, name)
         };
         if u != -1 {
             Some(Uniform(u))
@@ -519,8 +519,7 @@ impl Program {
 
     pub fn attribute_location(&self, name: &str) -> Option<Attribute> {
         let a = unsafe {
-            let name_c = ffi::CString::new(name).unwrap();
-            glow_context().get_attrib_location(self.0, name_c.as_ptr())
+            glow_context().get_attrib_location(self.0, name)
         };
         if a != -1 {
             Some(Attribute(a))
@@ -699,7 +698,7 @@ impl VertexArray {
     /// this `VertexArray`.
     pub fn bind(&self) {
         unsafe {
-            glow_context().bind_vertex_array(self.0);
+            glow_context().bind_vertex_array(Some(self.0));
         }
     }
 }
@@ -759,7 +758,7 @@ impl Buffer {
     /// (Data, Map etc).
     pub fn bind(&self, target: BufferTarget) {
         unsafe {
-            glow_context().bind_buffer(target, self.0);
+            glow_context().bind_buffer(target, Some(self.0));
         }
     }
 
@@ -890,19 +889,19 @@ impl Framebuffer {
 
     pub fn bind(&self) {
         unsafe {
-            glow_context().bind_framebuffer(gl::FRAMEBUFFER, self.0);
+            glow_context().bind_framebuffer(gl::FRAMEBUFFER, Some(self.0));
         }
     }
 
     pub fn bind_read(&self) {
         unsafe {
-            glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, self.0);
+            glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, Some(self.0));
         }
     }
 
     pub fn bind_draw(&self) {
         unsafe {
-            glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, self.0);
+            glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, Some(self.0));
         }
     }
 
@@ -923,19 +922,19 @@ impl Drop for Framebuffer {
 
 pub fn unbind_framebuffer() {
     unsafe {
-        glow_context().bind_framebuffer(gl::FRAMEBUFFER, 0);
+        glow_context().bind_framebuffer(gl::FRAMEBUFFER, Some(0));
     }
 }
 
 pub fn unbind_framebuffer_read() {
     unsafe {
-        glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, 0);
+        glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, Some(0));
     }
 }
 
 pub fn unbind_framebuffer_draw() {
     unsafe {
-        glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, 0);
+        glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, Some(0));
     }
 }
 
@@ -950,8 +949,7 @@ pub fn draw_buffers(bufs: &[Attachment]) {
 
 pub fn bind_frag_data_location(p: &Program, cn: u32, name: &str) {
     unsafe {
-        let name_c = ffi::CString::new(name).unwrap();
-        glow_context().bind_frag_data_location(p.0, cn, name_c.as_ptr());
+        glow_context().bind_frag_data_location(p.0, cn, name)
     }
 }
 
