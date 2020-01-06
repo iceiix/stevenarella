@@ -51,8 +51,8 @@ clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", rev = "07
 reqwest = { version = "0.10.0", features = [ "blocking" ]}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-console_error_panic_hook = "0.1.6"
-web-sys = { version = "0.3.33", features = [ "console" ]}
+stdweb = "0.4.20"
+winit = { version = "0.20.0", features = [ "stdweb" ]}
 
 [dependencies.steven_gl]
 path = "./gl"
