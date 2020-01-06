@@ -413,7 +413,7 @@ impl Texture {
                            0,
                            format,
                            ty,
-                           pix);
+                           Some(pix));
         }
     }
 
@@ -899,7 +899,7 @@ impl Framebuffer {
 
     pub fn texture_2d(&self, attachment: Attachment, target: TextureTarget, tex: &Texture, level: i32) {
         unsafe {
-            glow_context().framebuffer_texture_2d(gl::FRAMEBUFFER, attachment, target, tex.0, level);
+            glow_context().framebuffer_texture_2d(gl::FRAMEBUFFER, attachment, target, Some(tex.0), level);
         }
     }
 }
