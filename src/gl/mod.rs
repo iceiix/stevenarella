@@ -507,11 +507,13 @@ impl Program {
     }
 
     pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
+        use std::convert::TryInto;
+
         let u = unsafe {
             glow_context().get_uniform_location(self.0, name)
         };
         if let Some(u) = u {
-            Some(Uniform(u))
+            Some(Uniform(u.try_into().unwrap()))
         } else {
             None
         }
