@@ -764,7 +764,7 @@ impl Buffer {
 
     pub fn re_set_data(&self, target: BufferTarget, data: &[u8]) {
         unsafe {
-            glow_context().buffer_sub_data(target, 0, data.len() as isize, data.as_ptr() as *const _);
+            glow_context().buffer_sub_data_u8_slice(target, 0, data);
         }
     }
 
