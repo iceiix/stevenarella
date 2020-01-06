@@ -521,8 +521,8 @@ impl Program {
         let a = unsafe {
             glow_context().get_attrib_location(self.0, name)
         };
-        if a != -1 {
-            Some(Attribute(a))
+        if let Some(a) = a {
+            Some(Attribute(a as i32))
         } else {
             None
         }
