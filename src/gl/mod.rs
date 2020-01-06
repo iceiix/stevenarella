@@ -541,7 +541,7 @@ pub struct Shader(u32);
 
 impl Shader {
     pub fn new(ty: ShaderType) -> Shader {
-        Shader(unsafe { glow_context().create_shader(ty) })
+        Shader(unsafe { glow_context().create_shader(ty).expect("failed to create shader") })
     }
 
     pub fn set_source(&self, src: &str) {
