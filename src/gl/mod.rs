@@ -655,7 +655,7 @@ impl Attribute {
                                     ty,
                                     normalized as u8,
                                     stride,
-                                    offset as *const gl::types::GLvoid);
+                                    offset);
         }
     }
 
@@ -665,7 +665,7 @@ impl Attribute {
                                      size,
                                      ty,
                                      stride,
-                                     offset as *const gl::types::GLvoid);
+                                     offset);
         }
     }
 }
