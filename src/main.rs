@@ -229,7 +229,7 @@ fn main2() {
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
 
-    let mut events_loop = glutin::event_loop::EventLoop::new();
+    let events_loop = glutin::event_loop::EventLoop::new();
     let window_builder = glutin::window::WindowBuilder::new()
         .with_title("Stevenarella")
         .with_inner_size(glutin::dpi::LogicalSize::new(854.0, 480.0));
