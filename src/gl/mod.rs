@@ -967,8 +967,9 @@ pub fn read_buffer(a: Attachment) {
 pub type TargetBuffer = u32;
 pub const COLOR: TargetBuffer = gl::COLOR;
 
-pub fn clear_buffer(buffer: TargetBuffer, draw_buffer: i32, values: &[f32]) {
+pub fn clear_buffer(buffer: TargetBuffer, draw_buffer: u32, values: &mut [f32]) {
     unsafe {
-        glow_context().clear_bufferfv(buffer, draw_buffer, values.as_ptr());
+        // TODO: why does glow have &mut on clear buffer values, why would it change the color?
+        glow_context().clear_buffer_f32_slice(buffer, draw_buffer, values);
     }
 }
