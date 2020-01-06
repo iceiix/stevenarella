@@ -66,6 +66,7 @@ pub fn draw_elements(ty: DrawType, count: i32, dty: Type, offset: usize) {
 
 pub fn multi_draw_elements(ty: DrawType, count: &[i32], dty: Type, offsets: &[usize]) {
     unsafe {
+        // TODO: gl.MultiDrawElements in glow?
         glow_context().multi_draw_elements(ty, count.as_ptr(), dty, offsets.as_ptr() as *const _, count.len() as i32);
     }
 }
@@ -270,7 +271,8 @@ impl Texture {
     pub fn new() -> Texture {
         let mut t = Texture(0);
         unsafe {
-            glow_context().gen_textures(1, &mut t.0);
+            // TODO: return glow's Texture
+            glow_context().create_texture();
         }
         t
     }
@@ -289,7 +291,7 @@ impl Texture {
                       ty: Type,
                       pixels: &mut [u8]) {
         unsafe {
-            glow_context().get_tex_image(target,
+            glow_context().get_tex_image_u8_slice(target,
                             level,
                             format,
                             ty,
@@ -374,16 +376,16 @@ impl Texture {
                     format: TextureFormat,
                     fixed: bool) {
         unsafe {
-            let result: &mut [i32] = &mut [0; 1];
-            glow_context().get_integerv(gl::MAX_SAMPLES, &mut result[0]);
+            let result: i32 = glow_context().get_parameter_i32(gl::MAX_SAMPLES);
             let use_samples =
-                if samples > result[0] {
-                    info!("glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}", samples, result[0]);
-                    result[0]
+                if samples > result {
+                    info!("glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}", samples, result);
+                    result
                 } else {
                     samples
                 };
 
+            // TODO: gl.TexImage2DMultisample in glow
             glow_context().tex_image_2d_multisample(target,
                            use_samples,
                            format,
@@ -449,7 +451,7 @@ impl Texture {
                          param: TextureParameter,
                          value: TextureValue) {
         unsafe {
-            glow_context().tex_parameteri(target, param, value);
+            glow_context().tex_parameter_i32(target, param, value);
         }
     }
 }
@@ -552,23 +554,14 @@ impl Shader {
         }
     }
 
-    pub fn get_parameter(&self, param: ShaderParameter) -> i32 {
-        let mut ret: i32 = 0;
+    pub fn get_shader_compile_status(&self) -> bool {
         unsafe {
-            glow_context().get_shaderiv(self.0, param, &mut ret);
+            glow_context().get_shader_compile_status(self.0)
         }
-        ret
     }
 
     pub fn get_info_log(&self) -> String {
-        let len = self.get_parameter(INFO_LOG_LENGTH);
-
-        let mut data = Vec::<u8>::with_capacity(len as usize);
-        unsafe {
-            data.set_len(len as usize);
-            glow_context().get_shader_info_log(self.0, len, ptr::null_mut(), data.as_mut_ptr() as *mut i8);
-        }
-        String::from_utf8(data).unwrap()
+        glow_context().get_shader_info_log(self.0)
     }
 }
 
@@ -578,56 +571,57 @@ pub struct Uniform(i32);
 impl Uniform {
     pub fn set_int(&self, val: i32) {
         unsafe {
-            glow_context().uniform1i(self.0, val);
+            glow_context().uniform_1_i32(self.0, val);
         }
     }
 
     pub fn set_int3(&self, x: i32, y: i32, z: i32) {
         unsafe {
-            glow_context().uniform3i(self.0, x, y, z);
+            glow_context().uniform_3_i32(self.0, x, y, z);
         }
     }
 
     pub fn set_float(&self, val: f32) {
         unsafe {
-            glow_context().uniform1f(self.0, val);
+            glow_context().uniform_1_f32(self.0, val);
         }
     }
 
     pub fn set_float2(&self, x: f32, y: f32) {
         unsafe {
-            glow_context().uniform2f(self.0, x, y);
+            glow_context().uniform_2_f32(self.0, x, y);
         }
     }
 
     pub fn set_float3(&self, x: f32, y: f32, z: f32) {
         unsafe {
-            glow_context().uniform3f(self.0, x, y, z);
+            glow_context().uniform_3_f32(self.0, x, y, z);
         }
     }
 
     pub fn set_float4(&self, x: f32, y: f32, z: f32, w: f32) {
         unsafe {
-            glow_context().uniform4f(self.0, x, y, z, w);
+            glow_context().uniform_4_f32(self.0, x, y, z, w);
         }
     }
 
     pub fn set_float_mutli_raw(&self, data: *const f32, len: usize) {
         unsafe {
-            glow_context().uniform4fv(self.0, len as i32, data);
+            // TODO: takes a slice, not a raw pointer
+            glow_context().uniform_4_f32_slice(self.0, len as i32, data);
         }
     }
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
         use cgmath::Matrix;
         unsafe {
-            glow_context().uniform_matrix4fv(self.0, 1, false as u8, m.as_ptr());
+            glow_context().uniform_matrix_4_f32_slice(self.0, 1, false as u8, m.as_ptr());
         }
     }
 
     pub fn set_matrix4_multi(&self, m: &[::cgmath::Matrix4<f32>]) {
         unsafe {
-            glow_context().uniform_matrix4fv(self.0, m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
+            glow_context().uniform_matrix_4_f32_slice(self.0, m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
         }
     }
 }
@@ -650,7 +644,7 @@ impl Attribute {
 
     pub fn vertex_pointer(&self, size: i32, ty: Type, normalized: bool, stride: i32, offset: i32) {
         unsafe {
-            glow_context().vertex_attrib_pointer(self.0 as u32,
+            glow_context().vertex_attrib_pointer_f32(self.0 as u32,
                                     size,
                                     ty,
                                     normalized as u8,
@@ -661,7 +655,7 @@ impl Attribute {
 
     pub fn vertex_pointer_int(&self, size: i32, ty: Type, stride: i32, offset: i32) {
         unsafe {
-            glow_context().vertex_attrib_i_pointer(self.0 as u32,
+            glow_context().vertex_attrib_pointer_i32(self.0 as u32,
                                      size,
                                      ty,
                                      stride,
@@ -680,7 +674,8 @@ impl VertexArray {
     pub fn new() -> VertexArray {
         let mut va = VertexArray(0);
         unsafe {
-            glow_context().gen_vertex_arrays(1, &mut va.0);
+            // TODO: return glow's VertexArray
+            glow_context().create_vertex_array();
         }
         va
     }
@@ -740,7 +735,8 @@ impl Buffer {
     pub fn new() -> Buffer {
         let mut b = Buffer(0);
         unsafe {
-            glow_context().gen_buffers(1, &mut b.0);
+            // TODO: returns glow's Buffer
+            glow_context().create_buffer();
         }
         b
     }
@@ -778,6 +774,7 @@ impl Buffer {
     pub fn map(&self, target: BufferTarget, access: Access, length: usize) -> MappedBuffer {
         unsafe {
             MappedBuffer {
+                // TODO: is there no gl.MapBuffer, only gl.MapBufferRange (map_buffer_range) in glow?
                 inner: Vec::from_raw_parts(glow_context().map_buffer(target, access) as *mut u8, 0, length),
                 target,
             }
@@ -873,7 +870,8 @@ impl Framebuffer {
     pub fn new() -> Framebuffer {
         let mut fb = Framebuffer(0);
         unsafe {
-            glow_context().gen_framebuffers(1, &mut fb.0);
+            // TODO: return glow's Framebuffer
+            glow_context().create_framebuffer();
         }
         fb
     }
@@ -959,6 +957,7 @@ pub fn blit_framebuffer(
 
 pub fn read_buffer(a: Attachment) {
     unsafe {
+        // TODO: gl.ReadBuffer in glow?
         glow_context().read_buffer(a);
     }
 }
