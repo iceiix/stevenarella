@@ -427,7 +427,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                 }
             },
 
-            WindowEvent::MouseInput{device_id: _, state, button, modifiers: _} => {
+            WindowEvent::MouseInput{state, button, ..} => {
                 match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
                         let (width, height) = window.window().inner_size().into();
@@ -452,7 +452,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                     (_, _) => ()
                 }
             },
-            WindowEvent::CursorMoved{device_id: _, position, modifiers: _} => {
+            WindowEvent::CursorMoved{position, ..} => {
                 let (x, y) = position.into();
                 game.last_mouse_x = x;
                 game.last_mouse_y = y;
@@ -462,7 +462,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                     ui_container.hover_at(game, x, y, width, height);
                 }
             },
-            WindowEvent::MouseWheel{device_id: _, delta, phase: _, modifiers: _} => {
+            WindowEvent::MouseWheel{delta, ..} => {
                 // TODO: line vs pixel delta? does pixel scrolling (e.g. touchpad) need scaling?
                 match delta {
                     MouseScrollDelta::LineDelta(x, y) => {
@@ -474,7 +474,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                     },
                 }
             },
-            WindowEvent::KeyboardInput{device_id: _, input, is_synthetic: _} => {
+            WindowEvent::KeyboardInput{input, ..} => {
                 match (input.state, input.virtual_keycode) {
                     (ElementState::Released, Some(VirtualKeyCode::Escape)) => {
                         if game.focused {
