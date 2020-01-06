@@ -756,9 +756,8 @@ impl Buffer {
 
     pub fn set_data(&self, target: BufferTarget, data: &[u8], usage: BufferUsage) {
         unsafe {
-            glow_context().buffer_data(target,
-                           data.len() as isize,
-                           data.as_ptr() as *const gl::types::GLvoid,
+            glow_context().buffer_data_u8_slice(target,
+                           data,
                            usage);
         }
     }
