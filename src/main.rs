@@ -51,6 +51,7 @@ use std::thread;
 use std::sync::mpsc;
 use crate::protocol::mojang;
 use glutin;
+use glow;
 
 const CL_BRAND: console::CVar<String> = console::CVar {
     ty: PhantomData,
@@ -248,7 +249,10 @@ fn main2() {
         window.make_current().expect("Could not set current context.")
     };
 
-    gl::init(&window);
+    //gl::init(&window);
+    let context = glow::Context::from_loader_function(|s| {
+        window.get_proc_address(s) as *const _
+    });
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
