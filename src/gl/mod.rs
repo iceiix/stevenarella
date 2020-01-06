@@ -60,7 +60,7 @@ pub fn draw_arrays(ty: DrawType, offset: usize, count: usize) {
 
 pub fn draw_elements(ty: DrawType, count: i32, dty: Type, offset: usize) {
     unsafe {
-        glow_context().draw_elements(ty, count, dty, offset as *const gl::types::GLvoid);
+        glow_context().draw_elements(ty, count, dty, offset as i32);
     }
 }
 
@@ -293,7 +293,7 @@ impl Texture {
                             level,
                             format,
                             ty,
-                            pixels.as_mut_ptr() as *mut gl::types::GLvoid);
+                            Some(pixels));
         }
     }
 
@@ -306,11 +306,7 @@ impl Texture {
                     ty: Type,
                     pix: Option<&[u8]>) {
         unsafe {
-            let ptr = match pix {
-                Some(val) => val.as_ptr() as *const gl::types::GLvoid,
-                None => ptr::null(),
-            };
-            glow_context().tex_image2_d(target,
+            glow_context().tex_image_2d(target,
                            level,
                            format as i32,
                            width as i32,
@@ -318,7 +314,7 @@ impl Texture {
                            0,
                            format,
                            ty,
-                           ptr
+                           pix
             );
         }
     }
@@ -334,7 +330,7 @@ impl Texture {
                     ty: Type,
                     pix: &[u8]) {
         unsafe {
-            glow_context().tex_sub_image2_d(target,
+            glow_context().tex_sub_image_2d(target,
                            level,
                            x as i32,
                            y as i32,
@@ -342,7 +338,7 @@ impl Texture {
                            height as i32,
                            format,
                            ty,
-                           pix.as_ptr() as *const _
+                           pix
             );
         }
     }
@@ -357,11 +353,7 @@ impl Texture {
                     ty: Type,
                     pix: Option<&[u8]>) {
         unsafe {
-            let ptr = match pix {
-                Some(val) => val.as_ptr() as *const gl::types::GLvoid,
-                None => ptr::null(),
-            };
-            glow_context().tex_image2_d(target,
+            glow_context().tex_image_2d(target,
                            level,
                            internal_format as i32,
                            width as i32,
@@ -369,7 +361,7 @@ impl Texture {
                            0,
                            format,
                            ty,
-                           ptr
+                           pix
             );
         }
     }
@@ -392,7 +384,7 @@ impl Texture {
                     samples
                 };
 
-            glow_context().tex_image2_d_multisample(target,
+            glow_context().tex_image_2d_multisample(target,
                            use_samples,
                            format,
                            width as i32,
@@ -412,7 +404,7 @@ impl Texture {
                     ty: Type,
                     pix: &[u8]) {
         unsafe {
-            glow_context().tex_image3_d(target,
+            glow_context().tex_image_3d(target,
                            level,
                            format as i32,
                            width as i32,
@@ -421,7 +413,7 @@ impl Texture {
                            0,
                            format,
                            ty,
-                           pix.as_ptr() as *const gl::types::GLvoid);
+                           pix);
         }
     }
 
@@ -438,7 +430,7 @@ impl Texture {
                         ty: Type,
                         pix: &[u8]) {
         unsafe {
-            glow_context().tex_sub_image3_d(target,
+            glow_context().tex_sub_image_3d(target,
                               level,
                               x as i32,
                               y as i32,
@@ -448,7 +440,7 @@ impl Texture {
                               depth as i32,
                               format,
                               ty,
-                              pix.as_ptr() as *const gl::types::GLvoid);
+                              pix);
         }
     }
 
@@ -907,7 +899,7 @@ impl Framebuffer {
 
     pub fn texture_2d(&self, attachment: Attachment, target: TextureTarget, tex: &Texture, level: i32) {
         unsafe {
-            glow_context().framebuffer_texture2_d(gl::FRAMEBUFFER, attachment, target, tex.0, level);
+            glow_context().framebuffer_texture_2d(gl::FRAMEBUFFER, attachment, target, tex.0, level);
         }
     }
 }
