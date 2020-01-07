@@ -64,14 +64,7 @@ pub fn draw_elements(ty: DrawType, count: i32, dty: Type, offset: usize) {
     }
 }
 
-pub fn multi_draw_elements(ty: DrawType, count: &[i32], dty: Type, offsets: &[usize]) {
-    unsafe {
-        // TODO: gl.MultiDrawElements in glow?
-        glow_context().multi_draw_elements(ty, count.as_ptr(), dty, offsets.as_ptr() as *const _, count.len() as i32);
-    }
-}
-
-/// Sets the size of the viewport of this context.
+// Sets the size of the viewport of this context.
 pub fn viewport(x: i32, y: i32, w: i32, h: i32) {
     unsafe {
         glow_context().viewport(x, y, w, h);
