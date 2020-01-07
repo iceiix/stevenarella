@@ -15,9 +15,7 @@
 //extern crate steven_gl as gl;
 
 use std::ops::BitOr;
-use std::ffi;
 use std::mem;
-use std::ptr;
 use std::ops::{Deref, DerefMut};
 use log::{error, info};
 use glow as gl;
@@ -536,11 +534,7 @@ impl Shader {
 
     pub fn set_source(&self, src: &str) {
         unsafe {
-            let src_c = ffi::CString::new(src).unwrap();
-            glow_context().shader_source(self.0,
-                             1,
-                             &src_c.as_ptr(),
-                             ptr::null());
+            glow_context().shader_source(self.0, src);
         }
     }
 
