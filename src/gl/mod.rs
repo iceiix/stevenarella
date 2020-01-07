@@ -378,7 +378,9 @@ impl Texture {
                     samples
                 };
 
-            // TODO: gl.TexImage2DMultisample in glow
+            // TODO: switch to glRenderbufferStorageMultisample?
+            // from glTexImage2DMultisample which isn't in WebGL
+            /*
             glow_context().tex_image_2d_multisample(target,
                            use_samples,
                            format,
@@ -386,6 +388,7 @@ impl Texture {
                            height as i32,
                            fixed as u8
             );
+            */
         }
     }
 
