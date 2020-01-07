@@ -637,7 +637,7 @@ impl Attribute {
             glow_context().vertex_attrib_pointer_f32(self.0 as u32,
                                     size,
                                     ty,
-                                    normalized as u8,
+                                    normalized,
                                     stride,
                                     offset);
         }
