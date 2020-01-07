@@ -24,12 +24,12 @@ use glow::HasContext;
 static mut context: Option<glow::Context> = None;
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) -> glow::Context {
-    let ctx = gl::Context::from_loader_function(|s| {
-        vid.get_proc_address(s) as *const _
-    });
-    context = Some(ctx);
-    ctx
+pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
+    unsafe {
+        context = Some(gl::Context::from_loader_function(|s| {
+            vid.get_proc_address(s) as *const _
+        }));
+    }
 }
 
 fn glow_context() -> glow::Context {

@@ -248,7 +248,7 @@ fn main2() {
         window.make_current().expect("Could not set current context.")
     };
 
-    let gl = gl::init(&window);
+    gl::init(&window);
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
