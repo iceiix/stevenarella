@@ -918,10 +918,7 @@ pub fn unbind_framebuffer_draw() {
 
 pub fn draw_buffers(bufs: &[Attachment]) {
     unsafe {
-        glow_context().draw_buffers(
-                bufs.len() as i32,
-                bufs.as_ptr()
-        );
+        glow_context().draw_buffers(bufs);
     }
 }
 
