@@ -551,7 +551,9 @@ impl Shader {
     }
 
     pub fn get_info_log(&self) -> String {
-        glow_context().get_shader_info_log(self.0)
+        unsafe {
+            glow_context().get_shader_info_log(self.0)
+        }
     }
 }
 
