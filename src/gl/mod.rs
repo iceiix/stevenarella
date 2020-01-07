@@ -598,20 +598,22 @@ impl Uniform {
     pub fn set_float_mutli_raw(&self, data: *const f32, len: usize) {
         unsafe {
             // TODO: takes a slice, not a raw pointer
-            glow_context().uniform_4_f32_slice(Some(&self.0), len as i32, data);
+            //TODO glow_context().uniform_4_f32_slice(Some(&self.0), len as i32, data);
         }
     }
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
         use cgmath::Matrix;
         unsafe {
-            glow_context().uniform_matrix_4_f32_slice(Some(&self.0), 1, false as u8, m.as_ptr());
+            // TODO
+            //TODO glow_context().uniform_matrix_4_f32_slice(Some(&self.0), 1, false as u8, m.as_ptr());
         }
     }
 
     pub fn set_matrix4_multi(&self, m: &[::cgmath::Matrix4<f32>]) {
         unsafe {
-            glow_context().uniform_matrix_4_f32_slice(Some(&self.0), m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
+            // TODO
+            //TODO glow_context().uniform_matrix_4_f32_slice(Some(&self.0), m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
         }
     }
 }
