@@ -499,7 +499,7 @@ impl Program {
             glow_context().get_uniform_location(self.0, name)
         };
         if let Some(u) = u {
-            Some(Uniform(u as i32))
+            Some(Uniform(u))
         } else {
             None
         }
@@ -556,62 +556,62 @@ impl Shader {
 }
 
 #[derive(Clone, Copy)]
-pub struct Uniform(i32);
+pub struct Uniform(u32);
 
 impl Uniform {
     pub fn set_int(&self, val: i32) {
         unsafe {
-            glow_context().uniform_1_i32(self.0, val);
+            glow_context().uniform_1_i32(Some(&self.0), val);
         }
     }
 
     pub fn set_int3(&self, x: i32, y: i32, z: i32) {
         unsafe {
-            glow_context().uniform_3_i32(self.0, x, y, z);
+            glow_context().uniform_3_i32(Some(&self.0), x, y, z);
         }
     }
 
     pub fn set_float(&self, val: f32) {
         unsafe {
-            glow_context().uniform_1_f32(self.0, val);
+            glow_context().uniform_1_f32(Some(&self.0), val);
         }
     }
 
     pub fn set_float2(&self, x: f32, y: f32) {
         unsafe {
-            glow_context().uniform_2_f32(self.0, x, y);
+            glow_context().uniform_2_f32(Some(&self.0), x, y);
         }
     }
 
     pub fn set_float3(&self, x: f32, y: f32, z: f32) {
         unsafe {
-            glow_context().uniform_3_f32(self.0, x, y, z);
+            glow_context().uniform_3_f32(Some(&self.0), x, y, z);
         }
     }
 
     pub fn set_float4(&self, x: f32, y: f32, z: f32, w: f32) {
         unsafe {
-            glow_context().uniform_4_f32(self.0, x, y, z, w);
+            glow_context().uniform_4_f32(Some(&self.0), x, y, z, w);
         }
     }
 
     pub fn set_float_mutli_raw(&self, data: *const f32, len: usize) {
         unsafe {
             // TODO: takes a slice, not a raw pointer
-            glow_context().uniform_4_f32_slice(self.0, len as i32, data);
+            glow_context().uniform_4_f32_slice(Some(&self.0), len as i32, data);
         }
     }
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
         use cgmath::Matrix;
         unsafe {
-            glow_context().uniform_matrix_4_f32_slice(self.0, 1, false as u8, m.as_ptr());
+            glow_context().uniform_matrix_4_f32_slice(Some(&self.0), 1, false as u8, m.as_ptr());
         }
     }
 
     pub fn set_matrix4_multi(&self, m: &[::cgmath::Matrix4<f32>]) {
         unsafe {
-            glow_context().uniform_matrix_4_f32_slice(self.0, m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
+            glow_context().uniform_matrix_4_f32_slice(Some(&self.0), m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
         }
     }
 }
