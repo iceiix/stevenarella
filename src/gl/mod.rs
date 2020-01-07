@@ -947,13 +947,6 @@ pub fn blit_framebuffer(
     }
 }
 
-pub fn read_buffer(a: Attachment) {
-    unsafe {
-        // TODO: gl.ReadBuffer in glow?
-        glow_context().read_buffer(a);
-    }
-}
-
 pub type TargetBuffer = u32;
 pub const COLOR: TargetBuffer = gl::COLOR;
 
