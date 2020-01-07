@@ -455,7 +455,7 @@ impl Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
-            glow_context().delete_texture(1, &self.0);
+            glow_context().delete_texture(self.0);
         }
     }
 }
@@ -689,7 +689,7 @@ impl VertexArray {
 impl Drop for VertexArray {
     fn drop(&mut self) {
         unsafe {
-            glow_context().delete_vertex_array(1, &self.0);
+            glow_context().delete_vertex_array(self.0);
         }
         self.0 = 0;
     }
@@ -780,7 +780,7 @@ impl Buffer {
 impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
-            glow_context().delete_buffer(1, &self.0);
+            glow_context().delete_buffer(self.0);
         }
     }
 }
@@ -899,7 +899,7 @@ impl Framebuffer {
 impl Drop for Framebuffer {
     fn drop(&mut self) {
         unsafe {
-            glow_context().delete_framebuffer(1, &self.0);
+            glow_context().delete_framebuffer(self.0);
         }
     }
 }
