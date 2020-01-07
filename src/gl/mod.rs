@@ -33,7 +33,9 @@ pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
 }
 
 fn glow_context() -> glow::Context {
-    context.unwrap()
+    unsafe {
+        context.unwrap()
+    }
 }
 
 /// Dsed to specify how the vertices will be handled
