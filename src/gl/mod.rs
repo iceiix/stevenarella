@@ -767,8 +767,7 @@ impl Buffer {
     pub fn map(&self, target: BufferTarget, access: Access, length: usize) -> MappedBuffer {
         unsafe {
             MappedBuffer {
-                // TODO: is there no gl.MapBuffer, only gl.MapBufferRange (map_buffer_range) in glow?
-                inner: Vec::from_raw_parts(glow_context().map_buffer(target, access) as *mut u8, 0, length),
+                inner: Vec::from_raw_parts(glow_context().map_buffer_range(target, 0, length as i32, access) as *mut u8, 0, length),
                 target,
             }
         }
