@@ -262,12 +262,7 @@ pub struct Texture(u32);
 impl Texture {
     // Allocates a new texture.
     pub fn new() -> Texture {
-        let mut t = Texture(0);
-        unsafe {
-            // TODO: return glow's Texture
-            glow_context().create_texture();
-        }
-        t
+        Texture(unsafe { glow_context().create_texture().expect("create texture failed") })
     }
 
     /// Binds the texture to the passed target.
@@ -668,12 +663,7 @@ pub struct VertexArray(u32);
 impl VertexArray {
     /// Allocates a new `VertexArray`.
     pub fn new() -> VertexArray {
-        let mut va = VertexArray(0);
-        unsafe {
-            // TODO: return glow's VertexArray
-            glow_context().create_vertex_array();
-        }
-        va
+        VertexArray(unsafe { glow_context().create_vertex_array().expect("create vertex array failed") })
     }
 
     /// Marks the `VertexArray` as the currently active one, this
@@ -729,12 +719,7 @@ pub struct Buffer(u32);
 impl Buffer {
     /// Allocates a new Buffer.
     pub fn new() -> Buffer {
-        let mut b = Buffer(0);
-        unsafe {
-            // TODO: returns glow's Buffer
-            glow_context().create_buffer();
-        }
-        b
+        Buffer(unsafe { glow_context().create_buffer().expect("create buffer failed") })
     }
 
     /// Makes the buffer the currently active one for the given target.
@@ -863,12 +848,7 @@ pub fn check_gl_error() {
 
 impl Framebuffer {
     pub fn new() -> Framebuffer {
-        let mut fb = Framebuffer(0);
-        unsafe {
-            // TODO: return glow's Framebuffer
-            glow_context().create_framebuffer();
-        }
-        fb
+        Framebuffer(unsafe { glow_context().create_framebuffer().expect("create framebuffer failed") })
     }
 
     pub fn bind(&self) {
