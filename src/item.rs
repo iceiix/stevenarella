@@ -39,7 +39,7 @@ impl Default for Stack {
 
 impl Serializable for Option<Stack> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Option<Stack>, protocol::Error> {
-        let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
+        let protocol_version = protocol::current_protocol_version();
 
         if protocol_version >= 404 {
             let present = buf.read_u8()? != 0;

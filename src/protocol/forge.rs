@@ -147,7 +147,7 @@ impl Serializable for FmlHs {
                 })
             },
             3 => {
-                let protocol_version = unsafe { super::CURRENT_PROTOCOL_VERSION };
+                let protocol_version = super::current_protocol_version();
 
                 if protocol_version >= 47 {
                     Ok(FmlHs::RegistryData {

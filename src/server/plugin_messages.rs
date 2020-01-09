@@ -9,7 +9,7 @@ pub struct Brand {
 
 impl Brand {
     pub fn as_message(self) -> PluginMessageServerbound {
-        let protocol_version = unsafe { crate::protocol::CURRENT_PROTOCOL_VERSION };
+        let protocol_version = crate::protocol::current_protocol_version();
 
         let channel_name = if protocol_version >= 404 {
             "minecraft:brand"
