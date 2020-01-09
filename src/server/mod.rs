@@ -688,7 +688,7 @@ impl Server {
     }
 
     fn on_plugin_message_clientbound(&mut self, channel: &str, data: &[u8]) {
-        if unsafe { protocol::NETWORK_DEBUG } {
+        if protocol::is_network_debug() {
             debug!("Received plugin message: channel={}, data={:?}", channel, data);
         }
 
@@ -765,7 +765,7 @@ impl Server {
     }
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
-        if unsafe { protocol::NETWORK_DEBUG } {
+        if protocol::is_network_debug() {
             debug!("Sending plugin message: channel={}, data={:?}", channel, data);
         }
         if self.protocol_version >= 47 {

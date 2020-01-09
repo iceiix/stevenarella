@@ -297,7 +297,7 @@ fn main2() {
     game.renderer.camera.pos = cgmath::Point3::new(0.5, 13.2, 0.5);
 
     if opt.network_debug {
-        unsafe { protocol::NETWORK_DEBUG = true; }
+        protocol::enable_network_debug();
     }
 
     if opt.server.is_some() {

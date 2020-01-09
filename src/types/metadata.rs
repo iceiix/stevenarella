@@ -433,7 +433,7 @@ impl Metadata {
 
 impl Serializable for Metadata {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, protocol::Error> {
-        let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
+        let protocol_version = protocol::current_protocol_version();
 
         if protocol_version >= 404 {
             Metadata::read_from113(buf)
@@ -445,7 +445,7 @@ impl Serializable for Metadata {
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
-        let protocol_version = unsafe { protocol::CURRENT_PROTOCOL_VERSION };
+        let protocol_version = protocol::current_protocol_version();
 
         if protocol_version >= 404 {
             self.write_to113(buf)

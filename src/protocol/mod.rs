@@ -35,6 +35,7 @@ use std::net::TcpStream;
 use std::io;
 use std::io::{Write, Read};
 use std::convert;
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
@@ -44,9 +45,20 @@ use log::debug;
 
 pub const SUPPORTED_PROTOCOLS: [i32; 18] = [575, 498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
 
-// TODO: switch to using thread_local storage?, see https://doc.rust-lang.org/std/macro.thread_local.html
-pub static mut CURRENT_PROTOCOL_VERSION: i32 = SUPPORTED_PROTOCOLS[0];
-pub static mut NETWORK_DEBUG: bool = false;
+static CURRENT_PROTOCOL_VERSION: AtomicI32 = AtomicI32::new(SUPPORTED_PROTOCOLS[0]);
+static NETWORK_DEBUG: AtomicBool = AtomicBool::new(false);
+
+pub fn current_protocol_version() -> i32 {
+    CURRENT_PROTOCOL_VERSION.load(Ordering::Relaxed)
+}
+
+pub fn enable_network_debug() {
+    NETWORK_DEBUG.store(true, Ordering::Relaxed);
+}
+
+pub fn is_network_debug() -> bool {
+    NETWORK_DEBUG.load(Ordering::Relaxed)
+}
 
 /// Helper macro for defining packets
 #[macro_export]
@@ -1005,9 +1017,7 @@ pub struct Conn {
 
 impl Conn {
     pub fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
-        unsafe {
-            CURRENT_PROTOCOL_VERSION = protocol_version;
-        }
+        CURRENT_PROTOCOL_VERSION.store(protocol_version, Ordering::Relaxed);
 
         // TODO SRV record support
         let mut parts = target.split(':').collect::<Vec<&str>>();
@@ -1047,8 +1057,7 @@ impl Conn {
             VarInt(uncompressed_size as i32).write_to(&mut new)?;
             let mut write = ZlibEncoder::new(io::Cursor::new(buf), Compression::default());
             write.read_to_end(&mut new)?;
-            let network_debug = unsafe { NETWORK_DEBUG };
-            if network_debug {
+            if is_network_debug() {
                 debug!("Compressed for sending {} bytes to {} since > threshold {}, new={:?}",
                          uncompressed_size, new.len(), self.compression_threshold,
                          new);
@@ -1066,7 +1075,6 @@ impl Conn {
     }
 
     pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
-        let network_debug = unsafe { NETWORK_DEBUG };
         let len = VarInt::read_from(self)?.0 as usize;
         let mut ibuf = vec![0; len];
         self.read_exact(&mut ibuf)?;
@@ -1081,7 +1089,7 @@ impl Conn {
                     let mut reader = ZlibDecoder::new(buf);
                     reader.read_to_end(&mut new)?;
                 }
-                if network_debug {
+                if is_network_debug() {
                     debug!("Decompressed threshold={} len={} uncompressed_size={} to {} bytes",
                         self.compression_threshold, len, uncompressed_size, new.len());
                 }
@@ -1095,14 +1103,14 @@ impl Conn {
             Direction::Serverbound => Direction::Clientbound,
         };
 
-        if network_debug {
+        if is_network_debug() {
             debug!("about to parse id={:x}, dir={:?} state={:?}", id, dir, self.state);
             fs::File::create("last-packet")?.write_all(buf.get_ref())?;
         }
 
         let packet = packet::packet_by_id(self.protocol_version, self.state, dir, id, &mut buf)?;
 
-        if network_debug {
+        if is_network_debug() {
             debug!("packet = {:?}", packet);
         }
 

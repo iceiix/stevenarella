@@ -2600,7 +2600,7 @@ impl Serializable for Recipe {
             let a = String::read_from(buf)?;
             let b = String::read_from(buf)?;
 
-            let protocol_version = unsafe { super::CURRENT_PROTOCOL_VERSION };
+            let protocol_version = super::current_protocol_version();
 
             // 1.14+ swaps recipe identifier and type, and adds namespace to type
             if protocol_version >= 477 {
@@ -2735,7 +2735,7 @@ pub struct Trade {
 
 impl Serializable for Trade {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
-        let protocol_version = unsafe { super::CURRENT_PROTOCOL_VERSION };
+        let protocol_version = super::current_protocol_version();
 
         Ok(Trade {
             input_item_1: Serializable::read_from(buf)?,
