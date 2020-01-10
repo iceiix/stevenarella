@@ -4,9 +4,6 @@ version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 edition = "2018"
 
-[profile.release]
-opt-level = 1
-
 [dependencies]
 lazy_static = "1.4.0"
 cgmath = "0.17.0"

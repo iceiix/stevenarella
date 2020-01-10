@@ -288,15 +288,18 @@ macro_rules! define_blocks {
             }
         }
 
-        lazy_static! {
-            static ref VANILLA_ID_MAP: VanillaIDMap = {
-                let mut blocks_flat = vec![];
-                let mut blocks_hier = vec![];
-                let mut blocks_modded: HashMap<String, [Option<Block>; 16]> = HashMap::new();
-                let mut flat_id = 0;
-                let mut last_internal_id = 0;
-                let mut hier_block_id = 0;
-                $({
+        mod block_registration_functions {
+            use super::*;
+            $(
+                #[allow(non_snake_case)]
+                pub fn $name(
+                    blocks_flat: &mut Vec<Option<Block>>,
+                    blocks_hier: &mut Vec<Option<Block>>,
+                    blocks_modded: &mut HashMap<String, [Option<Block>; 16]>,
+                    flat_id: &mut usize,
+                    last_internal_id: &mut usize,
+                    hier_block_id: &mut usize,
+                    ) {
                     #[allow(non_camel_case_types, dead_code)]
                     struct CombinationIter<$($fname),*> {
                         first: bool,
@@ -391,28 +394,28 @@ macro_rules! define_blocks {
                         let hier_data: Option<usize> = block.get_hierarchical_data();
                         if let Some(modid) = block.get_modid() {
                             let hier_data = hier_data.unwrap();
-                            if !blocks_modded.contains_key(modid) {
-                                blocks_modded.insert(modid.to_string(), [None; 16]);
+                            if !(*blocks_modded).contains_key(modid) {
+                                (*blocks_modded).insert(modid.to_string(), [None; 16]);
                             }
-                            let block_from_data = blocks_modded.get_mut(modid).unwrap();
+                            let block_from_data = (*blocks_modded).get_mut(modid).unwrap();
                             block_from_data[hier_data] = Some(block);
                             continue
                         }
 
                         let vanilla_id =
                             if let Some(hier_data) = hier_data {
-                                if internal_id != last_internal_id {
-                                    hier_block_id += 1;
+                                if internal_id != *last_internal_id {
+                                    *hier_block_id += 1;
                                 }
-                                last_internal_id = internal_id;
-                                Some((hier_block_id << 4) + hier_data)
+                                *last_internal_id = internal_id;
+                                Some((*hier_block_id << 4) + hier_data)
                             } else {
                                 None
                             };
 
                         let offset = block.get_flat_offset();
                         if let Some(offset) = offset {
-                            let id = flat_id + offset;
+                            let id = *flat_id + offset;
                             /*
                             if let Some(vanilla_id) = vanilla_id {
                                 debug!("{} block state = {:?} hierarchical {}:{} offset={}", id, block, vanilla_id >> 4, vanilla_id & 0xF, offset);
@@ -424,17 +427,17 @@ macro_rules! define_blocks {
                                 last_offset = offset as isize;
                             }
 
-                            if blocks_flat.len() <= id {
-                                blocks_flat.resize(id + 1, None);
+                            if (*blocks_flat).len() <= id {
+                                (*blocks_flat).resize(id + 1, None);
                             }
-                            if blocks_flat[id].is_none() {
-                                blocks_flat[id] = Some(block);
+                            if (*blocks_flat)[id].is_none() {
+                                (*blocks_flat)[id] = Some(block);
                             } else {
                                 panic!(
                                     "Tried to register {:#?} to {} but {:#?} was already registered",
                                     block,
                                     id,
-                                    blocks_flat[id]
+                                    (*blocks_flat)[id]
                                 );
                             }
                         }
@@ -446,17 +449,17 @@ macro_rules! define_blocks {
                             }
                             */
 
-                            if blocks_hier.len() <= vanilla_id {
-                                blocks_hier.resize(vanilla_id + 1, None);
+                            if (*blocks_hier).len() <= vanilla_id {
+                                (*blocks_hier).resize(vanilla_id + 1, None);
                             }
-                            if blocks_hier[vanilla_id].is_none() {
-                                blocks_hier[vanilla_id] = Some(block);
+                            if (*blocks_hier)[vanilla_id].is_none() {
+                                (*blocks_hier)[vanilla_id] = Some(block);
                             } else {
                                 panic!(
                                     "Tried to register {:#?} to {} but {:#?} was already registered",
                                     block,
                                     vanilla_id,
-                                    blocks_hier[vanilla_id]
+                                    (*blocks_hier)[vanilla_id]
                                 );
                             }
                         }
@@ -464,9 +467,29 @@ macro_rules! define_blocks {
 
                     #[allow(unused_assignments)]
                     {
-                        flat_id += (last_offset + 1) as usize;
+                        *flat_id += (last_offset + 1) as usize;
                     }
-                })+
+                }
+            )+
+        }
+
+        lazy_static! {
+            static ref VANILLA_ID_MAP: VanillaIDMap = {
+                let mut blocks_flat = vec![];
+                let mut blocks_hier = vec![];
+                let mut blocks_modded: HashMap<String, [Option<Block>; 16]> = HashMap::new();
+                let mut flat_id = 0;
+                let mut last_internal_id = 0;
+                let mut hier_block_id = 0;
+
+                $(
+                    block_registration_functions::$name(&mut blocks_flat,
+                                                        &mut blocks_hier,
+                                                        &mut blocks_modded,
+                                                        &mut flat_id,
+                                                        &mut last_internal_id,
+                                                        &mut hier_block_id);
+                )+
 
                 VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded }
             };

@@ -12,10 +12,9 @@ tasks:
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup.sh
       sh ./rustup.sh -y
       source $HOME/.cargo/env
-      rustup install nightly
-      cargo +nightly --version
+      cargo --version
   - build: |
       source $HOME/.cargo/env
       cd stevenarella
-      cargo +nightly build
-      cargo +nightly test
+      cargo build
+      cargo test
