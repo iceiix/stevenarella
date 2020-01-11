@@ -66,7 +66,7 @@ The Visual Studio 2017 Redistributable is required to run these builds.
 
 ## Building
 
-Requires Rust nightly version `rustc 1.42.0-nightly (760ce94c6 2020-01-04)` or newer to build.
+Requires Rust stable version 1.40.0 or newer to build.
 
 Compile and run:
 ```bash
