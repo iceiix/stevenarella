@@ -1041,10 +1041,8 @@ impl Conn {
     }
 
     pub fn write_packet<T: PacketType>(&mut self, packet: T) -> Result<(), Error> {
-        let network_debug = unsafe { NETWORK_DEBUG };
-
-        /* TODO: debug printing packets to send
-        if network_debug {
+        /* TODO: fix Packet doesn't implement std::fmt::Debug
+        if is_network_debug() {
             println!("about to send {:?}", packet);
         }
         */
@@ -1053,7 +1051,7 @@ impl Conn {
         VarInt(packet.packet_id(self.protocol_version)).write_to(&mut buf)?;
         packet.write(&mut buf)?;
 
-        if network_debug  {
+        if is_network_debug()  {
             println!("sent bytes {:?}", buf);
         }
 
