@@ -311,7 +311,7 @@ fn main2() {
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
         let (width, height) = window.window().inner_size().into();
-        let (physical_width, physical_height) = window.window().inner_size().to_physical(game.dpi_factor).into();
+        let (physical_width, physical_height) = window.window().inner_size().into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -427,7 +427,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
             WindowEvent::CloseRequested => game.should_close = true,
             WindowEvent::Resized(logical_size) => {
                 game.dpi_factor = window.window().scale_factor();
-                window.resize(logical_size.to_physical(game.dpi_factor));
+                window.resize(logical_size);
             },
 
             WindowEvent::ReceivedCharacter(codepoint) => {
