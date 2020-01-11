@@ -21,12 +21,12 @@ use log::{error, info};
 use glow as gl;
 use glow::HasContext;
 
-static mut context: *mut glow::Context = 0 as *mut glow::Context;
+static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
 
 /// Inits the gl library. This should be called once a context is ready.
 pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
     unsafe {
-        context = &mut (gl::Context::from_loader_function(|s| {
+        CONTEXT = &mut (gl::Context::from_loader_function(|s| {
             vid.get_proc_address(s) as *const _
         })) as *mut glow::Context;
     }
@@ -34,7 +34,7 @@ pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
 
 fn glow_context() -> &'static glow::Context {
     unsafe {
-        context.as_ref().unwrap()
+        CONTEXT.as_ref().unwrap()
     }
 }
 
