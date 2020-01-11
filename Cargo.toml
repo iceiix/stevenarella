@@ -52,10 +52,6 @@ reqwest = { version = "0.10.0", features = [ "blocking" ]}
 stdweb = "0.4.20"
 winit = { version = "=0.20.0-alpha6", features = [ "stdweb" ]}
 
-[dependencies.steven_gl]
-path = "./gl"
-version = "0"
-
 [dependencies.steven_resources]
 path = "./resources"
 version = "0"

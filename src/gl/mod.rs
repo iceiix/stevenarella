@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//extern crate steven_gl as gl;
-
 use std::ops::BitOr;
 use std::mem;
 use std::ops::{Deref, DerefMut};
