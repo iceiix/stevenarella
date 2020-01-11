@@ -886,19 +886,19 @@ impl Drop for Framebuffer {
 
 pub fn unbind_framebuffer() {
     unsafe {
-        glow_context().bind_framebuffer(gl::FRAMEBUFFER, Some(0));
+        glow_context().bind_framebuffer(gl::FRAMEBUFFER, None);
     }
 }
 
 pub fn unbind_framebuffer_read() {
     unsafe {
-        glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, Some(0));
+        glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, None);
     }
 }
 
 pub fn unbind_framebuffer_draw() {
     unsafe {
-        glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, Some(0));
+        glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, None);
     }
 }
 
