@@ -394,7 +394,6 @@ impl Texture {
                     format: TextureFormat,
                     ty: Type,
                     pix: &[u8]) {
-        println!("image_3d level={}, width={}, height={}, depth={}, format={}, ty={}, pix.len()={}", level, width, height, depth, format, ty, pix.len());
         unsafe {
             glow_context().tex_image_3d(target,
                            level,
