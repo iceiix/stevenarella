@@ -265,7 +265,6 @@ pub const CLAMP_TO_EDGE: TextureValue = gl::CLAMP_TO_EDGE as TextureValue;
 pub struct Texture(u32);
 
 pub fn test_image_3d() {
-        /*
     const ATLAS_SIZE: usize = 1024;
     println!("inner tex_image_3d");
     unsafe {
@@ -275,6 +274,7 @@ pub fn test_image_3d() {
         println!("bind texture");
         CONTEXT.as_ref().unwrap().bind_texture(gl::TEXTURE_2D_ARRAY, Some(t));
         println!("teximage3d\n");
+        /*
         CONTEXT.as_ref().unwrap().tex_image_3d(
               gl::TEXTURE_2D_ARRAY, // target
                    0, // level
@@ -288,11 +288,11 @@ pub fn test_image_3d() {
                    None, // pixels
                    //Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
                        );
+        */
         println!("delete_texture");
         CONTEXT.as_ref().unwrap().delete_texture(t);
     }
     println!("returning\n");
-                       */
 }
 
 
