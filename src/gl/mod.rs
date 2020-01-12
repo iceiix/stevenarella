@@ -261,7 +261,6 @@ pub struct Texture(u32);
 pub fn test_image_3d() {
     const ATLAS_SIZE: usize = 1024;
     println!("inner tex_image_3d");
-    let mut v = vec![];
     unsafe {
         println!("creating texture");
         let t = CONTEXT.as_ref().unwrap().create_texture().unwrap();
@@ -269,7 +268,6 @@ pub fn test_image_3d() {
         println!("bind texture");
         CONTEXT.as_ref().unwrap().bind_texture(gl::TEXTURE_2D_ARRAY, Some(t));
         println!("teximage3d\n");
-        let pixels = &[0; ATLAS_SIZE * ATLAS_SIZE * 4];
         CONTEXT.as_ref().unwrap().tex_image_3d(
               gl::TEXTURE_2D_ARRAY,
                    0,
@@ -280,9 +278,8 @@ pub fn test_image_3d() {
                    0, // border
                    gl::RGBA, // format
                    gl::UNSIGNED_BYTE, // ty
-                   Some(pixels), // pixels
+                   Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
                        );
-        v.push(pixels);
     }
     println!("returning\n");
 }
