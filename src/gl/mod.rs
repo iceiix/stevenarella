@@ -269,8 +269,8 @@ pub fn test_image_3d() {
         CONTEXT.as_ref().unwrap().bind_texture(gl::TEXTURE_2D_ARRAY, Some(t));
         println!("teximage3d\n");
         CONTEXT.as_ref().unwrap().tex_image_3d(
-              gl::TEXTURE_2D_ARRAY,
-                   0,
+              gl::TEXTURE_2D_ARRAY, // target
+                   0, // level
                    gl::RGBA as i32, // internal_format
                    ATLAS_SIZE as i32,
                    ATLAS_SIZE as i32,
@@ -278,7 +278,8 @@ pub fn test_image_3d() {
                    0, // border
                    gl::RGBA, // format
                    gl::UNSIGNED_BYTE, // ty
-                   Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
+                   None, // pixels
+                   //Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
                        );
         println!("delete_texture");
         CONTEXT.as_ref().unwrap().delete_texture(t);
