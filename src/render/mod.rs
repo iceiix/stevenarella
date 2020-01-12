@@ -158,9 +158,9 @@ impl Renderer {
     pub fn new(res: Arc<RwLock<resources::Manager>>) -> Renderer {
         println!("\nabout to call 1st tex_image_3d");
         gl::Texture::new().test_image_3d();
-        let version = {
+        let version = 0; /*{
             res.read().unwrap().version()
-        };
+        };*/
         let tex = gl::Texture::new();
         tex.bind(gl::TEXTURE_2D_ARRAY);
         println!("about to call 2nd tex_image_3d");
