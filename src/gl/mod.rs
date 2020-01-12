@@ -53,20 +53,20 @@ pub const POINTS: DrawType = gl::POINTS;
 
 pub fn draw_arrays(ty: DrawType, offset: usize, count: usize) {
     unsafe {
-        glow_context().draw_arrays(ty, offset as i32, count as i32);
+        //glow_context().draw_arrays(ty, offset as i32, count as i32);
     }
 }
 
 pub fn draw_elements(ty: DrawType, count: i32, dty: Type, offset: usize) {
     unsafe {
-        glow_context().draw_elements(ty, count, dty, offset as i32);
+        //glow_context().draw_elements(ty, count, dty, offset as i32);
     }
 }
 
 // Sets the size of the viewport of this context.
 pub fn viewport(x: i32, y: i32, w: i32, h: i32) {
     unsafe {
-        glow_context().viewport(x, y, w, h);
+        //glow_context().viewport(x, y, w, h);
     }
 }
 
@@ -74,7 +74,7 @@ pub fn viewport(x: i32, y: i32, w: i32, h: i32) {
 /// when Clear is called with the color flag.
 pub fn clear_color(r: f32, g: f32, b: f32, a: f32) {
     unsafe {
-        glow_context().clear_color(r, g, b, a);
+        //glow_context().clear_color(r, g, b, a);
     }
 }
 
@@ -108,11 +108,15 @@ impl BitOr for ClearFlags {
 
 /// Clears the buffers specified by the passed flags.
 pub fn clear(flags: ClearFlags) {
-    unsafe { glow_context().clear(flags.internal()) }
+    unsafe { 
+        //glow_context().clear(flags.internal())
+    }
 }
 
 pub fn depth_mask(f: bool) {
-    unsafe { glow_context().depth_mask(f); }
+    unsafe {
+        //glow_context().depth_mask(f);
+    }
 }
 
 /// `Func` is a function to be preformed on two values.
@@ -127,7 +131,7 @@ pub const EQUAL: Func = gl::EQUAL;
 
 pub fn depth_func(f: Func) {
     unsafe {
-        glow_context().depth_func(f);
+        //glow_context().depth_func(f);
     }
 }
 
@@ -143,14 +147,14 @@ pub const MULTISAMPLE: Flag = gl::MULTISAMPLE;
 /// Enables the passed flag.
 pub fn enable(f: Flag) {
     unsafe {
-        glow_context().enable(f);
+        //glow_context().enable(f);
     }
 }
 
 /// Disables the passed flag.
 pub fn disable(f: Flag) {
     unsafe {
-        glow_context().disable(f);
+        //glow_context().disable(f);
     }
 }
 
@@ -158,7 +162,7 @@ pub fn disable(f: Flag) {
 /// currently active one.
 pub fn active_texture(id: u32) {
     unsafe {
-        glow_context().active_texture(gl::TEXTURE0 + id);
+        //glow_context().active_texture(gl::TEXTURE0 + id);
     }
 }
 
@@ -172,13 +176,13 @@ pub const ZERO_FACTOR: Factor = gl::ZERO;
 /// Sets the factors to be used when blending.
 pub fn blend_func(s_factor: Factor, d_factor: Factor) {
     unsafe {
-        glow_context().blend_func(s_factor, d_factor);
+        //glow_context().blend_func(s_factor, d_factor);
     }
 }
 
 pub fn blend_func_separate(s_factor_rgb: Factor, d_factor_rgb: Factor, s_factor_a: Factor, d_factor_a: Factor) {
     unsafe {
-        glow_context().blend_func_separate(s_factor_rgb, d_factor_rgb, s_factor_a, d_factor_a);
+        //glow_context().blend_func_separate(s_factor_rgb, d_factor_rgb, s_factor_a, d_factor_a);
     }
 }
 
@@ -190,7 +194,7 @@ pub const FRONT: Face = gl::FRONT;
 /// Sets the face to be culled by the gpu.
 pub fn cull_face(face: Face) {
     unsafe {
-        glow_context().cull_face(face);
+        //glow_context().cull_face(face);
     }
 }
 
@@ -203,7 +207,9 @@ pub const COUNTER_CLOCK_WISE: FaceDirection = gl::CCW;
 /// Sets the direction of vertices used to specify the
 /// front face (e.g. for culling).
 pub fn front_face(dir: FaceDirection) {
-    unsafe { glow_context().front_face(dir) }
+    unsafe { 
+        //glow_context().front_face(dir)
+    }
 }
 
 /// `Type` is a type of data used by various operations.
@@ -293,13 +299,13 @@ pub fn test_image_3d() {
 impl Texture {
     // Allocates a new texture.
     pub fn new() -> Texture {
-        Texture(unsafe { glow_context().create_texture().expect("create texture failed") })
+        Texture(0) //unsafe { glow_context().create_texture().expect("create texture failed") })
     }
 
     /// Binds the texture to the passed target.
     pub fn bind(&self, target: TextureTarget) {
         unsafe {
-            glow_context().bind_texture(target, Some(self.0));
+            //glow_context().bind_texture(target, Some(self.0));
         }
     }
 
@@ -310,11 +316,13 @@ impl Texture {
                       ty: Type,
                       pixels: &mut [u8]) {
         unsafe {
+            /*
             glow_context().get_tex_image_u8_slice(target,
                             level,
                             format,
                             ty,
                             Some(pixels));
+                            */
         }
     }
 
@@ -327,6 +335,7 @@ impl Texture {
                     ty: Type,
                     pix: Option<&[u8]>) {
         unsafe {
+            /*
             glow_context().tex_image_2d(target,
                            level,
                            format as i32,
@@ -337,6 +346,7 @@ impl Texture {
                            ty,
                            pix
             );
+            */
         }
     }
 
@@ -351,6 +361,7 @@ impl Texture {
                     ty: Type,
                     pix: &[u8]) {
         unsafe {
+            /*
             glow_context().tex_sub_image_2d_u8_slice(target,
                            level,
                            x as i32,
@@ -361,6 +372,7 @@ impl Texture {
                            ty,
                            Some(pix)
             );
+            */
         }
     }
 
@@ -374,6 +386,7 @@ impl Texture {
                     ty: Type,
                     pix: Option<&[u8]>) {
         unsafe {
+            /*
             glow_context().tex_image_2d(target,
                            level,
                            internal_format as i32,
@@ -384,6 +397,7 @@ impl Texture {
                            ty,
                            pix
             );
+            */
         }
     }
 
@@ -395,6 +409,7 @@ impl Texture {
                     format: TextureFormat,
                     fixed: bool) {
         unsafe {
+            /*
             let result: i32 = glow_context().get_parameter_i32(gl::MAX_SAMPLES);
             let use_samples =
                 if samples > result {
@@ -403,7 +418,7 @@ impl Texture {
                 } else {
                     samples
                 };
-
+*/
             // TODO: switch to glRenderbufferStorageMultisample?
             // from glTexImage2DMultisample which isn't in WebGL
             /*
@@ -428,6 +443,7 @@ impl Texture {
                     ty: Type,
                     pix: &[u8]) {
         unsafe {
+            /*
             glow_context().tex_image_3d(target,
                            level,
                            format as i32,
@@ -438,6 +454,7 @@ impl Texture {
                            format,
                            ty,
                            Some(pix));
+                           */
         }
     }
 
@@ -454,6 +471,7 @@ impl Texture {
                         ty: Type,
                         pix: &[u8]) {
         unsafe {
+            /*
             glow_context().tex_sub_image_3d_u8_slice(target,
                               level,
                               x as i32,
@@ -465,6 +483,7 @@ impl Texture {
                               format,
                               ty,
                               Some(pix));
+                              */
         }
     }
 
@@ -483,7 +502,7 @@ impl Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
-            glow_context().delete_texture(self.0);
+            //glow_context().delete_texture(self.0);
         }
     }
 }
@@ -503,54 +522,58 @@ pub struct Program(u32);
 
 impl Program {
     pub fn new() -> Program {
-        Program(unsafe { glow_context().create_program().expect("program creation failed") })
+        Program(0) //unsafe { glow_context().create_program().expect("program creation failed") })
     }
 
     pub fn attach_shader(&self, shader: Shader) {
         unsafe {
-            glow_context().attach_shader(self.0, shader.0);
+            //glow_context().attach_shader(self.0, shader.0);
         }
     }
 
     pub fn link(&self) {
         unsafe {
-            glow_context().link_program(self.0);
+            //glow_context().link_program(self.0);
         }
     }
 
     pub fn use_program(&self) {
         unsafe {
-            glow_context().use_program(Some(self.0));
+            //glow_context().use_program(Some(self.0));
         }
     }
 
     pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
+        /*
         let u = unsafe {
             glow_context().get_uniform_location(self.0, name)
         };
         if let Some(u) = u {
             Some(Uniform(u))
         } else {
+        */
             None
-        }
+        //}
     }
 
     pub fn attribute_location(&self, name: &str) -> Option<Attribute> {
+        /*
         let a = unsafe {
             glow_context().get_attrib_location(self.0, name)
         };
         if let Some(a) = a {
             Some(Attribute(a as i32))
         } else {
+        */
             None
-        }
+        //}
     }
 }
 
 impl Drop for Program {
     fn drop(&mut self) {
         unsafe {
-            glow_context().delete_program(self.0);
+            //glow_context().delete_program(self.0);
         }
     }
 }
@@ -559,7 +582,7 @@ pub struct Shader(u32);
 
 impl Shader {
     pub fn new(ty: ShaderType) -> Shader {
-        Shader(unsafe { glow_context().create_shader(ty).expect("failed to create shader") })
+        Shader(0) //unsafe { glow_context().create_shader(ty).expect("failed to create shader") })
     }
 
     pub fn set_source(&self, src: &str) {
@@ -572,7 +595,7 @@ impl Shader {
 
     pub fn compile(&self) {
         unsafe {
-            glow_context().compile_shader(self.0);
+            //glow_context().compile_shader(self.0);
         }
     }
 
@@ -601,37 +624,37 @@ pub struct Uniform(u32);
 impl Uniform {
     pub fn set_int(&self, val: i32) {
         unsafe {
-            glow_context().uniform_1_i32(Some(&self.0), val);
+            //glow_context().uniform_1_i32(Some(&self.0), val);
         }
     }
 
     pub fn set_int3(&self, x: i32, y: i32, z: i32) {
         unsafe {
-            glow_context().uniform_3_i32(Some(&self.0), x, y, z);
+            //glow_context().uniform_3_i32(Some(&self.0), x, y, z);
         }
     }
 
     pub fn set_float(&self, val: f32) {
         unsafe {
-            glow_context().uniform_1_f32(Some(&self.0), val);
+            //glow_context().uniform_1_f32(Some(&self.0), val);
         }
     }
 
     pub fn set_float2(&self, x: f32, y: f32) {
         unsafe {
-            glow_context().uniform_2_f32(Some(&self.0), x, y);
+            //glow_context().uniform_2_f32(Some(&self.0), x, y);
         }
     }
 
     pub fn set_float3(&self, x: f32, y: f32, z: f32) {
         unsafe {
-            glow_context().uniform_3_f32(Some(&self.0), x, y, z);
+            //glow_context().uniform_3_f32(Some(&self.0), x, y, z);
         }
     }
 
     pub fn set_float4(&self, x: f32, y: f32, z: f32, w: f32) {
         unsafe {
-            glow_context().uniform_4_f32(Some(&self.0), x, y, z, w);
+            //glow_context().uniform_4_f32(Some(&self.0), x, y, z, w);
         }
     }
 
@@ -664,34 +687,38 @@ pub struct Attribute(i32);
 impl Attribute {
     pub fn enable(&self) {
         unsafe {
-            glow_context().enable_vertex_attrib_array(self.0 as u32);
+            //glow_context().enable_vertex_attrib_array(self.0 as u32);
         }
     }
 
     pub fn disable(&self) {
         unsafe {
-            glow_context().disable_vertex_attrib_array(self.0 as u32);
+            //glow_context().disable_vertex_attrib_array(self.0 as u32);
         }
     }
 
     pub fn vertex_pointer(&self, size: i32, ty: Type, normalized: bool, stride: i32, offset: i32) {
         unsafe {
+            /*
             glow_context().vertex_attrib_pointer_f32(self.0 as u32,
                                     size,
                                     ty,
                                     normalized,
                                     stride,
                                     offset);
+                                    */
         }
     }
 
     pub fn vertex_pointer_int(&self, size: i32, ty: Type, stride: i32, offset: i32) {
         unsafe {
+            /*
             glow_context().vertex_attrib_pointer_i32(self.0 as u32,
                                      size,
                                      ty,
                                      stride,
                                      offset);
+                                     */
         }
     }
 }
@@ -704,7 +731,7 @@ pub struct VertexArray(u32);
 impl VertexArray {
     /// Allocates a new `VertexArray`.
     pub fn new() -> VertexArray {
-        VertexArray(unsafe { glow_context().create_vertex_array().expect("create vertex array failed") })
+        VertexArray(0) //unsafe { glow_context().create_vertex_array().expect("create vertex array failed") })
     }
 
     /// Marks the `VertexArray` as the currently active one, this
@@ -712,7 +739,7 @@ impl VertexArray {
     /// this `VertexArray`.
     pub fn bind(&self) {
         unsafe {
-            glow_context().bind_vertex_array(Some(self.0));
+            //glow_context().bind_vertex_array(Some(self.0));
         }
     }
 }
@@ -720,7 +747,7 @@ impl VertexArray {
 impl Drop for VertexArray {
     fn drop(&mut self) {
         unsafe {
-            glow_context().delete_vertex_array(self.0);
+            //glow_context().delete_vertex_array(self.0);
         }
         self.0 = 0;
     }
@@ -760,7 +787,7 @@ pub struct Buffer(u32);
 impl Buffer {
     /// Allocates a new Buffer.
     pub fn new() -> Buffer {
-        Buffer(unsafe { glow_context().create_buffer().expect("create buffer failed") })
+        Buffer(0) //unsafe { glow_context().create_buffer().expect("create buffer failed") })
     }
 
     /// Makes the buffer the currently active one for the given target.
@@ -768,21 +795,23 @@ impl Buffer {
     /// (Data, Map etc).
     pub fn bind(&self, target: BufferTarget) {
         unsafe {
-            glow_context().bind_buffer(target, Some(self.0));
+            //glow_context().bind_buffer(target, Some(self.0));
         }
     }
 
     pub fn set_data(&self, target: BufferTarget, data: &[u8], usage: BufferUsage) {
         unsafe {
+            /*
             glow_context().buffer_data_u8_slice(target,
                            data,
                            usage);
+                           */
         }
     }
 
     pub fn re_set_data(&self, target: BufferTarget, data: &[u8]) {
         unsafe {
-            glow_context().buffer_sub_data_u8_slice(target, 0, data);
+            //glow_context().buffer_sub_data_u8_slice(target, 0, data);
         }
     }
 
@@ -796,7 +825,7 @@ impl Buffer {
     pub fn map(&self, target: BufferTarget, access: Access, length: usize) -> MappedBuffer {
         unsafe {
             MappedBuffer {
-                inner: Vec::from_raw_parts(glow_context().map_buffer_range(target, 0, length as i32, access) as *mut u8, 0, length),
+                inner: vec![], //Vec::from_raw_parts(glow_context().map_buffer_range(target, 0, length as i32, access) as *mut u8, 0, length),
                 target,
             }
         }
@@ -806,7 +835,7 @@ impl Buffer {
 impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
-            glow_context().delete_buffer(self.0);
+            //glow_context().delete_buffer(self.0);
         }
     }
 }
@@ -833,7 +862,7 @@ impl DerefMut for MappedBuffer {
 impl Drop for MappedBuffer {
     fn drop(&mut self) {
         unsafe {
-            glow_context().unmap_buffer(self.target);
+            //glow_context().unmap_buffer(self.target);
         }
         mem::forget(mem::replace(&mut self.inner, Vec::new()));
     }
@@ -876,6 +905,7 @@ pub fn check_framebuffer_status() {
 
 pub fn check_gl_error() {
     unsafe {
+        /*
         loop {
             let err = glow_context().get_error();
             if err == gl::NO_ERROR {
@@ -884,35 +914,36 @@ pub fn check_gl_error() {
 
             error!("glGetError = {}", err);
         }
+        */
     }
 }
 
 impl Framebuffer {
     pub fn new() -> Framebuffer {
-        Framebuffer(unsafe { glow_context().create_framebuffer().expect("create framebuffer failed") })
+        Framebuffer(0) //unsafe { glow_context().create_framebuffer().expect("create framebuffer failed") })
     }
 
     pub fn bind(&self) {
         unsafe {
-            glow_context().bind_framebuffer(gl::FRAMEBUFFER, Some(self.0));
+            //glow_context().bind_framebuffer(gl::FRAMEBUFFER, Some(self.0));
         }
     }
 
     pub fn bind_read(&self) {
         unsafe {
-            glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, Some(self.0));
+            //glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, Some(self.0));
         }
     }
 
     pub fn bind_draw(&self) {
         unsafe {
-            glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, Some(self.0));
+            //glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, Some(self.0));
         }
     }
 
     pub fn texture_2d(&self, attachment: Attachment, target: TextureTarget, tex: &Texture, level: i32) {
         unsafe {
-            glow_context().framebuffer_texture_2d(gl::FRAMEBUFFER, attachment, target, Some(tex.0), level);
+            //glow_context().framebuffer_texture_2d(gl::FRAMEBUFFER, attachment, target, Some(tex.0), level);
         }
     }
 }
@@ -920,38 +951,38 @@ impl Framebuffer {
 impl Drop for Framebuffer {
     fn drop(&mut self) {
         unsafe {
-            glow_context().delete_framebuffer(self.0);
+            //glow_context().delete_framebuffer(self.0);
         }
     }
 }
 
 pub fn unbind_framebuffer() {
     unsafe {
-        glow_context().bind_framebuffer(gl::FRAMEBUFFER, None);
+        //glow_context().bind_framebuffer(gl::FRAMEBUFFER, None);
     }
 }
 
 pub fn unbind_framebuffer_read() {
     unsafe {
-        glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, None);
+        //glow_context().bind_framebuffer(gl::READ_FRAMEBUFFER, None);
     }
 }
 
 pub fn unbind_framebuffer_draw() {
     unsafe {
-        glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, None);
+        //glow_context().bind_framebuffer(gl::DRAW_FRAMEBUFFER, None);
     }
 }
 
 pub fn draw_buffers(bufs: &[Attachment]) {
     unsafe {
-        glow_context().draw_buffers(bufs);
+        //glow_context().draw_buffers(bufs);
     }
 }
 
 pub fn bind_frag_data_location(p: &Program, cn: u32, name: &str) {
     unsafe {
-        glow_context().bind_frag_data_location(p.0, cn, name)
+        //glow_context().bind_frag_data_location(p.0, cn, name)
     }
 }
 
@@ -959,6 +990,7 @@ pub fn blit_framebuffer(
     sx0: i32, sy0: i32, sx1: i32, sy1: i32,
     dx0: i32, dy0: i32, dx1: i32, dy1: i32,
     mask: ClearFlags, filter: TextureValue) {
+    /*
     unsafe {
         glow_context().blit_framebuffer(
             sx0, sy0, sx1, sy1,
@@ -966,6 +998,7 @@ pub fn blit_framebuffer(
             mask.internal(), filter as u32
         );
     }
+    */
 }
 
 pub type TargetBuffer = u32;
@@ -974,6 +1007,6 @@ pub const COLOR: TargetBuffer = gl::COLOR;
 pub fn clear_buffer(buffer: TargetBuffer, draw_buffer: u32, values: &mut [f32]) {
     unsafe {
         // TODO: why does glow have &mut on clear buffer values, why would it change the color?
-        glow_context().clear_buffer_f32_slice(buffer, draw_buffer, values);
+        //glow_context().clear_buffer_f32_slice(buffer, draw_buffer, values);
     }
 }
