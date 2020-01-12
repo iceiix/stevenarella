@@ -31,7 +31,7 @@ pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
         for i in 0..10 { 
               println!("gl::init tex_image_3d... {}", i);
               const ATLAS_SIZE: usize = 1024;
-             CONTEXT.as_ref().unwrap().tex_image_3d(
+             glow_context().tex_image_3d(
                   gl::TEXTURE_2D_ARRAY,
                        0,
                        gl::RGBA as i32, // internal_format
