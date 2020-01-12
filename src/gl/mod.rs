@@ -27,23 +27,6 @@ pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
         CONTEXT = &mut (gl::Context::from_loader_function(|s| {
             vid.get_proc_address(s) as *const _
         })) as *mut glow::Context;
-
-              println!("gl::init tex_image_3d...");
-              const ATLAS_SIZE: usize = 1024;
-             glow_context().tex_image_3d(
-                  gl::TEXTURE_2D_ARRAY,
-                       0,
-                       gl::RGBA as i32, // internal_format
-                       ATLAS_SIZE as i32,
-                       ATLAS_SIZE as i32,
-                       1, // depth
-                       0, // border
-                       gl::RGBA, // format
-                       gl::UNSIGNED_BYTE, // ty
-                       Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
-                           );
-                println!("returned");
-                println!("CONTEXT = {:?}", CONTEXT);
     }
 }
 
