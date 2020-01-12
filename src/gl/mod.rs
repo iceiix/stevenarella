@@ -28,7 +28,6 @@ pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
             vid.get_proc_address(s) as *const _
         })) as *mut glow::Context;
 
-        println!("main thread = {:?}", std::thread::current().id());
               println!("FIRST tex_image_3d...");
               const ATLAS_SIZE: usize = 1024;
              CONTEXT.as_ref().unwrap().tex_image_3d(
