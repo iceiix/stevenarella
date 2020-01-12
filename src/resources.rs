@@ -30,6 +30,7 @@ use zip;
 
 use crate::types::hash::FNVHash;
 use crate::ui;
+use crate::gl;
 
 const RESOURCES_VERSION: &str = "1.12.2";
 const VANILLA_CLIENT_URL: &str = "https://launcher.mojang.com/v1/objects/0f275bc1547d01fa5f56ba34bdc87d981ee12daf/client.jar";
@@ -101,6 +102,7 @@ impl Manager {
     /// Returns the 'version' of the manager. The version is
     /// increase everytime a pack is added or removed.
     pub fn version(&self) -> usize {
+        println!("4"); gl::Texture::new().test_image_3d();
         self.version
     }
 
@@ -419,10 +421,13 @@ impl Manager {
     }
 
     fn add_task_progress(progress: &Arc<Mutex<Progress>>, name: &str, file: &str, prog: u64) {
+        println!("2.1"); gl::Texture::new().test_image_3d();
         let mut progress = progress.lock().unwrap();
+        println!("2.2"); gl::Texture::new().test_image_3d();
         for task in progress.tasks.iter_mut()
             .filter(|v| v.task_file == file)
             .filter(|v| v.task_name == name) {
+            println!("2.3"); gl::Texture::new().test_image_3d();
             task.progress += prog as u64;
         }
     }
@@ -502,8 +507,11 @@ struct ProgressRead<'a, T> {
 
 impl <'a, T: io::Read> io::Read for ProgressRead<'a, T> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        println!("1"); gl::Texture::new().test_image_3d();
         let size = self.read.read(buf)?;
+        println!("2"); gl::Texture::new().test_image_3d();
         Manager::add_task_progress(self.progress, &self.task_name, &self.task_file, size as u64);
+        println!("3"); gl::Texture::new().test_image_3d();
         Ok(size)
     }
 }
