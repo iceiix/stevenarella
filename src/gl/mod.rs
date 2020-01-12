@@ -563,9 +563,11 @@ impl Shader {
     }
 
     pub fn set_source(&self, src: &str) {
+        /* TODO
         unsafe {
             glow_context().shader_source(self.0, src);
         }
+        */
     }
 
     pub fn compile(&self) {
