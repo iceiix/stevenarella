@@ -469,6 +469,7 @@ impl Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
+            println!("about to delete_texture {}", self.0);
             glow_context().delete_texture(self.0);
         }
     }
