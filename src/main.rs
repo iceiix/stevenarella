@@ -252,12 +252,6 @@ fn main2() {
 
     gl::init(&window);
 
-    for i in 0..10 {
-        println!("main call test_image_3d {}", i);
-        gl::Texture::new().test_image_3d();
-        println!("return {}", i);
-    }
-
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
 
