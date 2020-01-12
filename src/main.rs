@@ -425,9 +425,9 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
 
         Event::WindowEvent{event, ..} => match event {
             WindowEvent::CloseRequested => game.should_close = true,
-            WindowEvent::Resized(logical_size) => {
+            WindowEvent::Resized(physical_size) => {
                 game.dpi_factor = window.window().scale_factor();
-                window.resize(logical_size);
+                window.resize(physical_size);
             },
 
             WindowEvent::ReceivedCharacter(codepoint) => {
