@@ -403,31 +403,11 @@ impl Texture {
         }
     }
 
-    pub fn image_3d(&self,
-                    target: TextureTarget,
-                    level: i32,
-                    width: u32,
-                    height: u32,
-                    depth: u32,
-                    format: TextureFormat,
-                    ty: Type,
-                    pix: &[u8]) {
+    pub fn test_image_3d(&self) {
+        const ATLAS_SIZE: usize = 1024;
+        println!("inner tex_image_3d");
         unsafe {
-            /*
-            glow_context().tex_image_3d(target,
-                           level,
-                           format as i32,
-                           width as i32,
-                           height as i32,
-                           depth as i32,
-                           0,
-                           format,
-                           ty,
-                           Some(pix));
-                           */
-            println!("inner tex_image_3d");
-              const ATLAS_SIZE: usize = 1024;
-             CONTEXT.as_ref().unwrap().tex_image_3d(
+            CONTEXT.as_ref().unwrap().tex_image_3d(
                   gl::TEXTURE_2D_ARRAY,
                        0,
                        gl::RGBA as i32, // internal_format
@@ -439,7 +419,30 @@ impl Texture {
                        gl::UNSIGNED_BYTE, // ty
                        Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
                            );
-             println!("returned 3");
+        }
+        println!("returned 3");
+    }
+
+    pub fn image_3d(&self,
+                    target: TextureTarget,
+                    level: i32,
+                    width: u32,
+                    height: u32,
+                    depth: u32,
+                    format: TextureFormat,
+                    ty: Type,
+                    pix: &[u8]) {
+        unsafe {
+            glow_context().tex_image_3d(target,
+                           level,
+                           format as i32,
+                           width as i32,
+                           height as i32,
+                           depth as i32,
+                           0,
+                           format,
+                           ty,
+                           Some(pix));
         }
     }
 
