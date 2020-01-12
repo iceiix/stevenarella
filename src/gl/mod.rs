@@ -472,9 +472,11 @@ impl Texture {
                          target: TextureTarget,
                          param: TextureParameter,
                          value: TextureValue) {
+        /* TODO
         unsafe {
             glow_context().tex_parameter_i32(target, param, value);
         }
+        */
     }
 }
 
