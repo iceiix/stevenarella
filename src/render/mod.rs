@@ -161,6 +161,7 @@ impl Renderer {
         };
         let tex = gl::Texture::new();
         tex.bind(gl::TEXTURE_2D_ARRAY);
+        println!("thread = {:?}", std::thread::current().id());
         println!("about to call 2nd tex_image_3d");
         tex.image_3d(gl::TEXTURE_2D_ARRAY,
                      0,
