@@ -267,6 +267,7 @@ pub fn test_image_3d() {
         println!("\tt = {}", t);
         println!("bind texture");
         CONTEXT.as_ref().unwrap().bind_texture(gl::TEXTURE_2D_ARRAY, Some(t));
+        /*
         println!("teximage3d\n");
         CONTEXT.as_ref().unwrap().tex_image_3d(
               gl::TEXTURE_2D_ARRAY, // target
@@ -281,6 +282,7 @@ pub fn test_image_3d() {
                    None, // pixels
                    //Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
                        );
+                       */
         println!("delete_texture");
         CONTEXT.as_ref().unwrap().delete_texture(t);
     }
@@ -312,7 +314,7 @@ impl Texture {
                             level,
                             format,
                             ty,
-                            Some(pixels));
+                            None /* TODO Some(pixels) */);
         }
     }
 
@@ -333,7 +335,7 @@ impl Texture {
                            0,
                            format,
                            ty,
-                           pix
+                           None /* TODO pix */
             );
         }
     }
@@ -357,7 +359,7 @@ impl Texture {
                            height as i32,
                            format,
                            ty,
-                           Some(pix)
+                           None /* TODO Some(pix) */
             );
         }
     }
@@ -380,7 +382,7 @@ impl Texture {
                            0,
                            format,
                            ty,
-                           pix
+                           None /* TODO pix */
             );
         }
     }
@@ -435,7 +437,7 @@ impl Texture {
                            0,
                            format,
                            ty,
-                           Some(pix));
+                           None /* Some(pix) */);
         }
     }
 
@@ -462,7 +464,7 @@ impl Texture {
                               depth as i32,
                               format,
                               ty,
-                              Some(pix));
+                              None /* TODO Some(pix) */);
         }
     }
 
@@ -761,17 +763,21 @@ impl Buffer {
     }
 
     pub fn set_data(&self, target: BufferTarget, data: &[u8], usage: BufferUsage) {
+            /* TODO
         unsafe {
             glow_context().buffer_data_u8_slice(target,
                            data,
                            usage);
         }
+                           */
     }
 
     pub fn re_set_data(&self, target: BufferTarget, data: &[u8]) {
+        /* TODO
         unsafe {
             glow_context().buffer_sub_data_u8_slice(target, 0, data);
         }
+        */
     }
 
     /// Maps the memory in the buffer on the gpu to memory which the program
@@ -932,9 +938,11 @@ pub fn unbind_framebuffer_draw() {
 }
 
 pub fn draw_buffers(bufs: &[Attachment]) {
+    /* TODO
     unsafe {
         glow_context().draw_buffers(bufs);
     }
+    */
 }
 
 pub fn bind_frag_data_location(p: &Program, cn: u32, name: &str) {
