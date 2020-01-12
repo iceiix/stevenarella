@@ -577,15 +577,21 @@ impl Shader {
     }
 
     pub fn get_shader_compile_status(&self) -> bool {
+        true
+            /* TODO
         unsafe {
             glow_context().get_shader_compile_status(self.0)
         }
+        */
     }
 
     pub fn get_info_log(&self) -> String {
+        /* TODO
         unsafe {
             glow_context().get_shader_info_log(self.0)
         }
+        */
+        "".to_string()
     }
 }
 
