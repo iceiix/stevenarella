@@ -280,6 +280,8 @@ pub fn test_image_3d() {
                    gl::UNSIGNED_BYTE, // ty
                    Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
                        );
+        println!("delete_texture");
+        CONTEXT.as_ref().unwrap().delete_texture(t);
     }
     println!("returning\n");
 }
