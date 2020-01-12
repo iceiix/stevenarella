@@ -557,16 +557,14 @@ impl Program {
     }
 
     pub fn attribute_location(&self, name: &str) -> Option<Attribute> {
-        /*
         let a = unsafe {
             glow_context().get_attrib_location(self.0, name)
         };
         if let Some(a) = a {
             Some(Attribute(a as i32))
         } else {
-        */
             None
-        //}
+        }
     }
 }
 
@@ -582,7 +580,7 @@ pub struct Shader(u32);
 
 impl Shader {
     pub fn new(ty: ShaderType) -> Shader {
-        Shader(0) //unsafe { glow_context().create_shader(ty).expect("failed to create shader") })
+        Shader(unsafe { glow_context().create_shader(ty).expect("failed to create shader") })
     }
 
     pub fn set_source(&self, src: &str) {
