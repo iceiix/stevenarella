@@ -252,12 +252,12 @@ fn main2() {
 
     gl::init(&window);
 
-    println!("main 2"); gl::Texture::new().test_image_3d(); println!("ok");
+    println!("main 2"); gl::test_image_3d(); println!("ok");
     let rm = resource_manager.clone();
-    println!("main 3"); gl::Texture::new().test_image_3d(); println!("ok");
+    println!("main 3"); gl::test_image_3d(); println!("ok");
 
     let renderer = render::Renderer::new(rm);
-    println!("main 4"); gl::Texture::new().test_image_3d(); println!("ok");
+    println!("main 4"); gl::test_image_3d(); println!("ok");
     let mut ui_container = ui::Container::new();
 
     let mut last_frame = Instant::now();

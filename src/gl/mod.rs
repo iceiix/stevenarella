@@ -258,6 +258,27 @@ pub const CLAMP_TO_EDGE: TextureValue = gl::CLAMP_TO_EDGE as TextureValue;
 /// `Texture` is a buffer of data used by fragment shaders.
 pub struct Texture(u32);
 
+pub fn test_image_3d() {
+    const ATLAS_SIZE: usize = 1024;
+    println!("inner tex_image_3d");
+    unsafe {
+        CONTEXT.as_ref().unwrap().tex_image_3d(
+              gl::TEXTURE_2D_ARRAY,
+                   0,
+                   gl::RGBA as i32, // internal_format
+                   ATLAS_SIZE as i32,
+                   ATLAS_SIZE as i32,
+                   1, // depth
+                   0, // border
+                   gl::RGBA, // format
+                   gl::UNSIGNED_BYTE, // ty
+                   Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
+                       );
+    }
+    println!("returned 3");
+}
+
+
 impl Texture {
     // Allocates a new texture.
     pub fn new() -> Texture {
@@ -386,26 +407,6 @@ impl Texture {
         }
     }
 
-    pub fn test_image_3d(&self) {
-        const ATLAS_SIZE: usize = 1024;
-        println!("inner tex_image_3d");
-        unsafe {
-            CONTEXT.as_ref().unwrap().tex_image_3d(
-                  gl::TEXTURE_2D_ARRAY,
-                       0,
-                       gl::RGBA as i32, // internal_format
-                       ATLAS_SIZE as i32,
-                       ATLAS_SIZE as i32,
-                       1, // depth
-                       0, // border
-                       gl::RGBA, // format
-                       gl::UNSIGNED_BYTE, // ty
-                       Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
-                           );
-        }
-        println!("returned 3");
-    }
-
     pub fn image_3d(&self,
                     target: TextureTarget,
                     level: i32,
@@ -469,7 +470,6 @@ impl Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
-            println!("about to delete_texture {}", self.0);
             glow_context().delete_texture(self.0);
         }
     }
