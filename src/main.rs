@@ -252,8 +252,11 @@ fn main2() {
 
     gl::init(&window);
 
-    println!("main 2"); gl::test_image_3d(); println!("ok");
-    println!("main 3"); gl::test_image_3d(); println!("ok");
+    for i in 0..10 {
+        println!("\nmain {}", i);
+        gl::test_image_3d();
+        println!("ok {}", i);
+    }
 
     let renderer = render::Renderer::new(resource_manager.clone());
     println!("main 4"); gl::test_image_3d(); println!("ok");
