@@ -156,6 +156,8 @@ init_shader! {
 
 impl Renderer {
     pub fn new(res: Arc<RwLock<resources::Manager>>) -> Renderer {
+        println!("\nabout to call 1st tex_image_3d");
+        gl::Texture::new().test_image_3d();
         let version = {
             res.read().unwrap().version()
         };
