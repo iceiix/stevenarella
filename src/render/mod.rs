@@ -161,6 +161,7 @@ impl Renderer {
         };
         let tex = gl::Texture::new();
         tex.bind(gl::TEXTURE_2D_ARRAY);
+        println!("about to call 2nd tex_image_3d");
         tex.image_3d(gl::TEXTURE_2D_ARRAY,
                      0,
                      ATLAS_SIZE as u32,
@@ -169,6 +170,7 @@ impl Renderer {
                      gl::RGBA,
                      gl::UNSIGNED_BYTE,
                      &[0; ATLAS_SIZE * ATLAS_SIZE * 4]);
+        println!("returned 2");
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
