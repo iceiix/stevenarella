@@ -203,6 +203,19 @@ cfg_if! {
     }
 }
 
+use glow::HasContext;
+static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
+
+fn gl_init(window: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
+    use glow as gl;
+    unsafe {
+        CONTEXT = &mut (gl::Context::from_loader_function(|s| {
+                println!("Loaded {} = {:?}", s, window.get_proc_address(s));
+                window.get_proc_address(s) as *const _
+            })) as *mut glow::Context;
+    }
+}
+
 fn main2() {
     let opt = Opt::from_args();
 
@@ -251,12 +264,8 @@ fn main2() {
     };
 
     unsafe {
+        gl_init(&window);
         use glow as gl;
-        use glow::HasContext;
-        let CONTEXT = &mut (gl::Context::from_loader_function(|s| {
-                println!("Loaded {} = {:?}", s, window.get_proc_address(s));
-                window.get_proc_address(s) as *const _
-            })) as *mut glow::Context;
 
         for i in 0..10 {
             println!("\nmain {}", i);
