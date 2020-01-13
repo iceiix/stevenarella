@@ -156,9 +156,7 @@ init_shader! {
 
 impl Renderer {
     pub fn new(res: Arc<RwLock<resources::Manager>>) -> Renderer {
-        let version = {
-            res.read().unwrap().version()
-        };
+        let version = 0; //{ res.read().unwrap().version() };
         let tex = gl::Texture::new();
         tex.bind(gl::TEXTURE_2D_ARRAY);
         println!("returned 2");
