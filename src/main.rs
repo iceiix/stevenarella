@@ -284,12 +284,10 @@ fn main2() {
         gl::cull_face(gl::BACK);
         gl::front_face(gl::CLOCK_WISE);
 
-        /*
         // Shaders
         let chunk_shader = render::ChunkShader::new(&greg);
         let chunk_shader_alpha = render::ChunkShaderAlpha::new(&greg);
         let trans_shader = render::TransShader::new(&greg);
-        */
 
         // UI
         // Line Drawer

@@ -74,7 +74,7 @@ macro_rules! init_shader {
         }
     ) => (
         #[allow(dead_code)]
-        struct $name {
+        pub struct $name { // TODO: remove pub
             program: gl::Program,
             $(
                 $field: gl::Attribute,
