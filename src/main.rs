@@ -203,19 +203,6 @@ cfg_if! {
     }
 }
 
-use glow::HasContext;
-static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
-
-fn gl_init(window: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
-    use glow as gl;
-    unsafe {
-        CONTEXT = &mut (gl::Context::from_loader_function(|s| {
-                println!("Loaded {} = {:?}", s, window.get_proc_address(s));
-                window.get_proc_address(s) as *const _
-            })) as *mut glow::Context;
-    }
-}
-
 fn main2() {
     let opt = Opt::from_args();
 
@@ -263,44 +250,13 @@ fn main2() {
         window.make_current().expect("Could not set current context.")
     };
 
-    unsafe {
-        gl_init(&window);
-        use glow as gl;
-
-        for i in 0..10 {
-            println!("\nmain {}", i);
-
-            println!("creating texture");
-            let t = CONTEXT.as_ref().unwrap().create_texture().unwrap();
-            println!("\tt = {}", t);
-            println!("bind texture");
-            CONTEXT.as_ref().unwrap().bind_texture(gl::TEXTURE_2D_ARRAY, Some(t));
-            println!("teximage3d\n");
-            let ATLAS_SIZE = 1024;
-            CONTEXT.as_ref().unwrap().tex_image_3d(
-                  gl::TEXTURE_2D_ARRAY, // target
-                       0, // level
-                       gl::RGBA as i32, // internal_format
-                       ATLAS_SIZE as i32,
-                       ATLAS_SIZE as i32,
-                       1, // depth
-                       0, // border
-                       gl::RGBA, // format
-                       gl::UNSIGNED_BYTE, // ty
-                       None, // pixels
-                       //Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
-                           );
-            println!("delete_texture");
-            CONTEXT.as_ref().unwrap().delete_texture(t);
-
-            println!("ok {}", i);
-        }
-    }
-
-    println!("done");
-    return;
-    
     gl::init(&window);
+
+    for i in 0..10 {
+        println!("\nmain {}", i);
+        gl::test_image_3d();
+        println!("ok {}", i);
+    }
 
     let renderer = render::Renderer::new(resource_manager.clone());
     println!("main 4"); gl::test_image_3d(); println!("ok");
