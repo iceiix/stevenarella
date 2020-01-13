@@ -162,10 +162,12 @@ impl Renderer {
         let tex = gl::Texture::new();
         tex.bind(gl::TEXTURE_2D_ARRAY);
         println!("returned 2");
+        /*
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
+        */
 
         let (textures, skin_req, skin_reply) = TextureManager::new(res.clone());
         let textures = Arc::new(RwLock::new(textures));
