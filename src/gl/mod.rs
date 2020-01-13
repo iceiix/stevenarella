@@ -270,10 +270,10 @@ pub fn test_image_3d() {
     println!("inner tex_image_3d");
     unsafe {
         println!("creating texture");
-        let t = CONTEXT.as_ref().unwrap().create_texture().unwrap();
-        println!("\tt = {}", t);
+        let tex = Texture::new();
+        println!("\ttex = {:?}", tex.0);
         println!("bind texture");
-        CONTEXT.as_ref().unwrap().bind_texture(gl::TEXTURE_2D_ARRAY, Some(t));
+        tex.bind(gl::TEXTURE_2D_ARRAY);
         println!("teximage3d\n");
         /*
         CONTEXT.as_ref().unwrap().tex_image_3d(
@@ -290,8 +290,7 @@ pub fn test_image_3d() {
                    //Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
                        );
         */
-        println!("delete_texture");
-        CONTEXT.as_ref().unwrap().delete_texture(t);
+        // std::mem::drop(tex) -> delete_texture
     }
     println!("returning\n");
 }
@@ -300,13 +299,15 @@ pub fn test_image_3d() {
 impl Texture {
     // Allocates a new texture.
     pub fn new() -> Texture {
-        Texture(0) //unsafe { glow_context().create_texture().expect("create texture failed") })
+        println!("create_texture");
+        Texture(unsafe { glow_context().create_texture().expect("create texture failed") })
     }
 
     /// Binds the texture to the passed target.
     pub fn bind(&self, target: TextureTarget) {
+        println!("bind_texture");
         unsafe {
-            //glow_context().bind_texture(target, Some(self.0));
+            glow_context().bind_texture(target, Some(self.0));
         }
     }
 
@@ -503,7 +504,8 @@ impl Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
-            //glow_context().delete_texture(self.0);
+            println!("delete_texture");
+            glow_context().delete_texture(self.0);
         }
     }
 }
