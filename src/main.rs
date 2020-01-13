@@ -252,58 +252,9 @@ fn main2() {
 
     gl::init(&window);
 
-    {
-        let res = resource_manager.clone();
-
-        println!("\nabout to call 1st tex_image_3d");
-        gl::test_image_3d();
-        let version = {
-            res.read().unwrap().version()
-        };
-        let tex = gl::Texture::new();
-        tex.bind(gl::TEXTURE_2D_ARRAY);
-        println!("about to call 2nd tex_image_3d");
-        gl::test_image_3d();
-        /*
-        tex.image_3d(gl::TEXTURE_2D_ARRAY,
-                     0,
-                     ATLAS_SIZE as u32,
-                     ATLAS_SIZE as u32,
-                     1,
-                     gl::RGBA,
-                     gl::UNSIGNED_BYTE,
-                     &[0; ATLAS_SIZE * ATLAS_SIZE * 4]);
-                     */
-        println!("returned 2");
-        tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
-        tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
-        tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
-        tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
-
-        let mut greg = render::glsl::Registry::new();
-        render::shaders::add_shaders(&mut greg);
-
-        gl::enable(gl::DEPTH_TEST);
-        gl::enable(gl::CULL_FACE_FLAG);
-        gl::cull_face(gl::BACK);
-        gl::front_face(gl::CLOCK_WISE);
-
-        // Shaders
-        let chunk_shader = render::ChunkShader::new(&greg);
-        let chunk_shader_alpha = render::ChunkShaderAlpha::new(&greg);
-        let trans_shader = render::TransShader::new(&greg);
-
-        // UI
-        // Line Drawer
-        // Clouds
-
-        gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-        gl::depth_func(gl::LESS_OR_EQUAL);
-    }
-    println!("main 4"); gl::test_image_3d(); println!("ok");
-
-    return;
     let renderer = render::Renderer::new(resource_manager.clone());
+    println!("main 4"); gl::test_image_3d(); println!("ok");
+    return;
 
     let mut ui_container = ui::Container::new();
 
