@@ -190,8 +190,10 @@ impl Renderer {
         // Line Drawer
         // Clouds
 
+        /*
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         gl::depth_func(gl::LESS_OR_EQUAL);
+        */
 
         unsafe {
             println!("creating texture");
