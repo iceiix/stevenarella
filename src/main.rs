@@ -253,7 +253,12 @@ fn main2() {
     gl::init(&window);
 
     let renderer = render::Renderer::new(resource_manager.clone());
-    println!("main 4"); gl::test_image_3d(); println!("ok");
+    println!("main 4");
+    unsafe {
+        println!("creating texture");
+        let tex = gl::Texture::new();
+    }
+    println!("ok");
     return;
 
     let mut ui_container = ui::Container::new();

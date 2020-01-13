@@ -265,17 +265,6 @@ pub const CLAMP_TO_EDGE: TextureValue = gl::CLAMP_TO_EDGE as TextureValue;
 /// `Texture` is a buffer of data used by fragment shaders.
 pub struct Texture(u32);
 
-pub fn test_image_3d() {
-    const ATLAS_SIZE: usize = 1024;
-    println!("inner tex_image_3d");
-    unsafe {
-        println!("creating texture");
-        let tex = Texture::new();
-    }
-    println!("returning\n");
-}
-
-
 impl Texture {
     // Allocates a new texture.
     pub fn new() -> Texture {
