@@ -253,9 +253,13 @@ fn main2() {
     gl::init(&window);
 
     {
+        let res = resource_manager.clone();
+
         println!("\nabout to call 1st tex_image_3d");
         gl::test_image_3d();
-        //let version = { res.read().unwrap().version() };
+        let version = {
+            res.read().unwrap().version()
+        };
         let tex = gl::Texture::new();
         tex.bind(gl::TEXTURE_2D_ARRAY);
         println!("about to call 2nd tex_image_3d");
