@@ -257,6 +257,8 @@ fn main2() {
         gl::test_image_3d();
         println!("ok {}", i);
     }
+    println!("done");
+    return;
 
     let renderer = render::Renderer::new(resource_manager.clone());
     println!("main 4"); gl::test_image_3d(); println!("ok");
