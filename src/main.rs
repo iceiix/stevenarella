@@ -267,7 +267,7 @@ fn main2() {
             println!("bind texture");
             CONTEXT.as_ref().unwrap().bind_texture(gl::TEXTURE_2D_ARRAY, Some(t));
             println!("teximage3d\n");
-            /*
+            let ATLAS_SIZE = 1024;
             CONTEXT.as_ref().unwrap().tex_image_3d(
                   gl::TEXTURE_2D_ARRAY, // target
                        0, // level
@@ -281,7 +281,6 @@ fn main2() {
                        None, // pixels
                        //Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
                            );
-            */
             println!("delete_texture");
             CONTEXT.as_ref().unwrap().delete_texture(t);
 
