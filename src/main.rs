@@ -254,10 +254,6 @@ fn main2() {
 
     let renderer = render::Renderer::new(resource_manager.clone());
     println!("main 4");
-    unsafe {
-        println!("creating texture");
-        let tex = gl::Texture::new();
-    }
     println!("ok");
     return;
 
