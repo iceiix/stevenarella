@@ -25,6 +25,7 @@ static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
 pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
     unsafe {
         CONTEXT = &mut (gl::Context::from_loader_function(|s| {
+            println!("Loaded {} = {:?}", s, vid.get_proc_address(s));
             vid.get_proc_address(s) as *const _
         })) as *mut glow::Context;
     }
