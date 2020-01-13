@@ -271,26 +271,6 @@ pub fn test_image_3d() {
     unsafe {
         println!("creating texture");
         let tex = Texture::new();
-        println!("\ttex = {:?}", tex.0);
-        println!("bind texture");
-        tex.bind(gl::TEXTURE_2D_ARRAY);
-        println!("teximage3d\n");
-        /*
-        CONTEXT.as_ref().unwrap().tex_image_3d(
-              gl::TEXTURE_2D_ARRAY, // target
-                   0, // level
-                   gl::RGBA as i32, // internal_format
-                   ATLAS_SIZE as i32,
-                   ATLAS_SIZE as i32,
-                   1, // depth
-                   0, // border
-                   gl::RGBA, // format
-                   gl::UNSIGNED_BYTE, // ty
-                   None, // pixels
-                   //Some(&[0; ATLAS_SIZE * ATLAS_SIZE * 4]) // pixels
-                       );
-        */
-        // std::mem::drop(tex) -> delete_texture
     }
     println!("returning\n");
 }
