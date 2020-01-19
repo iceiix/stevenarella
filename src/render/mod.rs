@@ -199,8 +199,6 @@ impl Renderer {
             println!("creating texture");
             let tex = gl::Texture::new();
         }
-        std::thread::sleep(std::time::Duration::from_millis(1000 * 10));
-        std::process::exit(0);
 
         Renderer {
             resource_version: version,
@@ -850,6 +848,7 @@ impl TextureManager {
 
     #[cfg(not(target_arch = "wasm32"))]
     fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
+        println!("in process_skins thread");
         let client = reqwest::blocking::Client::new();
         loop {
             let hash = match recv.recv() {
