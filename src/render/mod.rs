@@ -199,8 +199,8 @@ impl Renderer {
             println!("creating texture");
             let tex = gl::Texture::new();
         }
-        let mut s = String::new();
-        std::io::stdin().read_line(&mut s);
+        std::thread::sleep(std::time::Duration::from_millis(1000 * 10));
+        std::process::exit(0);
 
         Renderer {
             resource_version: version,
