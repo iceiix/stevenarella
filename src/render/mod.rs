@@ -793,14 +793,14 @@ pub struct TextureManager {
 
     skins: HashMap<String, AtomicIsize, BuildHasherDefault<FNVHash>>,
 
-    _skin_thread: thread::JoinHandle<()>,
+    //_skin_thread: thread::JoinHandle<()>,
 }
 
 impl TextureManager {
     fn new(res: Arc<RwLock<resources::Manager>>) -> (TextureManager, mpsc::Sender<String>, mpsc::Receiver<(String, Option<image::DynamicImage>)>) {
         let (tx, rx) = mpsc::channel();
         let (stx, srx) = mpsc::channel();
-        let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
+        //let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
         let mut tm = TextureManager {
             textures: HashMap::with_hasher(BuildHasherDefault::default()),
             version: {
@@ -816,7 +816,7 @@ impl TextureManager {
             free_dynamics: Vec::new(),
             skins: HashMap::with_hasher(BuildHasherDefault::default()),
 
-            _skin_thread: skin_thread,
+            //_skin_thread: skin_thread,
         };
         tm.add_defaults();
         (tm, stx, rx)
@@ -849,7 +849,6 @@ impl TextureManager {
     #[cfg(not(target_arch = "wasm32"))]
     fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
         println!("in process_skins thread");
-        return;
         let client = reqwest::blocking::Client::new();
         loop {
             let hash = match recv.recv() {
