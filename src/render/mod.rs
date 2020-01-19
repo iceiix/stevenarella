@@ -199,7 +199,8 @@ impl Renderer {
             println!("creating texture");
             let tex = gl::Texture::new();
         }
-        std::process::exit(0);
+        let mut s = String::new();
+        std::io::stdin().read_line(&mut s);
 
         Renderer {
             resource_version: version,
