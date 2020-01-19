@@ -849,6 +849,7 @@ impl TextureManager {
     #[cfg(not(target_arch = "wasm32"))]
     fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
         println!("in process_skins thread");
+        return;
         let client = reqwest::blocking::Client::new();
         loop {
             let hash = match recv.recv() {
