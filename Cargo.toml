@@ -36,7 +36,7 @@ cgmath = "0.17.0"
 lazy_static = "1.4.0"
 collision = "0.20.1"
 rsa_public_encrypt_pkcs1 = "0.2.0"
-structopt = "0.3.7"
+structopt = "0.3.9"
 clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", rev = "07d080be58a361a5bbdb548fafe9449843d968be" }
 # clippy = "*"
 
