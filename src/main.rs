@@ -20,16 +20,14 @@ extern crate steven_shared as shared;
 
 use structopt::StructOpt;
 
-#[macro_use]
-pub mod macros;
+extern crate steven_protocol;
 
 pub mod ecs;
-pub mod protocol;
-pub mod format;
-pub mod nbt;
-pub mod item;
+use steven_protocol::protocol as protocol;
+use steven_protocol::format as format;
+use steven_protocol::nbt as nbt;
 pub mod gl;
-pub mod types;
+use steven_protocol::types as types;
 pub mod resources;
 pub mod render;
 pub mod ui;
