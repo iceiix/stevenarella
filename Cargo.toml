@@ -30,17 +30,13 @@ zip = { version = "0.5.4", features = ["deflate"], default-features = false }
 image = "0.22.3"
 rand = "0.7.2"
 rand_pcg = "0.2.1"
-hex = "0.4.0"
 base64 = "0.11.0"
 log = { version = "0.4.8", features = ["std"] }
 cgmath = "0.17.0"
 lazy_static = "1.4.0"
 collision = "0.20.1"
-aes = "0.3.2"
-cfb8 = "0.3.2"
 rsa_public_encrypt_pkcs1 = "0.2.0"
 structopt = "0.3.7"
-num-traits = "0.2.10"
 clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", rev = "07d080be58a361a5bbdb548fafe9449843d968be" }
 # clippy = "*"
 
@@ -65,6 +61,10 @@ version = "0"
 
 [dependencies.steven_shared]
 path = "./shared"
+version = "0"
+
+[dependencies.steven_protocol]
+path = "./protocol"
 version = "0"
 
 [dependencies.std_or_web]
