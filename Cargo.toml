@@ -67,6 +67,10 @@ version = "0"
 path = "./shared"
 version = "0"
 
+[dependencies.steven_protocol]
+path = "./protocol"
+version = "0"
+
 [dependencies.std_or_web]
 path = "./std_or_web"
 version = "0"
