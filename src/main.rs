@@ -271,8 +271,8 @@ fn main2() {
         }
     }
 
-    if !opt.username.is_none(){
-        vars.set(auth::CL_USERNAME, opt.username.unwrap());
+    if let Some(username) = opt.username{
+        vars.set(auth::CL_USERNAME, username);
     }
 
     let textures = renderer.get_textures();
