@@ -74,7 +74,7 @@ pub struct Game {
 
     connect_reply: Option<mpsc::Receiver<Result<server::Server, protocol::Error>>>,
 
-    dpi_factor: f64,
+    scale_factor: f64,
     last_mouse_x: f64,
     last_mouse_y: f64,
     last_mouse_xrel: f64,
@@ -268,7 +268,7 @@ fn main2() {
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = window.window().current_monitor().hidpi_factor();
+    let scale_factor = window.window().current_monitor().scale_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
         opt.default_protocol_version.unwrap_or("".to_string()));
     let mut game = Game {
@@ -282,7 +282,7 @@ fn main2() {
         should_close: false,
         chunk_builder: chunk_builder::ChunkBuilder::new(resource_manager, textures),
         connect_reply: None,
-        dpi_factor,
+        scale_factor,
         last_mouse_x: 0.0,
         last_mouse_y: 0.0,
         last_mouse_xrel: 0.0,
@@ -308,8 +308,9 @@ fn main2() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.window().inner_size().into();
-        let (physical_width, physical_height) = window.window().inner_size().to_physical(game.dpi_factor).into();
+        let physical_size = window.window().inner_size();
+        let (physical_width, physical_height) = physical_size.into();
+        let (width, height) = physical_size.to_logical::<f64>(game.scale_factor).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -345,9 +346,9 @@ fn main2() {
         game.console
             .lock()
             .unwrap()
-            .tick(&mut ui_container, &game.renderer, delta, width as f64);
-        ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
-        game.renderer.tick(&mut game.server.world, delta, width, height, physical_width, physical_height);
+            .tick(&mut ui_container, &game.renderer, delta, width);
+        ui_container.tick(&mut game.renderer, delta, width, height);
+        game.renderer.tick(&mut game.server.world, delta, width as u32, height as u32, physical_width, physical_height);
 
 
         if fps_cap > 0 && !vsync {
@@ -374,11 +375,6 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
     use glutin::event::*;
     match event {
         Event::DeviceEvent{event, ..} => match event {
-            DeviceEvent::ModifiersChanged(modifiers_state) => {
-                game.is_ctrl_pressed = modifiers_state.ctrl();
-                game.is_logo_pressed = modifiers_state.logo();
-            },
-
             DeviceEvent::MouseMotion{delta:(xrel, yrel)} => {
                 let (rx, ry) =
                     if xrel > 1000.0 || yrel > 1000.0 {
@@ -422,10 +418,16 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
         },
 
         Event::WindowEvent{event, ..} => match event {
+            WindowEvent::ModifiersChanged(modifiers_state) => {
+                game.is_ctrl_pressed = modifiers_state.ctrl();
+                game.is_logo_pressed = modifiers_state.logo();
+            },
             WindowEvent::CloseRequested => game.should_close = true,
-            WindowEvent::Resized(logical_size) => {
-                game.dpi_factor = window.window().hidpi_factor();
-                window.resize(logical_size.to_physical(game.dpi_factor));
+            WindowEvent::Resized(physical_size) => {
+                window.resize(physical_size)
+            },
+            WindowEvent::ScaleFactorChanged{scale_factor, ..} => {
+                game.scale_factor = scale_factor;
             },
 
             WindowEvent::ReceivedCharacter(codepoint) => {
@@ -437,7 +439,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
             WindowEvent::MouseInput{state, button, ..} => {
                 match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let (width, height) = window.window().inner_size().into();
+                        let (width, height) = window.window().inner_size().to_logical::<f64>(game.scale_factor).into();
 
                         if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
                             game.focused = true;
@@ -465,7 +467,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                 game.last_mouse_y = y;
 
                 if !game.focused {
-                    let (width, height) = window.window().inner_size().into();
+                    let (width, height) = window.window().inner_size().to_logical::<f64>(game.scale_factor).into();
                     ui_container.hover_at(game, x, y, width, height);
                 }
             },
