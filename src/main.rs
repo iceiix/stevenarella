@@ -322,8 +322,9 @@ fn main2() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.window().inner_size().into();
-        let (physical_width, physical_height) = window.window().inner_size().into();
+        let physical_size = window.window().inner_size();
+        let (physical_width, physical_height) = physical_size.into();
+        let (width, height) = physical_size.to_logical::<f64>(game.dpi_factor).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
