@@ -259,10 +259,13 @@ impl Renderer {
             self.height = height;
             gl::viewport(0, 0, width as i32, height as i32);
 
+            let fov = cgmath::Rad::from(cgmath::Deg(90.0_f32));
+            let aspect_ratio = (width as f32 / height as f32).max(1.0);
+
             self.perspective_matrix = cgmath::Matrix4::from(
                 cgmath::PerspectiveFov {
-                    fovy: cgmath::Rad::from(cgmath::Deg(90f32)),
-                    aspect: (width as f32 / height as f32),
+                    fovy: fov,
+                    aspect: aspect_ratio,
                     near: 0.1f32,
                     far: 500.0f32,
                 }
