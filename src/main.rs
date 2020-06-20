@@ -453,7 +453,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
             WindowEvent::MouseInput{state, button, ..} => {
                 match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let (width, height) = window.window().inner_size().into();
+                        let (width, height) = window.window().inner_size().to_logical::<f64>(game.dpi_factor).into();
 
                         if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
                             game.focused = true;
@@ -481,7 +481,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                 game.last_mouse_y = y;
 
                 if !game.focused {
-                    let (width, height) = window.window().inner_size().into();
+                    let (width, height) = window.window().inner_size().to_logical::<f64>(game.dpi_factor).into();
                     ui_container.hover_at(game, x, y, width, height);
                 }
             },
