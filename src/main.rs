@@ -276,7 +276,7 @@ fn main2() {
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = window.window().current_monitor().hidpi_factor();
+    let dpi_factor = window.window().current_monitor().scale_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
         opt.default_protocol_version.unwrap_or("".to_string()));
     let mut game = Game {
@@ -322,8 +322,9 @@ fn main2() {
         let diff = now.duration_since(last_frame);
         last_frame = now;
         let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let (width, height) = window.window().inner_size().into();
-        let (physical_width, physical_height) = window.window().inner_size().to_physical(game.dpi_factor).into();
+        let physical_size = window.window().inner_size();
+        let (physical_width, physical_height) = physical_size.into();
+        let (width, height) = physical_size.to_logical::<f64>(game.dpi_factor).into();
 
         let version = {
             let try_res = game.resource_manager.try_write();
@@ -436,10 +437,12 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
 
         Event::WindowEvent{event, ..} => match event {
             WindowEvent::CloseRequested => game.should_close = true,
-            WindowEvent::Resized(logical_size) => {
-                game.dpi_factor = window.window().hidpi_factor();
-                window.resize(logical_size.to_physical(game.dpi_factor));
+            WindowEvent::Resized(physical_size) => {
+                window.resize(physical_size);
             },
+            WindowEvent::ScaleFactorChanged{scale_factor, ..} => {
+                game.dpi_factor = scale_factor;
+            }
 
             WindowEvent::ReceivedCharacter(codepoint) => {
                 if !game.focused {
@@ -450,7 +453,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
             WindowEvent::MouseInput{state, button, ..} => {
                 match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let (width, height) = window.window().inner_size().into();
+                        let (width, height) = window.window().inner_size().to_logical::<f64>(game.dpi_factor).into();
 
                         if game.server.is_connected() && !game.focused && !game.screen_sys.is_current_closable() {
                             game.focused = true;
@@ -478,7 +481,7 @@ fn handle_window_event<T>(window: &mut glutin::WindowedContext<glutin::PossiblyC
                 game.last_mouse_y = y;
 
                 if !game.focused {
-                    let (width, height) = window.window().inner_size().into();
+                    let (width, height) = window.window().inner_size().to_logical::<f64>(game.dpi_factor).into();
                     ui_container.hover_at(game, x, y, width, height);
                 }
             },
