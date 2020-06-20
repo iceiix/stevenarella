@@ -324,7 +324,6 @@ fn main2() {
         let delta = (diff.subsec_nanos() as f64) / frame_time;
         let (width, height) = window.window().inner_size().into();
         let (physical_width, physical_height) = window.window().inner_size().to_physical(game.dpi_factor).into();
-
         let version = {
             let try_res = game.resource_manager.try_write();
             if try_res.is_ok() {
@@ -351,6 +350,11 @@ fn main2() {
         game.tick(delta);
         game.server.tick(&mut game.renderer, delta);
 
+        // Check if window is valid, it might be minimized
+        if physical_width == 0 || physical_height == 0 {
+            return;
+        }
+
         game.renderer.update_camera(physical_width, physical_height);
         game.server.world.compute_render_list(&mut game.renderer);
         game.chunk_builder.tick(&mut game.server.world, &mut game.renderer, version);
@@ -362,7 +366,6 @@ fn main2() {
             .tick(&mut ui_container, &game.renderer, delta, width as f64);
         ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
         game.renderer.tick(&mut game.server.world, delta, width, height, physical_width, physical_height);
-
 
         if fps_cap > 0 && !vsync {
             let frame_time = now.elapsed();
