@@ -170,6 +170,10 @@ struct Opt {
     #[structopt(short = "s", long = "server")]
     server: Option<String>,
 
+    /// Username for offline servers
+    #[structopt(short = "u", long = "username")]
+    username: Option<String>,
+
     /// Log decoded packets received from network
     #[structopt(short = "n", long = "network-debug")]
     network_debug: bool,
@@ -265,6 +269,10 @@ fn main2() {
         {
             screen_sys.add_screen(Box::new(screen::ServerList::new(None)));
         }
+    }
+
+    if let Some(username) = opt.username{
+        vars.set(auth::CL_USERNAME, username);
     }
 
     let textures = renderer.get_textures();
