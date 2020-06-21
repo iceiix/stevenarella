@@ -16,9 +16,9 @@ use std::collections::HashMap;
 use std::io;
 use std::io::Read;
 
-use super::protocol::Serializable;
 use super::protocol;
-use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use super::protocol::Serializable;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 #[derive(Debug, Clone)]
 pub enum Tag {
@@ -41,7 +41,6 @@ pub enum Tag {
 pub struct NamedTag(pub String, pub Tag);
 
 impl Tag {
-
     pub fn new_compound() -> Tag {
         Tag::Compound(HashMap::new())
     }
@@ -162,7 +161,6 @@ impl Tag {
             _ => None,
         }
     }
-
 
     fn internal_id(&self) -> u8 {
         match *self {

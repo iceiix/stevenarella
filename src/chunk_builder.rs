@@ -1,16 +1,15 @@
-
-use std::thread;
-use std::sync::mpsc;
-use std::sync::{Arc, RwLock};
-use crate::world;
-use crate::world::block;
+use crate::model;
 use crate::render;
 use crate::resources;
-use crate::model;
-use crate::types::bit::Set;
 use crate::shared::Direction;
-use rand::{self, SeedableRng, Rng};
+use crate::types::bit::Set;
+use crate::world;
+use crate::world::block;
+use rand::{self, Rng, SeedableRng};
 use rand_pcg;
+use std::sync::mpsc;
+use std::sync::{Arc, RwLock};
+use std::thread;
 
 const NUM_WORKERS: usize = 8;
 
@@ -24,18 +23,27 @@ pub struct ChunkBuilder {
 }
 
 impl ChunkBuilder {
-    pub fn new(resources: Arc<RwLock<resources::Manager>>, textures: Arc<RwLock<render::TextureManager>>) -> ChunkBuilder {
-        let models = Arc::new(RwLock::new(model::Factory::new(resources.clone(), textures)));
+    pub fn new(
+        resources: Arc<RwLock<resources::Manager>>,
+        textures: Arc<RwLock<render::TextureManager>>,
+    ) -> ChunkBuilder {
+        let models = Arc::new(RwLock::new(model::Factory::new(
+            resources.clone(),
+            textures,
+        )));
 
         let mut threads = vec![];
         let mut free = vec![];
         let (built_send, built_recv) = mpsc::channel();
-        for i in 0 .. NUM_WORKERS {
+        for i in 0..NUM_WORKERS {
             let built_send = built_send.clone();
             let (work_send, work_recv) = mpsc::channel();
             let models = models.clone();
             let id = i;
-            threads.push((work_send, thread::spawn(move || build_func(id, models, work_recv, built_send))));
+            threads.push((
+                work_send,
+                thread::spawn(move || build_func(id, models, work_recv, built_send)),
+            ));
             free.push((i, vec![], vec![]));
         }
         ChunkBuilder {
@@ -47,7 +55,12 @@ impl ChunkBuilder {
         }
     }
 
-    pub fn tick(&mut self, world: &mut world::World, renderer: &mut render::Renderer, version: usize) {
+    pub fn tick(
+        &mut self,
+        world: &mut world::World,
+        renderer: &mut render::Renderer,
+        version: usize,
+    ) {
         {
             if version != self.resource_version {
                 self.resource_version = version;
@@ -58,35 +71,50 @@ impl ChunkBuilder {
         while let Ok((id, mut val)) = self.built_recv.try_recv() {
             world.reset_building_flag(val.position);
 
-            if let Some(sec) = world.get_section_mut(val.position.0, val.position.1, val.position.2) {
+            if let Some(sec) = world.get_section_mut(val.position.0, val.position.1, val.position.2)
+            {
                 sec.cull_info = val.cull_info;
-                renderer.update_chunk_solid(&mut sec.render_buffer, &val.solid_buffer, val.solid_count);
-                renderer.update_chunk_trans(&mut sec.render_buffer, &val.trans_buffer, val.trans_count);
+                renderer.update_chunk_solid(
+                    &mut sec.render_buffer,
+                    &val.solid_buffer,
+                    val.solid_count,
+                );
+                renderer.update_chunk_trans(
+                    &mut sec.render_buffer,
+                    &val.trans_buffer,
+                    val.trans_count,
+                );
             }
 
             val.solid_buffer.clear();
             val.trans_buffer.clear();
-            self.free_builders.push((id, val.solid_buffer, val.trans_buffer));
+            self.free_builders
+                .push((id, val.solid_buffer, val.trans_buffer));
         }
         if self.free_builders.is_empty() {
             return;
         }
-        let dirty_sections = world.get_render_list().iter()
-                .map(|v| v.0)
-                .filter(|v| world.is_section_dirty(*v))
-                .collect::<Vec<_>>();
-        for (x,y, z) in dirty_sections {
+        let dirty_sections = world
+            .get_render_list()
+            .iter()
+            .map(|v| v.0)
+            .filter(|v| world.is_section_dirty(*v))
+            .collect::<Vec<_>>();
+        for (x, y, z) in dirty_sections {
             let t_id = self.free_builders.pop().unwrap();
             world.set_building_flag((x, y, z));
             let (cx, cy, cz) = (x << 4, y << 4, z << 4);
             let mut snapshot = world.capture_snapshot(cx - 2, cy - 2, cz - 2, 20, 20, 20);
             snapshot.make_relative(-2, -2, -2);
-            self.threads[t_id.0].0.send(BuildReq {
-                snapshot,
-                position: (x, y, z),
-                solid_buffer: t_id.1,
-                trans_buffer: t_id.2,
-            }).unwrap();
+            self.threads[t_id.0]
+                .0
+                .send(BuildReq {
+                    snapshot,
+                    position: (x, y, z),
+                    solid_buffer: t_id.1,
+                    trans_buffer: t_id.2,
+                })
+                .unwrap();
             if self.free_builders.is_empty() {
                 return;
             }
@@ -110,7 +138,12 @@ struct BuildReply {
     cull_info: CullInfo,
 }
 
-fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::Receiver<BuildReq>, built_send: mpsc::Sender<(usize, BuildReply)>) {
+fn build_func(
+    id: usize,
+    models: Arc<RwLock<model::Factory>>,
+    work_recv: mpsc::Receiver<BuildReq>,
+    built_send: mpsc::Sender<(usize, BuildReply)>,
+) {
     loop {
         let BuildReq {
             snapshot,
@@ -127,17 +160,14 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
             (((position.0 as u32) >> 8) & 0xff) as u8,
             (((position.0 as u32) >> 16) & 0xff) as u8,
             ((position.0 as u32) >> 24) as u8,
-
             ((position.1 as u32) & 0xff) as u8,
             (((position.1 as u32) >> 8) & 0xff) as u8,
             (((position.1 as u32) >> 16) & 0xff) as u8,
             ((position.1 as u32) >> 24) as u8,
-
             ((position.2 as u32) & 0xff) as u8,
             (((position.2 as u32) >> 8) & 0xff) as u8,
             (((position.2 as u32) >> 16) & 0xff) as u8,
             ((position.2 as u32) >> 24) as u8,
-
             (((position.0 as u32 ^ position.2 as u32) | 1) & 0xff) as u8,
             ((((position.0 as u32 ^ position.2 as u32) | 1) >> 8) & 0xff) as u8,
             ((((position.0 as u32 ^ position.2 as u32) | 1) >> 16) & 0xff) as u8,
@@ -147,9 +177,9 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
         let mut solid_count = 0;
         let mut trans_count = 0;
 
-        for y in 0 .. 16 {
-            for x in 0 .. 16 {
-                for z in 0 .. 16 {
+        for y in 0..16 {
+            for x in 0..16 {
+                for z in 0..16 {
                     let block = snapshot.get_block(x, y, z);
                     let mat = block.get_material();
                     if !mat.renderable {
@@ -161,26 +191,56 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
                     }
 
                     match block {
-                        block::Block::Water{..} | block::Block::FlowingWater{..} => {
+                        block::Block::Water { .. } | block::Block::FlowingWater { .. } => {
                             let tex = models.read().unwrap().textures.clone();
-                            trans_count += model::liquid::render_liquid(tex, false, &snapshot, x, y, z, &mut trans_buffer);
+                            trans_count += model::liquid::render_liquid(
+                                tex,
+                                false,
+                                &snapshot,
+                                x,
+                                y,
+                                z,
+                                &mut trans_buffer,
+                            );
                             continue;
-                        },
-                        block::Block::Lava{..} | block::Block::FlowingLava{..} => {
+                        }
+                        block::Block::Lava { .. } | block::Block::FlowingLava { .. } => {
                             let tex = models.read().unwrap().textures.clone();
-                            solid_count += model::liquid::render_liquid(tex, true, &snapshot, x, y, z, &mut solid_buffer);
+                            solid_count += model::liquid::render_liquid(
+                                tex,
+                                true,
+                                &snapshot,
+                                x,
+                                y,
+                                z,
+                                &mut solid_buffer,
+                            );
                             continue;
-                        },
-                        _ => {},
+                        }
+                        _ => {}
                     }
 
                     if mat.transparent {
                         trans_count += model::Factory::get_state_model(
-                            &models, block, &mut rng, &snapshot, x, y, z, &mut trans_buffer
+                            &models,
+                            block,
+                            &mut rng,
+                            &snapshot,
+                            x,
+                            y,
+                            z,
+                            &mut trans_buffer,
                         );
                     } else {
                         solid_count += model::Factory::get_state_model(
-                            &models, block, &mut rng, &snapshot, x, y, z, &mut solid_buffer
+                            &models,
+                            block,
+                            &mut rng,
+                            &snapshot,
+                            x,
+                            y,
+                            z,
+                            &mut solid_buffer,
                         );
                     }
                 }
@@ -189,14 +249,19 @@ fn build_func(id: usize, models: Arc<RwLock<model::Factory>>, work_recv: mpsc::R
 
         let cull_info = build_cull_info(&snapshot);
 
-        built_send.send((id, BuildReply {
-            position,
-            solid_buffer,
-            solid_count,
-            trans_buffer,
-            trans_count,
-            cull_info,
-        })).unwrap();
+        built_send
+            .send((
+                id,
+                BuildReply {
+                    position,
+                    solid_buffer,
+                    solid_count,
+                    trans_buffer,
+                    trans_count,
+                    cull_info,
+                },
+            ))
+            .unwrap();
     }
 }
 
@@ -204,9 +269,9 @@ fn build_cull_info(snapshot: &world::Snapshot) -> CullInfo {
     let mut visited = Set::new(16 * 16 * 16);
     let mut info = CullInfo::new();
 
-    for y in 0 .. 16 {
-        for z in 0 .. 16 {
-            for x in 0 .. 16 {
+    for y in 0..16 {
+        for z in 0..16 {
+            for x in 0..16 {
                 if visited.get(x | (z << 4) | (y << 8)) {
                     continue;
                 }
@@ -246,7 +311,11 @@ fn flood_fill(snapshot: &world::Snapshot, visited: &mut Set, x: i32, y: i32, z: 
         }
         visited.set(idx, true);
 
-        if snapshot.get_block(x, y, z).get_material().should_cull_against {
+        if snapshot
+            .get_block(x, y, z)
+            .get_material()
+            .should_cull_against
+        {
             continue;
         }
 
@@ -268,7 +337,7 @@ fn flood_fill(snapshot: &world::Snapshot, visited: &mut Set, x: i32, y: i32, z: 
 
         for d in Direction::all() {
             let (ox, oy, oz) = d.get_offset();
-            next_position.push_back((x+ox, y+oy, z+oz));
+            next_position.push_back((x + ox, y + oy, z + oz));
         }
     }
     touched
@@ -278,7 +347,9 @@ fn flood_fill(snapshot: &world::Snapshot, visited: &mut Set, x: i32, y: i32, z: 
 pub struct CullInfo(u64);
 
 impl CullInfo {
-    pub fn new() -> CullInfo { Default::default() }
+    pub fn new() -> CullInfo {
+        Default::default()
+    }
 
     pub fn all_vis() -> CullInfo {
         CullInfo(0xFFFFFFFFFFFFFFFF)

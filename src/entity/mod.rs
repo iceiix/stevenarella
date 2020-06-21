@@ -1,6 +1,5 @@
-
-pub mod player;
 pub mod block_entity;
+pub mod player;
 
 use crate::ecs;
 use cgmath::Vector3;
@@ -96,10 +95,7 @@ pub struct Rotation {
 
 impl Rotation {
     pub fn new(yaw: f64, pitch: f64) -> Rotation {
-        Rotation {
-            yaw,
-            pitch,
-        }
+        Rotation { yaw, pitch }
     }
 
     pub fn zero() -> Rotation {
@@ -114,10 +110,7 @@ pub struct TargetRotation {
 
 impl TargetRotation {
     pub fn new(yaw: f64, pitch: f64) -> TargetRotation {
-        TargetRotation {
-            yaw,
-            pitch,
-        }
+        TargetRotation { yaw, pitch }
     }
 
     pub fn zero() -> TargetRotation {
@@ -131,7 +124,9 @@ pub struct Gravity {
 }
 
 impl Gravity {
-    pub fn new() -> Gravity { Default::default() }
+    pub fn new() -> Gravity {
+        Default::default()
+    }
 }
 
 pub struct Bounds {
@@ -140,9 +135,7 @@ pub struct Bounds {
 
 impl Bounds {
     pub fn new(bounds: Aabb3<f64>) -> Bounds {
-        Bounds {
-            bounds,
-        }
+        Bounds { bounds }
     }
 }
 
@@ -152,7 +145,9 @@ pub struct GameInfo {
 }
 
 impl GameInfo {
-    pub fn new() -> GameInfo { Default::default() }
+    pub fn new() -> GameInfo {
+        Default::default()
+    }
 }
 
 #[derive(Default)]
@@ -162,5 +157,7 @@ pub struct Light {
 }
 
 impl Light {
-    pub fn new() -> Light { Default::default() }
+    pub fn new() -> Light {
+        Default::default()
+    }
 }

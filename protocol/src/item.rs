@@ -14,8 +14,8 @@
 
 use crate::nbt;
 use crate::protocol::{self, Serializable};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
-use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
 #[derive(Debug)]
 pub struct Stack {
@@ -24,7 +24,6 @@ pub struct Stack {
     damage: Option<isize>,
     tag: Option<nbt::NamedTag>,
 }
-
 
 impl Default for Stack {
     fn default() -> Stack {
@@ -44,7 +43,7 @@ impl Serializable for Option<Stack> {
         if protocol_version >= 404 {
             let present = buf.read_u8()? != 0;
             if !present {
-                return Ok(None)
+                return Ok(None);
             }
         }
 

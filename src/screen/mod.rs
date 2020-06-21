@@ -21,31 +21,30 @@ pub mod connecting;
 pub mod edit_server;
 
 pub mod settings_menu;
-pub use self::settings_menu::{SettingsMenu, VideoSettingsMenu, AudioSettingsMenu};
+pub use self::settings_menu::{AudioSettingsMenu, SettingsMenu, VideoSettingsMenu};
 
 use crate::render;
 use crate::ui;
 
 pub trait Screen {
     // Called once
-    fn init(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
-    }
-    fn deinit(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
-    }
+    fn init(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {}
+    fn deinit(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {}
 
     // May be called multiple times
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container);
     fn on_deactive(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container);
 
     // Called every frame the screen is active
-    fn tick(&mut self,
-            delta: f64,
-            renderer: &mut render::Renderer,
-            ui_container: &mut ui::Container) -> Option<Box<dyn Screen>>;
+    fn tick(
+        &mut self,
+        delta: f64,
+        renderer: &mut render::Renderer,
+        ui_container: &mut ui::Container,
+    ) -> Option<Box<dyn Screen>>;
 
     // Events
-    fn on_scroll(&mut self, _x: f64, _y: f64) {
-    }
+    fn on_scroll(&mut self, _x: f64, _y: f64) {}
 
     fn is_closable(&self) -> bool {
         false
@@ -65,7 +64,9 @@ pub struct ScreenSystem {
 }
 
 impl ScreenSystem {
-    pub fn new() -> ScreenSystem { Default::default() }
+    pub fn new() -> ScreenSystem {
+        Default::default()
+    }
 
     pub fn add_screen(&mut self, screen: Box<dyn Screen>) {
         self.screens.push(ScreenInfo {
@@ -94,10 +95,12 @@ impl ScreenSystem {
         }
     }
 
-    pub fn tick(&mut self,
-                delta: f64,
-                renderer: &mut render::Renderer,
-                ui_container: &mut ui::Container) {
+    pub fn tick(
+        &mut self,
+        delta: f64,
+        renderer: &mut render::Renderer,
+        ui_container: &mut ui::Container,
+    ) {
         for screen in &mut self.remove_queue {
             if screen.active {
                 screen.screen.on_deactive(renderer, ui_container);

@@ -1,11 +1,10 @@
-
 use crate::ecs;
 use crate::format::{self, Component};
+use crate::render;
+use crate::render::model::{self, FormatState};
 use crate::shared::{Direction, Position};
 use crate::world;
 use crate::world::block::Block;
-use crate::render;
-use crate::render::model::{self, FormatState};
 
 pub fn add_systems(m: &mut ecs::Manager) {
     let sys = SignRenderer::new(m);
@@ -13,21 +12,24 @@ pub fn add_systems(m: &mut ecs::Manager) {
 }
 
 pub fn init_entity(m: &mut ecs::Manager, e: ecs::Entity) {
-    m.add_component_direct(e, SignInfo {
-        model: None,
-        lines: [
-            Component::Text(format::TextComponent::new("")),
-            Component::Text(format::TextComponent::new("")),
-            Component::Text(format::TextComponent::new("")),
-            Component::Text(format::TextComponent::new("")),
-        ],
-        offset_x: 0.0,
-        offset_y: 0.0,
-        offset_z: 0.0,
-        has_stand: false,
-        rotation: 0.0,
-        dirty: false,
-    });
+    m.add_component_direct(
+        e,
+        SignInfo {
+            model: None,
+            lines: [
+                Component::Text(format::TextComponent::new("")),
+                Component::Text(format::TextComponent::new("")),
+                Component::Text(format::TextComponent::new("")),
+                Component::Text(format::TextComponent::new("")),
+            ],
+            offset_x: 0.0,
+            offset_y: 0.0,
+            offset_z: 0.0,
+            has_stand: false,
+            rotation: 0.0,
+            dirty: false,
+        },
+    );
 }
 
 pub struct SignInfo {
@@ -54,9 +56,7 @@ impl SignRenderer {
         let sign_info = m.get_key();
         let position = m.get_key();
         SignRenderer {
-            filter: ecs::Filter::new()
-                .with(position)
-                .with(sign_info),
+            filter: ecs::Filter::new().with(position).with(sign_info),
             position,
             sign_info,
         }
@@ -64,12 +64,16 @@ impl SignRenderer {
 }
 
 impl ecs::System for SignRenderer {
-
     fn filter(&self) -> &ecs::Filter {
         &self.filter
     }
 
-    fn update(&mut self, m: &mut ecs::Manager, world: &mut world::World, renderer: &mut render::Renderer) {
+    fn update(
+        &mut self,
+        m: &mut ecs::Manager,
+        world: &mut world::World,
+        renderer: &mut render::Renderer,
+    ) {
         for e in m.find(&self.filter) {
             let position = *m.get_component(e, self.position).unwrap();
             let info = m.get_component_mut(e, self.sign_info).unwrap();
@@ -85,24 +89,30 @@ impl ecs::System for SignRenderer {
         }
     }
 
-    fn entity_added(&mut self, m: &mut ecs::Manager, e: ecs::Entity, world: &mut world::World, renderer: &mut render::Renderer) {
+    fn entity_added(
+        &mut self,
+        m: &mut ecs::Manager,
+        e: ecs::Entity,
+        world: &mut world::World,
+        renderer: &mut render::Renderer,
+    ) {
+        use cgmath::{Decomposed, Matrix4, Quaternion, Rad, Rotation3, Vector3};
         use std::f64::consts::PI;
-        use cgmath::{Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
         let position = *m.get_component(e, self.position).unwrap();
         let info = m.get_component_mut(e, self.sign_info).unwrap();
         info.dirty = false;
         match world.get_block(position) {
-            Block::WallSign{facing, ..} => {
+            Block::WallSign { facing, .. } => {
                 info.offset_z = 7.5 / 16.0;
                 match facing {
-                    Direction::North => {},
+                    Direction::North => {}
                     Direction::South => info.rotation = PI,
                     Direction::West => info.rotation = PI / 2.0,
                     Direction::East => info.rotation = -PI / 2.0,
                     _ => unreachable!(),
                 }
-            },
-            Block::StandingSign{rotation, ..} => {
+            }
+            Block::StandingSign { rotation, .. } => {
                 info.offset_y = 5.0 / 16.0;
                 info.has_stand = true;
                 info.rotation = -(rotation.data() as f64 / 16.0) * PI * 2.0 + PI;
@@ -112,30 +122,48 @@ impl ecs::System for SignRenderer {
         let tex = render::Renderer::get_texture(renderer.get_textures_ref(), "entity/sign");
 
         macro_rules! rel {
-            ($x:expr, $y:expr, $w:expr, $h:expr) => (
+            ($x:expr, $y:expr, $w:expr, $h:expr) => {
                 Some(tex.relative(($x) / 64.0, ($y) / 32.0, ($w) / 64.0, ($h) / 32.0))
-            );
+            };
         }
 
         let mut verts = vec![];
         // Backboard
-        model::append_box(&mut verts, -0.5, -4.0/16.0, -0.5/16.0, 1.0, 8.0/16.0, 1.0/16.0, [
-            rel!(26.0, 0.0, 24.0, 2.0), // Down
-            rel!(2.0, 0.0, 24.0, 2.0), // Up
-            rel!(2.0, 2.0, 24.0, 12.0), // North
-            rel!(26.0, 2.0, 24.0, 12.0), // South
-            rel!(0.0, 2.0, 2.0, 12.0), // West
-            rel!(50.0, 2.0, 2.0, 12.0), // East
-        ]);
+        model::append_box(
+            &mut verts,
+            -0.5,
+            -4.0 / 16.0,
+            -0.5 / 16.0,
+            1.0,
+            8.0 / 16.0,
+            1.0 / 16.0,
+            [
+                rel!(26.0, 0.0, 24.0, 2.0),  // Down
+                rel!(2.0, 0.0, 24.0, 2.0),   // Up
+                rel!(2.0, 2.0, 24.0, 12.0),  // North
+                rel!(26.0, 2.0, 24.0, 12.0), // South
+                rel!(0.0, 2.0, 2.0, 12.0),   // West
+                rel!(50.0, 2.0, 2.0, 12.0),  // East
+            ],
+        );
         if info.has_stand {
-            model::append_box(&mut verts, -0.5/16.0, -0.25-9.0/16.0, -0.5/16.0, 1.0/16.0, 9.0/16.0, 1.0/16.0, [
-                rel!(4.0, 14.0, 2.0, 2.0), // Down
-                rel!(2.0, 14.0, 2.0, 2.0), // Up
-                rel!(2.0, 16.0, 2.0, 12.0), // North
-                rel!(6.0, 16.0, 2.0, 12.0), // South
-                rel!(0.0, 16.0, 2.0, 12.0), // West
-                rel!(4.0, 16.0, 2.0, 12.0), // East
-            ]);
+            model::append_box(
+                &mut verts,
+                -0.5 / 16.0,
+                -0.25 - 9.0 / 16.0,
+                -0.5 / 16.0,
+                1.0 / 16.0,
+                9.0 / 16.0,
+                1.0 / 16.0,
+                [
+                    rel!(4.0, 14.0, 2.0, 2.0),  // Down
+                    rel!(2.0, 14.0, 2.0, 2.0),  // Up
+                    rel!(2.0, 16.0, 2.0, 12.0), // North
+                    rel!(6.0, 16.0, 2.0, 12.0), // South
+                    rel!(0.0, 16.0, 2.0, 12.0), // West
+                    rel!(4.0, 16.0, 2.0, 12.0), // East
+                ],
+            );
         }
 
         for (i, line) in info.lines.iter().enumerate() {
@@ -154,15 +182,12 @@ impl ecs::System for SignRenderer {
             // Center align text
             for vert in &mut state.text {
                 vert.x += width * 0.5;
-                vert.y -= (Y_SCALE + 0.4/16.0) * (i as f32);
+                vert.y -= (Y_SCALE + 0.4 / 16.0) * (i as f32);
             }
             verts.extend_from_slice(&state.text);
         }
 
-        let model = renderer.model.create_model(
-            model::DEFAULT,
-            vec![verts]
-        );
+        let model = renderer.model.create_model(model::DEFAULT, vec![verts]);
 
         {
             let mdl = renderer.model.get_model(model).unwrap();
@@ -173,14 +198,28 @@ impl ecs::System for SignRenderer {
             mdl.matrix[0] = Matrix4::from(Decomposed {
                 scale: 1.0,
                 rot: Quaternion::from_angle_y(Rad(info.rotation as f32)),
-                disp: Vector3::new(position.x as f32 + 0.5, -position.y as f32 - 0.5, position.z as f32 + 0.5),
-            }) * Matrix4::from_translation(Vector3::new(info.offset_x as f32, -info.offset_y as f32, info.offset_z as f32));
+                disp: Vector3::new(
+                    position.x as f32 + 0.5,
+                    -position.y as f32 - 0.5,
+                    position.z as f32 + 0.5,
+                ),
+            }) * Matrix4::from_translation(Vector3::new(
+                info.offset_x as f32,
+                -info.offset_y as f32,
+                info.offset_z as f32,
+            ));
         }
 
         info.model = Some(model);
     }
 
-    fn entity_removed(&mut self, m: &mut ecs::Manager, e: ecs::Entity, _: &mut world::World, renderer: &mut render::Renderer) {
+    fn entity_removed(
+        &mut self,
+        m: &mut ecs::Manager,
+        e: ecs::Entity,
+        _: &mut world::World,
+        renderer: &mut render::Renderer,
+    ) {
         let info = m.get_component_mut(e, self.sign_info).unwrap();
         if let Some(model) = info.model {
             renderer.model.remove_model(model);

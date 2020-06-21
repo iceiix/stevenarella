@@ -142,5 +142,3 @@ protocol_packet_ids!(
         }
     }
 );
-
-

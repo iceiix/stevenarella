@@ -1,22 +1,21 @@
-
 pub mod sign;
 
-use crate::world::block::Block;
-use crate::shared::Position;
 use crate::ecs;
+use crate::shared::Position;
+use crate::world::block::Block;
 
 pub fn add_systems(m: &mut ecs::Manager) {
     sign::add_systems(m);
 }
 
 pub enum BlockEntityType {
-    Sign
+    Sign,
 }
 
 impl BlockEntityType {
     pub fn get_block_entity(bl: Block) -> Option<BlockEntityType> {
         match bl {
-            Block::StandingSign{..} | Block::WallSign{..} => Some(BlockEntityType::Sign),
+            Block::StandingSign { .. } | Block::WallSign { .. } => Some(BlockEntityType::Sign),
             _ => None,
         }
     }

@@ -2193,7 +2193,8 @@ impl Serializable for Advancement {
         };
 
         let criteria: LenPrefixed<VarInt, String> = Serializable::read_from(buf)?;
-        let requirements: LenPrefixed<VarInt, LenPrefixed<VarInt, String>> = Serializable::read_from(buf)?;
+        let requirements: LenPrefixed<VarInt, LenPrefixed<VarInt, String>> =
+            Serializable::read_from(buf)?;
         Ok(Advancement {
             id,
             parent_id,
@@ -2210,7 +2211,6 @@ impl Serializable for Advancement {
         self.criteria.write_to(buf)?;
         self.requirements.write_to(buf)
     }
-
 }
 
 #[derive(Debug, Default)]
@@ -2264,7 +2264,6 @@ impl Serializable for AdvancementDisplay {
         self.x_coord.write_to(buf)?;
         self.y_coord.write_to(buf)
     }
-
 }
 
 #[derive(Debug, Default)]
@@ -2315,8 +2314,6 @@ impl Serializable for CriterionProgress {
     }
 }
 
-
-
 #[derive(Debug, Default)]
 pub struct EntityProperty {
     pub key: String,
@@ -2362,7 +2359,6 @@ impl Serializable for EntityProperty_i16 {
         self.modifiers.write_to(buf)
     }
 }
-
 
 #[derive(Debug, Default)]
 pub struct PropertyModifier {
@@ -2434,33 +2430,25 @@ impl Serializable for PlayerInfoData {
                     };
                     m.players.push(p);
                 }
-                1 => {
-                    m.players.push(PlayerDetail::UpdateGamemode {
-                        uuid,
-                        gamemode: Serializable::read_from(buf)?,
-                    })
-                }
-                2 => {
-                    m.players.push(PlayerDetail::UpdateLatency {
-                        uuid,
-                        ping: Serializable::read_from(buf)?,
-                    })
-                }
-                3 => {
-                    m.players.push(PlayerDetail::UpdateDisplayName {
-                        uuid,
-                        display: {
-                            if bool::read_from(buf)? {
-                                Some(Serializable::read_from(buf)?)
-                            } else {
-                                None
-                            }
-                        },
-                    })
-                }
-                4 => {
-                    m.players.push(PlayerDetail::Remove { uuid: uuid })
-                }
+                1 => m.players.push(PlayerDetail::UpdateGamemode {
+                    uuid,
+                    gamemode: Serializable::read_from(buf)?,
+                }),
+                2 => m.players.push(PlayerDetail::UpdateLatency {
+                    uuid,
+                    ping: Serializable::read_from(buf)?,
+                }),
+                3 => m.players.push(PlayerDetail::UpdateDisplayName {
+                    uuid,
+                    display: {
+                        if bool::read_from(buf)? {
+                            Some(Serializable::read_from(buf)?)
+                        } else {
+                            None
+                        }
+                    },
+                }),
+                4 => m.players.push(PlayerDetail::Remove { uuid: uuid }),
                 _ => panic!(),
             }
         }
@@ -2619,8 +2607,7 @@ impl Serializable for Recipe {
             }
         };
 
-        let data =
-        match ty.as_ref() {
+        let data = match ty.as_ref() {
             "minecraft:crafting_shapeless" => RecipeData::Shapeless {
                 group: Serializable::read_from(buf)?,
                 ingredients: Serializable::read_from(buf)?,
@@ -2634,12 +2621,18 @@ impl Serializable for Recipe {
                 let capacity = width.0 as usize * height.0 as usize;
 
                 let mut ingredients = Vec::with_capacity(capacity);
-                for _ in 0 .. capacity {
+                for _ in 0..capacity {
                     ingredients.push(Serializable::read_from(buf)?);
                 }
                 let result: Option<item::Stack> = Serializable::read_from(buf)?;
 
-                RecipeData::Shaped { width, height, group, ingredients, result }
+                RecipeData::Shaped {
+                    width,
+                    height,
+                    group,
+                    ingredients,
+                    result,
+                }
             }
             "minecraft:crafting_special_armordye" => RecipeData::ArmorDye,
             "minecraft:crafting_special_bookcloning" => RecipeData::BookCloning,
@@ -2688,7 +2681,7 @@ impl Serializable for Recipe {
                 ingredient: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
             },
-            _ => panic!("unrecognized recipe type: {}", ty)
+            _ => panic!("unrecognized recipe type: {}", ty),
         };
 
         Ok(Recipe { id, ty, data })
@@ -2748,7 +2741,11 @@ impl Serializable for Trade {
             xp: Serializable::read_from(buf)?,
             special_price: Serializable::read_from(buf)?,
             price_multiplier: Serializable::read_from(buf)?,
-            demand: if protocol_version >= 498 { Some(Serializable::read_from(buf)?) } else { None },
+            demand: if protocol_version >= 498 {
+                Some(Serializable::read_from(buf)?)
+            } else {
+                None
+            },
         })
     }
 
@@ -2756,7 +2753,6 @@ impl Serializable for Trade {
         unimplemented!()
     }
 }
-
 
 #[derive(Debug, Default)]
 pub struct CommandNode {
@@ -2843,7 +2839,6 @@ pub enum CommandProperty {
     Dimension,
 }
 
-
 impl Serializable for CommandNode {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
         let flags: u8 = Serializable::read_from(buf)?;
@@ -2865,11 +2860,12 @@ impl Serializable for CommandNode {
             None
         };
 
-        let name: Option<String> = if node_type == CommandNodeType::Argument || node_type == CommandNodeType::Literal {
-            Serializable::read_from(buf)?
-        } else {
-            None
-        };
+        let name: Option<String> =
+            if node_type == CommandNodeType::Argument || node_type == CommandNodeType::Literal {
+                Serializable::read_from(buf)?
+            } else {
+                None
+            };
         let parser: Option<String> = if node_type == CommandNodeType::Argument {
             Serializable::read_from(buf)?
         } else {
@@ -2881,27 +2877,51 @@ impl Serializable for CommandNode {
                 "brigadier:bool" => CommandProperty::Bool,
                 "brigadier:double" => {
                     let flags = Serializable::read_from(buf)?;
-                    let min = if flags & 0x01 != 0 { Some(Serializable::read_from(buf)?) } else { None };
-                    let max = if flags & 0x02 != 0 { Some(Serializable::read_from(buf)?) } else { None };
+                    let min = if flags & 0x01 != 0 {
+                        Some(Serializable::read_from(buf)?)
+                    } else {
+                        None
+                    };
+                    let max = if flags & 0x02 != 0 {
+                        Some(Serializable::read_from(buf)?)
+                    } else {
+                        None
+                    };
                     CommandProperty::Double { flags, min, max }
-                },
+                }
                 "brigadier:float" => {
                     let flags = Serializable::read_from(buf)?;
-                    let min = if flags & 0x01 != 0 { Some(Serializable::read_from(buf)?) } else { None };
-                    let max = if flags & 0x02 != 0 { Some(Serializable::read_from(buf)?) } else { None };
+                    let min = if flags & 0x01 != 0 {
+                        Some(Serializable::read_from(buf)?)
+                    } else {
+                        None
+                    };
+                    let max = if flags & 0x02 != 0 {
+                        Some(Serializable::read_from(buf)?)
+                    } else {
+                        None
+                    };
                     CommandProperty::Float { flags, min, max }
-                },
+                }
                 "brigadier:integer" => {
                     let flags = Serializable::read_from(buf)?;
-                    let min = if flags & 0x01 != 0 { Some(Serializable::read_from(buf)?) } else { None };
-                    let max = if flags & 0x02 != 0 { Some(Serializable::read_from(buf)?) } else { None };
+                    let min = if flags & 0x01 != 0 {
+                        Some(Serializable::read_from(buf)?)
+                    } else {
+                        None
+                    };
+                    let max = if flags & 0x02 != 0 {
+                        Some(Serializable::read_from(buf)?)
+                    } else {
+                        None
+                    };
                     CommandProperty::Integer { flags, min, max }
+                }
+                "brigadier:string" => CommandProperty::String {
+                    token_type: Serializable::read_from(buf)?,
                 },
-                "brigadier:string" => {
-                    CommandProperty::String { token_type: Serializable::read_from(buf)? }
-                },
-                "minecraft:entity" => {
-                    CommandProperty::Entity { flags: Serializable::read_from(buf)? }
+                "minecraft:entity" => CommandProperty::Entity {
+                    flags: Serializable::read_from(buf)?,
                 },
                 "minecraft:game_profile" => CommandProperty::GameProfile,
                 "minecraft:block_pos" => CommandProperty::BlockPos,
@@ -2926,8 +2946,8 @@ impl Serializable for CommandNode {
                 "minecraft:particle" => CommandProperty::Particle,
                 "minecraft:rotation" => CommandProperty::Rotation,
                 "minecraft:scoreboard_slot" => CommandProperty::ScoreboardSlot,
-                "minecraft:score_holder" => {
-                    CommandProperty::ScoreHolder { flags: Serializable::read_from(buf)? }
+                "minecraft:score_holder" => CommandProperty::ScoreHolder {
+                    flags: Serializable::read_from(buf)?,
                 },
                 "minecraft:swizzle" => CommandProperty::Swizzle,
                 "minecraft:team" => CommandProperty::Team,
@@ -2936,8 +2956,8 @@ impl Serializable for CommandNode {
                 "minecraft:mob_effect" => CommandProperty::MobEffect,
                 "minecraft:function" => CommandProperty::Function,
                 "minecraft:entity_anchor" => CommandProperty::EntityAnchor,
-                "minecraft:range" => {
-                    CommandProperty::Range { decimals: Serializable::read_from(buf)? }
+                "minecraft:range" => CommandProperty::Range {
+                    decimals: Serializable::read_from(buf)?,
                 },
                 "minecraft:int_range" => CommandProperty::IntRange,
                 "minecraft:float_range" => CommandProperty::FloatRange,
@@ -2956,12 +2976,18 @@ impl Serializable for CommandNode {
             None
         };
 
-        Ok(CommandNode { flags, children, redirect_node, name, parser, properties, suggestions_type })
+        Ok(CommandNode {
+            flags,
+            children,
+            redirect_node,
+            name,
+            parser,
+            properties,
+            suggestions_type,
+        })
     }
 
     fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
         unimplemented!()
     }
 }
-
-

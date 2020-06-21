@@ -34,7 +34,9 @@ fn test_set() {
 
 impl Set {
     pub fn new(size: usize) -> Set {
-        Set { data: vec![0; (size + 63) / 64] }
+        Set {
+            data: vec![0; (size + 63) / 64],
+        }
     }
 
     pub fn resize(&mut self, new_size: usize) {

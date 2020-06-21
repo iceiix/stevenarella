@@ -1,10 +1,9 @@
-
-/// Implements https://wiki.vg/Minecraft_Forge_Handshake
-use std::io;
 use byteorder::WriteBytesExt;
 use log::debug;
+/// Implements https://wiki.vg/Minecraft_Forge_Handshake
+use std::io;
 
-use super::{Serializable, Error, LenPrefixed, VarInt};
+use super::{Error, LenPrefixed, Serializable, VarInt};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase {
@@ -44,7 +43,6 @@ impl Serializable for Phase {
         Ok(())
     }
 }
-
 
 #[derive(Clone, Debug, Default)]
 pub struct ForgeMod {
@@ -133,19 +131,20 @@ impl Serializable for FmlHs {
                     None
                 };
 
-                debug!("FML|HS ServerHello: fml_protocol_version={}, override_dimension={:?}", fml_protocol_version, override_dimension);
+                debug!(
+                    "FML|HS ServerHello: fml_protocol_version={}, override_dimension={:?}",
+                    fml_protocol_version, override_dimension
+                );
 
                 Ok(FmlHs::ServerHello {
                     fml_protocol_version,
                     override_dimension,
                 })
-            },
+            }
             1 => panic!("Received unexpected FML|HS ClientHello from server"),
-            2 => {
-                Ok(FmlHs::ModList {
-                    mods: Serializable::read_from(buf)?,
-                })
-            },
+            2 => Ok(FmlHs::ModList {
+                mods: Serializable::read_from(buf)?,
+            }),
             3 => {
                 let protocol_version = super::current_protocol_version();
 
@@ -161,34 +160,34 @@ impl Serializable for FmlHs {
                     Ok(FmlHs::ModIdData {
                         mappings: Serializable::read_from(buf)?,
                         block_substitutions: Serializable::read_from(buf)?,
-                        item_substitutions: Serializable::read_from(buf)?, 
+                        item_substitutions: Serializable::read_from(buf)?,
                     })
                 }
-            },
-            255 => {
-                Ok(FmlHs::HandshakeAck {
-                    phase: Serializable::read_from(buf)?,
-                })
-            },
+            }
+            255 => Ok(FmlHs::HandshakeAck {
+                phase: Serializable::read_from(buf)?,
+            }),
             _ => panic!("Unhandled FML|HS packet: discriminator={}", discriminator),
         }
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         match self {
-            FmlHs::ClientHello { fml_protocol_version } => {
+            FmlHs::ClientHello {
+                fml_protocol_version,
+            } => {
                 buf.write_u8(1)?;
                 fml_protocol_version.write_to(buf)
-            },
+            }
             FmlHs::ModList { mods } => {
                 buf.write_u8(2)?;
                 mods.write_to(buf)
-            },
+            }
             FmlHs::HandshakeAck { phase } => {
                 buf.write_u8(255)?;
                 phase.write_to(buf)
-            },
-            _ => unimplemented!()
+            }
+            _ => unimplemented!(),
         }
     }
 }

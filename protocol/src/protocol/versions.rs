@@ -1,22 +1,22 @@
 use super::*;
 
-mod v1_15_1;
-mod v1_14_4;
-mod v1_14_3;
-mod v1_14_2;
-mod v1_14_1;
-mod v1_14;
-mod v19w02a;
-mod v18w50a;
-mod v1_13_2;
-mod v1_12_2;
-mod v1_11_2;
-mod v1_10_2;
-mod v1_9_2;
-mod v1_9;
 mod v15w39c;
-mod v1_8_9;
+mod v18w50a;
+mod v19w02a;
+mod v1_10_2;
+mod v1_11_2;
+mod v1_12_2;
+mod v1_13_2;
+mod v1_14;
+mod v1_14_1;
+mod v1_14_2;
+mod v1_14_3;
+mod v1_14_4;
+mod v1_15_1;
 mod v1_7_10;
+mod v1_8_9;
+mod v1_9;
+mod v1_9_2;
 
 // https://wiki.vg/Protocol_History
 // https://wiki.vg/Protocol_version_numbers#Versions_after_the_Netty_rewrite
@@ -52,7 +52,13 @@ pub fn protocol_name_to_protocol_version(s: String) -> i32 {
     }
 }
 
-pub fn translate_internal_packet_id_for_version(version: i32, state: State, dir: Direction, id: i32, to_internal: bool) -> i32 {
+pub fn translate_internal_packet_id_for_version(
+    version: i32,
+    state: State,
+    dir: Direction,
+    id: i32,
+    to_internal: bool,
+) -> i32 {
     match version {
         575 => v1_15_1::translate_internal_packet_id(state, dir, id, to_internal),
         498 => v1_14_4::translate_internal_packet_id(state, dir, id, to_internal),

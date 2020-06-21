@@ -20,13 +20,16 @@ pub struct Registry {
 }
 
 impl Registry {
-    pub fn new() -> Registry { Default::default() }
+    pub fn new() -> Registry {
+        Default::default()
+    }
 
     pub fn register(&mut self, name: &str, source: &str) {
         if self.shaders.contains_key(name) {
             panic!("shader {} is already defined", name);
         }
-        self.shaders.insert(name.to_owned(), source.trim().to_owned());
+        self.shaders
+            .insert(name.to_owned(), source.trim().to_owned());
     }
 
     pub fn get(&self, name: &str) -> String {

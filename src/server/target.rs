@@ -1,10 +1,9 @@
-
-use crate::world;
-use crate::world::block;
-use crate::shared::{Position, Direction};
-use cgmath;
 use crate::render;
 use crate::render::model;
+use crate::shared::{Direction, Position};
+use crate::world;
+use crate::world::block;
+use cgmath;
 use collision::{self, Aabb};
 
 pub struct Info {
@@ -17,13 +16,13 @@ impl Info {
     pub fn new() -> Info {
         Info {
             model: None,
-            last_block: block::Air{},
+            last_block: block::Air {},
             last_pos: Position::new(0, 0, 0),
         }
     }
 
     pub fn clear(&mut self, renderer: &mut render::Renderer) {
-        self.last_block = block::Air{};
+        self.last_block = block::Air {};
         if let Some(model) = self.model.take() {
             renderer.model.remove_model(model);
         }
@@ -44,16 +43,27 @@ impl Info {
         let tex = render::Renderer::get_texture(renderer.get_textures_ref(), "steven:solid");
 
         for bound in bl.get_collision_boxes() {
-            let bound = bound.add_v(cgmath::Vector3::new(pos.x as f64, pos.y as f64, pos.z as f64));
+            let bound = bound.add_v(cgmath::Vector3::new(
+                pos.x as f64,
+                pos.y as f64,
+                pos.z as f64,
+            ));
             for point in [
                 (bound.min.x, bound.min.z),
                 (bound.min.x, bound.max.z),
                 (bound.max.x, bound.min.z),
                 (bound.max.x, bound.max.z),
-            ].iter() {
-                model::append_box(&mut parts,
-                    (point.0-LINE_SIZE) as f32, (bound.min.y-LINE_SIZE) as f32, (point.1-LINE_SIZE) as f32,
-                    (LINE_SIZE*2.0) as f32, ((bound.max.y-bound.min.y)+LINE_SIZE*2.0) as f32, (LINE_SIZE*2.0) as f32,
+            ]
+            .iter()
+            {
+                model::append_box(
+                    &mut parts,
+                    (point.0 - LINE_SIZE) as f32,
+                    (bound.min.y - LINE_SIZE) as f32,
+                    (point.1 - LINE_SIZE) as f32,
+                    (LINE_SIZE * 2.0) as f32,
+                    ((bound.max.y - bound.min.y) + LINE_SIZE * 2.0) as f32,
+                    (LINE_SIZE * 2.0) as f32,
                     [
                         Some(tex.clone()),
                         Some(tex.clone()),
@@ -61,7 +71,8 @@ impl Info {
                         Some(tex.clone()),
                         Some(tex.clone()),
                         Some(tex.clone()),
-                ]);
+                    ],
+                );
             }
 
             for point in [
@@ -69,10 +80,17 @@ impl Info {
                 (bound.min.x, bound.max.z, bound.max.x, bound.max.z),
                 (bound.min.x, bound.min.z, bound.min.x, bound.max.z),
                 (bound.max.x, bound.min.z, bound.max.x, bound.max.z),
-            ].iter() {
-                model::append_box(&mut parts,
-                    (point.0-LINE_SIZE) as f32, (bound.min.y-LINE_SIZE) as f32, (point.1-LINE_SIZE) as f32,
-                    ((point.2-point.0)+(LINE_SIZE*2.0)) as f32, (LINE_SIZE*2.0) as f32, ((point.3-point.1)+(LINE_SIZE*2.0)) as f32,
+            ]
+            .iter()
+            {
+                model::append_box(
+                    &mut parts,
+                    (point.0 - LINE_SIZE) as f32,
+                    (bound.min.y - LINE_SIZE) as f32,
+                    (point.1 - LINE_SIZE) as f32,
+                    ((point.2 - point.0) + (LINE_SIZE * 2.0)) as f32,
+                    (LINE_SIZE * 2.0) as f32,
+                    ((point.3 - point.1) + (LINE_SIZE * 2.0)) as f32,
                     [
                         Some(tex.clone()),
                         Some(tex.clone()),
@@ -80,10 +98,16 @@ impl Info {
                         Some(tex.clone()),
                         Some(tex.clone()),
                         Some(tex.clone()),
-                ]);
-                model::append_box(&mut parts,
-                    (point.0-LINE_SIZE) as f32, (bound.max.y-LINE_SIZE) as f32, (point.1-LINE_SIZE) as f32,
-                    ((point.2-point.0)+(LINE_SIZE*2.0)) as f32, (LINE_SIZE*2.0) as f32, ((point.3-point.1)+(LINE_SIZE*2.0)) as f32,
+                    ],
+                );
+                model::append_box(
+                    &mut parts,
+                    (point.0 - LINE_SIZE) as f32,
+                    (bound.max.y - LINE_SIZE) as f32,
+                    (point.1 - LINE_SIZE) as f32,
+                    ((point.2 - point.0) + (LINE_SIZE * 2.0)) as f32,
+                    (LINE_SIZE * 2.0) as f32,
+                    ((point.3 - point.1) + (LINE_SIZE * 2.0)) as f32,
                     [
                         Some(tex.clone()),
                         Some(tex.clone()),
@@ -91,7 +115,8 @@ impl Info {
                         Some(tex.clone()),
                         Some(tex.clone()),
                         Some(tex.clone()),
-                ]);
+                    ],
+                );
             }
         }
 
@@ -105,7 +130,15 @@ impl Info {
     }
 }
 
-pub fn test_block(world: &world::World, pos: Position, s: cgmath::Vector3<f64>, d: cgmath::Vector3<f64>) -> (bool, Option<(Position, block::Block, Direction, cgmath::Vector3<f64>)>) {
+pub fn test_block(
+    world: &world::World,
+    pos: Position,
+    s: cgmath::Vector3<f64>,
+    d: cgmath::Vector3<f64>,
+) -> (
+    bool,
+    Option<(Position, block::Block, Direction, cgmath::Vector3<f64>)>,
+) {
     let block = world.get_block(pos);
     let posf = cgmath::Vector3::new(pos.x as f64, pos.y as f64, pos.z as f64);
     for bound in block.get_collision_boxes() {
@@ -137,7 +170,11 @@ fn find_face(bound: collision::Aabb3<f64>, hit: cgmath::Vector3<f64>) -> Directi
     }
 }
 
-fn intersects_line(bound: collision::Aabb3<f64>, origin: cgmath::Vector3<f64>, dir: cgmath::Vector3<f64>) -> Option<cgmath::Vector3<f64>> {
+fn intersects_line(
+    bound: collision::Aabb3<f64>,
+    origin: cgmath::Vector3<f64>,
+    dir: cgmath::Vector3<f64>,
+) -> Option<cgmath::Vector3<f64>> {
     const RIGHT: usize = 0;
     const LEFT: usize = 1;
     const MIDDLE: usize = 2;
@@ -145,7 +182,7 @@ fn intersects_line(bound: collision::Aabb3<f64>, origin: cgmath::Vector3<f64>, d
     let mut candidate_plane = [0.0, 0.0, 0.0];
     let mut max_t = [0.0, 0.0, 0.0];
     let mut inside = true;
-    for i in 0 .. 3 {
+    for i in 0..3 {
         if origin[i] < bound.min[i] {
             quadrant[i] = LEFT;
             candidate_plane[i] = bound.min[i];
@@ -162,13 +199,13 @@ fn intersects_line(bound: collision::Aabb3<f64>, origin: cgmath::Vector3<f64>, d
         return Some(origin);
     }
 
-    for i in 0 .. 3 {
+    for i in 0..3 {
         if quadrant[i] != MIDDLE && dir[i] != 0.0 {
             max_t[i] = (candidate_plane[i] - origin[i]) / dir[i];
         }
     }
     let mut which_plane = 0;
-    for i in 1 .. 3 {
+    for i in 1..3 {
         if max_t[which_plane] < max_t[i] {
             which_plane = i;
         }
@@ -178,7 +215,7 @@ fn intersects_line(bound: collision::Aabb3<f64>, origin: cgmath::Vector3<f64>, d
     }
 
     let mut coord = cgmath::Vector3::new(0.0, 0.0, 0.0);
-    for i in 0 .. 3 {
+    for i in 0..3 {
         if which_plane != i {
             coord[i] = origin[i] + max_t[which_plane] * dir[i];
             if coord[i] < bound.min[i] || coord[i] > bound.max[i] {
@@ -191,8 +228,16 @@ fn intersects_line(bound: collision::Aabb3<f64>, origin: cgmath::Vector3<f64>, d
     Some(coord)
 }
 
-pub fn trace_ray<F, R>(world: &world::World, max: f64, s: cgmath::Vector3<f64>, d: cgmath::Vector3<f64>, collide_func: F) -> Option<R>
-    where F: Fn(&world::World, Position, cgmath::Vector3<f64>, cgmath::Vector3<f64>,) -> (bool, Option<R>) {
+pub fn trace_ray<F, R>(
+    world: &world::World,
+    max: f64,
+    s: cgmath::Vector3<f64>,
+    d: cgmath::Vector3<f64>,
+    collide_func: F,
+) -> Option<R>
+where
+    F: Fn(&world::World, Position, cgmath::Vector3<f64>, cgmath::Vector3<f64>) -> (bool, Option<R>),
+{
     struct Gen {
         count: i32,
         base: f64,
@@ -208,11 +253,7 @@ pub fn trace_ray<F, R>(world: &world::World, max: f64, s: cgmath::Vector3<f64>, 
             } else {
                 0.0
             };
-            Gen {
-                count: 0,
-                base,
-                d,
-            }
+            Gen { count: 0, base, d }
         }
 
         fn next(&mut self) -> f64 {
