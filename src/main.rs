@@ -371,6 +371,11 @@ fn main2() {
         game.tick(delta);
         game.server.tick(&mut game.renderer, delta);
 
+        // Check if window is valid, it might be minimized
+        if physical_width == 0 || physical_height == 0 {
+            return;
+        }
+
         game.renderer.update_camera(physical_width, physical_height);
         game.server.world.compute_render_list(&mut game.renderer);
         game.chunk_builder
