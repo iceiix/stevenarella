@@ -14,17 +14,16 @@
 
 pub mod logo;
 
-use std::rc::{Rc, Weak};
-use std::cell::{RefCell, RefMut};
-use crate::render;
 use crate::format;
-use glutin::event::VirtualKeyCode;
+use crate::render;
 #[cfg(not(target_arch = "wasm32"))]
-use clipboard::{ClipboardProvider, ClipboardContext};
+use clipboard::{ClipboardContext, ClipboardProvider};
+use glutin::event::VirtualKeyCode;
+use std::cell::{RefCell, RefMut};
+use std::rc::{Rc, Weak};
 
 const SCALED_WIDTH: f64 = 854.0;
 const SCALED_HEIGHT: f64 = 480.0;
-
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Mode {
@@ -56,8 +55,10 @@ struct Region {
 
 impl Region {
     fn intersects(&self, o: &Region) -> bool {
-        !(self.x + self.w < o.x || self.x > o.x + o.w || self.y + self.h < o.y ||
-          self.y > o.y + o.h)
+        !(self.x + self.w < o.x
+            || self.x > o.x + o.w
+            || self.y + self.h < o.y
+            || self.y > o.y + o.h)
     }
 }
 
@@ -304,8 +305,13 @@ impl Container {
             Mode::Unscaled(scale) => (scale, scale),
         };
 
-        if self.last_sw != sw || self.last_sh != sh || self.last_width != width ||
-           self.last_height != height || self.version != renderer.ui.version || self.last_mode != self.mode {
+        if self.last_sw != sw
+            || self.last_sh != sh
+            || self.last_width != width
+            || self.last_height != height
+            || self.version != renderer.ui.version
+            || self.last_mode != self.mode
+        {
             self.last_sw = sw;
             self.last_sh = sh;
             self.last_width = width;
@@ -324,9 +330,12 @@ impl Container {
 
         // If we don't have an element focused, focus one
         if !self.focusable_elements.is_empty()
-            && !self.focusable_elements.iter()
-                    .flat_map(|v| v.upgrade())
-                    .any(|v| v.is_focused()) {
+            && !self
+                .focusable_elements
+                .iter()
+                .flat_map(|v| v.upgrade())
+                .any(|v| v.is_focused())
+        {
             self.cycle_focus()
         }
 
@@ -380,13 +389,14 @@ impl Container {
         if self.focusable_elements.is_empty() {
             return;
         }
-        let focusables = self.focusable_elements.iter()
+        let focusables = self
+            .focusable_elements
+            .iter()
             .flat_map(|v| v.upgrade())
             .collect::<Vec<_>>();
 
         // Find the last focused element if there is one
-        let last_focus = focusables.iter()
-            .position(|v| v.is_focused());
+        let last_focus = focusables.iter().position(|v| v.is_focused());
         let next_focus = last_focus.map_or(0, |v| v + 1) % focusables.len();
 
         // Clear the last focus
@@ -397,15 +407,20 @@ impl Container {
         focusables[next_focus].set_focused(true);
     }
 
-    pub fn key_press(&mut self, game: &mut crate::Game, key: VirtualKeyCode, down: bool, ctrl_pressed: bool) {
+    pub fn key_press(
+        &mut self,
+        game: &mut crate::Game,
+        key: VirtualKeyCode,
+        down: bool,
+        ctrl_pressed: bool,
+    ) {
         if key == VirtualKeyCode::Tab {
             if !down {
                 self.cycle_focus();
             }
             return;
         }
-        for el in self.focusable_elements.iter()
-            .flat_map(|v| v.upgrade()) {
+        for el in self.focusable_elements.iter().flat_map(|v| v.upgrade()) {
             if el.is_focused() {
                 el.key_press(game, key, down, ctrl_pressed);
             }
@@ -416,8 +431,7 @@ impl Container {
         if c < ' ' {
             return;
         }
-        for el in self.focusable_elements.iter()
-            .flat_map(|v| v.upgrade()) {
+        for el in self.focusable_elements.iter().flat_map(|v| v.upgrade()) {
             if el.is_focused() {
                 el.key_type(game, c);
             }
@@ -463,11 +477,27 @@ impl ElementHolder for Container {
 }
 
 trait UIElement {
-    fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, sw: f64, sh: f64, width: f64, height: f64, delta: f64) -> &mut [u8];
+    fn draw(
+        &mut self,
+        renderer: &mut render::Renderer,
+        r: &Region,
+        sw: f64,
+        sh: f64,
+        width: f64,
+        height: f64,
+        delta: f64,
+    ) -> &mut [u8];
     fn get_size(&self) -> (f64, f64);
     fn is_dirty(&self) -> bool;
     fn post_init(_: Rc<RefCell<Self>>) {}
-    fn key_press(&mut self, _game: &mut crate::Game, _key: VirtualKeyCode, _down: bool, _ctrl_pressed: bool) {}
+    fn key_press(
+        &mut self,
+        _game: &mut crate::Game,
+        _key: VirtualKeyCode,
+        _down: bool,
+        _ctrl_pressed: bool,
+    ) {
+    }
     fn key_type(&mut self, _game: &mut crate::Game, _c: char) {}
     fn tick(&mut self, renderer: &mut render::Renderer);
 }
@@ -804,14 +834,29 @@ impl ImageBuilder {
 }
 
 impl UIElement for Image {
-    fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, sw: f64, sh: f64, width: f64, height: f64, delta: f64) -> &mut [u8] {
+    fn draw(
+        &mut self,
+        renderer: &mut render::Renderer,
+        r: &Region,
+        sw: f64,
+        sh: f64,
+        width: f64,
+        height: f64,
+        delta: f64,
+    ) -> &mut [u8] {
         if self.check_rebuild() {
             self.data.clear();
             let texture = render::Renderer::get_texture(renderer.get_textures_ref(), &self.texture);
             let mut element = render::ui::UIElement::new(
                 &texture,
-                r.x, r.y, r.w, r.h,
-                self.texture_coords.0, self.texture_coords.1, self.texture_coords.2, self.texture_coords.3,
+                r.x,
+                r.y,
+                r.w,
+                r.h,
+                self.texture_coords.0,
+                self.texture_coords.1,
+                self.texture_coords.2,
+                self.texture_coords.3,
             );
             element.r = self.colour.0;
             element.g = self.colour.1;
@@ -862,7 +907,16 @@ impl BatchBuilder {
 }
 
 impl UIElement for Batch {
-    fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, sw: f64, sh: f64, width: f64, height: f64, delta: f64) -> &mut [u8] {
+    fn draw(
+        &mut self,
+        renderer: &mut render::Renderer,
+        r: &Region,
+        sw: f64,
+        sh: f64,
+        width: f64,
+        height: f64,
+        delta: f64,
+    ) -> &mut [u8] {
         if self.check_rebuild() {
             self.data.clear();
             self.super_draw(renderer, r, sw, sh, width, height, delta);
@@ -916,15 +970,29 @@ element! {
 }
 
 impl UIElement for Text {
-    fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, sw: f64, sh: f64, width: f64, height: f64, delta: f64) -> &mut [u8] {
+    fn draw(
+        &mut self,
+        renderer: &mut render::Renderer,
+        r: &Region,
+        sw: f64,
+        sh: f64,
+        width: f64,
+        height: f64,
+        delta: f64,
+    ) -> &mut [u8] {
         if self.check_rebuild() {
             self.data.clear();
 
             let mut text = if self.rotation == 0.0 {
                 renderer.ui.new_text_scaled(
                     &self.text,
-                    r.x, r.y, sw * self.scale_x, sh * self.scale_y,
-                    self.colour.0, self.colour.1, self.colour.2,
+                    r.x,
+                    r.y,
+                    sw * self.scale_x,
+                    sh * self.scale_y,
+                    self.colour.0,
+                    self.colour.1,
+                    self.colour.2,
                 )
             } else {
                 let c = self.rotation.cos();
@@ -934,11 +1002,15 @@ impl UIElement for Text {
                 let w = (tmpx * c - tmpy * s).abs();
                 let h = (tmpy * c + tmpx * s).abs();
                 renderer.ui.new_text_rotated(
-                        &self.text,
-                        r.x + w - (r.w / 2.0), r.y + h - (r.h / 2.0),
-                        sw * self.scale_x, sh * self.scale_y,
-                        self.rotation,
-                        self.colour.0, self.colour.1, self.colour.2,
+                    &self.text,
+                    r.x + w - (r.w / 2.0),
+                    r.y + h - (r.h / 2.0),
+                    sw * self.scale_x,
+                    sh * self.scale_y,
+                    self.rotation,
+                    self.colour.0,
+                    self.colour.1,
+                    self.colour.2,
                 )
             };
             for e in &mut text.elements {
@@ -964,7 +1036,10 @@ impl UIElement for Text {
     }
 
     fn get_size(&self) -> (f64, f64) {
-        ((self.width + 2.0) * self.scale_x, self.height * self.scale_y)
+        (
+            (self.width + 2.0) * self.scale_x,
+            self.height * self.scale_y,
+        )
     }
 
     fn is_dirty(&self) -> bool {
@@ -975,8 +1050,6 @@ impl UIElement for Text {
             || self.last_rotation != self.rotation
     }
 }
-
-
 
 element! {
     ref FormattedRef
@@ -1011,7 +1084,16 @@ element! {
 }
 
 impl UIElement for Formatted {
-    fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, sw: f64, sh: f64, width: f64, height: f64, delta: f64) -> &mut [u8] {
+    fn draw(
+        &mut self,
+        renderer: &mut render::Renderer,
+        r: &Region,
+        sw: f64,
+        sh: f64,
+        width: f64,
+        height: f64,
+        delta: f64,
+    ) -> &mut [u8] {
         if self.check_rebuild() {
             self.data.clear();
 
@@ -1058,7 +1140,10 @@ impl UIElement for Formatted {
     }
 
     fn get_size(&self) -> (f64, f64) {
-        ((self.width + 2.0) * self.scale_x, self.height * self.scale_y)
+        (
+            (self.width + 2.0) * self.scale_x,
+            self.height * self.scale_y,
+        )
     }
 
     fn is_dirty(&self) -> bool {
@@ -1075,7 +1160,11 @@ impl Formatted {
         self.dirty = true;
     }
 
-    pub fn compute_size(renderer: &render::Renderer, text: &format::Component, max_width: f64) -> (f64, f64) {
+    pub fn compute_size(
+        renderer: &render::Renderer,
+        text: &format::Component,
+        max_width: f64,
+    ) -> (f64, f64) {
         let mut state = FormatState {
             lines: 0,
             width: 0.0,
@@ -1098,14 +1187,13 @@ struct FormatState<'a> {
     renderer: &'a render::Renderer,
 }
 
-
-impl <'a> ElementHolder for FormatState<'a> {
+impl<'a> ElementHolder for FormatState<'a> {
     fn add(&mut self, el: Element, _: bool) {
         self.text.push(el);
     }
 }
 
-impl <'a> FormatState<'a> {
+impl<'a> FormatState<'a> {
     fn build(&mut self, c: &format::Component, color: format::Color) {
         match *c {
             format::Component::Text(ref txt) => {
@@ -1197,46 +1285,156 @@ impl ButtonBuilder {
 }
 
 impl UIElement for Button {
-    fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, sw: f64, sh: f64, width: f64, height: f64, delta: f64) -> &mut [u8] {
+    fn draw(
+        &mut self,
+        renderer: &mut render::Renderer,
+        r: &Region,
+        sw: f64,
+        sh: f64,
+        width: f64,
+        height: f64,
+        delta: f64,
+    ) -> &mut [u8] {
         if self.check_rebuild() {
             self.data.clear();
             let offset = match (self.disabled, self.hovered) {
-                    (true, _) => 46.0,
-                    (false, true) => 86.0,
-                    (false, false) => 66.0,
+                (true, _) => 46.0,
+                (false, true) => 86.0,
+                (false, false) => 66.0,
             };
             let texture = render::Renderer::get_texture(renderer.get_textures_ref(), "gui/widgets")
-                      .relative(0.0, offset / 256.0, 200.0 / 256.0, 20.0 / 256.0);
+                .relative(0.0, offset / 256.0, 200.0 / 256.0, 20.0 / 256.0);
 
-            self.data.extend(render::ui::UIElement::new(&texture, r.x, r.y, 4.0 * sw, 4.0 * sh, 0.0, 0.0, 2.0/200.0, 2.0/20.0).bytes(width, height));
-            self.data.extend(render::ui::UIElement::new(&texture, r.x + r.w - 4.0 * sw, r.y, 4.0 * sw, 4.0 * sh, 198.0/200.0, 0.0, 2.0/200.0, 2.0/20.0).bytes(width, height));
-            self.data.extend(render::ui::UIElement::new(&texture, r.x, r.y + r.h - 6.0 * sh, 4.0 * sw, 6.0 * sh, 0.0, 17.0/20.0, 2.0/200.0, 3.0/20.0).bytes(width, height));
-            self.data.extend(render::ui::UIElement::new(&texture, r.x + r.w - 4.0 * sw, r.y + r.h - 6.0 * sh, 4.0 * sw, 6.0 * sh, 198.0/200.0, 17.0/20.0, 2.0/200.0, 3.0/20.0).bytes(width, height));
-
-            let w = ((r.w / sw)/2.0) - 4.0;
-            self.data.extend(render::ui::UIElement::new(
-                &texture.relative(2.0/200.0, 0.0, 196.0/200.0, 2.0/20.0),
-                r.x+4.0*sw, r.y, r.w - 8.0 * sw, 4.0 * sh, 0.0, 0.0, w/196.0, 1.0).bytes(width, height)
+            self.data.extend(
+                render::ui::UIElement::new(
+                    &texture,
+                    r.x,
+                    r.y,
+                    4.0 * sw,
+                    4.0 * sh,
+                    0.0,
+                    0.0,
+                    2.0 / 200.0,
+                    2.0 / 20.0,
+                )
+                .bytes(width, height),
             );
-            self.data.extend(render::ui::UIElement::new(
-                &texture.relative(2.0/200.0, 17.0/20.0, 196.0/200.0, 3.0/20.0),
-                r.x+4.0*sw, r.y+r.h-6.0*sh, r.w - 8.0 * sw, 6.0 * sh, 0.0, 0.0, w/196.0, 1.0).bytes(width, height)
+            self.data.extend(
+                render::ui::UIElement::new(
+                    &texture,
+                    r.x + r.w - 4.0 * sw,
+                    r.y,
+                    4.0 * sw,
+                    4.0 * sh,
+                    198.0 / 200.0,
+                    0.0,
+                    2.0 / 200.0,
+                    2.0 / 20.0,
+                )
+                .bytes(width, height),
+            );
+            self.data.extend(
+                render::ui::UIElement::new(
+                    &texture,
+                    r.x,
+                    r.y + r.h - 6.0 * sh,
+                    4.0 * sw,
+                    6.0 * sh,
+                    0.0,
+                    17.0 / 20.0,
+                    2.0 / 200.0,
+                    3.0 / 20.0,
+                )
+                .bytes(width, height),
+            );
+            self.data.extend(
+                render::ui::UIElement::new(
+                    &texture,
+                    r.x + r.w - 4.0 * sw,
+                    r.y + r.h - 6.0 * sh,
+                    4.0 * sw,
+                    6.0 * sh,
+                    198.0 / 200.0,
+                    17.0 / 20.0,
+                    2.0 / 200.0,
+                    3.0 / 20.0,
+                )
+                .bytes(width, height),
             );
 
-            let h = ((r.h / sh)/2.0) - 5.0;
-            self.data.extend(render::ui::UIElement::new(
-                &texture.relative(0.0/200.0, 2.0/20.0, 2.0/200.0, 15.0/20.0),
-                r.x, r.y + 4.0*sh, 4.0 * sw, r.h - 10.0*sh, 0.0, 0.0, 1.0, h/16.0).bytes(width, height)
+            let w = ((r.w / sw) / 2.0) - 4.0;
+            self.data.extend(
+                render::ui::UIElement::new(
+                    &texture.relative(2.0 / 200.0, 0.0, 196.0 / 200.0, 2.0 / 20.0),
+                    r.x + 4.0 * sw,
+                    r.y,
+                    r.w - 8.0 * sw,
+                    4.0 * sh,
+                    0.0,
+                    0.0,
+                    w / 196.0,
+                    1.0,
+                )
+                .bytes(width, height),
             );
-            self.data.extend(render::ui::UIElement::new(
-                &texture.relative(198.0/200.0, 2.0/20.0, 2.0/200.0, 15.0/20.0),
-                r.x+r.w - 4.0 * sw, r.y + 4.0*sh, 4.0 * sw, r.h - 10.0*sh, 0.0, 0.0, 1.0, h/16.0).bytes(width, height)
+            self.data.extend(
+                render::ui::UIElement::new(
+                    &texture.relative(2.0 / 200.0, 17.0 / 20.0, 196.0 / 200.0, 3.0 / 20.0),
+                    r.x + 4.0 * sw,
+                    r.y + r.h - 6.0 * sh,
+                    r.w - 8.0 * sw,
+                    6.0 * sh,
+                    0.0,
+                    0.0,
+                    w / 196.0,
+                    1.0,
+                )
+                .bytes(width, height),
             );
 
+            let h = ((r.h / sh) / 2.0) - 5.0;
+            self.data.extend(
+                render::ui::UIElement::new(
+                    &texture.relative(0.0 / 200.0, 2.0 / 20.0, 2.0 / 200.0, 15.0 / 20.0),
+                    r.x,
+                    r.y + 4.0 * sh,
+                    4.0 * sw,
+                    r.h - 10.0 * sh,
+                    0.0,
+                    0.0,
+                    1.0,
+                    h / 16.0,
+                )
+                .bytes(width, height),
+            );
+            self.data.extend(
+                render::ui::UIElement::new(
+                    &texture.relative(198.0 / 200.0, 2.0 / 20.0, 2.0 / 200.0, 15.0 / 20.0),
+                    r.x + r.w - 4.0 * sw,
+                    r.y + 4.0 * sh,
+                    4.0 * sw,
+                    r.h - 10.0 * sh,
+                    0.0,
+                    0.0,
+                    1.0,
+                    h / 16.0,
+                )
+                .bytes(width, height),
+            );
 
-            self.data.extend(render::ui::UIElement::new(
-                &texture.relative(2.0/200.0, 2.0/20.0, 196.0/200.0, 15.0/20.0),
-                r.x+4.0*sw, r.y+4.0*sh, r.w - 8.0 * sw, r.h - 10.0 * sh, 0.0, 0.0, w/196.0, h/16.0).bytes(width, height)
+            self.data.extend(
+                render::ui::UIElement::new(
+                    &texture.relative(2.0 / 200.0, 2.0 / 20.0, 196.0 / 200.0, 15.0 / 20.0),
+                    r.x + 4.0 * sw,
+                    r.y + 4.0 * sh,
+                    r.w - 8.0 * sw,
+                    r.h - 10.0 * sh,
+                    0.0,
+                    0.0,
+                    w / 196.0,
+                    h / 16.0,
+                )
+                .bytes(width, height),
             );
             self.super_draw(renderer, r, sw, sh, width, height, delta);
             self.last_disabled = self.disabled;
@@ -1254,10 +1452,8 @@ impl UIElement for Button {
     }
 
     fn is_dirty(&self) -> bool {
-        self.last_disabled != self.disabled
-            || self.last_hovered != self.hovered
+        self.last_disabled != self.disabled || self.last_hovered != self.hovered
     }
-
 
     fn post_init(s: Rc<RefCell<Self>>) {
         s.borrow_mut().add_hover_func(move |this, hover, _| {
@@ -1311,9 +1507,17 @@ impl TextBoxBuilder {
 }
 
 impl UIElement for TextBox {
-    fn key_press(&mut self, game: &mut crate::Game, key: VirtualKeyCode, down: bool, ctrl_pressed: bool) {
+    fn key_press(
+        &mut self,
+        game: &mut crate::Game,
+        key: VirtualKeyCode,
+        down: bool,
+        ctrl_pressed: bool,
+    ) {
         match (key, down) {
-            (VirtualKeyCode::Back, _) => {self.input.pop();},
+            (VirtualKeyCode::Back, _) => {
+                self.input.pop();
+            }
             (VirtualKeyCode::Return, false) => {
                 use std::mem;
                 let len = self.submit_funcs.len();
@@ -1322,7 +1526,7 @@ impl UIElement for TextBox {
                     (func)(self, game);
                 }
                 self.submit_funcs.append(&mut temp);
-            },
+            }
             // TODO: wasm clipboard pasting, Clipboard API: https://www.w3.org/TR/clipboard-apis/
             #[cfg(not(target_arch = "wasm32"))]
             (VirtualKeyCode::V, true) => {
@@ -1330,11 +1534,11 @@ impl UIElement for TextBox {
                     let mut clipboard: ClipboardContext = ClipboardProvider::new().unwrap();
                     match clipboard.get_contents() {
                         Ok(text) => self.input.push_str(&text),
-                        Err(_) => ()
+                        Err(_) => (),
                     }
                 }
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
 
@@ -1342,7 +1546,16 @@ impl UIElement for TextBox {
         self.input.push(c);
     }
 
-    fn draw(&mut self, renderer: &mut render::Renderer, r: &Region, sw: f64, sh: f64, width: f64, height: f64, delta: f64) -> &mut [u8] {
+    fn draw(
+        &mut self,
+        renderer: &mut render::Renderer,
+        r: &Region,
+        sw: f64,
+        sh: f64,
+        width: f64,
+        height: f64,
+        delta: f64,
+    ) -> &mut [u8] {
         if self.check_rebuild() {
             self.data.clear();
             self.cursor_tick += delta;
@@ -1381,17 +1594,21 @@ impl UIElement for TextBox {
 
     fn post_init(s: Rc<RefCell<Self>>) {
         let mut textbox = s.borrow_mut();
-        textbox.button = Some(ButtonBuilder::new()
-            .position(0.0, 0.0)
-            .size(textbox.width, textbox.height)
-            .disabled(true)
-            .attach(&mut *textbox));
-        textbox.text = Some(TextBuilder::new()
-            .text("")
-            .position(5.0, 0.0)
-            .draw_index(1)
-            .alignment(VAttach::Middle, HAttach::Left)
-            .attach(&mut *textbox));
+        textbox.button = Some(
+            ButtonBuilder::new()
+                .position(0.0, 0.0)
+                .size(textbox.width, textbox.height)
+                .disabled(true)
+                .attach(&mut *textbox),
+        );
+        textbox.text = Some(
+            TextBuilder::new()
+                .text("")
+                .position(5.0, 0.0)
+                .draw_index(1)
+                .alignment(VAttach::Middle, HAttach::Left)
+                .attach(&mut *textbox),
+        );
     }
 }
 

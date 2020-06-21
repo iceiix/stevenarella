@@ -22,7 +22,6 @@ pub enum Component {
 }
 
 impl Component {
-
     pub fn from_string(str: &str) -> Self {
         let mut component;
         match serde_json::from_str::<serde_json::Value>(str) {
@@ -31,7 +30,7 @@ impl Component {
             Err(_) => {
                 component = Component::Text(TextComponent::new(str));
                 convert_legacy(&mut component);
-            },
+            }
         }
         component
     }
@@ -47,7 +46,9 @@ impl Component {
             Component::Text(TextComponent::from_value(v, modifier))
         } else if v.get("translate").is_some() {
             // TODO: translations
-            Component::Text(TextComponent::new(v.get("translate").unwrap().as_str().unwrap()))
+            Component::Text(TextComponent::new(
+                v.get("translate").unwrap().as_str().unwrap(),
+            ))
         } else {
             modifier.color = Some(Color::RGB(255, 0, 0));
             Component::Text(TextComponent {
@@ -100,9 +101,10 @@ impl Modifier {
             underlined: v.get("underlined").map_or(Option::None, |v| v.as_bool()),
             strikethrough: v.get("strikethrough").map_or(Option::None, |v| v.as_bool()),
             obfuscated: v.get("obfuscated").map_or(Option::None, |v| v.as_bool()),
-            color: v.get("color")
-                    .map_or(Option::None, |v| v.as_str())
-                    .map(|v| Color::from_string(&v.to_owned())),
+            color: v
+                .get("color")
+                .map_or(Option::None, |v| v.as_str())
+                .map(|v| Color::from_string(&v.to_owned())),
             extra: Option::None,
         };
         if let Some(extra) = v.get("extra") {
@@ -132,7 +134,9 @@ impl TextComponent {
     pub fn new(val: &str) -> TextComponent {
         TextComponent {
             text: val.to_owned(),
-            modifier: Modifier { ..Default::default() },
+            modifier: Modifier {
+                ..Default::default()
+            },
         }
     }
 
@@ -319,8 +323,9 @@ pub fn convert_legacy(c: &mut Component) {
                             current.text = txt.text[last..i].to_owned();
                             last = next.0 + 1;
 
-                            let mut modifier = if (color_char >= 'a' && color_char <= 'f') ||
-                                                  (color_char >= '0' && color_char <= '9') {
+                            let mut modifier = if (color_char >= 'a' && color_char <= 'f')
+                                || (color_char >= '0' && color_char <= '9')
+                            {
                                 Default::default()
                             } else {
                                 current.modifier.clone()

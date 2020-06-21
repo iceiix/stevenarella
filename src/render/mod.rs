@@ -16,29 +16,29 @@ mod atlas;
 pub mod glsl;
 #[macro_use]
 pub mod shaders;
-pub mod ui;
-pub mod model;
 pub mod clouds;
+pub mod model;
+pub mod ui;
 
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use std::io::Write;
-use crate::resources;
 use crate::gl;
+use crate::resources;
+use crate::world;
+use byteorder::{NativeEndian, WriteBytesExt};
+use cgmath::prelude::*;
+use collision;
 use image;
 use image::{GenericImage, GenericImageView};
-use byteorder::{WriteBytesExt, NativeEndian};
-use serde_json;
-use cgmath::prelude::*;
-use crate::world;
-use collision;
 use log::{error, trace};
+use serde_json;
+use std::collections::HashMap;
+use std::io::Write;
+use std::sync::{Arc, RwLock};
 
-use std::hash::BuildHasherDefault;
 use crate::types::hash::FNVHash;
+use std::hash::BuildHasherDefault;
 use std::sync::atomic::{AtomicIsize, Ordering};
-use std::thread;
 use std::sync::mpsc;
+use std::thread;
 
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest;
@@ -100,7 +100,9 @@ pub struct ChunkBuffer {
 }
 
 impl ChunkBuffer {
-    pub fn new() -> ChunkBuffer { Default::default() }
+    pub fn new() -> ChunkBuffer {
+        Default::default()
+    }
 }
 
 struct ChunkRenderInfo {
@@ -250,9 +252,13 @@ impl Renderer {
             if rm.version() != self.resource_version {
                 self.resource_version = rm.version();
                 trace!("Updating textures to {}", self.resource_version);
-                self.textures.write().unwrap().update_textures(self.resource_version);
+                self.textures
+                    .write()
+                    .unwrap()
+                    .update_textures(self.resource_version);
 
-                self.model.rebuild_models(self.resource_version, &self.textures);
+                self.model
+                    .rebuild_models(self.resource_version, &self.textures);
             }
         }
 
@@ -261,34 +267,47 @@ impl Renderer {
             self.height = height;
             gl::viewport(0, 0, width as i32, height as i32);
 
-            self.perspective_matrix = cgmath::Matrix4::from(
-                cgmath::PerspectiveFov {
-                    fovy: cgmath::Rad::from(cgmath::Deg(90f32)),
-                    aspect: (width as f32 / height as f32),
-                    near: 0.1f32,
-                    far: 500.0f32,
-                }
-            );
+            self.perspective_matrix = cgmath::Matrix4::from(cgmath::PerspectiveFov {
+                fovy: cgmath::Rad::from(cgmath::Deg(90f32)),
+                aspect: (width as f32 / height as f32),
+                near: 0.1f32,
+                far: 500.0f32,
+            });
 
             self.init_trans(width, height);
         }
 
         self.view_vector = cgmath::Vector3::new(
-            ((self.camera.yaw - PI64/2.0).cos() * -self.camera.pitch.cos()) as f32,
+            ((self.camera.yaw - PI64 / 2.0).cos() * -self.camera.pitch.cos()) as f32,
             (-self.camera.pitch.sin()) as f32,
-            (-(self.camera.yaw - PI64/2.0).sin() * -self.camera.pitch.cos()) as f32
+            (-(self.camera.yaw - PI64 / 2.0).sin() * -self.camera.pitch.cos()) as f32,
         );
-        let camera = cgmath::Point3::new(-self.camera.pos.x as f32, -self.camera.pos.y as f32, self.camera.pos.z as f32);
+        let camera = cgmath::Point3::new(
+            -self.camera.pos.x as f32,
+            -self.camera.pos.y as f32,
+            self.camera.pos.z as f32,
+        );
         let camera_matrix = cgmath::Matrix4::look_at(
             camera,
-            camera + cgmath::Point3::new(-self.view_vector.x, -self.view_vector.y, self.view_vector.z).to_vec(),
-            cgmath::Vector3::new(0.0, -1.0, 0.0)
+            camera
+                + cgmath::Point3::new(-self.view_vector.x, -self.view_vector.y, self.view_vector.z)
+                    .to_vec(),
+            cgmath::Vector3::new(0.0, -1.0, 0.0),
         );
         self.camera_matrix = camera_matrix * cgmath::Matrix4::from_nonuniform_scale(-1.0, 1.0, 1.0);
-        self.frustum = collision::Frustum::from_matrix4(self.perspective_matrix * self.camera_matrix).unwrap();
+        self.frustum =
+            collision::Frustum::from_matrix4(self.perspective_matrix * self.camera_matrix).unwrap();
     }
 
-    pub fn tick(&mut self, world: &mut world::World, delta: f64, width: u32, height: u32, physical_width: u32, physical_height: u32) {
+    pub fn tick(
+        &mut self,
+        world: &mut world::World,
+        delta: f64,
+        width: u32,
+        height: u32,
+        physical_width: u32,
+        physical_height: u32,
+    ) {
         self.update_textures(delta);
 
         let trans = self.trans.as_mut().unwrap();
@@ -301,18 +320,22 @@ impl Renderer {
 
         let time_offset = self.sky_offset * 0.9;
         gl::clear_color(
-             (122.0 / 255.0) * time_offset,
-             (165.0 / 255.0) * time_offset,
-             (247.0 / 255.0) * time_offset,
-             1.0
+            (122.0 / 255.0) * time_offset,
+            (165.0 / 255.0) * time_offset,
+            (247.0 / 255.0) * time_offset,
+            1.0,
         );
         gl::clear(gl::ClearFlags::Color | gl::ClearFlags::Depth);
 
         // Chunk rendering
         self.chunk_shader.program.use_program();
 
-        self.chunk_shader.perspective_matrix.set_matrix4(&self.perspective_matrix);
-        self.chunk_shader.camera_matrix.set_matrix4(&self.camera_matrix);
+        self.chunk_shader
+            .perspective_matrix
+            .set_matrix4(&self.perspective_matrix);
+        self.chunk_shader
+            .camera_matrix
+            .set_matrix4(&self.camera_matrix);
         self.chunk_shader.texture.set_int(0);
         self.chunk_shader.light_level.set_float(self.light_level);
         self.chunk_shader.sky_offset.set_float(self.sky_offset);
@@ -320,36 +343,71 @@ impl Renderer {
         for (pos, info) in world.get_render_list() {
             if let Some(solid) = info.solid.as_ref() {
                 if solid.count > 0 {
-                    self.chunk_shader.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
+                    self.chunk_shader
+                        .offset
+                        .set_int3(pos.0, pos.1 * 4096, pos.2);
                     solid.array.bind();
-                    gl::draw_elements(gl::TRIANGLES, solid.count as i32, self.element_buffer_type, 0);
+                    gl::draw_elements(
+                        gl::TRIANGLES,
+                        solid.count as i32,
+                        self.element_buffer_type,
+                        0,
+                    );
                 }
             }
         }
 
         // Line rendering
         // Model rendering
-        self.model.draw(&self.frustum, &self.perspective_matrix, &self.camera_matrix, self.light_level, self.sky_offset);
+        self.model.draw(
+            &self.frustum,
+            &self.perspective_matrix,
+            &self.camera_matrix,
+            self.light_level,
+            self.sky_offset,
+        );
         if world.copy_cloud_heightmap(&mut self.clouds.heightmap_data) {
             self.clouds.dirty = true;
         }
-        self.clouds.draw(&self.camera.pos, &self.perspective_matrix, &self.camera_matrix, self.light_level, self.sky_offset, delta);
+        self.clouds.draw(
+            &self.camera.pos,
+            &self.perspective_matrix,
+            &self.camera_matrix,
+            self.light_level,
+            self.sky_offset,
+            delta,
+        );
 
         // Trans chunk rendering
         self.chunk_shader_alpha.program.use_program();
-        self.chunk_shader_alpha.perspective_matrix.set_matrix4(&self.perspective_matrix);
-        self.chunk_shader_alpha.camera_matrix.set_matrix4(&self.camera_matrix);
+        self.chunk_shader_alpha
+            .perspective_matrix
+            .set_matrix4(&self.perspective_matrix);
+        self.chunk_shader_alpha
+            .camera_matrix
+            .set_matrix4(&self.camera_matrix);
         self.chunk_shader_alpha.texture.set_int(0);
-        self.chunk_shader_alpha.light_level.set_float(self.light_level);
-        self.chunk_shader_alpha.sky_offset.set_float(self.sky_offset);
+        self.chunk_shader_alpha
+            .light_level
+            .set_float(self.light_level);
+        self.chunk_shader_alpha
+            .sky_offset
+            .set_float(self.sky_offset);
 
         // Copy the depth buffer
         trans.main.bind_read();
         trans.trans.bind_draw();
         gl::blit_framebuffer(
-            0, 0, physical_width as i32, physical_height as i32,
-            0, 0, physical_width as i32, physical_height as i32,
-            gl::ClearFlags::Depth, gl::NEAREST
+            0,
+            0,
+            physical_width as i32,
+            physical_height as i32,
+            0,
+            0,
+            physical_width as i32,
+            physical_height as i32,
+            gl::ClearFlags::Depth,
+            gl::NEAREST,
         );
 
         gl::enable(gl::BLEND);
@@ -359,14 +417,26 @@ impl Renderer {
         gl::clear(gl::ClearFlags::Color);
         gl::clear_buffer(gl::COLOR, 0, &mut [0.0, 0.0, 0.0, 1.0]);
         gl::clear_buffer(gl::COLOR, 1, &mut [0.0, 0.0, 0.0, 0.0]);
-        gl::blend_func_separate(gl::ONE_FACTOR, gl::ONE_FACTOR, gl::ZERO_FACTOR, gl::ONE_MINUS_SRC_ALPHA);
+        gl::blend_func_separate(
+            gl::ONE_FACTOR,
+            gl::ONE_FACTOR,
+            gl::ZERO_FACTOR,
+            gl::ONE_MINUS_SRC_ALPHA,
+        );
 
         for (pos, info) in world.get_render_list().iter().rev() {
             if let Some(trans) = info.trans.as_ref() {
                 if trans.count > 0 {
-                    self.chunk_shader_alpha.offset.set_int3(pos.0, pos.1 * 4096, pos.2);
+                    self.chunk_shader_alpha
+                        .offset
+                        .set_int3(pos.0, pos.1 * 4096, pos.2);
                     trans.array.bind();
-                    gl::draw_elements(gl::TRIANGLES, trans.count as i32, self.element_buffer_type, 0);
+                    gl::draw_elements(
+                        gl::TRIANGLES,
+                        trans.count as i32,
+                        self.element_buffer_type,
+                        0,
+                    );
                 }
             }
         }
@@ -395,7 +465,8 @@ impl Renderer {
             let (data, ty) = self::generate_element_buffer(size);
             self.element_buffer_type = ty;
             self.element_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
-            self.element_buffer.set_data(gl::ELEMENT_ARRAY_BUFFER, &data, gl::DYNAMIC_DRAW);
+            self.element_buffer
+                .set_data(gl::ELEMENT_ARRAY_BUFFER, &data, gl::DYNAMIC_DRAW);
             self.element_buffer_size = size;
         }
     }
@@ -431,16 +502,27 @@ impl Renderer {
         info.buffer.bind(gl::ARRAY_BUFFER);
         if new || info.buffer_size < data.len() {
             info.buffer_size = data.len();
-            info.buffer.set_data(gl::ARRAY_BUFFER, data, gl::DYNAMIC_DRAW);
+            info.buffer
+                .set_data(gl::ARRAY_BUFFER, data, gl::DYNAMIC_DRAW);
         } else {
             info.buffer.re_set_data(gl::ARRAY_BUFFER, data);
         }
 
-        self.chunk_shader.position.vertex_pointer(3, gl::FLOAT, false, 40, 0);
-        self.chunk_shader.texture_info.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 40, 12);
-        self.chunk_shader.texture_offset.vertex_pointer(3, gl::SHORT, false, 40, 20);
-        self.chunk_shader.color.vertex_pointer(3, gl::UNSIGNED_BYTE, true, 40, 28);
-        self.chunk_shader.lighting.vertex_pointer(2, gl::UNSIGNED_SHORT, false, 40, 32);
+        self.chunk_shader
+            .position
+            .vertex_pointer(3, gl::FLOAT, false, 40, 0);
+        self.chunk_shader
+            .texture_info
+            .vertex_pointer(4, gl::UNSIGNED_SHORT, false, 40, 12);
+        self.chunk_shader
+            .texture_offset
+            .vertex_pointer(3, gl::SHORT, false, 40, 20);
+        self.chunk_shader
+            .color
+            .vertex_pointer(3, gl::UNSIGNED_BYTE, true, 40, 28);
+        self.chunk_shader
+            .lighting
+            .vertex_pointer(2, gl::UNSIGNED_SHORT, false, 40, 32);
 
         info.count = count;
     }
@@ -476,16 +558,27 @@ impl Renderer {
         info.buffer.bind(gl::ARRAY_BUFFER);
         if new || info.buffer_size < data.len() {
             info.buffer_size = data.len();
-            info.buffer.set_data(gl::ARRAY_BUFFER, data, gl::DYNAMIC_DRAW);
+            info.buffer
+                .set_data(gl::ARRAY_BUFFER, data, gl::DYNAMIC_DRAW);
         } else {
             info.buffer.re_set_data(gl::ARRAY_BUFFER, data);
         }
 
-        self.chunk_shader_alpha.position.vertex_pointer(3, gl::FLOAT, false, 40, 0);
-        self.chunk_shader_alpha.texture_info.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 40, 12);
-        self.chunk_shader_alpha.texture_offset.vertex_pointer(3, gl::SHORT, false, 40, 20);
-        self.chunk_shader_alpha.color.vertex_pointer(3, gl::UNSIGNED_BYTE, true, 40, 28);
-        self.chunk_shader_alpha.lighting.vertex_pointer(2, gl::UNSIGNED_SHORT, false, 40, 32);
+        self.chunk_shader_alpha
+            .position
+            .vertex_pointer(3, gl::FLOAT, false, 40, 0);
+        self.chunk_shader_alpha
+            .texture_info
+            .vertex_pointer(4, gl::UNSIGNED_SHORT, false, 40, 12);
+        self.chunk_shader_alpha
+            .texture_offset
+            .vertex_pointer(3, gl::SHORT, false, 40, 20);
+        self.chunk_shader_alpha
+            .color
+            .vertex_pointer(3, gl::UNSIGNED_BYTE, true, 40, 28);
+        self.chunk_shader_alpha
+            .lighting
+            .vertex_pointer(2, gl::UNSIGNED_SHORT, false, 40, 32);
 
         info.count = count;
     }
@@ -500,19 +593,23 @@ impl Renderer {
                 unsafe {
                     data.set_len(len);
                 }
-                self.gl_texture.get_pixels(gl::TEXTURE_2D_ARRAY,
-                                           0,
-                                           gl::RGBA,
-                                           gl::UNSIGNED_BYTE,
-                                           &mut data[..]);
-                self.gl_texture.image_3d(gl::TEXTURE_2D_ARRAY,
-                                         0,
-                                         ATLAS_SIZE as u32,
-                                         ATLAS_SIZE as u32,
-                                         tex.atlases.len() as u32,
-                                         gl::RGBA,
-                                         gl::UNSIGNED_BYTE,
-                                         &data[..]);
+                self.gl_texture.get_pixels(
+                    gl::TEXTURE_2D_ARRAY,
+                    0,
+                    gl::RGBA,
+                    gl::UNSIGNED_BYTE,
+                    &mut data[..],
+                );
+                self.gl_texture.image_3d(
+                    gl::TEXTURE_2D_ARRAY,
+                    0,
+                    ATLAS_SIZE as u32,
+                    ATLAS_SIZE as u32,
+                    tex.atlases.len() as u32,
+                    gl::RGBA,
+                    gl::UNSIGNED_BYTE,
+                    &data[..],
+                );
                 self.texture_layers = tex.atlases.len();
             }
             tex.pending_uploads.len()
@@ -524,17 +621,19 @@ impl Renderer {
                 let atlas = upload.0;
                 let rect = upload.1;
                 let img = &upload.2;
-                self.gl_texture.sub_image_3d(gl::TEXTURE_2D_ARRAY,
-                                             0,
-                                             rect.x as u32,
-                                             rect.y as u32,
-                                             atlas as u32,
-                                             rect.width as u32,
-                                             rect.height as u32,
-                                             1,
-                                             gl::RGBA,
-                                             gl::UNSIGNED_BYTE,
-                                             &img[..]);
+                self.gl_texture.sub_image_3d(
+                    gl::TEXTURE_2D_ARRAY,
+                    0,
+                    rect.x as u32,
+                    rect.y as u32,
+                    atlas as u32,
+                    rect.width as u32,
+                    rect.height as u32,
+                    1,
+                    gl::RGBA,
+                    gl::UNSIGNED_BYTE,
+                    &img[..],
+                );
             }
             tex.pending_uploads.clear();
         }
@@ -566,30 +665,36 @@ impl Renderer {
             if ani.remaining_time <= 0.0 {
                 ani.current_frame = (ani.current_frame + 1) % ani.frames.len();
                 ani.remaining_time += ani.frames[ani.current_frame].time as f64;
-                let offset = ani.texture.width * ani.texture.width *
-                             ani.frames[ani.current_frame].index * 4;
+                let offset =
+                    ani.texture.width * ani.texture.width * ani.frames[ani.current_frame].index * 4;
                 let offset2 = offset + ani.texture.width * ani.texture.width * 4;
-                self.gl_texture.sub_image_3d(gl::TEXTURE_2D_ARRAY,
-                                             0,
-                                             ani.texture.get_x() as u32,
-                                             ani.texture.get_y() as u32,
-                                             ani.texture.atlas as u32,
-                                             ani.texture.get_width() as u32,
-                                             ani.texture.get_height() as u32,
-                                             1,
-                                             gl::RGBA,
-                                             gl::UNSIGNED_BYTE,
-                                             &ani.data[offset..offset2]);
+                self.gl_texture.sub_image_3d(
+                    gl::TEXTURE_2D_ARRAY,
+                    0,
+                    ani.texture.get_x() as u32,
+                    ani.texture.get_y() as u32,
+                    ani.texture.atlas as u32,
+                    ani.texture.get_width() as u32,
+                    ani.texture.get_height() as u32,
+                    1,
+                    gl::RGBA,
+                    gl::UNSIGNED_BYTE,
+                    &ani.data[offset..offset2],
+                );
             } else {
                 ani.remaining_time -= delta / 3.0;
             }
         }
-
     }
 
     fn init_trans(&mut self, width: u32, height: u32) {
         self.trans = None;
-        self.trans = Some(TransInfo::new(width, height, &self.chunk_shader_alpha, &self.trans_shader));
+        self.trans = Some(TransInfo::new(
+            width,
+            height,
+            &self.chunk_shader_alpha,
+            &self.trans_shader,
+        ));
     }
 
     pub fn get_textures(&self) -> Arc<RwLock<TextureManager>> {
@@ -615,9 +720,7 @@ impl Renderer {
     }
 
     pub fn get_texture(textures: &RwLock<TextureManager>, name: &str) -> Texture {
-        let tex = {
-            textures.read().unwrap().get_texture(name)
-        };
+        let tex = { textures.read().unwrap().get_texture(name) };
         match tex {
             Some(val) => val,
             None => {
@@ -635,9 +738,7 @@ impl Renderer {
     }
 
     pub fn get_skin(&self, textures: &RwLock<TextureManager>, url: &str) -> Texture {
-        let tex = {
-            textures.read().unwrap().get_skin(url)
-        };
+        let tex = { textures.read().unwrap().get_skin(url) };
         match tex {
             Some(val) => val,
             None => {
@@ -685,27 +786,59 @@ init_shader! {
 }
 
 impl TransInfo {
-    pub fn new(width: u32, height: u32, chunk_shader: &ChunkShaderAlpha, shader: &TransShader) -> TransInfo {
+    pub fn new(
+        width: u32,
+        height: u32,
+        chunk_shader: &ChunkShaderAlpha,
+        shader: &TransShader,
+    ) -> TransInfo {
         let trans = gl::Framebuffer::new();
         trans.bind();
 
         let accum = gl::Texture::new();
         accum.bind(gl::TEXTURE_2D);
-        accum.image_2d_ex(gl::TEXTURE_2D, 0, width, height, gl::RGBA16F, gl::RGBA, gl::FLOAT, None);
+        accum.image_2d_ex(
+            gl::TEXTURE_2D,
+            0,
+            width,
+            height,
+            gl::RGBA16F,
+            gl::RGBA,
+            gl::FLOAT,
+            None,
+        );
         accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
         accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
         trans.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &accum, 0);
 
         let revealage = gl::Texture::new();
         revealage.bind(gl::TEXTURE_2D);
-        revealage.image_2d_ex(gl::TEXTURE_2D, 0, width, height, gl::R16F, gl::RED, gl::FLOAT, None);
+        revealage.image_2d_ex(
+            gl::TEXTURE_2D,
+            0,
+            width,
+            height,
+            gl::R16F,
+            gl::RED,
+            gl::FLOAT,
+            None,
+        );
         revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
         revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
         trans.texture_2d(gl::COLOR_ATTACHMENT_1, gl::TEXTURE_2D, &revealage, 0);
 
         let trans_depth = gl::Texture::new();
         trans_depth.bind(gl::TEXTURE_2D);
-        trans_depth.image_2d_ex(gl::TEXTURE_2D, 0, width, height, gl::DEPTH_COMPONENT24, gl::DEPTH_COMPONENT, gl::UNSIGNED_BYTE, None);
+        trans_depth.image_2d_ex(
+            gl::TEXTURE_2D,
+            0,
+            width,
+            height,
+            gl::DEPTH_COMPONENT24,
+            gl::DEPTH_COMPONENT,
+            gl::UNSIGNED_BYTE,
+            None,
+        );
         trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
         trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
         trans.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &trans_depth, 0);
@@ -721,13 +854,37 @@ impl TransInfo {
 
         let fb_color = gl::Texture::new();
         fb_color.bind(gl::TEXTURE_2D_MULTISAMPLE);
-        fb_color.image_2d_sample(gl::TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, width, height, gl::RGBA8, false);
-        main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D_MULTISAMPLE, &fb_color, 0);
+        fb_color.image_2d_sample(
+            gl::TEXTURE_2D_MULTISAMPLE,
+            NUM_SAMPLES,
+            width,
+            height,
+            gl::RGBA8,
+            false,
+        );
+        main.texture_2d(
+            gl::COLOR_ATTACHMENT_0,
+            gl::TEXTURE_2D_MULTISAMPLE,
+            &fb_color,
+            0,
+        );
 
         let fb_depth = gl::Texture::new();
         fb_depth.bind(gl::TEXTURE_2D_MULTISAMPLE);
-        fb_depth.image_2d_sample(gl::TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, width, height, gl::DEPTH_COMPONENT24, false);
-        main.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D_MULTISAMPLE, &fb_depth, 0);
+        fb_depth.image_2d_sample(
+            gl::TEXTURE_2D_MULTISAMPLE,
+            NUM_SAMPLES,
+            width,
+            height,
+            gl::DEPTH_COMPONENT24,
+            false,
+        );
+        main.texture_2d(
+            gl::DEPTH_ATTACHMENT,
+            gl::TEXTURE_2D_MULTISAMPLE,
+            &fb_depth,
+            0,
+        );
         gl::check_framebuffer_status();
 
         gl::unbind_framebuffer();
@@ -739,7 +896,11 @@ impl TransInfo {
         buffer.bind(gl::ARRAY_BUFFER);
 
         let mut data = vec![];
-        for f in [-1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0].iter() {
+        for f in [
+            -1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0,
+        ]
+        .iter()
+        {
             data.write_f32::<NativeEndian>(*f).unwrap();
         }
         buffer.set_data(gl::ARRAY_BUFFER, &data, gl::STATIC_DRAW);
@@ -792,12 +953,17 @@ pub struct TextureManager {
     free_dynamics: Vec<Texture>,
 
     skins: HashMap<String, AtomicIsize, BuildHasherDefault<FNVHash>>,
-
     //_skin_thread: thread::JoinHandle<()>,
 }
 
 impl TextureManager {
-    fn new(res: Arc<RwLock<resources::Manager>>) -> (TextureManager, mpsc::Sender<String>, mpsc::Receiver<(String, Option<image::DynamicImage>)>) {
+    fn new(
+        res: Arc<RwLock<resources::Manager>>,
+    ) -> (
+        TextureManager,
+        mpsc::Sender<String>,
+        mpsc::Receiver<(String, Option<image::DynamicImage>)>,
+    ) {
         let (tx, rx) = mpsc::channel();
         let (stx, srx) = mpsc::channel();
         //let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
@@ -815,7 +981,6 @@ impl TextureManager {
             dynamic_textures: HashMap::with_hasher(BuildHasherDefault::default()),
             free_dynamics: Vec::new(),
             skins: HashMap::with_hasher(BuildHasherDefault::default()),
-
             //_skin_thread: skin_thread,
         };
         tm.add_defaults();
@@ -823,31 +988,30 @@ impl TextureManager {
     }
 
     fn add_defaults(&mut self) {
-        self.put_texture("steven",
-                         "missing_texture",
-                         2,
-                         2,
-                         vec![
-            0, 0, 0, 255,
-            255, 0, 255, 255,
-            255, 0, 255, 255,
-            0, 0, 0, 255,
-        ]);
-        self.put_texture("steven",
-                         "solid",
-                         1,
-                         1,
-                         vec![
-            255, 255, 255, 255,
-        ]);
+        self.put_texture(
+            "steven",
+            "missing_texture",
+            2,
+            2,
+            vec![
+                0, 0, 0, 255, 255, 0, 255, 255, 255, 0, 255, 255, 0, 0, 0, 255,
+            ],
+        );
+        self.put_texture("steven", "solid", 1, 1, vec![255, 255, 255, 255]);
     }
 
     #[cfg(target_arch = "wasm32")]
-    fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
+    fn process_skins(
+        recv: mpsc::Receiver<String>,
+        reply: mpsc::Sender<(String, Option<image::DynamicImage>)>,
+    ) {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn process_skins(recv: mpsc::Receiver<String>, reply: mpsc::Sender<(String, Option<image::DynamicImage>)>) {
+    fn process_skins(
+        recv: mpsc::Receiver<String>,
+        reply: mpsc::Sender<(String, Option<image::DynamicImage>)>,
+    ) {
         println!("in process_skins thread");
         let client = reqwest::blocking::Client::new();
         loop {
@@ -858,21 +1022,24 @@ impl TextureManager {
             match Self::obtain_skin(&client, &hash) {
                 Ok(img) => {
                     let _ = reply.send((hash, Some(img)));
-                },
+                }
                 Err(err) => {
                     error!("Failed to get skin {:?}: {}", hash, err);
                     let _ = reply.send((hash, None));
-                },
+                }
             }
         }
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn obtain_skin(client: &::reqwest::blocking::Client, hash: &str) -> Result<image::DynamicImage, ::std::io::Error> {
+    fn obtain_skin(
+        client: &::reqwest::blocking::Client,
+        hash: &str,
+    ) -> Result<image::DynamicImage, ::std::io::Error> {
         use std::io::Read;
-        use std_or_web::fs;
-        use std::path::Path;
         use std::io::{Error, ErrorKind};
+        use std::path::Path;
+        use std_or_web::fs;
         let path = format!("skin-cache/{}/{}.png", &hash[..2], hash);
         let cache_path = Path::new(&path);
         fs::create_dir_all(cache_path.parent().unwrap())?;
@@ -892,7 +1059,7 @@ impl TextureManager {
             };
             let mut buf = vec![];
             match res.read_to_end(&mut buf) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(err) => {
                     // TODO: different error for failure to read?
                     return Err(Error::new(ErrorKind::InvalidData, err));
@@ -914,9 +1081,9 @@ impl TextureManager {
             // Needs changing to the new format
             let mut new = image::DynamicImage::new_rgba8(64, 64);
             new.copy_from(&img, 0, 0);
-            for xx in 0 .. 4 {
-                for yy in 0 .. 16 {
-                    for section in 0 .. 4 {
+            for xx in 0..4 {
+                for yy in 0..16 {
+                    for section in 0..4 {
                         let os = match section {
                             0 => 2,
                             1 => 1,
@@ -924,8 +1091,16 @@ impl TextureManager {
                             3 => 3,
                             _ => unreachable!(),
                         };
-                        new.put_pixel(16 + (3 - xx) + section * 4, 48 + yy, img.get_pixel(xx + os * 4, 16 + yy));
-                        new.put_pixel(32 + (3 - xx) + section * 4, 48 + yy, img.get_pixel(xx + 40 + os * 4, 16 + yy));
+                        new.put_pixel(
+                            16 + (3 - xx) + section * 4,
+                            48 + yy,
+                            img.get_pixel(xx + os * 4, 16 + yy),
+                        );
+                        new.put_pixel(
+                            32 + (3 - xx) + section * 4,
+                            48 + yy,
+                            img.get_pixel(xx + 40 + os * 4, 16 + yy),
+                        );
                     }
                 }
             }
@@ -942,8 +1117,8 @@ impl TextureManager {
             (40, 16, 16, 16),
         ];
         for bl in blacklist.iter() {
-            for x in bl.0 .. (bl.0 + bl.2) {
-                for y in bl.1 .. (bl.1 + bl.3) {
+            for x in bl.0..(bl.0 + bl.2) {
+                for y in bl.1..(bl.1 + bl.3) {
                     let mut col = img.get_pixel(x, y);
                     col.0[3] = 255;
                     img.put_pixel(x, y, col);
@@ -977,7 +1152,8 @@ impl TextureManager {
                     let (width, height) = img.dimensions();
                     (width, height, img.to_rgba().into_vec())
                 };
-                let new_tex = self.put_texture("steven-dynamic", n, width as u32, height as u32, data);
+                let new_tex =
+                    self.put_texture("steven-dynamic", n, width as u32, height as u32, data);
                 self.dynamic_textures.get_mut(n).unwrap().0 = new_tex;
             } else if !self.textures.contains_key(name) {
                 self.load_texture(name);
@@ -1005,7 +1181,11 @@ impl TextureManager {
         let res = self.resources.clone();
         // TODO: This shouldn't be hardcoded to steve but instead
         // have a way to select alex as a default.
-        let img = if let Some(mut val) = res.read().unwrap().open("minecraft", "textures/entity/steve.png") {
+        let img = if let Some(mut val) = res
+            .read()
+            .unwrap()
+            .open("minecraft", "textures/entity/steve.png")
+        {
             let mut data = Vec::new();
             val.read_to_end(&mut data).unwrap();
             image::load_from_memory(&data).unwrap()
@@ -1018,7 +1198,9 @@ impl TextureManager {
     }
 
     fn update_skin(&mut self, hash: String, img: image::DynamicImage) {
-        if !self.skins.contains_key(&hash) { return; }
+        if !self.skins.contains_key(&hash) {
+            return;
+        }
         let name = format!("steven-dynamic:skin-{}", hash);
         let tex = self.get_texture(&name).unwrap();
         let rect = atlas::Rect {
@@ -1028,8 +1210,12 @@ impl TextureManager {
             height: tex.height,
         };
 
-        self.pending_uploads.push((tex.atlas, rect, img.to_rgba().into_vec()));
-        self.dynamic_textures.get_mut(&format!("skin-{}", hash)).unwrap().1 = img;
+        self.pending_uploads
+            .push((tex.atlas, rect, img.to_rgba().into_vec()));
+        self.dynamic_textures
+            .get_mut(&format!("skin-{}", hash))
+            .unwrap()
+            .1 = img;
     }
 
     fn get_texture(&self, name: &str) -> Option<Texture> {
@@ -1070,23 +1256,27 @@ impl TextureManager {
         self.insert_texture_dummy(plugin, name);
     }
 
-    fn load_animation(&mut self,
-                      plugin: &str,
-                      name: &str,
-                      img: &image::DynamicImage,
-                      data: Vec<u8>)
-                      -> Option<AnimatedTexture> {
+    fn load_animation(
+        &mut self,
+        plugin: &str,
+        name: &str,
+        img: &image::DynamicImage,
+        data: Vec<u8>,
+    ) -> Option<AnimatedTexture> {
         let path = format!("textures/{}.png.mcmeta", name);
         let res = self.resources.clone();
         if let Some(val) = res.read().unwrap().open(plugin, &path) {
             let meta: serde_json::Value = serde_json::from_reader(val).unwrap();
             let animation = meta.get("animation").unwrap();
-            let frame_time = animation.get("frametime").and_then(|v| v.as_i64()).unwrap_or(1);
-            let interpolate = animation.get("interpolate")
-                                       .and_then(|v| v.as_bool())
-                                       .unwrap_or(false);
-            let frames = if let Some(frames) = animation.get("frames")
-                                                        .and_then(|v| v.as_array()) {
+            let frame_time = animation
+                .get("frametime")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(1);
+            let interpolate = animation
+                .get("interpolate")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let frames = if let Some(frames) = animation.get("frames").and_then(|v| v.as_array()) {
                 let mut out = Vec::with_capacity(frames.len());
                 for frame in frames {
                     if let Some(index) = frame.as_i64() {
@@ -1095,7 +1285,7 @@ impl TextureManager {
                             time: frame_time,
                         })
                     } else {
-                        out.push(AnimationFrame{
+                        out.push(AnimationFrame {
                             index: frame.get("index").unwrap().as_i64().unwrap() as usize,
                             time: frame_time * frame.get("frameTime").unwrap().as_i64().unwrap(),
                         })
@@ -1127,13 +1317,14 @@ impl TextureManager {
         None
     }
 
-    fn put_texture(&mut self,
-                   plugin: &str,
-                   name: &str,
-                   width: u32,
-                   height: u32,
-                   data: Vec<u8>)
-                   -> Texture {
+    fn put_texture(
+        &mut self,
+        plugin: &str,
+        name: &str,
+        width: u32,
+        height: u32,
+        data: Vec<u8>,
+    ) -> Texture {
         let (atlas, rect) = self.find_free(width as usize, height as usize);
         self.pending_uploads.push((atlas, rect, data));
 
@@ -1224,19 +1415,27 @@ impl TextureManager {
                 height,
             };
             self.pending_uploads.push((tex.atlas, rect, data));
-            let mut t = tex.relative(0.0, 0.0, (width as f32) / (tex.width as f32), (height as f32) / (tex.height as f32));
+            let mut t = tex.relative(
+                0.0,
+                0.0,
+                (width as f32) / (tex.width as f32),
+                (height as f32) / (tex.height as f32),
+            );
             let old_name = mem::replace(&mut tex.name, format!("steven-dynamic:{}", name));
-            self.dynamic_textures.insert(name.to_owned(), (tex.clone(), img));
+            self.dynamic_textures
+                .insert(name.to_owned(), (tex.clone(), img));
             // We need to rename the texture itself so that get_texture calls
             // work with the new name
             let mut old = self.textures.remove(&old_name).unwrap();
             old.name = format!("steven-dynamic:{}", name);
             t.name = old.name.clone();
-            self.textures.insert(format!("steven-dynamic:{}", name), old);
+            self.textures
+                .insert(format!("steven-dynamic:{}", name), old);
             t
         } else {
             let tex = self.put_texture("steven-dynamic", name, width as u32, height as u32, data);
-            self.dynamic_textures.insert(name.to_owned(), (tex.clone(), img));
+            self.dynamic_textures
+                .insert(name.to_owned(), (tex.clone(), img));
             tex
         }
     }

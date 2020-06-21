@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::ops::BitOr;
-use std::mem;
-use std::ops::{Deref, DerefMut};
-use log::{error, info};
 use glow as gl;
 use glow::HasContext;
+use log::{error, info};
+use std::mem;
+use std::ops::BitOr;
+use std::ops::{Deref, DerefMut};
 
 static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
+pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
     unsafe {
         CONTEXT = &mut (gl::Context::from_loader_function(|s| {
             println!("Loaded {} = {:?}", s, vid.get_proc_address(s));
@@ -109,7 +109,7 @@ impl BitOr for ClearFlags {
 
 /// Clears the buffers specified by the passed flags.
 pub fn clear(flags: ClearFlags) {
-    unsafe { 
+    unsafe {
         //glow_context().clear(flags.internal())
     }
 }
@@ -181,7 +181,12 @@ pub fn blend_func(s_factor: Factor, d_factor: Factor) {
     }
 }
 
-pub fn blend_func_separate(s_factor_rgb: Factor, d_factor_rgb: Factor, s_factor_a: Factor, d_factor_a: Factor) {
+pub fn blend_func_separate(
+    s_factor_rgb: Factor,
+    d_factor_rgb: Factor,
+    s_factor_a: Factor,
+    d_factor_a: Factor,
+) {
     unsafe {
         //glow_context().blend_func_separate(s_factor_rgb, d_factor_rgb, s_factor_a, d_factor_a);
     }
@@ -208,7 +213,7 @@ pub const COUNTER_CLOCK_WISE: FaceDirection = gl::CCW;
 /// Sets the direction of vertices used to specify the
 /// front face (e.g. for culling).
 pub fn front_face(dir: FaceDirection) {
-    unsafe { 
+    unsafe {
         //glow_context().front_face(dir)
     }
 }
@@ -269,7 +274,11 @@ impl Texture {
     // Allocates a new texture.
     pub fn new() -> Texture {
         println!("create_texture");
-        Texture(unsafe { glow_context().create_texture().expect("create texture failed") })
+        Texture(unsafe {
+            glow_context()
+                .create_texture()
+                .expect("create texture failed")
+        })
     }
 
     /// Binds the texture to the passed target.
@@ -280,12 +289,14 @@ impl Texture {
         }
     }
 
-    pub fn get_pixels(&self,
-                      target: TextureTarget,
-                      level: i32,
-                      format: TextureFormat,
-                      ty: Type,
-                      pixels: &mut [u8]) {
+    pub fn get_pixels(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        format: TextureFormat,
+        ty: Type,
+        pixels: &mut [u8],
+    ) {
         unsafe {
             /*
             glow_context().get_tex_image_u8_slice(target,
@@ -297,14 +308,16 @@ impl Texture {
         }
     }
 
-    pub fn image_2d(&self,
-                    target: TextureTarget,
-                    level: i32,
-                    width: u32,
-                    height: u32,
-                    format: TextureFormat,
-                    ty: Type,
-                    pix: Option<&[u8]>) {
+    pub fn image_2d(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        width: u32,
+        height: u32,
+        format: TextureFormat,
+        ty: Type,
+        pix: Option<&[u8]>,
+    ) {
         unsafe {
             /*
             glow_context().tex_image_2d(target,
@@ -321,16 +334,18 @@ impl Texture {
         }
     }
 
-    pub fn sub_image_2d(&self,
-                    target: TextureTarget,
-                    level: i32,
-                    x: u32,
-                    y: u32,
-                    width: u32,
-                    height: u32,
-                    format: TextureFormat,
-                    ty: Type,
-                    pix: &[u8]) {
+    pub fn sub_image_2d(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+        format: TextureFormat,
+        ty: Type,
+        pix: &[u8],
+    ) {
         unsafe {
             /*
             glow_context().tex_sub_image_2d_u8_slice(target,
@@ -347,15 +362,17 @@ impl Texture {
         }
     }
 
-    pub fn image_2d_ex(&self,
-                    target: TextureTarget,
-                    level: i32,
-                    width: u32,
-                    height: u32,
-                    internal_format: TextureFormat,
-                    format: TextureFormat,
-                    ty: Type,
-                    pix: Option<&[u8]>) {
+    pub fn image_2d_ex(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        width: u32,
+        height: u32,
+        internal_format: TextureFormat,
+        format: TextureFormat,
+        ty: Type,
+        pix: Option<&[u8]>,
+    ) {
         unsafe {
             /*
             glow_context().tex_image_2d(target,
@@ -372,24 +389,26 @@ impl Texture {
         }
     }
 
-    pub fn image_2d_sample(&self,
-                    target: TextureTarget,
-                    samples: i32,
-                    width: u32,
-                    height: u32,
-                    format: TextureFormat,
-                    fixed: bool) {
+    pub fn image_2d_sample(
+        &self,
+        target: TextureTarget,
+        samples: i32,
+        width: u32,
+        height: u32,
+        format: TextureFormat,
+        fixed: bool,
+    ) {
         unsafe {
             /*
-            let result: i32 = glow_context().get_parameter_i32(gl::MAX_SAMPLES);
-            let use_samples =
-                if samples > result {
-                    info!("glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}", samples, result);
-                    result
-                } else {
-                    samples
-                };
-*/
+                        let result: i32 = glow_context().get_parameter_i32(gl::MAX_SAMPLES);
+                        let use_samples =
+                            if samples > result {
+                                info!("glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}", samples, result);
+                                result
+                            } else {
+                                samples
+                            };
+            */
             // TODO: switch to glRenderbufferStorageMultisample?
             // from glTexImage2DMultisample which isn't in WebGL
             /*
@@ -404,15 +423,17 @@ impl Texture {
         }
     }
 
-    pub fn image_3d(&self,
-                    target: TextureTarget,
-                    level: i32,
-                    width: u32,
-                    height: u32,
-                    depth: u32,
-                    format: TextureFormat,
-                    ty: Type,
-                    pix: &[u8]) {
+    pub fn image_3d(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        width: u32,
+        height: u32,
+        depth: u32,
+        format: TextureFormat,
+        ty: Type,
+        pix: &[u8],
+    ) {
         unsafe {
             /*
             glow_context().tex_image_3d(target,
@@ -429,18 +450,20 @@ impl Texture {
         }
     }
 
-    pub fn sub_image_3d(&self,
-                        target: TextureTarget,
-                        level: i32,
-                        x: u32,
-                        y: u32,
-                        z: u32,
-                        width: u32,
-                        height: u32,
-                        depth: u32,
-                        format: TextureFormat,
-                        ty: Type,
-                        pix: &[u8]) {
+    pub fn sub_image_3d(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        x: u32,
+        y: u32,
+        z: u32,
+        width: u32,
+        height: u32,
+        depth: u32,
+        format: TextureFormat,
+        ty: Type,
+        pix: &[u8],
+    ) {
         unsafe {
             /*
             glow_context().tex_sub_image_3d_u8_slice(target,
@@ -458,10 +481,12 @@ impl Texture {
         }
     }
 
-    pub fn set_parameter(&self,
-                         target: TextureTarget,
-                         param: TextureParameter,
-                         value: TextureValue) {
+    pub fn set_parameter(
+        &self,
+        target: TextureTarget,
+        param: TextureParameter,
+        value: TextureValue,
+    ) {
         /* TODO
         unsafe {
             glow_context().tex_parameter_i32(target, param, value);
@@ -575,7 +600,7 @@ impl Shader {
 
     pub fn get_shader_compile_status(&self) -> bool {
         true
-            /* TODO
+        /* TODO
         unsafe {
             glow_context().get_shader_compile_status(self.0)
         }
@@ -855,11 +880,12 @@ pub struct Framebuffer(u32);
 pub fn check_framebuffer_status() {
     unsafe {
         let status = glow_context().check_framebuffer_status(gl::FRAMEBUFFER);
-        let s =
-        match status {
+        let s = match status {
             gl::FRAMEBUFFER_UNDEFINED => "GL_FRAMEBUFFER_UNDEFINED",
             gl::FRAMEBUFFER_INCOMPLETE_ATTACHMENT => "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT",
-            gl::FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT => "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT",
+            gl::FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT => {
+                "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"
+            }
             gl::FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER => "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER",
             gl::FRAMEBUFFER_INCOMPLETE_READ_BUFFER => "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER",
             gl::FRAMEBUFFER_UNSUPPORTED => "GL_FRAMEBUFFER_UNSUPPORTED",
@@ -868,11 +894,14 @@ pub fn check_framebuffer_status() {
 
             gl::FRAMEBUFFER_COMPLETE => "GL_FRAMEBUFFER_COMPLETE",
             //gl::FRAMEBUFFER_INCOMPLETE_DIMENSIONS => "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS",
-            _ => "unknown"
+            _ => "unknown",
         };
 
         if status != gl::FRAMEBUFFER_COMPLETE {
-            panic!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
+            panic!(
+                "glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}",
+                status, s
+            );
         }
     }
 }
@@ -915,7 +944,13 @@ impl Framebuffer {
         }
     }
 
-    pub fn texture_2d(&self, attachment: Attachment, target: TextureTarget, tex: &Texture, level: i32) {
+    pub fn texture_2d(
+        &self,
+        attachment: Attachment,
+        target: TextureTarget,
+        tex: &Texture,
+        level: i32,
+    ) {
         unsafe {
             //glow_context().framebuffer_texture_2d(gl::FRAMEBUFFER, attachment, target, Some(tex.0), level);
         }
@@ -961,9 +996,17 @@ pub fn bind_frag_data_location(p: &Program, cn: u32, name: &str) {
 }
 
 pub fn blit_framebuffer(
-    sx0: i32, sy0: i32, sx1: i32, sy1: i32,
-    dx0: i32, dy0: i32, dx1: i32, dy1: i32,
-    mask: ClearFlags, filter: TextureValue) {
+    sx0: i32,
+    sy0: i32,
+    sx1: i32,
+    sy1: i32,
+    dx0: i32,
+    dy0: i32,
+    dx1: i32,
+    dy1: i32,
+    mask: ClearFlags,
+    filter: TextureValue,
+) {
     /*
     unsafe {
         glow_context().blit_framebuffer(

@@ -16,34 +16,36 @@
 #![allow(non_camel_case_types)]
 
 use aes::Aes128;
-use cfb8::Cfb8;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
-use serde_json;
-use std_or_web::fs;
+use cfb8::Cfb8;
+use hex;
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest;
-use hex;
+use serde_json;
+use std_or_web::fs;
 
-pub mod mojang;
 pub mod forge;
+pub mod mojang;
 
-use crate::nbt;
 use crate::format;
-use std::fmt;
-use std::default;
-use std::net::TcpStream;
-use std::io;
-use std::io::{Write, Read};
-use std::convert;
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
-use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use crate::nbt;
+use crate::shared::Position;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
-use std::time::{Instant, Duration};
-use crate::shared::Position;
 use log::debug;
+use std::convert;
+use std::default;
+use std::fmt;
+use std::io;
+use std::io::{Read, Write};
+use std::net::TcpStream;
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::time::{Duration, Instant};
 
-pub const SUPPORTED_PROTOCOLS: [i32; 18] = [575, 498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5];
+pub const SUPPORTED_PROTOCOLS: [i32; 18] = [
+    575, 498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74, 47, 5,
+];
 
 static CURRENT_PROTOCOL_VERSION: AtomicI32 = AtomicI32::new(SUPPORTED_PROTOCOLS[0]);
 static NETWORK_DEBUG: AtomicBool = AtomicBool::new(false);
@@ -233,7 +235,7 @@ impl Serializable for Vec<u8> {
     }
 }
 
-impl Serializable for Option<nbt::NamedTag>{
+impl Serializable for Option<nbt::NamedTag> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Option<nbt::NamedTag>, Error> {
         let ty = buf.read_u8()?;
         if ty == 0 {
@@ -257,7 +259,10 @@ impl Serializable for Option<nbt::NamedTag>{
     }
 }
 
-impl <T> Serializable for Option<T> where T : Serializable {
+impl<T> Serializable for Option<T>
+where
+    T: Serializable,
+{
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Option<T>, Error> {
         Result::Ok(Some(T::read_from(buf)?))
     }
@@ -318,11 +323,7 @@ impl Serializable for bool {
         Result::Ok(buf.read_u8()? != 0)
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        buf.write_u8(if *self {
-            1
-        } else {
-            0
-        })?;
+        buf.write_u8(if *self { 1 } else { 0 })?;
         Result::Ok(())
     }
 }
@@ -433,9 +434,9 @@ impl UUID {
         parts.extend_from_slice(&hex::decode(&s[24..36]).unwrap());
         let mut high = 0u64;
         let mut low = 0u64;
-        for i in 0 .. 8 {
-            high |= (parts[i] as u64) << (56 - i*8);
-            low |= (parts[i + 8] as u64) << (56 - i*8);
+        for i in 0..8 {
+            high |= (parts[i] as u64) << (56 - i * 8);
+            low |= (parts[i + 8] as u64) << (56 - i * 8);
         }
         UUID(high, low)
     }
@@ -449,8 +450,10 @@ impl Default for UUID {
 
 impl Serializable for UUID {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<UUID, Error> {
-        Result::Ok(UUID(buf.read_u64::<BigEndian>()?,
-                        buf.read_u64::<BigEndian>()?))
+        Result::Ok(UUID(
+            buf.read_u64::<BigEndian>()?,
+            buf.read_u64::<BigEndian>()?,
+        ))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         buf.write_u64::<BigEndian>(self.0)?;
@@ -496,8 +499,7 @@ impl Serializable for Biomes3D {
     }
 }
 
-
-pub trait Lengthable : Serializable + Copy + Default {
+pub trait Lengthable: Serializable + Copy + Default {
     fn into_len(self) -> usize;
     fn from_len(_: usize) -> Self;
 }
@@ -507,7 +509,7 @@ pub struct LenPrefixed<L: Lengthable, V> {
     pub data: Vec<V>,
 }
 
-impl <L: Lengthable, V: Default>  LenPrefixed<L, V> {
+impl<L: Lengthable, V: Default> LenPrefixed<L, V> {
     pub fn new(data: Vec<V>) -> LenPrefixed<L, V> {
         LenPrefixed {
             len: Default::default(),
@@ -516,7 +518,7 @@ impl <L: Lengthable, V: Default>  LenPrefixed<L, V> {
     }
 }
 
-impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
+impl<L: Lengthable, V: Serializable> Serializable for LenPrefixed<L, V> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<LenPrefixed<L, V>, Error> {
         let len_data: L = Serializable::read_from(buf)?;
         let len: usize = len_data.into_len();
@@ -541,8 +543,7 @@ impl <L: Lengthable, V: Serializable>  Serializable for LenPrefixed<L, V> {
     }
 }
 
-
-impl <L: Lengthable, V: Default> Default for LenPrefixed<L, V> {
+impl<L: Lengthable, V: Default> Default for LenPrefixed<L, V> {
     fn default() -> Self {
         LenPrefixed {
             len: default::Default::default(),
@@ -551,7 +552,7 @@ impl <L: Lengthable, V: Default> Default for LenPrefixed<L, V> {
     }
 }
 
-impl <L: Lengthable, V: fmt::Debug> fmt::Debug for LenPrefixed<L, V> {
+impl<L: Lengthable, V: fmt::Debug> fmt::Debug for LenPrefixed<L, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.data.fmt(f)
     }
@@ -563,7 +564,7 @@ pub struct LenPrefixedBytes<L: Lengthable> {
     pub data: Vec<u8>,
 }
 
-impl <L: Lengthable>  LenPrefixedBytes<L> {
+impl<L: Lengthable> LenPrefixedBytes<L> {
     pub fn new(data: Vec<u8>) -> LenPrefixedBytes<L> {
         LenPrefixedBytes {
             len: Default::default(),
@@ -572,7 +573,7 @@ impl <L: Lengthable>  LenPrefixedBytes<L> {
     }
 }
 
-impl <L: Lengthable>  Serializable for LenPrefixedBytes<L> {
+impl<L: Lengthable> Serializable for LenPrefixedBytes<L> {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<LenPrefixedBytes<L>, Error> {
         let len_data: L = Serializable::read_from(buf)?;
         let len: usize = len_data.into_len();
@@ -592,8 +593,7 @@ impl <L: Lengthable>  Serializable for LenPrefixedBytes<L> {
     }
 }
 
-
-impl <L: Lengthable> Default for LenPrefixedBytes<L> {
+impl<L: Lengthable> Default for LenPrefixedBytes<L> {
     fn default() -> Self {
         LenPrefixedBytes {
             len: default::Default::default(),
@@ -602,7 +602,7 @@ impl <L: Lengthable> Default for LenPrefixedBytes<L> {
     }
 }
 
-impl <L: Lengthable> fmt::Debug for LenPrefixedBytes<L> {
+impl<L: Lengthable> fmt::Debug for LenPrefixedBytes<L> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.data.fmt(f)
     }
@@ -610,14 +610,17 @@ impl <L: Lengthable> fmt::Debug for LenPrefixedBytes<L> {
 
 impl Lengthable for bool {
     fn into_len(self) -> usize {
-        if self  { 1 } else { 0 }
+        if self {
+            1
+        } else {
+            0
+        }
     }
 
     fn from_len(u: usize) -> bool {
         u != 0
     }
 }
-
 
 impl Lengthable for u8 {
     fn into_len(self) -> usize {
@@ -685,7 +688,12 @@ impl<T: NumCast> convert::From<FixedPoint5<T>> for f64 {
     }
 }
 
-impl<T> fmt::Debug for FixedPoint5<T> where T: fmt::Display, f64: convert::From<T>, T: NumCast + Copy {
+impl<T> fmt::Debug for FixedPoint5<T>
+where
+    T: fmt::Display,
+    f64: convert::From<T>,
+    T: NumCast + Copy,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let x: f64 = (*self).into();
         write!(f, "FixedPoint5(#{} = {}f)", self.0, x)
@@ -726,7 +734,12 @@ impl<T: NumCast> convert::From<FixedPoint12<T>> for f64 {
     }
 }
 
-impl<T> fmt::Debug for FixedPoint12<T> where T: fmt::Display, f64: convert::From<T>, T: NumCast + Copy {
+impl<T> fmt::Debug for FixedPoint12<T>
+where
+    T: fmt::Display,
+    f64: convert::From<T>,
+    T: NumCast + Copy,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let x: f64 = (*self).into();
         write!(f, "FixedPoint12(#{} = {}f)", self.0, x)
@@ -751,7 +764,7 @@ impl Lengthable for VarInt {
 impl Serializable for VarInt {
     /// Decodes a `VarInt` from the Reader
     fn read_from<R: io::Read>(buf: &mut R) -> Result<VarInt, Error> {
-        const PART : u32 = 0x7F;
+        const PART: u32 = 0x7F;
         let mut size = 0;
         let mut val = 0u32;
         loop {
@@ -762,7 +775,7 @@ impl Serializable for VarInt {
                 return Result::Err(Error::Err("VarInt too big".to_owned()));
             }
             if (b & 0x80) == 0 {
-                break
+                break;
             }
         }
 
@@ -771,7 +784,7 @@ impl Serializable for VarInt {
 
     /// Encodes a `VarInt` into the Writer
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        const PART : u32 = 0x7F;
+        const PART: u32 = 0x7F;
         let mut val = self.0 as u32;
         loop {
             if (val & !PART) == 0 {
@@ -826,7 +839,11 @@ impl Serializable for VarShort {
     }
 
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        assert!(self.0 >= 0 && self.0 <= 0x7fffff, "VarShort invalid value: {}", self.0);
+        assert!(
+            self.0 >= 0 && self.0 <= 0x7fffff,
+            "VarShort invalid value: {}",
+            self.0
+        );
         let mut low = self.0 & 0x7fff;
         let high = (self.0 & 0x7f8000) >> 15;
         if high != 0 {
@@ -873,7 +890,7 @@ impl Lengthable for VarLong {
 impl Serializable for VarLong {
     /// Decodes a `VarLong` from the Reader
     fn read_from<R: io::Read>(buf: &mut R) -> Result<VarLong, Error> {
-        const PART : u64 = 0x7F;
+        const PART: u64 = 0x7F;
         let mut size = 0;
         let mut val = 0u64;
         loop {
@@ -884,7 +901,7 @@ impl Serializable for VarLong {
                 return Result::Err(Error::Err("VarLong too big".to_owned()));
             }
             if (b & 0x80) == 0 {
-                break
+                break;
             }
         }
 
@@ -893,7 +910,7 @@ impl Serializable for VarLong {
 
     /// Encodes a `VarLong` into the Writer
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        const PART : u64 = 0x7F;
+        const PART: u64 = 0x7F;
         let mut val = self.0 as u64;
         loop {
             if (val & !PART) == 0 {
@@ -924,7 +941,7 @@ impl Serializable for Position {
         Ok(Position::new(
             ((pos as i64) >> 38) as i32,
             (((pos as i64) >> 26) & 0xFFF) as i32,
-            ((pos as i64) << 38 >> 38) as i32
+            ((pos as i64) << 38 >> 38) as i32,
         ))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
@@ -935,7 +952,6 @@ impl Serializable for Position {
         Result::Ok(())
     }
 }
-
 
 /// Direction is used to define whether packets are going to the
 /// server or the client.
@@ -1058,9 +1074,13 @@ impl Conn {
             let mut write = ZlibEncoder::new(io::Cursor::new(buf), Compression::default());
             write.read_to_end(&mut new)?;
             if is_network_debug() {
-                debug!("Compressed for sending {} bytes to {} since > threshold {}, new={:?}",
-                         uncompressed_size, new.len(), self.compression_threshold,
-                         new);
+                debug!(
+                    "Compressed for sending {} bytes to {} since > threshold {}, new={:?}",
+                    uncompressed_size,
+                    new.len(),
+                    self.compression_threshold,
+                    new
+                );
             }
             buf = new;
         }
@@ -1090,8 +1110,13 @@ impl Conn {
                     reader.read_to_end(&mut new)?;
                 }
                 if is_network_debug() {
-                    debug!("Decompressed threshold={} len={} uncompressed_size={} to {} bytes",
-                        self.compression_threshold, len, uncompressed_size, new.len());
+                    debug!(
+                        "Decompressed threshold={} len={} uncompressed_size={} to {} bytes",
+                        self.compression_threshold,
+                        len,
+                        uncompressed_size,
+                        new.len()
+                    );
                 }
                 buf = io::Cursor::new(new);
             }
@@ -1104,7 +1129,10 @@ impl Conn {
         };
 
         if is_network_debug() {
-            debug!("about to parse id={:x}, dir={:?} state={:?}", id, dir, self.state);
+            debug!(
+                "about to parse id={:x}, dir={:?} state={:?}",
+                id, dir, self.state
+            );
             fs::File::create("last-packet")?.write_all(buf.get_ref())?;
         }
 
@@ -1119,10 +1147,12 @@ impl Conn {
                 let pos = buf.position() as usize;
                 let ibuf = buf.into_inner();
                 if ibuf.len() != pos {
-                    return Result::Err(Error::Err(format!("Failed to read all of packet 0x{:X}, \
+                    return Result::Err(Error::Err(format!(
+                        "Failed to read all of packet 0x{:X}, \
                                                            had {} bytes left",
-                                                          id,
-                                                          ibuf.len() - pos)))
+                        id,
+                        ibuf.len() - pos
+                    )));
                 }
                 Result::Ok(val)
             }
@@ -1140,10 +1170,10 @@ impl Conn {
     }
 
     pub fn do_status(mut self) -> Result<(Status, Duration), Error> {
-        use serde_json::Value;
-        use self::packet::status::serverbound::*;
         use self::packet::handshake::serverbound::Handshake;
+        use self::packet::status::serverbound::*;
         use self::packet::Packet;
+        use serde_json::Value;
         let host = self.host.clone();
         let port = self.port;
         self.write_packet(Handshake {
@@ -1191,43 +1221,61 @@ impl Conn {
                         if let Value::Array(items) = modlist {
                             for item in items {
                                 if let Value::Object(obj) = item {
-                                    let modid = obj.get("modid").unwrap().as_str().unwrap().to_string();
-                                    let version = obj.get("version").unwrap().as_str().unwrap().to_string();
+                                    let modid =
+                                        obj.get("modid").unwrap().as_str().unwrap().to_string();
+                                    let version =
+                                        obj.get("version").unwrap().as_str().unwrap().to_string();
 
-                                    forge_mods.push(crate::protocol::forge::ForgeMod { modid, version });
+                                    forge_mods
+                                        .push(crate::protocol::forge::ForgeMod { modid, version });
                                 }
                             }
                         }
                     }
                 } else {
-                    panic!("Unrecognized modinfo type in server ping response: {} in {}", modinfo_type, modinfo);
+                    panic!(
+                        "Unrecognized modinfo type in server ping response: {} in {}",
+                        modinfo_type, modinfo
+                    );
                 }
             }
         }
 
-        Ok((Status {
-            version: StatusVersion {
-                name: version.get("name").and_then(Value::as_str).ok_or(invalid_status())?
-                          .to_owned(),
-                protocol: version.get("protocol")
-                                      .and_then(Value::as_i64)
-                                      .ok_or(invalid_status())? as i32,
+        Ok((
+            Status {
+                version: StatusVersion {
+                    name: version
+                        .get("name")
+                        .and_then(Value::as_str)
+                        .ok_or(invalid_status())?
+                        .to_owned(),
+                    protocol: version
+                        .get("protocol")
+                        .and_then(Value::as_i64)
+                        .ok_or(invalid_status())? as i32,
+                },
+                players: StatusPlayers {
+                    max: players
+                        .get("max")
+                        .and_then(Value::as_i64)
+                        .ok_or(invalid_status())? as i32,
+                    online: players
+                        .get("online")
+                        .and_then(Value::as_i64)
+                        .ok_or(invalid_status())? as i32,
+                    sample: Vec::new(), /* TODO */
+                },
+                description: format::Component::from_value(
+                    val.get("description").ok_or(invalid_status())?,
+                ),
+                favicon: val
+                    .get("favicon")
+                    .and_then(Value::as_str)
+                    .map(|v| v.to_owned()),
+                forge_mods,
             },
-            players: StatusPlayers {
-                max: players.get("max")
-                                 .and_then(Value::as_i64)
-                                 .ok_or(invalid_status())? as i32,
-                online: players.get("online")
-                                    .and_then(Value::as_i64)
-                                    .ok_or(invalid_status())? as i32,
-                sample: Vec::new(), /* TODO */
-            },
-            description: format::Component::from_value(val.get("description")
-                                                               .ok_or(invalid_status())?),
-            favicon: val.get("favicon").and_then(Value::as_str).map(|v| v.to_owned()),
-            forge_mods,
-        },
-            ping))
+            ping,
+        ))
     }
 }
 

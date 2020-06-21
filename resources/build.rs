@@ -1,8 +1,8 @@
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
 use std::io::BufWriter;
 use std::io::Write;
+use std::path::{Path, PathBuf};
 
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -13,7 +13,11 @@ fn main() {
     build_map(&mut out, &base);
 
     let mut file = BufWriter::new(fs::File::create(&dest.join("resources.rs")).unwrap());
-    write!(file, "pub fn get_file(name: &str) -> Option<&'static [u8]> {{\n").unwrap();
+    write!(
+        file,
+        "pub fn get_file(name: &str) -> Option<&'static [u8]> {{\n"
+    )
+    .unwrap();
     write!(file, "    match name {{\n").unwrap();
     for path in &out {
         let mut absolute_path = std::env::current_dir().unwrap();
@@ -22,10 +26,14 @@ fn main() {
         let absolute = absolute_path.to_str().unwrap().replace("\\", "/");
         let relative = path.to_str().unwrap().replace("\\", "/");
 
-        write!(file, "        {:?} => Some(include_bytes!(\"{}\")),\n", relative, absolute).unwrap();
+        write!(
+            file,
+            "        {:?} => Some(include_bytes!(\"{}\")),\n",
+            relative, absolute
+        )
+        .unwrap();
     }
     write!(file, "        _ => None\n    }}\n}}\n").unwrap();
-
 }
 
 fn build_map(out: &mut Vec<PathBuf>, path: &Path) {

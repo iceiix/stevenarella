@@ -1,5 +1,3 @@
-
-
 use std::hash::Hasher;
 
 pub struct FNVHash(u64);

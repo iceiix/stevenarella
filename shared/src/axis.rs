@@ -1,10 +1,9 @@
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Axis {
     Y,
     Z,
     X,
-    None
+    None,
 }
 
 impl Axis {
