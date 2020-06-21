@@ -259,10 +259,13 @@ impl Renderer {
             self.height = height;
             gl::viewport(0, 0, width as i32, height as i32);
 
+            let fovy = cgmath::Rad::from(cgmath::Deg(90.0_f32));
+            let aspect = (width as f32 / height as f32).max(1.0);
+
             self.perspective_matrix = cgmath::Matrix4::from(
                 cgmath::PerspectiveFov {
-                    fovy: cgmath::Rad::from(cgmath::Deg(90f32)),
-                    aspect: (width as f32 / height as f32),
+                    fovy,
+                    aspect,
                     near: 0.1f32,
                     far: 500.0f32,
                 }
@@ -910,7 +913,7 @@ impl TextureManager {
         if height == 32 {
             // Needs changing to the new format
             let mut new = image::DynamicImage::new_rgba8(64, 64);
-            new.copy_from(&img, 0, 0);
+            new.copy_from(&img, 0, 0).expect("Invalid png image in skin");
             for xx in 0 .. 4 {
                 for yy in 0 .. 16 {
                     for section in 0 .. 4 {

@@ -51,12 +51,6 @@ Forge servers are currently supported on 1.7.10 - 1.12.2.
 
 Support for older protocols will _not_ be dropped as newer protocols are added.
 
-## Credits
-
-Thanks to [@thinkofname](https://github.com/thinkofname/) for
-the original [Steven (Rust)](https://github.com/thinkofname/steven),
-which Stevenarella is an updated and enhanced version of.
-
 ## Downloads
 
 Windows users can download pre-compiled builds from here: https://ci.appveyor.com/project/iceiix/stevenarella
@@ -66,7 +60,7 @@ The Visual Studio 2017 Redistributable is required to run these builds.
 
 ## Building
 
-Requires Rust stable version 1.40.0 or newer to build.
+Requires Rust stable version 1.44.1 or newer to build.
 
 Compile and run:
 ```bash
@@ -87,6 +81,36 @@ Just running Stevenarella via a double click (Windows) or `./stevenarella` (ever
 will bring up a login screen followed by a server list which you can select a server
 from.
 
-## License
+## Contributions
+
+Stevenarella is an [OPEN Open Source Project](https://github.com/openopensource/openopensource.github.io):
+
+> Individuals making significant and valuable contributions are given
+> commit-access to the project to contribute as they see fit. This project
+> is more like an open wiki than a standard guarded open source project.
+
+### Rules
+
+There are a few basic ground-rules for contributors:
+
+1. **No `--force` pushes** or modifying the Git history on the `master` branch.
+1. **Non-master branches** ought to be used for ongoing work.
+1. **External API changes and significant modifications** ought to be subject to an **internal pull-request** to solicit feedback from other contributors.
+1. Internal pull-requests to solicit feedback are *encouraged* for any other non-trivial contribution but left to the discretion of the contributor.
+1. Contributors should attempt to adhere to the prevailing code-style.
+
+### Changes to this arrangement
+
+This is an experiment and feedback is welcome! This document may also be
+subject to pull-requests or changes by contributors where you believe
+you have something valuable to add or change.
+
+### Credits
+
+Thanks to [@thinkofname](https://github.com/thinkofname/) for
+the original [Steven (Rust)](https://github.com/thinkofname/steven),
+which Stevenarella is an updated and enhanced version of.
+
+### License
 
 Dual-licensed MIT and ApacheV2
