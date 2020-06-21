@@ -1,4 +1,3 @@
-
 use crate::axis::Axis;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -15,9 +14,12 @@ pub enum Direction {
 impl Direction {
     pub fn all() -> Vec<Direction> {
         vec![
-            Direction::Down, Direction::Up,
-            Direction::North, Direction::South,
-            Direction::West, Direction::East,
+            Direction::Down,
+            Direction::Up,
+            Direction::North,
+            Direction::South,
+            Direction::West,
+            Direction::East,
         ]
     }
 
@@ -116,7 +118,6 @@ impl Direction {
             _ => unreachable!(),
         }
     }
-
 
     pub fn horizontal_index(&self) -> usize {
         match *self {

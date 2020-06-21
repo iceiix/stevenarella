@@ -14,16 +14,17 @@
 
 extern crate steven_resources as internal;
 
-use std::thread;
-use std::path;
-use std::io;
-use std::fs;
-use std::sync::mpsc;
-use std::sync::{Arc, Mutex};
+use serde_json;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
-use serde_json;
+use std::io;
+use std::path;
+use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std_or_web::fs;
 
+#[cfg(not(target_arch = "wasm32"))]
 use reqwest;
 use zip;
 
@@ -36,11 +37,11 @@ const ASSET_VERSION: &str = "1.13.1";
 const ASSET_INDEX_URL: &str = "https://launchermeta.mojang.com/mc/assets/1.13.1/1e710e31f3ce2fe262373b8cf5e054ee5955d904/1.13.1.json";
 
 pub trait Pack: Sync + Send {
-    fn open(&self, name: &str) -> Option<Box<io::Read>>;
+    fn open(&self, name: &str) -> Option<Box<dyn io::Read>>;
 }
 
 pub struct Manager {
-    packs: Vec<Box<Pack>>,
+    packs: Vec<Box<dyn Pack>>,
     version: usize,
 
     vanilla_chan: Option<mpsc::Receiver<bool>>,
@@ -84,14 +85,21 @@ impl Manager {
             version: 0,
             vanilla_chan: None,
             vanilla_assets_chan: None,
-            vanilla_progress: Arc::new(Mutex::new(Progress {
-                tasks: vec![],
-            })),
+            vanilla_progress: Arc::new(Mutex::new(Progress { tasks: vec![] })),
         };
         m.add_pack(Box::new(InternalPack));
-        m.download_vanilla();
-        m.download_assets();
-        (m, ManagerUI { progress_ui: vec!{}, num_tasks: 0 })
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            m.download_vanilla();
+            m.download_assets();
+        }
+        (
+            m,
+            ManagerUI {
+                progress_ui: vec![],
+                num_tasks: 0,
+            },
+        )
     }
 
     /// Returns the 'version' of the manager. The version is
@@ -100,7 +108,7 @@ impl Manager {
         self.version
     }
 
-    pub fn open(&self, plugin: &str, name: &str) -> Option<Box<io::Read>> {
+    pub fn open(&self, plugin: &str, name: &str) -> Option<Box<dyn io::Read>> {
         let path = format!("assets/{}/{}", plugin, name);
         for pack in self.packs.iter().rev() {
             if let Some(val) = pack.open(&path) {
@@ -110,7 +118,7 @@ impl Manager {
         None
     }
 
-    pub fn open_all(&self, plugin: &str, name: &str) -> Vec<Box<io::Read>> {
+    pub fn open_all(&self, plugin: &str, name: &str) -> Vec<Box<dyn io::Read>> {
         let mut ret = Vec::new();
         let path = format!("assets/{}/{}", plugin, name);
         for pack in self.packs.iter().rev() {
@@ -152,9 +160,12 @@ impl Manager {
         progress.tasks.retain(|v| v.progress < v.total);
         // Find out what we have to work with
         for task in &progress.tasks {
-            if !mui.progress_ui.iter()
+            if !mui
+                .progress_ui
+                .iter()
                 .filter(|v| v.task_file == task.task_file)
-                .any(|v| v.task_name == task.task_name) {
+                .any(|v| v.task_name == task.task_name)
+            {
                 mui.num_tasks += 1;
                 // Add a ui element for it
                 let background = ui::ImageBuilder::new()
@@ -213,16 +224,22 @@ impl Manager {
             }
             let mut found = false;
             let mut prog = 1.0;
-            for task in progress.tasks.iter()
+            for task in progress
+                .tasks
+                .iter()
                 .filter(|v| v.task_file == ui.task_file)
-                .filter(|v| v.task_name == ui.task_name) {
+                .filter(|v| v.task_name == ui.task_name)
+            {
                 found = true;
                 prog = task.progress as f64 / task.total as f64;
             }
             let background = ui.background.borrow();
             let bar = ui.progress_bar.borrow();
             // Let the progress bar finish
-            if !found && (background.y - ui.position).abs() < 0.7 * delta && (bar.width - 350.0).abs() < 1.0 * delta {
+            if !found
+                && (background.y - ui.position).abs() < 0.7 * delta
+                && (bar.width - 350.0).abs() < 1.0 * delta
+            {
                 ui.closing = true;
                 ui.position = -UI_HEIGHT;
             }
@@ -254,10 +271,11 @@ impl Manager {
         }
 
         // Clean up dead elements
-        mui.progress_ui.retain(|v| v.position >= -UI_HEIGHT || !v.closing);
+        mui.progress_ui
+            .retain(|v| v.position >= -UI_HEIGHT || !v.closing);
     }
 
-    fn add_pack(&mut self, pck: Box<Pack>) {
+    fn add_pack(&mut self, pck: Box<dyn Pack>) {
         self.packs.push(pck);
         self.version += 1;
     }
@@ -265,7 +283,12 @@ impl Manager {
     fn load_vanilla(&mut self) {
         let loc = format!("./resources-{}", RESOURCES_VERSION);
         let location = path::Path::new(&loc);
-        self.packs.insert(1, Box::new(DirPack { root: location.to_path_buf() }));
+        self.packs.insert(
+            1,
+            Box::new(DirPack {
+                root: location.to_path_buf(),
+            }),
+        );
         self.version += 1;
     }
 
@@ -274,28 +297,40 @@ impl Manager {
         self.version += 1;
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn download_assets(&mut self) {
         let loc = format!("./index/{}.json", ASSET_VERSION);
         let location = path::Path::new(&loc).to_owned();
         let progress_info = self.vanilla_progress.clone();
         let (send, recv) = mpsc::channel();
-        if fs::metadata(&location).is_ok(){
+        if fs::metadata(&location).is_ok() {
             self.load_assets();
         } else {
             self.vanilla_assets_chan = Some(recv);
         }
         thread::spawn(move || {
-            let client = reqwest::Client::new();
-            if fs::metadata(&location).is_err(){
+            let client = reqwest::blocking::Client::new();
+            if fs::metadata(&location).is_err() {
                 fs::create_dir_all(location.parent().unwrap()).unwrap();
-                let res = client.get(ASSET_INDEX_URL)
-                                .send()
-                                .unwrap();
+                let res = client.get(ASSET_INDEX_URL).send().unwrap();
 
-                let length = res.headers().get(reqwest::header::CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
-                Self::add_task(&progress_info, "Downloading Asset Index", &*location.to_string_lossy(), length);
+                let length = res
+                    .headers()
+                    .get(reqwest::header::CONTENT_LENGTH)
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .parse::<u64>()
+                    .unwrap();
+                Self::add_task(
+                    &progress_info,
+                    "Downloading Asset Index",
+                    &*location.to_string_lossy(),
+                    length,
+                );
                 {
-                    let mut file = fs::File::create(format!("index-{}.tmp", ASSET_VERSION)).unwrap();
+                    let mut file =
+                        fs::File::create(format!("index-{}.tmp", ASSET_VERSION)).unwrap();
                     let mut progress = ProgressRead {
                         read: res,
                         progress: &progress_info,
@@ -311,16 +346,25 @@ impl Manager {
             let index: serde_json::Value = serde_json::from_reader(&file).unwrap();
             let root_location = path::Path::new("./objects/");
             let objects = index.get("objects").and_then(|v| v.as_object()).unwrap();
-            Self::add_task(&progress_info, "Downloading Assets", "./objects", objects.len() as u64);
+            Self::add_task(
+                &progress_info,
+                "Downloading Assets",
+                "./objects",
+                objects.len() as u64,
+            );
             for (k, v) in objects {
                 let hash = v.get("hash").and_then(|v| v.as_str()).unwrap();
                 let hash_path = format!("{}/{}", &hash[..2], hash);
                 let location = root_location.join(&hash_path);
-                if fs::metadata(&location).is_err(){
+                if fs::metadata(&location).is_err() {
                     fs::create_dir_all(location.parent().unwrap()).unwrap();
-                    let res = client.get(&format!("http://resources.download.minecraft.net/{}", hash_path))
-                                    .send()
-                                    .unwrap();
+                    let res = client
+                        .get(&format!(
+                            "http://resources.download.minecraft.net/{}",
+                            hash_path
+                        ))
+                        .send()
+                        .unwrap();
                     let length = v.get("size").and_then(|v| v.as_u64()).unwrap();
                     Self::add_task(&progress_info, "Downloading Asset", k, length);
                     let mut tmp_file = location.to_owned();
@@ -342,6 +386,7 @@ impl Manager {
         });
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn download_vanilla(&mut self) {
         let loc = format!("./resources-{}", RESOURCES_VERSION);
         let location = path::Path::new(&loc);
@@ -354,15 +399,25 @@ impl Manager {
 
         let progress_info = self.vanilla_progress.clone();
         thread::spawn(move || {
-            let client = reqwest::Client::new();
-            let res = client.get(VANILLA_CLIENT_URL)
-                            .send()
-                            .unwrap();
+            let client = reqwest::blocking::Client::new();
+            let res = client.get(VANILLA_CLIENT_URL).send().unwrap();
             let mut file = fs::File::create(format!("{}.tmp", RESOURCES_VERSION)).unwrap();
 
-            let length = res.headers().get(reqwest::header::CONTENT_LENGTH).unwrap().to_str().unwrap().parse::<u64>().unwrap();
+            let length = res
+                .headers()
+                .get(reqwest::header::CONTENT_LENGTH)
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .parse::<u64>()
+                .unwrap();
             let task_file = format!("./resources-{}", RESOURCES_VERSION);
-            Self::add_task(&progress_info, "Downloading Core Assets", &task_file, length);
+            Self::add_task(
+                &progress_info,
+                "Downloading Core Assets",
+                &task_file,
+                length,
+            );
             {
                 let mut progress = ProgressRead {
                     read: res,
@@ -378,7 +433,12 @@ impl Manager {
             let mut zip = zip::ZipArchive::new(file).unwrap();
 
             let task_file = format!("./resources-{}", RESOURCES_VERSION);
-            Self::add_task(&progress_info, "Unpacking Core Assets", &task_file, zip.len() as u64);
+            Self::add_task(
+                &progress_info,
+                "Unpacking Core Assets",
+                &task_file,
+                zip.len() as u64,
+            );
 
             let loc = format!("./resources-{}", RESOURCES_VERSION);
             let location = path::Path::new(&loc);
@@ -414,9 +474,12 @@ impl Manager {
 
     fn add_task_progress(progress: &Arc<Mutex<Progress>>, name: &str, file: &str, prog: u64) {
         let mut progress = progress.lock().unwrap();
-        for task in progress.tasks.iter_mut()
+        for task in progress
+            .tasks
+            .iter_mut()
             .filter(|v| v.task_file == file)
-            .filter(|v| v.task_name == name) {
+            .filter(|v| v.task_name == name)
+        {
             task.progress += prog as u64;
         }
     }
@@ -427,7 +490,7 @@ struct DirPack {
 }
 
 impl Pack for DirPack {
-    fn open(&self, name: &str) -> Option<Box<io::Read>> {
+    fn open(&self, name: &str) -> Option<Box<dyn io::Read>> {
         match fs::File::open(self.root.join(name)) {
             Ok(val) => Some(Box::new(val)),
             Err(_) => None,
@@ -438,7 +501,7 @@ impl Pack for DirPack {
 struct InternalPack;
 
 impl Pack for InternalPack {
-    fn open(&self, name: &str) -> Option<Box<io::Read>> {
+    fn open(&self, name: &str) -> Option<Box<dyn io::Read>> {
         match internal::get_file(name) {
             Some(val) => Some(Box::new(io::Cursor::new(val))),
             None => None,
@@ -459,16 +522,17 @@ impl ObjectPack {
         let objects = index.get("objects").and_then(|v| v.as_object()).unwrap();
         let mut hash_objs = HashMap::with_hasher(BuildHasherDefault::default());
         for (k, v) in objects {
-            hash_objs.insert(k.clone(), v.get("hash").and_then(|v| v.as_str()).unwrap().to_owned());
+            hash_objs.insert(
+                k.clone(),
+                v.get("hash").and_then(|v| v.as_str()).unwrap().to_owned(),
+            );
         }
-        ObjectPack {
-            objects: hash_objs,
-        }
+        ObjectPack { objects: hash_objs }
     }
 }
 
 impl Pack for ObjectPack {
-    fn open(&self, name: &str) -> Option<Box<io::Read>> {
+    fn open(&self, name: &str) -> Option<Box<dyn io::Read>> {
         if !name.starts_with("assets/") {
             return None;
         }
@@ -494,7 +558,7 @@ struct ProgressRead<'a, T> {
     task_file: String,
 }
 
-impl <'a, T: io::Read> io::Read for ProgressRead<'a, T> {
+impl<'a, T: io::Read> io::Read for ProgressRead<'a, T> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let size = self.read.read(buf)?;
         Manager::add_task_progress(self.progress, &self.task_name, &self.task_file, size as u64);

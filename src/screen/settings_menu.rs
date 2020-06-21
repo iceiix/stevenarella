@@ -1,7 +1,7 @@
 use crate::console;
 use crate::render;
-use crate::ui;
 use crate::settings;
+use crate::ui;
 
 use std::rc::Rc;
 
@@ -13,7 +13,7 @@ pub struct UIElements {
 pub struct SettingsMenu {
     _vars: Rc<console::Vars>,
     elements: Option<UIElements>,
-    show_disconnect_button: bool
+    show_disconnect_button: bool,
 }
 
 impl SettingsMenu {
@@ -21,7 +21,7 @@ impl SettingsMenu {
         SettingsMenu {
             _vars: vars,
             elements: None,
-            show_disconnect_button: show_disconnect_button
+            show_disconnect_button: show_disconnect_button,
         }
     }
 }
@@ -51,7 +51,8 @@ impl super::Screen for SettingsMenu {
                 .attach(&mut *audio_settings);
             audio_settings.add_text(txt);
             audio_settings.add_click_func(|_, game| {
-                game.screen_sys.add_screen(Box::new(AudioSettingsMenu::new(game.vars.clone())));
+                game.screen_sys
+                    .add_screen(Box::new(AudioSettingsMenu::new(game.vars.clone())));
                 true
             });
         }
@@ -70,7 +71,8 @@ impl super::Screen for SettingsMenu {
                 .attach(&mut *video_settings);
             video_settings.add_text(txt);
             video_settings.add_click_func(|_, game| {
-                game.screen_sys.add_screen(Box::new(VideoSettingsMenu::new(game.vars.clone())));
+                game.screen_sys
+                    .add_screen(Box::new(VideoSettingsMenu::new(game.vars.clone())));
                 true
             });
         }
@@ -142,7 +144,8 @@ impl super::Screen for SettingsMenu {
                 disconnect_button.add_text(txt);
                 disconnect_button.add_click_func(|_, game| {
                     game.server.disconnect(None);
-                    game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
+                    game.screen_sys
+                        .replace_screen(Box::new(super::ServerList::new(None)));
                     true
                 });
             }
@@ -153,14 +156,18 @@ impl super::Screen for SettingsMenu {
             background,
             _buttons: buttons,
         });
-
     }
     fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         self.elements = None;
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(
+        &mut self,
+        _delta: f64,
+        renderer: &mut render::Renderer,
+        ui_container: &mut ui::Container,
+    ) -> Option<Box<dyn super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
         {
             let mode = ui_container.mode;
@@ -178,9 +185,7 @@ impl super::Screen for SettingsMenu {
     }
 
     // Events
-    fn on_scroll(&mut self, _x: f64, _y: f64) {
-
-    }
+    fn on_scroll(&mut self, _x: f64, _y: f64) {}
 
     fn is_closable(&self) -> bool {
         true
@@ -227,11 +232,14 @@ impl super::Screen for VideoSettingsMenu {
         {
             let mut fov_setting = fov_setting.borrow_mut();
             let txt = ui::TextBuilder::new()
-                .text(format!("FOV: {}", match r_fov {
-                    90 => "Normal".into(),
-                    110 => "Quake pro".into(),
-                    val => val.to_string(),
-                }))
+                .text(format!(
+                    "FOV: {}",
+                    match r_fov {
+                        90 => "Normal".into(),
+                        110 => "Quake pro".into(),
+                        val => val.to_string(),
+                    }
+                ))
                 .alignment(ui::VAttach::Middle, ui::HAttach::Center)
                 .attach(&mut *fov_setting);
             fov_setting.add_text(txt);
@@ -246,14 +254,18 @@ impl super::Screen for VideoSettingsMenu {
         {
             let mut vsync_setting = vsync_setting.borrow_mut();
             let txt = ui::TextBuilder::new()
-                .text(format!("VSync: {}", if r_vsync { "Enabled" } else { "Disabled" }))
+                .text(format!(
+                    "VSync: {}",
+                    if r_vsync { "Enabled" } else { "Disabled" }
+                ))
                 .alignment(ui::VAttach::Middle, ui::HAttach::Center)
                 .attach(&mut *vsync_setting);
             let txt_vsync = txt.clone();
             vsync_setting.add_text(txt);
             vsync_setting.add_click_func(move |_, game| {
                 let r_vsync = !*game.vars.get(settings::R_VSYNC);
-                txt_vsync.borrow_mut().text = format!("VSync: {}", if r_vsync { "Enabled" } else { "Disabled" });
+                txt_vsync.borrow_mut().text =
+                    format!("VSync: {}", if r_vsync { "Enabled" } else { "Disabled" });
                 game.vars.set(settings::R_VSYNC, r_vsync);
                 true
             });
@@ -269,10 +281,13 @@ impl super::Screen for VideoSettingsMenu {
         {
             let mut fps_setting = fps_setting.borrow_mut();
             let txt = ui::TextBuilder::new()
-                .text(format!("FPS cap: {}", match r_max_fps {
-                    0 => "Unlimited".into(),
-                    val => val.to_string(),
-                }))
+                .text(format!(
+                    "FPS cap: {}",
+                    match r_max_fps {
+                        0 => "Unlimited".into(),
+                        val => val.to_string(),
+                    }
+                ))
                 .alignment(ui::VAttach::Middle, ui::HAttach::Center)
                 .attach(&mut *fps_setting);
             fps_setting.add_text(txt);
@@ -302,14 +317,18 @@ impl super::Screen for VideoSettingsMenu {
             background,
             _buttons: buttons,
         });
-
     }
     fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         self.elements = None;
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(
+        &mut self,
+        _delta: f64,
+        renderer: &mut render::Renderer,
+        ui_container: &mut ui::Container,
+    ) -> Option<Box<dyn super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
         {
             let mode = ui_container.mode;
@@ -327,9 +346,7 @@ impl super::Screen for VideoSettingsMenu {
     }
 
     // Events
-    fn on_scroll(&mut self, _x: f64, _y: f64) {
-
-    }
+    fn on_scroll(&mut self, _x: f64, _y: f64) {}
 
     fn is_closable(&self) -> bool {
         true
@@ -338,14 +355,14 @@ impl super::Screen for VideoSettingsMenu {
 
 pub struct AudioSettingsMenu {
     _vars: Rc<console::Vars>,
-    elements: Option<UIElements>
+    elements: Option<UIElements>,
 }
 
 impl AudioSettingsMenu {
     pub fn new(vars: Rc<console::Vars>) -> AudioSettingsMenu {
         AudioSettingsMenu {
             _vars: vars,
-            elements: None
+            elements: None,
         }
     }
 }
@@ -387,14 +404,18 @@ impl super::Screen for AudioSettingsMenu {
             background,
             _buttons: buttons,
         });
-
     }
     fn on_deactive(&mut self, _renderer: &mut render::Renderer, _ui_container: &mut ui::Container) {
         self.elements = None;
     }
 
     // Called every frame the screen is active
-    fn tick(&mut self, _delta: f64, renderer: &mut render::Renderer, ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(
+        &mut self,
+        _delta: f64,
+        renderer: &mut render::Renderer,
+        ui_container: &mut ui::Container,
+    ) -> Option<Box<dyn super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
         {
             let mode = ui_container.mode;
@@ -412,9 +433,7 @@ impl super::Screen for AudioSettingsMenu {
     }
 
     // Events
-    fn on_scroll(&mut self, _x: f64, _y: f64) {
-
-    }
+    fn on_scroll(&mut self, _x: f64, _y: f64) {}
 
     fn is_closable(&self) -> bool {
         true

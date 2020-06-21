@@ -1,9 +1,8 @@
-
 use super::*;
 use crate::ecs;
-use crate::world;
 use crate::render;
 use crate::shared::Position as BPos;
+use crate::world;
 use cgmath::InnerSpace;
 
 pub struct ApplyVelocity {
@@ -18,9 +17,7 @@ impl ApplyVelocity {
         let position = m.get_key();
         let velocity = m.get_key();
         ApplyVelocity {
-            filter: ecs::Filter::new()
-                .with(position)
-                .with(velocity),
+            filter: ecs::Filter::new().with(position).with(velocity),
             position,
             velocity,
             movement: m.get_key(),
@@ -29,7 +26,6 @@ impl ApplyVelocity {
 }
 
 impl ecs::System for ApplyVelocity {
-
     fn filter(&self) -> &ecs::Filter {
         &self.filter
     }
@@ -58,9 +54,7 @@ impl ApplyGravity {
         let gravity = m.get_key::<Gravity>();
         let velocity = m.get_key();
         ApplyGravity {
-            filter: ecs::Filter::new()
-                .with(gravity)
-                .with(velocity),
+            filter: ecs::Filter::new().with(gravity).with(velocity),
             velocity,
             movement: m.get_key(),
         }
@@ -68,7 +62,6 @@ impl ApplyGravity {
 }
 
 impl ecs::System for ApplyGravity {
-
     fn filter(&self) -> &ecs::Filter {
         &self.filter
     }
@@ -98,15 +91,13 @@ impl UpdateLastPosition {
     pub fn new(m: &mut ecs::Manager) -> UpdateLastPosition {
         let position = m.get_key();
         UpdateLastPosition {
-            filter: ecs::Filter::new()
-                .with(position),
+            filter: ecs::Filter::new().with(position),
             position,
         }
     }
 }
 
 impl ecs::System for UpdateLastPosition {
-
     fn filter(&self) -> &ecs::Filter {
         &self.filter
     }
@@ -133,9 +124,7 @@ impl LerpPosition {
         let position = m.get_key();
         let target_position = m.get_key();
         LerpPosition {
-            filter: ecs::Filter::new()
-                .with(position)
-                .with(target_position),
+            filter: ecs::Filter::new().with(position).with(target_position),
             position,
             target_position,
             game_info: m.get_key(),
@@ -144,20 +133,24 @@ impl LerpPosition {
 }
 
 impl ecs::System for LerpPosition {
-
     fn filter(&self) -> &ecs::Filter {
         &self.filter
     }
 
     fn update(&mut self, m: &mut ecs::Manager, _: &mut world::World, _: &mut render::Renderer) {
         let world_entity = m.get_world();
-        let delta = m.get_component_mut(world_entity, self.game_info).unwrap().delta.min(5.0);
+        let delta = m
+            .get_component_mut(world_entity, self.game_info)
+            .unwrap()
+            .delta
+            .min(5.0);
         for e in m.find(&self.filter) {
             let pos = m.get_component_mut(e, self.position).unwrap();
             let target_pos = m.get_component(e, self.target_position).unwrap();
 
-            pos.position = pos.position + (target_pos.position - pos.position) * delta * target_pos.lerp_amount;
-            let len = (pos.position - target_pos.position).magnitude2() ;
+            pos.position = pos.position
+                + (target_pos.position - pos.position) * delta * target_pos.lerp_amount;
+            let len = (pos.position - target_pos.position).magnitude2();
             if len < 0.001 || len > 100.0 * 100.0 {
                 pos.position = target_pos.position;
             }
@@ -177,9 +170,7 @@ impl LerpRotation {
         let rotation = m.get_key();
         let target_rotation = m.get_key();
         LerpRotation {
-            filter: ecs::Filter::new()
-                .with(rotation)
-                .with(target_rotation),
+            filter: ecs::Filter::new().with(rotation).with(target_rotation),
             rotation,
             target_rotation,
             game_info: m.get_key(),
@@ -188,7 +179,6 @@ impl LerpRotation {
 }
 
 impl ecs::System for LerpRotation {
-
     fn filter(&self) -> &ecs::Filter {
         &self.filter
     }
@@ -196,12 +186,16 @@ impl ecs::System for LerpRotation {
     fn update(&mut self, m: &mut ecs::Manager, _: &mut world::World, _: &mut render::Renderer) {
         use std::f64::consts::PI;
         let world_entity = m.get_world();
-        let delta = m.get_component_mut(world_entity, self.game_info).unwrap().delta.min(5.0);
+        let delta = m
+            .get_component_mut(world_entity, self.game_info)
+            .unwrap()
+            .delta
+            .min(5.0);
         for e in m.find(&self.filter) {
             let rot = m.get_component_mut(e, self.rotation).unwrap();
             let target_rot = m.get_component_mut(e, self.target_rotation).unwrap();
-            target_rot.yaw = (PI*2.0 + target_rot.yaw) % (PI*2.0);
-            target_rot.pitch = (PI*2.0 + target_rot.pitch) % (PI*2.0);
+            target_rot.yaw = (PI * 2.0 + target_rot.yaw) % (PI * 2.0);
+            target_rot.pitch = (PI * 2.0 + target_rot.pitch) % (PI * 2.0);
 
             let mut delta_yaw = target_rot.yaw - rot.yaw;
             let mut delta_pitch = target_rot.pitch - rot.pitch;
@@ -215,8 +209,8 @@ impl ecs::System for LerpRotation {
 
             rot.yaw += delta_yaw * 0.2 * delta;
             rot.pitch += delta_pitch * 0.2 * delta;
-            rot.yaw = (PI*2.0 + rot.yaw) % (PI*2.0);
-            rot.pitch = (PI*2.0 + rot.pitch) % (PI*2.0);
+            rot.yaw = (PI * 2.0 + rot.yaw) % (PI * 2.0);
+            rot.pitch = (PI * 2.0 + rot.pitch) % (PI * 2.0);
         }
     }
 }
@@ -225,7 +219,7 @@ pub struct LightEntity {
     filter: ecs::Filter,
     position: ecs::Key<Position>,
     bounds: ecs::Key<Bounds>,
-    light: ecs::Key<Light>
+    light: ecs::Key<Light>,
 }
 
 impl LightEntity {
@@ -234,10 +228,7 @@ impl LightEntity {
         let bounds = m.get_key();
         let light = m.get_key();
         LightEntity {
-            filter: ecs::Filter::new()
-                .with(position)
-                .with(bounds)
-                .with(light),
+            filter: ecs::Filter::new().with(position).with(bounds).with(light),
             position,
             bounds,
             light,
@@ -246,7 +237,6 @@ impl LightEntity {
 }
 
 impl ecs::System for LightEntity {
-
     fn filter(&self) -> &ecs::Filter {
         &self.filter
     }
@@ -269,14 +259,13 @@ impl ecs::System for LightEntity {
 
             let length = (bounds.bounds.max - bounds.bounds.min).magnitude() as f32;
 
-            for y in min_y .. max_y {
-                for z in min_z .. max_z {
-                    for x in min_x .. max_x {
-                        let dist = length - (
-                                ((x as f32 + 0.5) - pos.position.x as f32).powi(2)
+            for y in min_y..max_y {
+                for z in min_z..max_z {
+                    for x in min_x..max_x {
+                        let dist = length
+                            - (((x as f32 + 0.5) - pos.position.x as f32).powi(2)
                                 + ((y as f32 + 0.5) - pos.position.y as f32).powi(2)
-                                + ((z as f32 + 0.5) - pos.position.z as f32).powi(2)
-                            )
+                                + ((z as f32 + 0.5) - pos.position.z as f32).powi(2))
                             .sqrt()
                             .min(length);
                         let dist = dist / length;

@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::{Arc, RwLock};
-use std::collections::HashMap;
-use crate::resources;
 use crate::gl;
 use crate::render;
 use crate::render::glsl;
 use crate::render::shaders;
-use byteorder::{WriteBytesExt, NativeEndian};
+use crate::resources;
+use byteorder::{NativeEndian, WriteBytesExt};
 use image;
 use image::GenericImageView;
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 const UI_WIDTH: f64 = 854.0;
 const UI_HEIGHT: f64 = 480.0;
@@ -69,10 +69,11 @@ init_shader! {
 }
 
 impl UIState {
-    pub fn new(glsl: &glsl::Registry,
-               textures: Arc<RwLock<render::TextureManager>>,
-               res: Arc<RwLock<resources::Manager>>)
-               -> UIState {
+    pub fn new(
+        glsl: &glsl::Registry,
+        textures: Arc<RwLock<render::TextureManager>>,
+        res: Arc<RwLock<resources::Manager>>,
+    ) -> UIState {
         let shader = UIShader::new(glsl);
 
         let array = gl::VertexArray::new();
@@ -84,9 +85,15 @@ impl UIState {
         shader.texture_offset.enable();
         shader.color.enable();
         shader.position.vertex_pointer_int(3, gl::SHORT, 28, 0);
-        shader.texture_info.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 28, 8);
-        shader.texture_offset.vertex_pointer_int(3, gl::SHORT, 28, 16);
-        shader.color.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 28, 24);
+        shader
+            .texture_info
+            .vertex_pointer(4, gl::UNSIGNED_SHORT, false, 28, 8);
+        shader
+            .texture_offset
+            .vertex_pointer_int(3, gl::SHORT, 28, 16);
+        shader
+            .color
+            .vertex_pointer(4, gl::UNSIGNED_BYTE, true, 28, 24);
 
         let index_buffer = gl::Buffer::new();
         index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
@@ -155,17 +162,21 @@ impl UIState {
                 let (data, ty) = render::generate_element_buffer(self.count);
                 self.index_type = ty;
                 self.index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
-                self.index_buffer.set_data(gl::ELEMENT_ARRAY_BUFFER, &data, gl::DYNAMIC_DRAW);
+                self.index_buffer
+                    .set_data(gl::ELEMENT_ARRAY_BUFFER, &data, gl::DYNAMIC_DRAW);
                 self.max_index = self.count;
             }
 
-            self.shader.screensize.set_float2(width as f32, height as f32);
+            self.shader
+                .screensize
+                .set_float2(width as f32, height as f32);
 
             self.buffer.bind(gl::ARRAY_BUFFER);
             self.index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
             if self.data.len() > self.prev_size {
                 self.prev_size = self.data.len();
-                self.buffer.set_data(gl::ARRAY_BUFFER, &self.data, gl::STREAM_DRAW);
+                self.buffer
+                    .set_data(gl::ARRAY_BUFFER, &self.data, gl::STREAM_DRAW);
             } else {
                 self.buffer.re_set_data(gl::ARRAY_BUFFER, &self.data);
             }
@@ -209,15 +220,19 @@ impl UIState {
         if page == 0 {
             let sw = (self.page_width / 16.0) as u32;
             let sh = (self.page_height / 16.0) as u32;
-            return p.relative((cx * sw + info.0 as u32) as f32 / (self.page_width as f32),
-                              (cy * sh) as f32 / (self.page_height as f32),
-                              (info.1 - info.0) as f32 / (self.page_width as f32),
-                              (sh as f32) / (self.page_height as f32))
+            return p.relative(
+                (cx * sw + info.0 as u32) as f32 / (self.page_width as f32),
+                (cy * sh) as f32 / (self.page_height as f32),
+                (info.1 - info.0) as f32 / (self.page_width as f32),
+                (sh as f32) / (self.page_height as f32),
+            );
         }
-        p.relative((cx * 16 + info.0 as u32) as f32 / 256.0,
-                   (cy * 16) as f32 / 256.0,
-                   (info.1 - info.0) as f32 / 256.0,
-                   16.0 / 256.0)
+        p.relative(
+            (cx * 16 + info.0 as u32) as f32 / 256.0,
+            (cy * 16) as f32 / 256.0,
+            (info.1 - info.0) as f32 / 256.0,
+            16.0 / 256.0,
+        )
     }
 
     pub fn size_of_string(&self, val: &str) -> f64 {
@@ -273,7 +288,7 @@ impl UIState {
                     let mut start = true;
                     'x_loop: for x in 0..sw {
                         for y in 0..sh {
-                            let a = img.get_pixel(cx + x, cy + y).data[3];
+                            let a = img.get_pixel(cx + x, cy + y).0[3];
                             if start && a != 0 {
                                 self.font_character_info[i as usize].0 = x as i32;
                                 start = false;
@@ -296,44 +311,47 @@ impl UIState {
         self.new_text_scaled(val, x, y, 1.0, 1.0, r, g, b)
     }
 
-    pub fn new_text_scaled(&mut self,
-                           val: &str,
-                           x: f64,
-                           y: f64,
-                           sx: f64,
-                           sy: f64,
-                           r: u8,
-                           g: u8,
-                           b: u8)
-                           -> UIText {
+    pub fn new_text_scaled(
+        &mut self,
+        val: &str,
+        x: f64,
+        y: f64,
+        sx: f64,
+        sy: f64,
+        r: u8,
+        g: u8,
+        b: u8,
+    ) -> UIText {
         self.create_text(val, x, y, sx, sy, 0.0, r, g, b)
     }
 
-    pub fn new_text_rotated(&mut self,
-                            val: &str,
-                            x: f64,
-                            y: f64,
-                            sx: f64,
-                            sy: f64,
-                            rotation: f64,
-                            r: u8,
-                            g: u8,
-                            b: u8)
-                            -> UIText {
+    pub fn new_text_rotated(
+        &mut self,
+        val: &str,
+        x: f64,
+        y: f64,
+        sx: f64,
+        sy: f64,
+        rotation: f64,
+        r: u8,
+        g: u8,
+        b: u8,
+    ) -> UIText {
         self.create_text(val, x, y, sx, sy, rotation, r, g, b)
     }
 
-    fn create_text(&mut self,
-                   val: &str,
-                   x: f64,
-                   y: f64,
-                   sx: f64,
-                   sy: f64,
-                   rotation: f64,
-                   r: u8,
-                   g: u8,
-                   b: u8)
-                   -> UIText {
+    fn create_text(
+        &mut self,
+        val: &str,
+        x: f64,
+        y: f64,
+        sx: f64,
+        sy: f64,
+        rotation: f64,
+        r: u8,
+        g: u8,
+        b: u8,
+    ) -> UIText {
         let mut elements = Vec::new();
         let mut offset = 0.0;
         for ch in val.chars() {
@@ -361,30 +379,34 @@ impl UIState {
                 dy = (16.0 * 0.5) + (tmpy * c + tmpx * s);
             }
 
-            let mut shadow = UIElement::new(&texture,
-                                            x + dsx * sx,
-                                            y + dsy * sy,
-                                            w * sx,
-                                            16.0 * sy,
-                                            0.0,
-                                            0.0,
-                                            1.0,
-                                            1.0);
+            let mut shadow = UIElement::new(
+                &texture,
+                x + dsx * sx,
+                y + dsy * sy,
+                w * sx,
+                16.0 * sy,
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+            );
             shadow.r = ((r as f64) * 0.25) as u8;
             shadow.g = ((g as f64) * 0.25) as u8;
             shadow.b = ((b as f64) * 0.25) as u8;
             shadow.rotation = rotation;
             elements.push(shadow);
 
-            let mut text = UIElement::new(&texture,
-                                          x + dx * sx,
-                                          y + dy * sy,
-                                          w * sx,
-                                          16.0 * sy,
-                                          0.0,
-                                          0.0,
-                                          1.0,
-                                          1.0);
+            let mut text = UIElement::new(
+                &texture,
+                x + dx * sx,
+                y + dy * sy,
+                w * sx,
+                16.0 * sy,
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+            );
             text.r = r;
             text.g = g;
             text.b = b;
@@ -437,16 +459,17 @@ pub struct UIElement {
 }
 
 impl UIElement {
-    pub fn new(tex: &render::Texture,
-               x: f64,
-               y: f64,
-               width: f64,
-               height: f64,
-               tx: f64,
-               ty: f64,
-               tw: f64,
-               th: f64)
-               -> UIElement {
+    pub fn new(
+        tex: &render::Texture,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        tx: f64,
+        ty: f64,
+        tw: f64,
+        th: f64,
+    ) -> UIElement {
         let twidth = tex.get_width();
         let theight = tex.get_height();
         UIElement {
@@ -474,46 +497,56 @@ impl UIElement {
 
     pub fn bytes(&self, width: f64, height: f64) -> Vec<u8> {
         let mut buf = Vec::with_capacity(28 * 4);
-        self.append_vertex(&mut buf,
-                           self.x,
-                           self.y,
-                           self.t_offsetx,
-                           self.t_offsety,
-                           width,
-                           height);
-        self.append_vertex(&mut buf,
-                           self.x + self.w,
-                           self.y,
-                           self.t_offsetx + self.t_sizew,
-                           self.t_offsety,
-                           width,
-                           height);
-        self.append_vertex(&mut buf,
-                           self.x,
-                           self.y + self.h,
-                           self.t_offsetx,
-                           self.t_offsety + self.t_sizeh,
-                           width,
-                           height);
-        self.append_vertex(&mut buf,
-                           self.x + self.w,
-                           self.y + self.h,
-                           self.t_offsetx + self.t_sizew,
-                           self.t_offsety + self.t_sizeh,
-                           width,
-                           height);
+        self.append_vertex(
+            &mut buf,
+            self.x,
+            self.y,
+            self.t_offsetx,
+            self.t_offsety,
+            width,
+            height,
+        );
+        self.append_vertex(
+            &mut buf,
+            self.x + self.w,
+            self.y,
+            self.t_offsetx + self.t_sizew,
+            self.t_offsety,
+            width,
+            height,
+        );
+        self.append_vertex(
+            &mut buf,
+            self.x,
+            self.y + self.h,
+            self.t_offsetx,
+            self.t_offsety + self.t_sizeh,
+            width,
+            height,
+        );
+        self.append_vertex(
+            &mut buf,
+            self.x + self.w,
+            self.y + self.h,
+            self.t_offsetx + self.t_sizew,
+            self.t_offsety + self.t_sizeh,
+            width,
+            height,
+        );
         buf
     }
 
     #[allow(unused_must_use)]
-    pub fn append_vertex(&self,
-                         buf: &mut Vec<u8>,
-                         x: f64,
-                         y: f64,
-                         tx: i16,
-                         ty: i16,
-                         width: f64,
-                         height: f64) {
+    pub fn append_vertex(
+        &self,
+        buf: &mut Vec<u8>,
+        x: f64,
+        y: f64,
+        tx: i16,
+        ty: i16,
+        width: f64,
+        height: f64,
+    ) {
         let mut dx = x as f64;
         let mut dy = y as f64;
         if self.rotation != 0.0 {

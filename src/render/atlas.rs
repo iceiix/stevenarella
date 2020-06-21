@@ -26,7 +26,9 @@ pub struct Rect {
 
 impl Atlas {
     pub fn new(width: usize, height: usize) -> Atlas {
-        let mut a = Atlas { free_space: Vec::new() };
+        let mut a = Atlas {
+            free_space: Vec::new(),
+        };
         a.free_space.push(Rect {
             x: 0,
             y: 0,
@@ -78,13 +80,15 @@ impl Atlas {
         } else {
             if t.height > height {
                 // Split by height
-                self.free_space.insert(0,
-                                       Rect {
-                                           x: t.x,
-                                           y: t.y + height,
-                                           width,
-                                           height: t.height - height,
-                                       });
+                self.free_space.insert(
+                    0,
+                    Rect {
+                        x: t.x,
+                        y: t.y + height,
+                        width,
+                        height: t.height - height,
+                    },
+                );
                 target_index += 1;
             }
             t.x += width;

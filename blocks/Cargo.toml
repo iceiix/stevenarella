@@ -5,9 +5,9 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
 edition = "2018"
 
 [dependencies]
-lazy_static = "1.1.0"
-cgmath = "0.16.1"
-collision = "0.18.0"
+lazy_static = "1.4.0"
+cgmath = "0.17.0"
+collision = "0.20.1"
 
 
 [dependencies.steven_shared]

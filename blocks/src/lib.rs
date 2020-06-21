@@ -1,12 +1,12 @@
-
-#![recursion_limit="600"]
+#![recursion_limit = "600"]
 
 extern crate steven_shared as shared;
 
 use crate::shared::{Axis, Direction, Position};
-use collision::Aabb3;
 use cgmath::Point3;
+use collision::Aabb3;
 use lazy_static::lazy_static;
+use std::collections::HashMap;
 
 pub mod material;
 pub use self::material::Material;
@@ -44,26 +44,28 @@ macro_rules! create_ids {
 struct VanillaIDMap {
     flat: Vec<Option<Block>>,
     hier: Vec<Option<Block>>,
+    modded: HashMap<String, [Option<Block>; 16]>,
 }
 
 macro_rules! define_blocks {
     (
         $(
             $name:ident {
+                $(modid $modid:expr,)?
                 props {
                     $(
                         $fname:ident : $ftype:ty = [$($val:expr),+],
                     )*
                 },
-                $(data $datafunc:expr,)*
-                $(offset $offsetfunc:expr,)*
-                $(material $mat:expr,)*
+                $(data $datafunc:expr,)?
+                $(offset $offsetfunc:expr,)?
+                $(material $mat:expr,)?
                 model $model:expr,
-                $(variant $variant:expr,)*
-                $(tint $tint:expr,)*
-                $(collision $collision:expr,)*
-                $(update_state ($world:ident, $pos:ident) => $update_state:expr,)*
-                $(multipart ($mkey:ident, $mval:ident) => $multipart:expr,)*
+                $(variant $variant:expr,)?
+                $(tint $tint:expr,)?
+                $(collision $collision:expr,)?
+                $(update_state ($world:ident, $pos:ident) => $update_state:expr,)?
+                $(multipart ($mkey:ident, $mval:ident) => $multipart:expr,)?
             }
         )+
     ) => (
@@ -73,7 +75,7 @@ macro_rules! define_blocks {
                 $name {
                     $(
                         $fname : $ftype,
-                    )*
+                    )?
                 },
             )+
         }
@@ -87,7 +89,7 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             internal_ids::$name
                         }
@@ -100,12 +102,12 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(
                                 let data: Option<usize> = ($datafunc).map(|v| v);
                                 return data;
-                            )*
+                            )?
                             Some(0)
                         }
                     )+
@@ -117,27 +119,59 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(
                                 let offset: Option<usize> = ($offsetfunc).map(|v| v);
                                 return offset;
-                            )*
+                            )?
                             $(
                                 let data: Option<usize> = ($datafunc).map(|v| v);
                                 return data;
-                            )*
+                            )?
                             Some(0)
                         }
                     )+
                 }
             }
 
-            pub fn by_vanilla_id(id: usize, protocol_version: i32) -> Block {
+            #[allow(unused_variables, unreachable_code)]
+            pub fn get_modid(&self) -> Option<&str> {
+                match *self {
+                    $(
+                        Block::$name {
+                            $($fname,)?
+                        } => {
+                            $(
+                                return Some($modid);
+                            )?
+                            None
+                        }
+                    )+
+                }
+            }
+
+            pub fn by_vanilla_id(id: usize, protocol_version: i32, modded_block_ids: &HashMap<usize, String>) -> Block {
                 if protocol_version >= 404 {
                     VANILLA_ID_MAP.flat.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
+                    // TODO: support modded 1.13.2+ blocks after https://github.com/iceiix/stevenarella/pull/145
                 } else {
-                    VANILLA_ID_MAP.hier.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
+                    if let Some(block) = VANILLA_ID_MAP.hier.get(id).and_then(|v| *v) {
+                        block
+                    } else {
+                        let data = id & 0xf;
+
+                        if let Some(name) = modded_block_ids.get(&(id >> 4)) {
+                            if let Some(blocks_by_data) = VANILLA_ID_MAP.modded.get(name) {
+                                blocks_by_data[data].unwrap_or(Block::Missing{})
+                            } else {
+                                //info!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
+                                Block::Missing{}
+                            }
+                        } else {
+                            Block::Missing{}
+                        }
+                    }
                 }
             }
 
@@ -146,9 +180,9 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
-                            $(return $mat;)*
+                            $(return $mat;)?
                             material::SOLID
                         }
                     )+
@@ -160,7 +194,7 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             let parts = $model;
                             (String::from(parts.0), String::from(parts.1))
@@ -174,7 +208,7 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(return String::from($variant);)*
                             //"normal".to_owned()
@@ -189,9 +223,9 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
-                            $(return $tint;)*
+                            $(return $tint;)?
                             TintType::Default
                         }
                     )+
@@ -203,9 +237,9 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
-                            $(return $collision;)*
+                            $(return $collision;)?
                             vec![Aabb3::new(
                                 Point3::new(0.0, 0.0, 0.0),
                                 Point3::new(1.0, 1.0, 1.0)
@@ -220,15 +254,15 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(
                                 let $world = world;
                                 let $pos = pos;
                                 return $update_state;
-                            )*
+                            )?
                             Block::$name {
-                                $($fname: $fname,)*
+                                $($fname: $fname,)?
                             }
                         }
                     )+
@@ -240,13 +274,13 @@ macro_rules! define_blocks {
                 match *self {
                     $(
                         Block::$name {
-                            $($fname,)*
+                            $($fname,)?
                         } => {
                             $(
                                 let $mkey = key;
                                 let $mval = val;
                                 return $multipart;
-                            )*
+                            )?
                             false
                         }
                     )+
@@ -254,14 +288,18 @@ macro_rules! define_blocks {
             }
         }
 
-        lazy_static! {
-            static ref VANILLA_ID_MAP: VanillaIDMap = {
-                let mut blocks_flat = vec![];
-                let mut blocks_hier = vec![];
-                let mut flat_id = 0;
-                let mut last_internal_id = 0;
-                let mut hier_block_id = 0;
-                $({
+        mod block_registration_functions {
+            use super::*;
+            $(
+                #[allow(non_snake_case)]
+                pub fn $name(
+                    blocks_flat: &mut Vec<Option<Block>>,
+                    blocks_hier: &mut Vec<Option<Block>>,
+                    blocks_modded: &mut HashMap<String, [Option<Block>; 16]>,
+                    flat_id: &mut usize,
+                    last_internal_id: &mut usize,
+                    hier_block_id: &mut usize,
+                    ) {
                     #[allow(non_camel_case_types, dead_code)]
                     struct CombinationIter<$($fname),*> {
                         first: bool,
@@ -272,15 +310,15 @@ macro_rules! define_blocks {
                     }
                     #[allow(non_camel_case_types)]
                     struct CombinationIterState<$($fname),*> {
-                        $($fname: $fname,)*
+                        $($fname: $fname,)?
                     }
                     #[allow(non_camel_case_types)]
                     struct CombinationIterOrig<$($fname),*> {
-                        $($fname: $fname,)*
+                        $($fname: $fname,)?
                     }
                     #[allow(non_camel_case_types)]
                     struct CombinationIterCurrent {
-                        $($fname: $ftype,)*
+                        $($fname: $ftype,)?
                     }
 
                     #[allow(non_camel_case_types)]
@@ -297,7 +335,7 @@ macro_rules! define_blocks {
                                 return Some(Block::$name {
                                     $(
                                         $fname: self.current.$fname,
-                                    )*
+                                    )?
                                 });
                             }
                             let mut has_value = false;
@@ -310,7 +348,7 @@ macro_rules! define_blocks {
                                     }
                                     self.state.$fname = self.orig.$fname.clone();
                                     self.current.$fname = self.state.$fname.next().unwrap();
-                                )*
+                                )?
                                 self.finished = true;
                                 return None;
                             }
@@ -318,7 +356,7 @@ macro_rules! define_blocks {
                                 Some(Block::$name {
                                     $(
                                         $fname: self.current.$fname,
-                                    )*
+                                    )?
                                 })
                             } else {
                                 None
@@ -333,13 +371,13 @@ macro_rules! define_blocks {
                                 finished: false,
                                 first: true,
                                 orig: CombinationIterOrig {
-                                    $($fname: $fname.clone(),)*
+                                    $($fname: $fname.clone(),)?
                                 },
                                 current: CombinationIterCurrent {
-                                    $($fname: $fname.next().unwrap(),)*
+                                    $($fname: $fname.next().unwrap(),)?
                                 },
                                 state: CombinationIterState {
-                                    $($fname: $fname,)*
+                                    $($fname: $fname,)?
                                 }
                             }
                         }
@@ -354,70 +392,106 @@ macro_rules! define_blocks {
                     for block in iter {
                         let internal_id = block.get_internal_id();
                         let hier_data: Option<usize> = block.get_hierarchical_data();
+                        if let Some(modid) = block.get_modid() {
+                            let hier_data = hier_data.unwrap();
+                            if !(*blocks_modded).contains_key(modid) {
+                                (*blocks_modded).insert(modid.to_string(), [None; 16]);
+                            }
+                            let block_from_data = (*blocks_modded).get_mut(modid).unwrap();
+                            block_from_data[hier_data] = Some(block);
+                            continue
+                        }
+
                         let vanilla_id =
                             if let Some(hier_data) = hier_data {
-                                if internal_id != last_internal_id {
-                                    hier_block_id += 1;
+                                if internal_id != *last_internal_id {
+                                    *hier_block_id += 1;
                                 }
-                                last_internal_id = internal_id;
-                                Some((hier_block_id << 4) + hier_data)
+                                *last_internal_id = internal_id;
+                                Some((*hier_block_id << 4) + hier_data)
                             } else {
                                 None
                             };
 
                         let offset = block.get_flat_offset();
                         if let Some(offset) = offset {
-                            let id = flat_id + offset;
+                            let id = *flat_id + offset;
                             /*
                             if let Some(vanilla_id) = vanilla_id {
-                                println!("{} block state = {:?} hierarchical {}:{} offset={}", id, block, vanilla_id >> 4, vanilla_id & 0xF, offset);
+                                debug!("{} block state = {:?} hierarchical {}:{} offset={}", id, block, vanilla_id >> 4, vanilla_id & 0xF, offset);
                             } else {
-                                println!("{} block state = {:?} hierarchical none, offset={}", id, block, offset);
+                                debug!("{} block state = {:?} hierarchical none, offset={}", id, block, offset);
                             }
                             */
                             if offset as isize > last_offset {
                                 last_offset = offset as isize;
                             }
 
-                            if blocks_flat.len() <= id {
-                                blocks_flat.resize(id + 1, None);
+                            if (*blocks_flat).len() <= id {
+                                (*blocks_flat).resize(id + 1, None);
                             }
-                            if blocks_flat[id].is_none() {
-                                blocks_flat[id] = Some(block);
+                            if (*blocks_flat)[id].is_none() {
+                                (*blocks_flat)[id] = Some(block);
                             } else {
                                 panic!(
                                     "Tried to register {:#?} to {} but {:#?} was already registered",
                                     block,
                                     id,
-                                    blocks_flat[id]
+                                    (*blocks_flat)[id]
                                 );
                             }
+                        }
 
-                            if let Some(vanilla_id) = vanilla_id {
-                                if blocks_hier.len() <= vanilla_id {
-                                    blocks_hier.resize(vanilla_id + 1, None);
-                                }
-                                if blocks_hier[vanilla_id].is_none() {
-                                    blocks_hier[vanilla_id] = Some(block);
-                                } else {
-                                    panic!(
-                                        "Tried to register {:#?} to {} but {:#?} was already registered",
-                                        block,
-                                        id,
-                                        blocks_hier[vanilla_id]
-                                    );
-                                }
+                        if let Some(vanilla_id) = vanilla_id {
+                            /*
+                            if offset.is_none() {
+                                debug!("(no flat) block state = {:?} hierarchical {}:{}", block, vanilla_id >> 4, vanilla_id & 0xF);
+                            }
+                            */
+
+                            if (*blocks_hier).len() <= vanilla_id {
+                                (*blocks_hier).resize(vanilla_id + 1, None);
+                            }
+                            if (*blocks_hier)[vanilla_id].is_none() {
+                                (*blocks_hier)[vanilla_id] = Some(block);
+                            } else {
+                                panic!(
+                                    "Tried to register {:#?} to {} but {:#?} was already registered",
+                                    block,
+                                    vanilla_id,
+                                    (*blocks_hier)[vanilla_id]
+                                );
                             }
                         }
                     }
 
                     #[allow(unused_assignments)]
                     {
-                        flat_id += (last_offset + 1) as usize;
+                        *flat_id += (last_offset + 1) as usize;
                     }
-                })+
+                }
+            )+
+        }
 
-                VanillaIDMap { flat: blocks_flat, hier: blocks_hier }
+        lazy_static! {
+            static ref VANILLA_ID_MAP: VanillaIDMap = {
+                let mut blocks_flat = vec![];
+                let mut blocks_hier = vec![];
+                let mut blocks_modded: HashMap<String, [Option<Block>; 16]> = HashMap::new();
+                let mut flat_id = 0;
+                let mut last_internal_id = 0;
+                let mut hier_block_id = 0;
+
+                $(
+                    block_registration_functions::$name(&mut blocks_flat,
+                                                        &mut blocks_hier,
+                                                        &mut blocks_modded,
+                                                        &mut flat_id,
+                                                        &mut last_internal_id,
+                                                        &mut hier_block_id);
+                )+
+
+                VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded }
             };
         }
     );
@@ -426,7 +500,7 @@ macro_rules! define_blocks {
 #[derive(Clone, Copy)]
 pub enum TintType {
     Default,
-    Color{r: u8, g: u8, b: u8},
+    Color { r: u8, g: u8, b: u8 },
     Grass,
     Foliage,
 }
@@ -986,6 +1060,56 @@ define_blocks! {
         },
     }
     Wool {
+        props {
+            color: ColoredVariant = [
+                ColoredVariant::White,
+                ColoredVariant::Orange,
+                ColoredVariant::Magenta,
+                ColoredVariant::LightBlue,
+                ColoredVariant::Yellow,
+                ColoredVariant::Lime,
+                ColoredVariant::Pink,
+                ColoredVariant::Gray,
+                ColoredVariant::Silver,
+                ColoredVariant::Cyan,
+                ColoredVariant::Purple,
+                ColoredVariant::Blue,
+                ColoredVariant::Brown,
+                ColoredVariant::Green,
+                ColoredVariant::Red,
+                ColoredVariant::Black
+            ],
+        },
+        data Some(color.data()),
+        model { ("minecraft", format!("{}_wool", color.as_string()) ) },
+    }
+    ThermalExpansionRockwool {
+        modid "ThermalExpansion:Rockwool",
+        props {
+            color: ColoredVariant = [
+                ColoredVariant::White,
+                ColoredVariant::Orange,
+                ColoredVariant::Magenta,
+                ColoredVariant::LightBlue,
+                ColoredVariant::Yellow,
+                ColoredVariant::Lime,
+                ColoredVariant::Pink,
+                ColoredVariant::Gray,
+                ColoredVariant::Silver,
+                ColoredVariant::Cyan,
+                ColoredVariant::Purple,
+                ColoredVariant::Blue,
+                ColoredVariant::Brown,
+                ColoredVariant::Green,
+                ColoredVariant::Red,
+                ColoredVariant::Black
+            ],
+        },
+        data Some(color.data()),
+        model { ("minecraft", format!("{}_wool", color.as_string()) ) },
+    }
+    ThermalFoundationRockwool {
+        modid "thermalfoundation:rockwool",
         props {
             color: ColoredVariant = [
                 ColoredVariant::White,
@@ -5501,59 +5625,65 @@ define_blocks! {
 
 fn can_burn<W: WorldAccess>(world: &W, pos: Position) -> bool {
     match world.get_block(pos) {
-        Block::Planks{..} |
-        Block::DoubleWoodenSlab{..} |
-        Block::WoodenSlab{..} |
-        Block::FenceGate{..} |
-        Block::SpruceFenceGate{..} |
-        Block::BirchFenceGate{..} |
-        Block::JungleFenceGate{..} |
-        Block::DarkOakFenceGate{..} |
-        Block::AcaciaFenceGate{..} |
-        Block::Fence{..} |
-        Block::SpruceFence{..} |
-        Block::BirchFence{..} |
-        Block::JungleFence{..} |
-        Block::DarkOakFence{..} |
-        Block::AcaciaFence{..} |
-        Block::OakStairs{..} |
-        Block::BirchStairs{..} |
-        Block::SpruceStairs{..} |
-        Block::JungleStairs{..} |
-        Block::AcaciaStairs{..} |
-        Block::DarkOakStairs{..} |
-        Block::Log{..} |
-        Block::Log2{..} |
-        Block::Leaves{..} |
-        Block::Leaves2{..} |
-        Block::BookShelf{..} |
-        Block::TNT{..} |
-        Block::TallGrass{..} |
-        Block::DoublePlant{..} |
-        Block::YellowFlower{..} |
-        Block::RedFlower{..} |
-        Block::DeadBush{..} |
-        Block::Wool{..} |
-        Block::Vine{..} |
-        Block::CoalBlock{..} |
-        Block::HayBlock{..} |
-        Block::Carpet{..} => true,
+        Block::Planks { .. }
+        | Block::DoubleWoodenSlab { .. }
+        | Block::WoodenSlab { .. }
+        | Block::FenceGate { .. }
+        | Block::SpruceFenceGate { .. }
+        | Block::BirchFenceGate { .. }
+        | Block::JungleFenceGate { .. }
+        | Block::DarkOakFenceGate { .. }
+        | Block::AcaciaFenceGate { .. }
+        | Block::Fence { .. }
+        | Block::SpruceFence { .. }
+        | Block::BirchFence { .. }
+        | Block::JungleFence { .. }
+        | Block::DarkOakFence { .. }
+        | Block::AcaciaFence { .. }
+        | Block::OakStairs { .. }
+        | Block::BirchStairs { .. }
+        | Block::SpruceStairs { .. }
+        | Block::JungleStairs { .. }
+        | Block::AcaciaStairs { .. }
+        | Block::DarkOakStairs { .. }
+        | Block::Log { .. }
+        | Block::Log2 { .. }
+        | Block::Leaves { .. }
+        | Block::Leaves2 { .. }
+        | Block::BookShelf { .. }
+        | Block::TNT { .. }
+        | Block::TallGrass { .. }
+        | Block::DoublePlant { .. }
+        | Block::YellowFlower { .. }
+        | Block::RedFlower { .. }
+        | Block::DeadBush { .. }
+        | Block::Wool { .. }
+        | Block::Vine { .. }
+        | Block::CoalBlock { .. }
+        | Block::HayBlock { .. }
+        | Block::Carpet { .. } => true,
         _ => false,
     }
 }
 
 fn is_snowy<W: WorldAccess>(world: &W, pos: Position) -> bool {
     match world.get_block(pos.shift(Direction::Up)) {
-        Block::Snow{..} | Block::SnowLayer{..} => true,
+        Block::Snow { .. } | Block::SnowLayer { .. } => true,
         _ => false,
     }
 }
 
-fn can_connect_sides<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f: &F) -> (bool, bool, bool, bool) {
-    (can_connect(world, pos.shift(Direction::North), f),
-     can_connect(world, pos.shift(Direction::South), f),
-     can_connect(world, pos.shift(Direction::West), f),
-     can_connect(world, pos.shift(Direction::East), f))
+fn can_connect_sides<F: Fn(Block) -> bool, W: WorldAccess>(
+    world: &W,
+    pos: Position,
+    f: &F,
+) -> (bool, bool, bool, bool) {
+    (
+        can_connect(world, pos.shift(Direction::North), f),
+        can_connect(world, pos.shift(Direction::South), f),
+        can_connect(world, pos.shift(Direction::West), f),
+        can_connect(world, pos.shift(Direction::East), f),
+    )
 }
 
 fn can_connect<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f: &F) -> bool {
@@ -5563,28 +5693,28 @@ fn can_connect<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f
 
 fn can_connect_fence(block: Block) -> bool {
     match block {
-        Block::Fence{..} |
-        Block::SpruceFence{..} |
-        Block::BirchFence{..} |
-        Block::JungleFence{..} |
-        Block::DarkOakFence{..} |
-        Block::AcaciaFence{..} |
-        Block::FenceGate{..} |
-        Block::SpruceFenceGate{..} |
-        Block::BirchFenceGate{..} |
-        Block::JungleFenceGate{..} |
-        Block::DarkOakFenceGate{..} |
-        Block::AcaciaFenceGate{..} => true,
+        Block::Fence { .. }
+        | Block::SpruceFence { .. }
+        | Block::BirchFence { .. }
+        | Block::JungleFence { .. }
+        | Block::DarkOakFence { .. }
+        | Block::AcaciaFence { .. }
+        | Block::FenceGate { .. }
+        | Block::SpruceFenceGate { .. }
+        | Block::BirchFenceGate { .. }
+        | Block::JungleFenceGate { .. }
+        | Block::DarkOakFenceGate { .. }
+        | Block::AcaciaFenceGate { .. } => true,
         _ => false,
     }
 }
 
 fn can_connect_glasspane(block: Block) -> bool {
     match block {
-        Block::Glass{..} |
-        Block::StainedGlass{..} |
-        Block::GlassPane{..} |
-        Block::StainedGlassPane{..} => true,
+        Block::Glass { .. }
+        | Block::StainedGlass { .. }
+        | Block::GlassPane { .. }
+        | Block::StainedGlassPane { .. } => true,
         _ => false,
     }
 }
@@ -5597,7 +5727,11 @@ fn can_connect_redstone<W: WorldAccess>(world: &W, pos: Position, dir: Direction
         let side_up = world.get_block(shift_pos.shift(Direction::Up));
         let up = world.get_block(pos.shift(Direction::Up));
 
-        if match side_up { Block::RedstoneWire{..} => true, _ => false,} && !up.get_material().should_cull_against {
+        if match side_up {
+            Block::RedstoneWire { .. } => true,
+            _ => false,
+        } && !up.get_material().should_cull_against
+        {
             return RedstoneSide::Up;
         }
 
@@ -5605,71 +5739,90 @@ fn can_connect_redstone<W: WorldAccess>(world: &W, pos: Position, dir: Direction
     }
 
     let side_down = world.get_block(shift_pos.shift(Direction::Down));
-    if match block { Block::RedstoneWire{..} => true, _ => false,} || match side_down { Block::RedstoneWire{..} => true, _ => false,} {
+    if match block {
+        Block::RedstoneWire { .. } => true,
+        _ => false,
+    } || match side_down {
+        Block::RedstoneWire { .. } => true,
+        _ => false,
+    } {
         return RedstoneSide::Side;
     }
     RedstoneSide::None
 }
 
 fn fence_gate_data(facing: Direction, in_wall: bool, open: bool, powered: bool) -> Option<usize> {
-    if in_wall || powered { return None; }
+    if in_wall || powered {
+        return None;
+    }
 
     Some(facing.horizontal_index() | (if open { 0x4 } else { 0x0 }))
 }
 
 fn fence_gate_offset(facing: Direction, in_wall: bool, open: bool, powered: bool) -> Option<usize> {
-    Some(if powered { 0 } else { 1<<0 } +
-         if open { 0 } else { 1<<1 } +
-         if in_wall { 0 } else { 1<<2 } +
-         facing.horizontal_offset() * (1<<3))
+    Some(
+        if powered { 0 } else { 1 << 0 }
+            + if open { 0 } else { 1 << 1 }
+            + if in_wall { 0 } else { 1 << 2 }
+            + facing.horizontal_offset() * (1 << 3),
+    )
 }
 
 fn fence_gate_collision(facing: Direction, in_wall: bool, open: bool) -> Vec<Aabb3<f64>> {
-    if open { return vec![]; }
+    if open {
+        return vec![];
+    }
 
     let (min_x, min_y, min_z, max_x, max_y, max_z) = if in_wall {
         match facing.axis() {
-            Axis::Z => (0.0, 0.0, 3.0/8.0, 1.0, 13.0/16.0, 5.0/8.0),
-            Axis::X => (3.0/8.0, 0.0, 0.0, 5.0/8.0, 13.0/16.0, 1.0),
+            Axis::Z => (0.0, 0.0, 3.0 / 8.0, 1.0, 13.0 / 16.0, 5.0 / 8.0),
+            Axis::X => (3.0 / 8.0, 0.0, 0.0, 5.0 / 8.0, 13.0 / 16.0, 1.0),
             _ => unreachable!(),
         }
     } else {
         match facing.axis() {
-            Axis::Z => (0.0, 0.0, 3.0/8.0, 1.0, 1.0, 5.0/8.0),
-            Axis::X => (3.0/8.0, 0.0, 0.0, 5.0/8.0, 1.0, 1.0),
+            Axis::Z => (0.0, 0.0, 3.0 / 8.0, 1.0, 1.0, 5.0 / 8.0),
+            Axis::X => (3.0 / 8.0, 0.0, 0.0, 5.0 / 8.0, 1.0, 1.0),
             _ => unreachable!(),
         }
     };
 
     vec![Aabb3::new(
         Point3::new(min_x, min_y, min_z),
-        Point3::new(max_x, max_y, max_z)
+        Point3::new(max_x, max_y, max_z),
     )]
 }
 
 fn fence_gate_update_state<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> bool {
-    if let Block::CobblestoneWall{..} = world.get_block(pos.shift(facing.clockwise())) {
+    if let Block::CobblestoneWall { .. } = world.get_block(pos.shift(facing.clockwise())) {
         return true;
     }
 
-    if let Block::CobblestoneWall{..} = world.get_block(pos.shift(facing.counter_clockwise())) {
+    if let Block::CobblestoneWall { .. } = world.get_block(pos.shift(facing.counter_clockwise())) {
         return true;
     }
 
     false
 }
 
-fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered: bool) -> Option<usize> {
+fn door_data(
+    facing: Direction,
+    half: DoorHalf,
+    hinge: Side,
+    open: bool,
+    powered: bool,
+) -> Option<usize> {
     match half {
         DoorHalf::Upper => {
             if facing == Direction::North && open {
-                Some(0x8
-                     | (if hinge == Side::Right { 0x1 } else { 0x0 })
-                     | (if powered { 0x2 } else { 0x0 }))
+                Some(
+                    0x8 | (if hinge == Side::Right { 0x1 } else { 0x0 })
+                        | (if powered { 0x2 } else { 0x0 }),
+                )
             } else {
                 None
             }
-        },
+        }
         DoorHalf::Lower => {
             if hinge == Side::Left && !powered {
                 Some(facing.clockwise().horizontal_index() | (if open { 0x4 } else { 0x0 }))
@@ -5680,26 +5833,83 @@ fn door_data(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered
     }
 }
 
-fn door_offset(facing: Direction, half: DoorHalf, hinge: Side, open: bool, powered: bool) -> Option<usize> {
-    Some(if powered { 0 } else { 1<<0 } +
-         if open { 0 } else { 1<<1 } +
-         if hinge == Side::Left { 0 } else { 1<<2 } +
-         if half == DoorHalf::Upper { 0 } else { 1<<3 } +
-         facing.horizontal_offset() * (1<<4))
+fn door_offset(
+    facing: Direction,
+    half: DoorHalf,
+    hinge: Side,
+    open: bool,
+    powered: bool,
+) -> Option<usize> {
+    Some(
+        if powered { 0 } else { 1 << 0 }
+            + if open { 0 } else { 1 << 1 }
+            + if hinge == Side::Left { 0 } else { 1 << 2 }
+            + if half == DoorHalf::Upper { 0 } else { 1 << 3 }
+            + facing.horizontal_offset() * (1 << 4),
+    )
 }
 
-
-fn update_door_state<W: WorldAccess>(world: &W, pos: Position, ohalf: DoorHalf, ofacing: Direction, ohinge: Side, oopen: bool, opowered: bool) -> (Direction, Side, bool, bool) {
+fn update_door_state<W: WorldAccess>(
+    world: &W,
+    pos: Position,
+    ohalf: DoorHalf,
+    ofacing: Direction,
+    ohinge: Side,
+    oopen: bool,
+    opowered: bool,
+) -> (Direction, Side, bool, bool) {
     let oy = if ohalf == DoorHalf::Upper { -1 } else { 1 };
 
     match world.get_block(pos + (0, oy, 0)) {
-        Block::WoodenDoor{half, facing, hinge, open, powered} |
-        Block::SpruceDoor{half, facing, hinge, open, powered} |
-        Block::BirchDoor{half, facing, hinge, open, powered} |
-        Block::JungleDoor{half, facing, hinge, open, powered} |
-        Block::AcaciaDoor{half, facing, hinge, open, powered} |
-        Block::DarkOakDoor{half, facing, hinge, open, powered} |
-        Block::IronDoor{half, facing, hinge, open, powered} => {
+        Block::WoodenDoor {
+            half,
+            facing,
+            hinge,
+            open,
+            powered,
+        }
+        | Block::SpruceDoor {
+            half,
+            facing,
+            hinge,
+            open,
+            powered,
+        }
+        | Block::BirchDoor {
+            half,
+            facing,
+            hinge,
+            open,
+            powered,
+        }
+        | Block::JungleDoor {
+            half,
+            facing,
+            hinge,
+            open,
+            powered,
+        }
+        | Block::AcaciaDoor {
+            half,
+            facing,
+            hinge,
+            open,
+            powered,
+        }
+        | Block::DarkOakDoor {
+            half,
+            facing,
+            hinge,
+            open,
+            powered,
+        }
+        | Block::IronDoor {
+            half,
+            facing,
+            hinge,
+            open,
+            powered,
+        } => {
             if half != ohalf {
                 if ohalf == DoorHalf::Upper {
                     return (facing, ohinge, open, opowered);
@@ -5707,8 +5917,8 @@ fn update_door_state<W: WorldAccess>(world: &W, pos: Position, ohalf: DoorHalf, 
                     return (ofacing, hinge, oopen, powered);
                 }
             }
-        },
-        _ => {},
+        }
+        _ => {}
     }
 
     (ofacing, ohinge, oopen, opowered)
@@ -5718,7 +5928,7 @@ fn door_collision(facing: Direction, hinge: Side, open: bool) -> Vec<Aabb3<f64>>
     use std::f64::consts::PI;
     let mut bounds = Aabb3::new(
         Point3::new(0.0, 0.0, 0.0),
-        Point3::new(1.0, 1.0, 3.0 / 16.0)
+        Point3::new(1.0, 1.0, 3.0 / 16.0),
     );
     let mut angle = match facing {
         Direction::South => 0.0,
@@ -5727,43 +5937,48 @@ fn door_collision(facing: Direction, hinge: Side, open: bool) -> Vec<Aabb3<f64>>
         Direction::East => PI * 1.5,
         _ => 0.0,
     };
-    angle += if open {
-        PI * 0.5
-    } else {
-        0.0
-    } * match hinge { Side::Left => 1.0, Side::Right => -1.0 };
+    angle += if open { PI * 0.5 } else { 0.0 }
+        * match hinge {
+            Side::Left => 1.0,
+            Side::Right => -1.0,
+        };
 
     let c = angle.cos();
     let s = angle.sin();
 
     let x = bounds.min.x - 0.5;
     let z = bounds.min.z - 0.5;
-    bounds.min.x = 0.5 + (x*c - z*s);
-    bounds.min.z = 0.5 + (z*c + x*s);
+    bounds.min.x = 0.5 + (x * c - z * s);
+    bounds.min.z = 0.5 + (z * c + x * s);
     let x = bounds.max.x - 0.5;
     let z = bounds.max.z - 0.5;
-    bounds.max.x = 0.5 + (x*c - z*s);
-    bounds.max.z = 0.5 + (z*c + x*s);
+    bounds.max.x = 0.5 + (x * c - z * s);
+    bounds.max.z = 0.5 + (z * c + x * s);
 
     vec![bounds]
 }
 
 fn update_repeater_state<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> bool {
-    let f = |dir| {
-        match world.get_block(pos.shift(dir)) {
-            Block::RepeaterPowered{..} => true,
-            _ => false,
-        }
+    let f = |dir| match world.get_block(pos.shift(dir)) {
+        Block::RepeaterPowered { .. } => true,
+        _ => false,
     };
 
     f(facing.clockwise()) || f(facing.counter_clockwise())
 }
 
-fn update_double_plant_state<W: WorldAccess>(world: &W, pos: Position, ohalf: BlockHalf, ovariant: DoublePlantVariant) -> (BlockHalf, DoublePlantVariant) {
-    if ohalf != BlockHalf::Upper { return (ohalf, ovariant); }
+fn update_double_plant_state<W: WorldAccess>(
+    world: &W,
+    pos: Position,
+    ohalf: BlockHalf,
+    ovariant: DoublePlantVariant,
+) -> (BlockHalf, DoublePlantVariant) {
+    if ohalf != BlockHalf::Upper {
+        return (ohalf, ovariant);
+    }
 
     match world.get_block(pos.shift(Direction::Down)) {
-        Block::DoublePlant{variant, ..} => (ohalf, variant),
+        Block::DoublePlant { variant, .. } => (ohalf, variant),
         _ => (ohalf, ovariant),
     }
 }
@@ -5785,65 +6000,65 @@ fn piston_collision(extended: bool, facing: Direction) -> Vec<Aabb3<f64>> {
 
     vec![Aabb3::new(
         Point3::new(min_x, min_y, min_z),
-        Point3::new(max_x, max_y, max_z)
+        Point3::new(max_x, max_y, max_z),
     )]
 }
 
 fn trapdoor_collision(facing: Direction, half: BlockHalf, open: bool) -> Vec<Aabb3<f64>> {
     let (min_x, min_y, min_z, max_x, max_y, max_z) = if open {
         match facing {
-            Direction::North => (0.0, 0.0, 3.0/16.0, 1.0, 1.0, 1.0),
-            Direction::South => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0/16.0),
-            Direction::West => (3.0/16.0, 0.0, 0.0, 1.0, 1.0, 1.0),
-            Direction::East => (0.0, 0.0, 0.0, 3.0/16.0, 1.0, 1.0),
+            Direction::North => (0.0, 0.0, 3.0 / 16.0, 1.0, 1.0, 1.0),
+            Direction::South => (0.0, 0.0, 0.0, 1.0, 1.0, 3.0 / 16.0),
+            Direction::West => (3.0 / 16.0, 0.0, 0.0, 1.0, 1.0, 1.0),
+            Direction::East => (0.0, 0.0, 0.0, 3.0 / 16.0, 1.0, 1.0),
             _ => unreachable!(),
         }
     } else {
         match half {
-            BlockHalf::Bottom => (0.0, 0.0, 0.0, 1.0, 3.0/16.0, 1.0),
-            BlockHalf::Top => (0.0, 3.0/16.0, 0.0, 1.0, 1.0, 1.0),
+            BlockHalf::Bottom => (0.0, 0.0, 0.0, 1.0, 3.0 / 16.0, 1.0),
+            BlockHalf::Top => (0.0, 3.0 / 16.0, 0.0, 1.0, 1.0, 1.0),
             _ => unreachable!(),
         }
     };
 
     vec![Aabb3::new(
         Point3::new(min_x, min_y, min_z),
-        Point3::new(max_x, max_y, max_z))
-    ]
+        Point3::new(max_x, max_y, max_z),
+    )]
 }
 
 fn fence_collision(north: bool, south: bool, west: bool, east: bool) -> Vec<Aabb3<f64>> {
     let mut collision = vec![Aabb3::new(
-        Point3::new(3.0/8.0, 0.0, 3.0/8.0),
-        Point3::new(5.0/8.0, 1.5, 5.0/8.0))
-    ];
+        Point3::new(3.0 / 8.0, 0.0, 3.0 / 8.0),
+        Point3::new(5.0 / 8.0, 1.5, 5.0 / 8.0),
+    )];
 
     if north {
         collision.push(Aabb3::new(
-            Point3::new(3.0/8.0, 0.0, 0.0),
-            Point3::new(5.0/8.0, 1.5, 3.0/8.0))
-        );
+            Point3::new(3.0 / 8.0, 0.0, 0.0),
+            Point3::new(5.0 / 8.0, 1.5, 3.0 / 8.0),
+        ));
     }
 
     if south {
         collision.push(Aabb3::new(
-            Point3::new(3.0/8.0, 0.0, 5.0/8.0),
-            Point3::new(5.0/8.0, 1.5, 1.0))
-        );
+            Point3::new(3.0 / 8.0, 0.0, 5.0 / 8.0),
+            Point3::new(5.0 / 8.0, 1.5, 1.0),
+        ));
     }
 
     if west {
         collision.push(Aabb3::new(
-            Point3::new(0.0, 0.0, 3.0/8.0),
-            Point3::new(3.0/8.0, 1.5, 5.0/8.0))
-        );
+            Point3::new(0.0, 0.0, 3.0 / 8.0),
+            Point3::new(3.0 / 8.0, 1.5, 5.0 / 8.0),
+        ));
     }
 
     if east {
         collision.push(Aabb3::new(
-            Point3::new(5.0/8.0, 0.0, 3.0/8.0),
-            Point3::new(1.0, 1.5, 5.0/8.0))
-        );
+            Point3::new(5.0 / 8.0, 0.0, 3.0 / 8.0),
+            Point3::new(1.0, 1.5, 5.0 / 8.0),
+        ));
     }
 
     collision
@@ -5851,36 +6066,36 @@ fn fence_collision(north: bool, south: bool, west: bool, east: bool) -> Vec<Aabb
 
 fn pane_collision(north: bool, south: bool, east: bool, west: bool) -> Vec<Aabb3<f64>> {
     let mut collision = vec![Aabb3::new(
-        Point3::new(7.0/16.0, 0.0, 7.0/16.0),
-        Point3::new(9.0/16.0, 1.0, 9.0/16.0))
-    ];
+        Point3::new(7.0 / 16.0, 0.0, 7.0 / 16.0),
+        Point3::new(9.0 / 16.0, 1.0, 9.0 / 16.0),
+    )];
 
     if north {
         collision.push(Aabb3::new(
-            Point3::new(7.0/16.0, 0.0, 0.0),
-            Point3::new(9.0/16.0, 1.0, 9.0/16.0))
-        );
+            Point3::new(7.0 / 16.0, 0.0, 0.0),
+            Point3::new(9.0 / 16.0, 1.0, 9.0 / 16.0),
+        ));
     }
 
     if south {
         collision.push(Aabb3::new(
-            Point3::new(7.0/16.0, 0.0, 7.0/16.0),
-            Point3::new(9.0/16.0, 1.0, 1.0))
-        );
+            Point3::new(7.0 / 16.0, 0.0, 7.0 / 16.0),
+            Point3::new(9.0 / 16.0, 1.0, 1.0),
+        ));
     }
 
     if west {
         collision.push(Aabb3::new(
-            Point3::new(0.0, 0.0, 7.0/16.0),
-            Point3::new(9.0/16.0, 1.0, 9.0/16.0))
-        );
+            Point3::new(0.0, 0.0, 7.0 / 16.0),
+            Point3::new(9.0 / 16.0, 1.0, 9.0 / 16.0),
+        ));
     }
 
     if east {
         collision.push(Aabb3::new(
-            Point3::new(7.0/16.0, 0.0, 7.0/16.0),
-            Point3::new(1.0, 1.0, 9.0/16.0))
-        );
+            Point3::new(7.0 / 16.0, 0.0, 7.0 / 16.0),
+            Point3::new(1.0, 1.0, 9.0 / 16.0),
+        ));
     }
 
     collision
@@ -5888,20 +6103,20 @@ fn pane_collision(north: bool, south: bool, east: bool, west: bool) -> Vec<Aabb3
 
 fn get_stair_info<W: WorldAccess>(world: &W, pos: Position) -> Option<(Direction, BlockHalf)> {
     match world.get_block(pos) {
-        Block::OakStairs{facing, half, ..} |
-        Block::StoneStairs{facing, half, ..} |
-        Block::BrickStairs{facing, half, ..} |
-        Block::StoneBrickStairs{facing, half, ..} |
-        Block::NetherBrickStairs{facing, half, ..} |
-        Block::SandstoneStairs{facing, half, ..} |
-        Block::SpruceStairs{facing, half, ..} |
-        Block::BirchStairs{facing, half, ..} |
-        Block::JungleStairs{facing, half, ..} |
-        Block::QuartzStairs{facing, half, ..} |
-        Block::AcaciaStairs{facing, half, ..} |
-        Block::DarkOakStairs{facing, half, ..} |
-        Block::RedSandstoneStairs{facing, half, ..} |
-        Block::PurpurStairs{facing, half, ..} => Some((facing, half)),
+        Block::OakStairs { facing, half, .. }
+        | Block::StoneStairs { facing, half, .. }
+        | Block::BrickStairs { facing, half, .. }
+        | Block::StoneBrickStairs { facing, half, .. }
+        | Block::NetherBrickStairs { facing, half, .. }
+        | Block::SandstoneStairs { facing, half, .. }
+        | Block::SpruceStairs { facing, half, .. }
+        | Block::BirchStairs { facing, half, .. }
+        | Block::JungleStairs { facing, half, .. }
+        | Block::QuartzStairs { facing, half, .. }
+        | Block::AcaciaStairs { facing, half, .. }
+        | Block::DarkOakStairs { facing, half, .. }
+        | Block::RedSandstoneStairs { facing, half, .. }
+        | Block::PurpurStairs { facing, half, .. } => Some((facing, half)),
         _ => None,
     }
 }
@@ -5930,18 +6145,34 @@ fn update_stair_shape<W: WorldAccess>(world: &W, pos: Position, facing: Directio
     StairShape::Straight
 }
 
-fn stair_data(facing: Direction, half: BlockHalf, shape: StairShape, waterlogged: bool) -> Option<usize> {
-    if shape != StairShape::Straight { return None; }
-    if waterlogged { return None; }
+fn stair_data(
+    facing: Direction,
+    half: BlockHalf,
+    shape: StairShape,
+    waterlogged: bool,
+) -> Option<usize> {
+    if shape != StairShape::Straight {
+        return None;
+    }
+    if waterlogged {
+        return None;
+    }
 
     Some((5 - facing.index()) | (if half == BlockHalf::Top { 0x4 } else { 0x0 }))
 }
 
-fn stair_offset(facing: Direction, half: BlockHalf, shape: StairShape, waterlogged: bool) -> Option<usize> {
-    Some(if waterlogged { 0 } else { 1 } +
-         shape.offset() * 2 +
-         if half == BlockHalf::Top { 0 } else { 2 * 5 } +
-         facing.horizontal_offset() * 2 * 5 * 2)
+fn stair_offset(
+    facing: Direction,
+    half: BlockHalf,
+    shape: StairShape,
+    waterlogged: bool,
+) -> Option<usize> {
+    Some(
+        if waterlogged { 0 } else { 1 }
+            + shape.offset() * 2
+            + if half == BlockHalf::Top { 0 } else { 2 * 5 }
+            + facing.horizontal_offset() * 2 * 5 * 2,
+    )
 }
 
 #[allow(clippy::many_single_char_names)]
@@ -5989,24 +6220,24 @@ fn stair_collision(facing: Direction, shape: StairShape, half: BlockHalf) -> Vec
     for bound in &mut bounds {
         let x = bound.min.x - 0.5;
         let z = bound.min.z - 0.5;
-        bound.min.x = 0.5 + (x*c - z*s);
-        bound.min.z = 0.5 + (z*c + x*s);
+        bound.min.x = 0.5 + (x * c - z * s);
+        bound.min.z = 0.5 + (z * c + x * s);
         let x = bound.max.x - 0.5;
         let z = bound.max.z - 0.5;
-        bound.max.x = 0.5 + (x*c - z*s);
-        bound.max.z = 0.5 + (z*c + x*s);
+        bound.max.x = 0.5 + (x * c - z * s);
+        bound.max.z = 0.5 + (z * c + x * s);
 
         if half == BlockHalf::Top {
             let c = PI.cos();
             let s = PI.sin();
             let z = bound.min.z - 0.5;
             let y = bound.min.y - 0.5;
-            bound.min.z = 0.5 + (z*c - y*s);
-            bound.min.y = 0.5 + (y*c + z*s);
+            bound.min.z = 0.5 + (z * c - y * s);
+            bound.min.y = 0.5 + (y * c + z * s);
             let z = bound.max.z - 0.5;
             let y = bound.max.y - 0.5;
-            bound.max.z = 0.5 + (z*c - y*s);
-            bound.max.y = 0.5 + (y*c + z*s);
+            bound.max.z = 0.5 + (z * c - y * s);
+            bound.max.y = 0.5 + (y * c + z * s);
 
             bound.min.x = 1.0 - bound.min.x;
             bound.max.x = 1.0 - bound.max.x;
@@ -6026,7 +6257,7 @@ fn slab_collision(half: BlockHalf) -> Vec<Aabb3<f64>> {
 
     vec![Aabb3::new(
         Point3::new(min_x, min_y, min_z),
-        Point3::new(max_x, max_y, max_z)
+        Point3::new(max_x, max_y, max_z),
     )]
 }
 
@@ -6094,7 +6325,7 @@ impl DirtVariant {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum BedPart {
     Head,
-    Foot
+    Foot,
 }
 
 impl BedPart {
@@ -6177,7 +6408,6 @@ impl NoteBlockInstrument {
     }
 }
 
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum RedSandstoneVariant {
     Normal,
@@ -6258,67 +6488,91 @@ impl PrismarineVariant {
     }
 }
 
-fn mushroom_block_data(is_stem: bool, west: bool, up: bool, south: bool, north: bool, east: bool, down: bool) -> Option<usize> {
-    Some(match
-        (is_stem, west,  up,    south, north, east,  down) {
+fn mushroom_block_data(
+    is_stem: bool,
+    west: bool,
+    up: bool,
+    south: bool,
+    north: bool,
+    east: bool,
+    down: bool,
+) -> Option<usize> {
+    Some(match (is_stem, west, up, south, north, east, down) {
         (false, false, false, false, false, false, false) => 0,
-        (false, true,  false, false, true,  false, false) => 1,
-        (false, false, false, false, true,  false, false) => 2,
-        (false, false, false, false, true,  true,  false) => 3,
-        (false, true,  false, false, false, false, false) => 4,
-        (false, false, true,  false, false, false, false) => 5,
-        (false, false, false, false, false, true,  false) => 6,
-        (false, true,  false, true,  false, false, false) => 7,
-        (false, false, false, true,  false, false, false) => 8,
-        (false, false, false, true,  false, true,  false) => 9,
-        (false, true,  false, true,  true,  true, false)  => 10,
-        (false, true,  true,  true,  true,  true,  true)  => 14,
-        (true,  false, false, false, false, false, false) => 15,
+        (false, true, false, false, true, false, false) => 1,
+        (false, false, false, false, true, false, false) => 2,
+        (false, false, false, false, true, true, false) => 3,
+        (false, true, false, false, false, false, false) => 4,
+        (false, false, true, false, false, false, false) => 5,
+        (false, false, false, false, false, true, false) => 6,
+        (false, true, false, true, false, false, false) => 7,
+        (false, false, false, true, false, false, false) => 8,
+        (false, false, false, true, false, true, false) => 9,
+        (false, true, false, true, true, true, false) => 10,
+        (false, true, true, true, true, true, true) => 14,
+        (true, false, false, false, false, false, false) => 15,
         _ => return None,
     })
 }
 
-fn mushroom_block_offset(is_stem: bool, west: bool, up: bool, south: bool, north: bool, east: bool, down: bool) -> Option<usize> {
+fn mushroom_block_offset(
+    is_stem: bool,
+    west: bool,
+    up: bool,
+    south: bool,
+    north: bool,
+    east: bool,
+    down: bool,
+) -> Option<usize> {
     if is_stem {
         None
     } else {
-        Some(if west { 0 } else { 1<<0 } +
-             if up { 0 } else { 1<<1 } +
-             if south { 0 } else { 1<<2 } +
-             if north { 0 } else { 1<<3 } +
-             if east { 0 } else { 1<<4 } +
-             if down { 0 } else { 1<<5 })
+        Some(
+            if west { 0 } else { 1 << 0 }
+                + if up { 0 } else { 1 << 1 }
+                + if south { 0 } else { 1 << 2 }
+                + if north { 0 } else { 1 << 3 }
+                + if east { 0 } else { 1 << 4 }
+                + if down { 0 } else { 1 << 5 },
+        )
     }
 }
 
-
-fn mushroom_block_variant(is_stem: bool, west: bool, up: bool, south: bool, north: bool, east: bool, down: bool) -> String {
+fn mushroom_block_variant(
+    is_stem: bool,
+    west: bool,
+    up: bool,
+    south: bool,
+    north: bool,
+    east: bool,
+    down: bool,
+) -> String {
     (if is_stem {
         "all_stem"
     } else {
-        match
-            (west,  up,    south, north, east,  down) {
+        match (west, up, south, north, east, down) {
             (false, false, false, false, false, false) => "all_inside",
-            (true,  false, false, true,  false, false) => "north_west",
-            (false, false, false, true,  false, false) => "north",
-            (false, false, false, true,  true,  false) => "north_east",
-            (true,  false, false, false, false, false) => "west",
-            (false, true,  false, false, false, false) => "center",
-            (false, false, false, false, true,  false) => "east",
-            (true,  false, true,  false, false, false) => "south_west",
-            (false, false, true,  false, false, false) => "south",
-            (false, false, true,  false, true,  false) => "south_east",
-            (true,  false, true,  true,  true,  false)  => "stem",
-            (true,  true,  true,  true,  true,  true)  => "all_outside",
+            (true, false, false, true, false, false) => "north_west",
+            (false, false, false, true, false, false) => "north",
+            (false, false, false, true, true, false) => "north_east",
+            (true, false, false, false, false, false) => "west",
+            (false, true, false, false, false, false) => "center",
+            (false, false, false, false, true, false) => "east",
+            (true, false, true, false, false, false) => "south_west",
+            (false, false, true, false, false, false) => "south",
+            (false, false, true, false, true, false) => "south_east",
+            (true, false, true, true, true, false) => "stem",
+            (true, true, true, true, true, true) => "all_outside",
             _ => "all_stem",
         }
-    }).to_string()
+    })
+    .to_string()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum DoorHalf {
     Upper,
-    Lower
+    Lower,
 }
 
 impl DoorHalf {
@@ -6647,9 +6901,9 @@ impl StoneSlabVariant {
 
     fn data(self) -> usize {
         match self {
-            StoneSlabVariant::Stone |
-            StoneSlabVariant::RedSandstone |
-            StoneSlabVariant::Purpur => 0,
+            StoneSlabVariant::Stone | StoneSlabVariant::RedSandstone | StoneSlabVariant::Purpur => {
+                0
+            }
             StoneSlabVariant::Sandstone => 1,
             StoneSlabVariant::PetrifiedWood => 2,
             StoneSlabVariant::Cobblestone => 3,
@@ -6913,7 +7167,8 @@ impl AttachedFace {
             (AttachedFace::Floor, Direction::East) => "up_x",
             (AttachedFace::Ceiling, Direction::South) => "down_z",
             _ => "north", // TODO: support 1.13.2+ new directions
-        }.to_owned()
+        }
+        .to_owned()
     }
 }
 
@@ -6970,7 +7225,6 @@ impl StructureBlockMode {
     }
 }
 
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TreeVariant {
     Oak,
@@ -7001,7 +7255,7 @@ impl TreeVariant {
             TreeVariant::StrippedJungle => "stripped_jungle_log",
             TreeVariant::StrippedAcacia => "stripped_acacia_log",
             TreeVariant::StrippedDarkOak => "stripped_dark_oak_log",
-            TreeVariant::StrippedOak => "stripped_oak_log"
+            TreeVariant::StrippedOak => "stripped_oak_log",
         }
     }
 
@@ -7264,4 +7518,3 @@ impl CoralVariant {
         }
     }
 }
-

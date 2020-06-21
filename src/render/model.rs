@@ -1,17 +1,16 @@
-
 use super::glsl;
 use super::shaders;
+use crate::format::{self, Component};
 use crate::gl;
-use cgmath::{Point3, Matrix4, SquareMatrix};
+use crate::model::BlockVertex;
+use crate::shared::Direction;
+use crate::types::hash::FNVHash;
+use byteorder::{NativeEndian, WriteBytesExt};
+use cgmath::{Matrix4, Point3, SquareMatrix};
 use collision::{self, Frustum, Sphere};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::sync::{Arc, RwLock};
-use crate::types::hash::FNVHash;
-use crate::shared::Direction;
-use byteorder::{WriteBytesExt, NativeEndian};
-use crate::model::BlockVertex;
-use crate::format::{self, Component};
 
 pub struct Manager {
     collections: Vec<Collection>,
@@ -42,17 +41,25 @@ impl Manager {
         m.add_collection(
             &greg.get("model_vertex"),
             &greg.get("model_frag"),
-            gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA
+            gl::SRC_ALPHA,
+            gl::ONE_MINUS_SRC_ALPHA,
         );
         m.add_collection(
             &greg.get("sun_vertex"),
             &greg.get("sun_frag"),
-            gl::SRC_ALPHA, gl::ONE_FACTOR
+            gl::SRC_ALPHA,
+            gl::ONE_FACTOR,
         );
         m
     }
 
-    pub fn add_collection(&mut self, vert: &str, frag: &str, blend_s: gl::Factor, blend_d: gl::Factor) -> CollectionKey {
+    pub fn add_collection(
+        &mut self,
+        vert: &str,
+        frag: &str,
+        blend_s: gl::Factor,
+        blend_d: gl::Factor,
+    ) -> CollectionKey {
         let collection = Collection {
             shader: ModelShader::new_manual(vert, frag),
             models: HashMap::with_hasher(BuildHasherDefault::default()),
@@ -84,11 +91,26 @@ impl Manager {
             collection.shader.texture_offset.map(|v| v.enable());
             collection.shader.color.map(|v| v.enable());
             collection.shader.id.map(|v| v.enable());
-            collection.shader.position.map(|v| v.vertex_pointer(3, gl::FLOAT, false, 36, 0));
-            collection.shader.texture_info.map(|v| v.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 36, 12));
-            collection.shader.texture_offset.map(|v| v.vertex_pointer_int(3, gl::SHORT, 36, 20));
-            collection.shader.color.map(|v| v.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 36, 28));
-            collection.shader.id.map(|v| v.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32));
+            collection
+                .shader
+                .position
+                .map(|v| v.vertex_pointer(3, gl::FLOAT, false, 36, 0));
+            collection
+                .shader
+                .texture_info
+                .map(|v| v.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 36, 12));
+            collection
+                .shader
+                .texture_offset
+                .map(|v| v.vertex_pointer_int(3, gl::SHORT, 36, 20));
+            collection
+                .shader
+                .color
+                .map(|v| v.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 36, 28));
+            collection
+                .shader
+                .id
+                .map(|v| v.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32));
 
             let mut model = Model {
                 // For culling only
@@ -125,7 +147,8 @@ impl Manager {
         if self.max_index < model.count as usize {
             let (data, ty) = super::generate_element_buffer(model.count as usize);
             self.index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
-            self.index_buffer.set_data(gl::ELEMENT_ARRAY_BUFFER, &data, gl::DYNAMIC_DRAW);
+            self.index_buffer
+                .set_data(gl::ELEMENT_ARRAY_BUFFER, &data, gl::DYNAMIC_DRAW);
             self.max_index = model.count as usize;
             self.index_type = ty;
         }
@@ -156,8 +179,12 @@ impl Manager {
             let _ = buffer.write_u16::<NativeEndian>(vert.texture.get_y() as u16);
             let _ = buffer.write_u16::<NativeEndian>(vert.texture.get_width() as u16);
             let _ = buffer.write_u16::<NativeEndian>(vert.texture.get_height() as u16);
-            let _ = buffer.write_i16::<NativeEndian>(((vert.texture.get_width() as f64) * 16.0 * vert.texture_x) as i16);
-            let _ = buffer.write_i16::<NativeEndian>(((vert.texture.get_height() as f64) * 16.0 * vert.texture_y) as i16);
+            let _ = buffer.write_i16::<NativeEndian>(
+                ((vert.texture.get_width() as f64) * 16.0 * vert.texture_x) as i16,
+            );
+            let _ = buffer.write_i16::<NativeEndian>(
+                ((vert.texture.get_height() as f64) * 16.0 * vert.texture_y) as i16,
+            );
             let _ = buffer.write_i16::<NativeEndian>(vert.texture.atlas as i16);
             let _ = buffer.write_i16::<NativeEndian>(0);
             let _ = buffer.write_u8(vert.r);
@@ -174,12 +201,18 @@ impl Manager {
         if buffer.len() < model.buffer_size {
             model.buffer.re_set_data(gl::ARRAY_BUFFER, &buffer);
         } else {
-            model.buffer.set_data(gl::ARRAY_BUFFER, &buffer, gl::DYNAMIC_DRAW);
+            model
+                .buffer
+                .set_data(gl::ARRAY_BUFFER, &buffer, gl::DYNAMIC_DRAW);
             model.buffer_size = buffer.len();
         }
     }
 
-    pub fn rebuild_models(&mut self, version: usize, textures: &Arc<RwLock<super::TextureManager>>) {
+    pub fn rebuild_models(
+        &mut self,
+        version: usize,
+        textures: &Arc<RwLock<super::TextureManager>>,
+    ) {
         for collection in &mut self.collections {
             for (_, model) in &mut collection.models {
                 for vert in &mut model.verts {
@@ -200,28 +233,57 @@ impl Manager {
         }
     }
 
-    pub fn draw(&mut self, frustum: &Frustum<f32>, perspective_matrix: &Matrix4<f32>, camera_matrix: &Matrix4<f32>, light_level: f32, sky_offset: f32) {
+    pub fn draw(
+        &mut self,
+        frustum: &Frustum<f32>,
+        perspective_matrix: &Matrix4<f32>,
+        camera_matrix: &Matrix4<f32>,
+        light_level: f32,
+        sky_offset: f32,
+    ) {
         gl::enable(gl::BLEND);
         for collection in &self.collections {
             collection.shader.program.use_program();
-            collection.shader.perspective_matrix.map(|v| v.set_matrix4(perspective_matrix));
-            collection.shader.camera_matrix.map(|v| v.set_matrix4(camera_matrix));
+            collection
+                .shader
+                .perspective_matrix
+                .map(|v| v.set_matrix4(perspective_matrix));
+            collection
+                .shader
+                .camera_matrix
+                .map(|v| v.set_matrix4(camera_matrix));
             collection.shader.texture.map(|v| v.set_int(0));
-            collection.shader.sky_offset.map(|v| v.set_float(sky_offset));
-            collection.shader.light_level.map(|v| v.set_float(light_level));
+            collection
+                .shader
+                .sky_offset
+                .map(|v| v.set_float(sky_offset));
+            collection
+                .shader
+                .light_level
+                .map(|v| v.set_float(light_level));
             gl::blend_func(collection.blend_s, collection.blend_d);
 
             for model in collection.models.values() {
-                if model.radius > 0.0 && frustum.contains(&Sphere {
-                    center: Point3::new(model.x, -model.y, model.z),
-                    radius: model.radius
-                }) == collision::Relation::Out {
+                if model.radius > 0.0
+                    && frustum.contains(&Sphere {
+                        center: Point3::new(model.x, -model.y, model.z),
+                        radius: model.radius,
+                    }) == collision::Relation::Out
+                {
                     continue;
                 }
                 model.array.bind();
-                collection.shader.lighting.map(|v| v.set_float2(model.block_light, model.sky_light));
-                collection.shader.model_matrix.map(|v| v.set_matrix4_multi(&model.matrix));
-                collection.shader.color_mul.map(|v| v.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len()));
+                collection
+                    .shader
+                    .lighting
+                    .map(|v| v.set_float2(model.block_light, model.sky_light));
+                collection
+                    .shader
+                    .model_matrix
+                    .map(|v| v.set_matrix4_multi(&model.matrix));
+                collection.shader.color_mul.map(|v| {
+                    v.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len())
+                });
                 gl::draw_elements(gl::TRIANGLES, model.count, self.index_type, 0);
             }
         }
@@ -301,23 +363,44 @@ init_shader! {
 // Helper methods
 pub fn append_box(
     verts: &mut Vec<Vertex>,
-    x: f32, y: f32, z: f32,
-    w: f32, h: f32, d: f32, textures: [Option<super::Texture>; 6]
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+    h: f32,
+    d: f32,
+    textures: [Option<super::Texture>; 6],
 ) {
-    append_box_texture_scale(verts, x, y, z, w, h, d, textures, [
-        [1.0, 1.0],
-        [1.0, 1.0],
-        [1.0, 1.0],
-        [1.0, 1.0],
-        [1.0, 1.0],
-        [1.0, 1.0]
-    ]);
+    append_box_texture_scale(
+        verts,
+        x,
+        y,
+        z,
+        w,
+        h,
+        d,
+        textures,
+        [
+            [1.0, 1.0],
+            [1.0, 1.0],
+            [1.0, 1.0],
+            [1.0, 1.0],
+            [1.0, 1.0],
+            [1.0, 1.0],
+        ],
+    );
 }
 pub fn append_box_texture_scale(
     verts: &mut Vec<Vertex>,
-    x: f32, y: f32, z: f32,
-    w: f32, h: f32, d: f32,
-    textures: [Option<super::Texture>; 6], texture_scale: [[f64; 2]; 6]) {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+    h: f32,
+    d: f32,
+    textures: [Option<super::Texture>; 6],
+    texture_scale: [[f64; 2]; 6],
+) {
     for dir in Direction::all() {
         let tex = textures[dir.index()].clone();
         if tex.is_none() {
@@ -326,7 +409,11 @@ pub fn append_box_texture_scale(
         let tex = tex.unwrap();
         for vert in BlockVertex::face_by_direction(dir) {
             let (rr, gg, bb) = if dir == Direction::West || dir == Direction::East {
-                ((255.0 * 0.8) as u8, (255.0 * 0.8) as u8, (255.0 * 0.8) as u8)
+                (
+                    (255.0 * 0.8) as u8,
+                    (255.0 * 0.8) as u8,
+                    (255.0 * 0.8) as u8,
+                )
             } else {
                 (255, 255, 255)
             };
@@ -356,7 +443,7 @@ pub struct FormatState<'a> {
     pub x_scale: f32,
 }
 
-impl <'a> FormatState<'a> {
+impl<'a> FormatState<'a> {
     pub fn build(&mut self, c: &Component, color: format::Color) {
         match *c {
             format::Component::Text(ref txt) => {

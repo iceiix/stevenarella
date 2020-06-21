@@ -3,6 +3,13 @@ name = "stevenarella"
 version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>", "iceiix <ice_ix@protonmail.ch>" ]
 edition = "2018"
+description = "Multi-protocol multi-platform Minecraft-compatible client"
+repository = "https://github.com/iceiix/stevenarella"
+license = "MIT/Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "src/main.rs"
 
 [profile.dev]
 # Steven runs horrendously slow with no optimizations, and often freezes.
@@ -11,27 +18,34 @@ edition = "2018"
 opt-level = 1
 
 [dependencies]
-sha-1 = "0.8.1"
-glutin = "0.19.0"
-byteorder = "1.2.7"
-reqwest = "0.9.5"
-serde = "1.0.84"
-serde_json = "1.0.34"
-flate2 = "1.0.6"
-zip = "0.5.0"
-image = "0.20.1"
-rand = "0.5.5"
-hex = "0.3.2"
-base64 = "0.10.0"
-log = { version = "0.4.6", features = ["std"] }
-cgmath = "0.16.1"
-lazy_static = "1.2.0"
-collision = "0.18.0"
-aes = "0.3.2"
-cfb8 = "0.3.1"
+cfg-if = "0.1.9"
+wasm-bindgen = "0.2.44"
+sha-1 = "0.8.2"
+glutin = "0.22.0"
+byteorder = "1.3.4"
+serde = "1.0.104"
+serde_json = "1.0.55"
+flate2 = { version = "1.0.14", features = ["rust_backend"], default-features = false }
+zip = { version = "0.5.6", features = ["deflate"], default-features = false }
+image = "0.23.6"
+rand = "0.7.3"
+rand_pcg = "0.2.1"
+base64 = "0.12.2"
+log = { version = "0.4.8", features = ["std"] }
+cgmath = "0.17.0"
+lazy_static = "1.4.0"
+collision = "0.20.1"
 rsa_public_encrypt_pkcs1 = "0.2.0"
+structopt = "0.3.15"
 clipboard = "0.5.0"
 # clippy = "*"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { version = "0.10.6", features = [ "blocking" ]}
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+stdweb = "0.4.20"
+winit = { version = "0.20.0", features = [ "stdweb" ]}
 
 [dependencies.steven_gl]
 path = "./gl"
@@ -47,4 +61,12 @@ version = "0"
 
 [dependencies.steven_shared]
 path = "./shared"
+version = "0"
+
+[dependencies.steven_protocol]
+path = "./protocol"
+version = "0"
+
+[dependencies.std_or_web]
+path = "./std_or_web"
 version = "0"

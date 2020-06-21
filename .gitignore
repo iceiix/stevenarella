@@ -1,6 +1,11 @@
+# Rust
 target/
+**/*.rs.bk
 .rust/
+
 working/
+*.log
+pkg
 
 # IntelliJ
 .idea

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::ui;
 use crate::render;
+use crate::ui;
 
 pub struct Connecting {
     elements: Option<UIElements>,
@@ -26,7 +26,6 @@ struct UIElements {
     _msg: ui::TextRef,
     _disclaimer: ui::TextRef,
 }
-
 
 impl Connecting {
     pub fn new(target: &str) -> Connecting {
@@ -74,10 +73,12 @@ impl super::Screen for Connecting {
         self.elements = None
     }
 
-    fn tick(&mut self,
-            _delta: f64,
-            renderer: &mut render::Renderer,
-            _ui_container: &mut ui::Container) -> Option<Box<super::Screen>>{
+    fn tick(
+        &mut self,
+        _delta: f64,
+        renderer: &mut render::Renderer,
+        _ui_container: &mut ui::Container,
+    ) -> Option<Box<dyn super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
 
         elements.logo.tick(renderer);

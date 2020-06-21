@@ -12,32 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fs;
-use std::thread;
-use std::sync::mpsc;
-use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::rc::Rc;
+use std::sync::mpsc;
+use std::thread;
+use std_or_web::fs;
 
-use crate::ui;
-use crate::render;
 use crate::format;
 use crate::format::{Component, TextComponent};
 use crate::protocol;
+use crate::render;
+use crate::ui;
 
-use serde_json;
-use std::time::{Duration};
-use image;
 use base64;
+use image;
 use rand;
 use rand::Rng;
+use serde_json;
+use std::time::Duration;
 
 pub struct ServerList {
     elements: Option<UIElements>,
     disconnect_reason: Option<Component>,
 
     needs_reload: Rc<RefCell<bool>>,
-    server_protocol_versions: HashMap<String, i32>,
 }
 
 struct UIElements {
@@ -70,7 +68,6 @@ struct Server {
 }
 
 struct PingInfo {
-    address: String, 
     motd: format::Component,
     ping: Duration,
     exists: bool,
@@ -78,6 +75,7 @@ struct PingInfo {
     max: i32,
     protocol_version: i32,
     protocol_name: String,
+    forge_mods: Vec<crate::protocol::forge::ForgeMod>,
     favicon: Option<image::DynamicImage>,
 }
 
@@ -97,13 +95,14 @@ impl ServerList {
             elements: None,
             disconnect_reason,
             needs_reload: Rc::new(RefCell::new(false)),
-            server_protocol_versions: HashMap::new(),
         }
     }
 
-    fn reload_server_list(&mut self,
-                          renderer: &mut render::Renderer,
-                          ui_container: &mut ui::Container) {
+    fn reload_server_list(
+        &mut self,
+        renderer: &mut render::Renderer,
+        ui_container: &mut ui::Container,
+    ) {
         let elements = self.elements.as_mut().unwrap();
         *self.needs_reload.borrow_mut() = false;
         {
@@ -144,15 +143,12 @@ impl ServerList {
                 let mut backr = back.borrow_mut();
                 let address = address.clone();
                 backr.add_hover_func(move |this, over, _| {
-                    this.colour.3 = if over {
-                        200
-                    } else {
-                        100
-                    };
+                    this.colour.3 = if over { 200 } else { 100 };
                     false
                 });
                 backr.add_click_func(move |_, game| {
-                    game.screen_sys.replace_screen(Box::new(super::connecting::Connecting::new(&address)));
+                    game.screen_sys
+                        .replace_screen(Box::new(super::connecting::Connecting::new(&address)));
                     game.connect_to(&address);
                     true
                 });
@@ -170,7 +166,6 @@ impl ServerList {
                 .position(5.0, 5.0)
                 .size(90.0, 90.0)
                 .attach(&mut *back.borrow_mut());
-
 
             // Ping indicator
             let ping = ui::ImageBuilder::new()
@@ -235,9 +230,13 @@ impl ServerList {
                 let sname = name.clone();
                 let saddr = address.clone();
                 btn.add_click_func(move |_, game| {
-                    game.screen_sys.replace_screen(Box::new(super::edit_server::EditServerEntry::new(
-                        Some((index, sname.clone(), saddr.clone()))
-                    )));
+                    game.screen_sys.replace_screen(Box::new(
+                        super::edit_server::EditServerEntry::new(Some((
+                            index,
+                            sname.clone(),
+                            saddr.clone(),
+                        ))),
+                    ));
                     true
                 })
             }
@@ -263,7 +262,9 @@ impl ServerList {
 
             // Don't block the main thread whilst pinging the server
             thread::spawn(move || {
-                match protocol::Conn::new(&address, protocol::SUPPORTED_PROTOCOLS[0]).and_then(|conn| conn.do_status()) {
+                match protocol::Conn::new(&address, protocol::SUPPORTED_PROTOCOLS[0])
+                    .and_then(|conn| conn.do_status())
+                {
                     Ok(res) => {
                         let mut desc = res.0.description;
                         format::convert_legacy(&mut desc);
@@ -275,7 +276,6 @@ impl ServerList {
                             None
                         };
                         drop(send.send(PingInfo {
-                            address,
                             motd: desc,
                             ping: res.1,
                             exists: true,
@@ -283,6 +283,7 @@ impl ServerList {
                             max: res.0.players.max,
                             protocol_version: res.0.version.protocol,
                             protocol_name: res.0.version.name,
+                            forge_mods: res.0.forge_mods,
                             favicon,
                         }));
                     }
@@ -291,7 +292,6 @@ impl ServerList {
                         let mut msg = TextComponent::new(&e);
                         msg.modifier.color = Some(format::Color::Red);
                         let _ = send.send(PingInfo {
-                            address,
                             motd: Component::Text(msg),
                             ping: Duration::new(99999, 0),
                             exists: false,
@@ -299,6 +299,7 @@ impl ServerList {
                             max: 0,
                             protocol_version: 0,
                             protocol_name: "".to_owned(),
+                            forge_mods: vec![],
                             favicon: None,
                         });
                     }
@@ -348,9 +349,8 @@ impl super::Screen for ServerList {
                 .attach(&mut *add);
             add.add_text(txt);
             add.add_click_func(move |_, game| {
-                game.screen_sys.replace_screen(Box::new(super::edit_server::EditServerEntry::new(
-                    None
-                )));
+                game.screen_sys
+                    .replace_screen(Box::new(super::edit_server::EditServerEntry::new(None)));
                 true
             })
         }
@@ -370,7 +370,8 @@ impl super::Screen for ServerList {
                 .alignment(ui::VAttach::Middle, ui::HAttach::Center)
                 .attach(&mut *options);
             options.add_click_func(|_, game| {
-                game.screen_sys.add_screen(Box::new(super::SettingsMenu::new(game.vars.clone(), false)));
+                game.screen_sys
+                    .add_screen(Box::new(super::SettingsMenu::new(game.vars.clone(), false)));
                 true
             });
         }
@@ -389,7 +390,10 @@ impl super::Screen for ServerList {
             let background = ui::ImageBuilder::new()
                 .texture("steven:solid")
                 .position(0.0, 3.0)
-                .size(width.max(renderer.ui.size_of_string("Disconnected")) + 4.0, height + 4.0 + 16.0)
+                .size(
+                    width.max(renderer.ui.size_of_string("Disconnected")) + 4.0,
+                    height + 4.0 + 16.0,
+                )
                 .colour((0, 0, 0, 100))
                 .alignment(ui::VAttach::Top, ui::HAttach::Center)
                 .draw_index(10)
@@ -438,10 +442,12 @@ impl super::Screen for ServerList {
         self.elements = None
     }
 
-    fn tick(&mut self,
-            delta: f64,
-            renderer: &mut render::Renderer,
-            ui_container: &mut ui::Container) -> Option<Box<super::Screen>> {
+    fn tick(
+        &mut self,
+        delta: f64,
+        renderer: &mut render::Renderer,
+        ui_container: &mut ui::Container,
+    ) -> Option<Box<dyn super::Screen>> {
         if *self.needs_reload.borrow() {
             self.reload_server_list(renderer, ui_container);
         }
@@ -471,20 +477,23 @@ impl super::Screen for ServerList {
                         s.motd.borrow_mut().set_text(res.motd);
                         // Selects the icon for the given ping range
                         // TODO: switch to as_millis() experimental duration_as_u128 #50202 once available?
-                        let ping_ms = (res.ping.subsec_nanos() as f64)/1000000.0 + (res.ping.as_secs() as f64)*1000.0;
+                        let ping_ms = (res.ping.subsec_nanos() as f64) / 1000000.0
+                            + (res.ping.as_secs() as f64) * 1000.0;
                         let y = match ping_ms.round() as u64 {
-                            _x @ 0 ... 75 => 16.0 / 256.0,
-                            _x @ 76 ... 150 => 24.0 / 256.0,
-                            _x @ 151 ... 225 => 32.0 / 256.0,
-                            _x @ 226 ... 350 => 40.0 / 256.0,
-                            _x @ 351 ... 999 => 48.0 / 256.0,
+                            _x @ 0..=75 => 16.0 / 256.0,
+                            _x @ 76..=150 => 24.0 / 256.0,
+                            _x @ 151..=225 => 32.0 / 256.0,
+                            _x @ 226..=350 => 40.0 / 256.0,
+                            _x @ 351..=999 => 48.0 / 256.0,
                             _ => 56.0 / 256.0,
                         };
                         s.ping.borrow_mut().texture_coords.1 = y;
                         if res.exists {
                             {
                                 let mut players = s.players.borrow_mut();
-                                let txt = if protocol::SUPPORTED_PROTOCOLS.contains(&res.protocol_version) {
+                                let txt = if protocol::SUPPORTED_PROTOCOLS
+                                    .contains(&res.protocol_version)
+                                {
                                     players.colour.1 = 255;
                                     players.colour.2 = 255;
                                     format!("{}/{}", res.online, res.max)
@@ -494,28 +503,30 @@ impl super::Screen for ServerList {
                                     format!("Out of date {}/{}", res.online, res.max)
                                 };
                                 players.text = txt;
-
-                                // TODO: store in memory instead of disk? but where?
-                                self.server_protocol_versions.insert(res.address, res.protocol_version);
-                                let mut out = fs::File::create("server_versions.json").unwrap();
-                                serde_json::to_writer_pretty(&mut out, &self.server_protocol_versions).unwrap();
                             }
-                            let mut txt = TextComponent::new(&res.protocol_name);
+                            let sm =
+                                format!("{} mods + {}", res.forge_mods.len(), res.protocol_name);
+                            let st = if res.forge_mods.len() > 0 {
+                                &sm
+                            } else {
+                                &res.protocol_name
+                            };
+                            let mut txt = TextComponent::new(&st);
                             txt.modifier.color = Some(format::Color::Yellow);
                             let mut msg = Component::Text(txt);
                             format::convert_legacy(&mut msg);
                             s.version.borrow_mut().set_text(msg);
                         }
                         if let Some(favicon) = res.favicon {
-                            let name: String = std::iter::repeat(()).map(|()| rand::thread_rng()
-                                               .sample(&rand::distributions::Alphanumeric))
-                                               .take(30)
-                                               .collect();
+                            let name: String = std::iter::repeat(())
+                                .map(|()| {
+                                    rand::thread_rng().sample(&rand::distributions::Alphanumeric)
+                                })
+                                .take(30)
+                                .collect();
                             let tex = renderer.get_textures_ref();
                             s.icon_texture = Some(name.clone());
-                            let icon_tex = tex.write()
-                                              .unwrap()
-                                              .put_dynamic(&name, favicon);
+                            let icon_tex = tex.write().unwrap().put_dynamic(&name, favicon);
                             s.icon.borrow_mut().texture = icon_tex.name;
                         }
                     }

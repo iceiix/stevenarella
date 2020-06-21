@@ -1,12 +1,11 @@
-
-use std::sync::{Arc, RwLock};
-use std::f64::consts;
-use crate::ui;
 use crate::render;
 use crate::resources;
+use crate::ui;
+use rand::{self, seq::SliceRandom};
+use rand_pcg;
+use std::f64::consts;
+use std::sync::{Arc, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
-use rand;
-use rand::Rng;
 
 pub struct Logo {
     _shadow: ui::BatchRef,
@@ -20,9 +19,10 @@ pub struct Logo {
 }
 
 impl Logo {
-    pub fn new(resources: Arc<RwLock<resources::Manager>>,
-               ui_container: &mut ui::Container)
-               -> Logo {
+    pub fn new(
+        resources: Arc<RwLock<resources::Manager>>,
+        ui_container: &mut ui::Container,
+    ) -> Logo {
         let logo_str = {
             let res = resources.read().unwrap();
             let mut logo = res.open("steven", "logo/logo.txt").unwrap();
@@ -66,14 +66,15 @@ impl Logo {
                     .colour((0, 0, 0, 100))
                     .attach(&mut *shadow_batch.borrow_mut());
 
-
                 ui::ImageBuilder::new()
                     .texture("minecraft:blocks/planks_oak")
                     .position(x as f64, y as f64)
                     .size(4.0, 8.0)
                     .texture_coords((
-                        (x % 16) as f64 / 16.0, (y % 16) as f64 / 16.0,
-                        4.0 / 16.0, 8.0 / 16.0
+                        (x % 16) as f64 / 16.0,
+                        (y % 16) as f64 / 16.0,
+                        4.0 / 16.0,
+                        8.0 / 16.0,
                     ))
                     .colour((r, g, b, 255))
                     .attach(&mut *layer0.borrow_mut());
@@ -101,8 +102,9 @@ impl Logo {
                     text_strings.push(line.to_owned().replace("\r", ""));
                 }
             }
-            let mut r: rand::XorShiftRng = rand::SeedableRng::from_seed([45, 0, 0, 0, 64, 0, 0, 0, 32, 0, 0, 0, 12, 0, 0, 0]);
-            r.shuffle(&mut text_strings[..]);
+            let mut r: rand_pcg::Pcg32 =
+                rand::SeedableRng::from_seed([45, 0, 0, 0, 64, 0, 0, 0, 32, 0, 0, 0, 12, 0, 0, 0]);
+            text_strings.shuffle(&mut r);
         }
 
         let txt = ui::TextBuilder::new()
@@ -147,7 +149,7 @@ impl Logo {
             if self.text_base_scale > 1.0 {
                 self.text_base_scale = 1.0;
             }
-            text.x =(-width / 2.0) * self.text_base_scale;
+            text.x = (-width / 2.0) * self.text_base_scale;
             self.text_orig_x = text.x;
         }
 
@@ -160,6 +162,6 @@ impl Logo {
         text.scale_x = (0.7 + (offset / 3.0)) * self.text_base_scale;
         text.scale_y = (0.7 + (offset / 3.0)) * self.text_base_scale;
         let scale = text.scale_x;
-        text.x =self.text_orig_x * scale * self.text_base_scale;
+        text.x = self.text_orig_x * scale * self.text_base_scale;
     }
 }
