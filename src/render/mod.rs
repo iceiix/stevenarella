@@ -913,7 +913,7 @@ impl TextureManager {
         if height == 32 {
             // Needs changing to the new format
             let mut new = image::DynamicImage::new_rgba8(64, 64);
-            new.copy_from(&img, 0, 0);
+            new.copy_from(&img, 0, 0).expect("Invalid png image in skin");
             for xx in 0 .. 4 {
                 for yy in 0 .. 16 {
                     for section in 0 .. 4 {
