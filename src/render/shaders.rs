@@ -77,7 +77,7 @@ macro_rules! init_shader {
         }
     ) => (
         #[allow(dead_code)]
-        pub struct $name { // TODO: remove pub
+        struct $name {
             program: gl::Program,
             $(
                 $field: gl::Attribute,
@@ -131,7 +131,7 @@ pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
     v.set_source(vertex);
     v.compile();
 
-    if !v.get_shader_compile_status() {
+    if v.get_parameter(gl::COMPILE_STATUS) == 0 {
         error!("Src: {}", vertex);
         panic!("Shader error: {}", v.get_info_log());
     } else {
@@ -146,7 +146,7 @@ pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
     f.set_source(fragment);
     f.compile();
 
-    if !f.get_shader_compile_status() {
+    if f.get_parameter(gl::COMPILE_STATUS) == 0 {
         error!("Src: {}", fragment);
         panic!("Shader error: {}", f.get_info_log());
     } else {
