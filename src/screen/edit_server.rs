@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std_or_web::fs;
 use std::collections::BTreeMap;
+use std_or_web::fs;
 
-use crate::ui;
 use crate::render;
+use crate::ui;
 
 use serde_json::{self, Value};
 
@@ -60,7 +60,8 @@ impl EditServerEntry {
         };
 
         {
-            let servers = servers_info.as_object_mut()
+            let servers = servers_info
+                .as_object_mut()
                 .unwrap()
                 .get_mut("servers")
                 .unwrap()
@@ -76,7 +77,6 @@ impl EditServerEntry {
         let mut out = fs::File::create("servers.json").unwrap();
         serde_json::to_writer_pretty(&mut out, &servers_info).unwrap();
     }
-
 }
 
 impl super::Screen for EditServerEntry {
@@ -131,7 +131,8 @@ impl super::Screen for EditServerEntry {
                     &server_name.borrow().input,
                     &server_address.borrow().input,
                 );
-                game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
+                game.screen_sys
+                    .replace_screen(Box::new(super::ServerList::new(None)));
                 true
             });
         }
@@ -150,7 +151,8 @@ impl super::Screen for EditServerEntry {
                 .attach(&mut *cancel);
             cancel.add_text(txt);
             cancel.add_click_func(|_, game| {
-                game.screen_sys.replace_screen(Box::new(super::ServerList::new(None)));
+                game.screen_sys
+                    .replace_screen(Box::new(super::ServerList::new(None)));
                 true
             });
         }
@@ -169,11 +171,12 @@ impl super::Screen for EditServerEntry {
         self.elements = None
     }
 
-    fn tick(&mut self,
-            _delta: f64,
-            renderer: &mut render::Renderer,
-            _ui_container: &mut ui::Container) -> Option<Box<dyn super::Screen>> {
-
+    fn tick(
+        &mut self,
+        _delta: f64,
+        renderer: &mut render::Renderer,
+        _ui_container: &mut ui::Container,
+    ) -> Option<Box<dyn super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
         elements.logo.tick(renderer);
         None

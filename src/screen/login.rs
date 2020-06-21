@@ -19,12 +19,12 @@ use std::thread;
 
 use rand::{self, Rng};
 
-use crate::ui;
-use crate::render;
+use crate::auth;
 use crate::console;
 use crate::protocol;
 use crate::protocol::mojang;
-use crate::auth;
+use crate::render;
+use crate::ui;
 
 pub struct Login {
     elements: Option<UIElements>,
@@ -47,10 +47,12 @@ struct UIElements {
     profile: mojang::Profile,
 }
 
-
 impl Login {
     pub fn new(vars: Rc<console::Vars>) -> Login {
-        Login { elements: None, vars: vars }
+        Login {
+            elements: None,
+            vars: vars,
+        }
     }
 }
 
@@ -81,7 +83,6 @@ impl super::Screen for Login {
                 true
             });
         }
-
 
         // Login Error
         let login_error = ui::TextBuilder::new()
@@ -157,10 +158,12 @@ impl super::Screen for Login {
         self.elements = None
     }
 
-    fn tick(&mut self,
-            _delta: f64,
-            renderer: &mut render::Renderer,
-            _ui_container: &mut ui::Container) -> Option<Box<dyn super::Screen>> {
+    fn tick(
+        &mut self,
+        _delta: f64,
+        renderer: &mut render::Renderer,
+        _ui_container: &mut ui::Container,
+    ) -> Option<Box<dyn super::Screen>> {
         let elements = self.elements.as_mut().unwrap();
 
         if elements.try_login.get() && elements.login_res.is_none() {
@@ -171,10 +174,10 @@ impl super::Screen for Login {
             elements.login_btn_text.borrow_mut().text = "Logging in...".into();
             let mut client_token = self.vars.get(auth::AUTH_CLIENT_TOKEN).clone();
             if client_token.is_empty() {
-                client_token = std::iter::repeat(()).map(|()| rand::thread_rng()
-                               .sample(&rand::distributions::Alphanumeric))
-                               .take(20)
-                               .collect();
+                client_token = std::iter::repeat(())
+                    .map(|()| rand::thread_rng().sample(&rand::distributions::Alphanumeric))
+                    .take(20)
+                    .collect();
                 self.vars.set(auth::AUTH_CLIENT_TOKEN, client_token);
             }
             let client_token = self.vars.get(auth::AUTH_CLIENT_TOKEN).clone();
@@ -186,7 +189,8 @@ impl super::Screen for Login {
                 if refresh {
                     tx.send(profile.refresh(&client_token)).unwrap();
                 } else {
-                    tx.send(mojang::Profile::login(&username, &password, &client_token)).unwrap();
+                    tx.send(mojang::Profile::login(&username, &password, &client_token))
+                        .unwrap();
                 }
             });
         }
@@ -203,10 +207,10 @@ impl super::Screen for Login {
                         self.vars.set(auth::AUTH_TOKEN, val.access_token.clone());
                         elements.profile = val;
                         return Some(Box::new(super::ServerList::new(None)));
-                    },
+                    }
                     Err(err) => {
                         elements.login_error.borrow_mut().text = format!("{}", err);
-                    },
+                    }
                 }
             }
         }

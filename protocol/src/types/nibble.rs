@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 pub struct Array {
     pub data: Vec<u8>,
 }
@@ -25,8 +24,8 @@ impl Array {
     }
 
     pub fn get(&self, idx: usize) -> u8 {
-        let val = self.data[idx>>1];
-        if idx&1 == 0 {
+        let val = self.data[idx >> 1];
+        if idx & 1 == 0 {
             val & 0xF
         } else {
             val >> 4
@@ -36,7 +35,7 @@ impl Array {
     pub fn set(&mut self, idx: usize, val: u8) {
         let i = idx >> 1;
         let old = self.data[i];
-        if idx&1 == 0 {
+        if idx & 1 == 0 {
             self.data[i] = (old & 0xF0) | (val & 0xF);
         } else {
             self.data[i] = (old & 0x0F) | ((val & 0xF) << 4);

@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashMap;
-use std::marker::PhantomData;
-use std::io;
-use std::fmt;
-use crate::protocol;
-use crate::protocol::Serializable;
-use crate::protocol::LenPrefixed;
 use crate::format;
 use crate::item;
-use crate::shared::Position;
 use crate::nbt;
+use crate::protocol;
+use crate::protocol::LenPrefixed;
+use crate::protocol::Serializable;
+use crate::shared::Position;
+use std::collections::HashMap;
+use std::fmt;
+use std::io;
+use std::marker::PhantomData;
 
 pub struct MetadataKey<T: MetaValue> {
     index: i32,
     ty: PhantomData<T>,
 }
 
-impl <T: MetaValue> MetadataKey<T> {
+impl<T: MetaValue> MetadataKey<T> {
     #[allow(dead_code)]
     fn new(index: i32) -> MetadataKey<T> {
         MetadataKey {
@@ -45,7 +45,9 @@ pub struct Metadata {
 
 impl Metadata {
     pub fn new() -> Metadata {
-        Metadata { map: HashMap::new() }
+        Metadata {
+            map: HashMap::new(),
+        }
     }
 
     pub fn get<T: MetaValue>(&self, key: &MetadataKey<T>) -> Option<&T> {
@@ -77,14 +79,22 @@ impl Metadata {
                 3 => m.put_raw(index, f32::read_from(buf)?),
                 4 => m.put_raw(index, String::read_from(buf)?),
                 5 => m.put_raw(index, Option::<item::Stack>::read_from(buf)?),
-                6 => m.put_raw(index,
-                               [i32::read_from(buf)?,
-                                i32::read_from(buf)?,
-                                i32::read_from(buf)?]),
-                7 => m.put_raw(index,
-                               [f32::read_from(buf)?,
-                                f32::read_from(buf)?,
-                                f32::read_from(buf)?]),
+                6 => m.put_raw(
+                    index,
+                    [
+                        i32::read_from(buf)?,
+                        i32::read_from(buf)?,
+                        i32::read_from(buf)?,
+                    ],
+                ),
+                7 => m.put_raw(
+                    index,
+                    [
+                        f32::read_from(buf)?,
+                        f32::read_from(buf)?,
+                        f32::read_from(buf)?,
+                    ],
+                ),
                 _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
             }
         }
@@ -100,8 +110,7 @@ impl Metadata {
             let ty_index: u8 = *k as u8;
             const TYPE_SHIFT: usize = 5;
 
-            match *v
-            {
+            match *v {
                 Value::Byte(ref val) => {
                     u8::write_to(&(ty_index | (0 << TYPE_SHIFT)), buf)?;
                     val.write_to(buf)?;
@@ -165,10 +174,14 @@ impl Metadata {
                 4 => m.put_raw(index, format::Component::read_from(buf)?),
                 5 => m.put_raw(index, Option::<item::Stack>::read_from(buf)?),
                 6 => m.put_raw(index, bool::read_from(buf)?),
-                7 => m.put_raw(index,
-                               [f32::read_from(buf)?,
-                                f32::read_from(buf)?,
-                                f32::read_from(buf)?]),
+                7 => m.put_raw(
+                    index,
+                    [
+                        f32::read_from(buf)?,
+                        f32::read_from(buf)?,
+                        f32::read_from(buf)?,
+                    ],
+                ),
                 8 => m.put_raw(index, Position::read_from(buf)?),
                 9 => {
                     if bool::read_from(buf)? {
@@ -287,13 +300,20 @@ impl Metadata {
                 2 => m.put_raw(index, f32::read_from(buf)?),
                 3 => m.put_raw(index, String::read_from(buf)?),
                 4 => m.put_raw(index, format::Component::read_from(buf)?),
-                5 => m.put_raw(index, LenPrefixed::<bool, format::Component>::read_from(buf)?),
+                5 => m.put_raw(
+                    index,
+                    LenPrefixed::<bool, format::Component>::read_from(buf)?,
+                ),
                 6 => m.put_raw(index, Option::<item::Stack>::read_from(buf)?),
                 7 => m.put_raw(index, bool::read_from(buf)?),
-                8 => m.put_raw(index,
-                               [f32::read_from(buf)?,
-                                f32::read_from(buf)?,
-                                f32::read_from(buf)?]),
+                8 => m.put_raw(
+                    index,
+                    [
+                        f32::read_from(buf)?,
+                        f32::read_from(buf)?,
+                        f32::read_from(buf)?,
+                    ],
+                ),
                 9 => m.put_raw(index, Position::read_from(buf)?),
                 10 => {
                     if bool::read_from(buf)? {
@@ -328,7 +348,7 @@ impl Metadata {
                     } else {
                         m.put_raw::<Option<protocol::VarInt>>(index, None);
                     }
-                },
+                }
                 18 => m.put_raw(index, PoseData::read_from(buf)?),
                 _ => return Err(protocol::Error::Err("unknown metadata type".to_owned())),
             }
@@ -427,8 +447,6 @@ impl Metadata {
         u8::write_to(&0xFF, buf)?;
         Ok(())
     }
-
-
 }
 
 impl Serializable for Metadata {
@@ -571,7 +589,7 @@ impl Serializable for ParticleData {
             1 => ParticleData::AngryVillager,
             2 => ParticleData::Barrier,
             3 => ParticleData::Block {
-                block_state: Serializable::read_from(buf)?
+                block_state: Serializable::read_from(buf)?,
             },
             4 => ParticleData::Bubble,
             5 => ParticleData::Cloud,
@@ -649,7 +667,11 @@ impl Serializable for VillagerData {
         let villager_type = protocol::VarInt::read_from(buf)?;
         let profession = protocol::VarInt::read_from(buf)?;
         let level = protocol::VarInt::read_from(buf)?;
-        Ok(VillagerData { villager_type, profession, level })
+        Ok(VillagerData {
+            villager_type,
+            profession,
+            level,
+        })
     }
 
     fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), protocol::Error> {
@@ -687,8 +709,6 @@ impl Serializable for PoseData {
         unimplemented!()
     }
 }
-
-
 
 pub trait MetaValue {
     fn unwrap(_: &Value) -> &Self;
@@ -778,7 +798,6 @@ impl MetaValue for LenPrefixed<bool, format::Component> {
         Value::OptionalFormatComponent(self)
     }
 }
-
 
 impl MetaValue for Option<item::Stack> {
     fn unwrap(value: &Value) -> &Self {
@@ -936,14 +955,12 @@ impl MetaValue for PoseData {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
     use std::marker::PhantomData;
 
-    const TEST: MetadataKey<String> =
-        MetadataKey {
+    const TEST: MetadataKey<String> = MetadataKey {
         index: 0,
         ty: PhantomData,
     };

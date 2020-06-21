@@ -1,25 +1,24 @@
-
 pub mod liquid;
 
-use std::sync::{Arc, RwLock};
-use std::collections::HashMap;
-use std::cell::RefCell;
-use std::io::Write;
-use byteorder::{WriteBytesExt, NativeEndian};
-use crate::resources;
 use crate::render;
+use crate::resources;
+use crate::shared::Direction;
 use crate::world;
 use crate::world::block::{Block, TintType};
-use crate::shared::Direction;
+use byteorder::{NativeEndian, WriteBytesExt};
 use serde_json;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::io::Write;
+use std::sync::{Arc, RwLock};
 
-use std::hash::BuildHasherDefault;
 use crate::types::hash::FNVHash;
-use log::{error};
+use log::error;
+use std::hash::BuildHasherDefault;
 
-use rand::Rng;
-use rand::seq::SliceRandom;
 use image::GenericImageView;
+use rand::seq::SliceRandom;
+use rand::Rng;
 
 pub struct Factory {
     resources: Arc<RwLock<resources::Manager>>,
@@ -35,7 +34,7 @@ pub struct Factory {
 struct Key(String, String);
 
 macro_rules! try_log {
-    ($e:expr) => (
+    ($e:expr) => {
         match $e {
             Ok(val) => val,
             Err(err) => {
@@ -43,8 +42,8 @@ macro_rules! try_log {
                 return false;
             }
         }
-    );
-    (opt $e:expr) => (
+    };
+    (opt $e:expr) => {
         match $e {
             Ok(val) => val,
             Err(err) => {
@@ -52,7 +51,7 @@ macro_rules! try_log {
                 return None;
             }
         }
-    );
+    };
 }
 
 thread_local!(
@@ -60,7 +59,10 @@ thread_local!(
 );
 
 impl Factory {
-    pub fn new(resources: Arc<RwLock<resources::Manager>>, textures: Arc<RwLock<render::TextureManager>>) -> Factory {
+    pub fn new(
+        resources: Arc<RwLock<resources::Manager>>,
+        textures: Arc<RwLock<render::TextureManager>>,
+    ) -> Factory {
         Factory {
             grass_colors: Factory::load_biome_colors(resources.clone(), "grass"),
             foliage_colors: Factory::load_biome_colors(resources.clone(), "foliage"),
@@ -72,7 +74,11 @@ impl Factory {
     }
 
     fn load_biome_colors(res: Arc<RwLock<resources::Manager>>, name: &str) -> image::DynamicImage {
-        let mut val = match res.read().unwrap().open("minecraft", &format!("textures/colormap/{}.png", name)) {
+        let mut val = match res
+            .read()
+            .unwrap()
+            .open("minecraft", &format!("textures/colormap/{}.png", name))
+        {
             Some(val) => val,
             None => return image::DynamicImage::new_rgb8(256, 256),
         };
@@ -87,7 +93,17 @@ impl Factory {
         self.foliage_colors = Factory::load_biome_colors(self.resources.clone(), "foliage");
     }
 
-    fn get_model<R: Rng, W: Write>(&self, key: Key, block: Block, rng: &mut R, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> Result<usize, bool> {
+    fn get_model<R: Rng, W: Write>(
+        &self,
+        key: Key,
+        block: Block,
+        rng: &mut R,
+        snapshot: &world::Snapshot,
+        x: i32,
+        y: i32,
+        z: i32,
+        buf: &mut W,
+    ) -> Result<usize, bool> {
         use std::collections::hash_map::Entry;
         if let Some(model) = self.models.get(&key) {
             if model.multipart.is_empty() {
@@ -103,7 +119,7 @@ impl Factory {
                     match entry {
                         Entry::Occupied(e) => {
                             return Ok(e.get().render(self, snapshot, x, y, z, buf));
-                        },
+                        }
                         Entry::Vacant(e) => {
                             let mut res: Option<Model> = None;
                             for rule in &model.multipart {
@@ -119,7 +135,7 @@ impl Factory {
                             if let Some(mdl) = res {
                                 return Ok(e.insert(mdl).render(self, snapshot, x, y, z, buf));
                             }
-                        },
+                        }
                     };
                     Err(true)
                 });
@@ -143,7 +159,7 @@ impl Factory {
                     if !ok {
                         return false;
                     }
-                },
+                }
                 Rule::Match(ref key, ref val) => {
                     if !block.match_multipart(key, val) {
                         return false;
@@ -154,8 +170,16 @@ impl Factory {
         true
     }
 
-    pub fn get_state_model<R: Rng, W: Write>(models: &Arc<RwLock<Factory>>, block: Block, rng: &mut R,
-            snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
+    pub fn get_state_model<R: Rng, W: Write>(
+        models: &Arc<RwLock<Factory>>,
+        block: Block,
+        rng: &mut R,
+        snapshot: &world::Snapshot,
+        x: i32,
+        y: i32,
+        z: i32,
+        buf: &mut W,
+    ) -> usize {
         let (plugin, name) = block.get_model();
         let key = Key(plugin.to_owned(), name.to_owned());
         let mut missing_variant;
@@ -177,23 +201,32 @@ impl Factory {
                 Err(val) => missing_variant = val,
             };
         }
-        let ret = Factory::get_state_model(models, Block::Missing{}, rng, snapshot, x, y, z, buf);
+        let ret = Factory::get_state_model(models, Block::Missing {}, rng, snapshot, x, y, z, buf);
         if !missing_variant {
             // Still no model, replace with placeholder
             let mut m = models.write().unwrap();
-            let model = m.models.get(&Key("steven".to_owned(), "missing_block".to_owned())).unwrap().clone();
+            let model = m
+                .models
+                .get(&Key("steven".to_owned(), "missing_block".to_owned()))
+                .unwrap()
+                .clone();
             m.models.insert(key, model);
         }
         ret
     }
 
     fn load_model(&mut self, plugin: &str, name: &str) -> bool {
-        let file = match self.resources.read().unwrap().open(plugin, &format!("blockstates/{}.json", name)) {
+        let file = match self
+            .resources
+            .read()
+            .unwrap()
+            .open(plugin, &format!("blockstates/{}.json", name))
+        {
             Some(val) => val,
             None => {
                 error!("Error missing block state for {}:{}", plugin, name);
                 return false;
-            },
+            }
         };
         let mdl: serde_json::Value = try_log!(serde_json::from_reader(file));
 
@@ -218,14 +251,12 @@ impl Factory {
                 if let Some(when) = rule.get("when").and_then(|v| v.as_object()) {
                     Self::parse_rules(when, &mut rules);
                 }
-                model.multipart.push(MultipartRule {
-                    apply,
-                    rules,
-                })
+                model.multipart.push(MultipartRule { apply, rules })
             }
         }
 
-        self.models.insert(Key(plugin.to_owned(), name.to_owned()), model);
+        self.models
+            .insert(Key(plugin.to_owned(), name.to_owned()), model);
         true
     }
 
@@ -252,9 +283,7 @@ impl Factory {
     }
 
     fn parse_model_list(&self, plugin: &str, v: &serde_json::Value) -> Variants {
-        let mut variants = Variants {
-            models: vec![]
-        };
+        let mut variants = Variants { models: vec![] };
         if let Some(list) = v.as_array() {
             for val in list {
                 if let Some(mdl) = self.parse_block_state_variant(plugin, val) {
@@ -273,24 +302,35 @@ impl Factory {
             None => {
                 error!("Couldn't find model name");
                 return None;
-            },
+            }
         };
 
-        let file = match self.resources.read().unwrap().open(plugin, &format!("models/block/{}.json", model_name)) {
+        let file = match self
+            .resources
+            .read()
+            .unwrap()
+            .open(plugin, &format!("models/block/{}.json", model_name))
+        {
             Some(val) => val,
             None => {
-                error!("Couldn't find model {}", format!("models/block/{}.json", model_name));
+                error!(
+                    "Couldn't find model {}",
+                    format!("models/block/{}.json", model_name)
+                );
                 return None;
-            },
+            }
         };
         let block_model: serde_json::Value = try_log!(opt serde_json::from_reader(file));
 
         let mut model = match self.parse_model(plugin, &block_model) {
             Some(val) => val,
             None => {
-                error!("Failed to parse model {}", format!("models/block/{}.json", model_name));
+                error!(
+                    "Failed to parse model {}",
+                    format!("models/block/{}.json", model_name)
+                );
                 return None;
-            },
+            }
         };
 
         model.y = v.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0);
@@ -303,20 +343,28 @@ impl Factory {
     fn parse_model(&self, plugin: &str, v: &serde_json::Value) -> Option<RawModel> {
         let parent = v.get("parent").and_then(|v| v.as_str()).unwrap_or("");
         let mut model = if !parent.is_empty() && !parent.starts_with("builtin/") {
-            let file = match self.resources.read().unwrap().open(plugin, &format!("models/{}.json", parent)) {
+            let file = match self
+                .resources
+                .read()
+                .unwrap()
+                .open(plugin, &format!("models/{}.json", parent))
+            {
                 Some(val) => val,
                 None => {
                     error!("Couldn't find model {}", format!("models/{}.json", parent));
                     return None;
-                },
+                }
             };
             let block_model: serde_json::Value = try_log!(opt serde_json::from_reader(file));
             match self.parse_model(plugin, &block_model) {
                 Some(val) => val,
                 None => {
-                    error!("Failed to parse model {}", format!("models/{}.json", parent));
-                    return None
-                },
+                    error!(
+                        "Failed to parse model {}",
+                        format!("models/{}.json", parent)
+                    );
+                    return None;
+                }
             }
         } else {
             RawModel {
@@ -343,7 +391,9 @@ impl Factory {
 
         if let Some(textures) = v.get("textures").and_then(|v| v.as_object()) {
             for (k, v) in textures {
-                model.texture_vars.insert(k.clone(), v.as_str().unwrap_or("").to_owned());
+                model
+                    .texture_vars
+                    .insert(k.clone(), v.as_str().unwrap_or("").to_owned());
             }
         }
 
@@ -367,16 +417,28 @@ impl Factory {
 
     fn parse_block_element(&self, v: &serde_json::Value) -> ModelElement {
         let mut element = ModelElement {
-            from: v.get("from").and_then(|v| v.as_array()).map(|v| [
-                v[0].as_f64().unwrap(),
-                v[1].as_f64().unwrap(),
-                v[2].as_f64().unwrap()
-            ]).unwrap(),
-            to: v.get("to").and_then(|v| v.as_array()).map(|v| [
-                v[0].as_f64().unwrap(),
-                v[1].as_f64().unwrap(),
-                v[2].as_f64().unwrap()
-            ]).unwrap(),
+            from: v
+                .get("from")
+                .and_then(|v| v.as_array())
+                .map(|v| {
+                    [
+                        v[0].as_f64().unwrap(),
+                        v[1].as_f64().unwrap(),
+                        v[2].as_f64().unwrap(),
+                    ]
+                })
+                .unwrap(),
+            to: v
+                .get("to")
+                .and_then(|v| v.as_array())
+                .map(|v| {
+                    [
+                        v[0].as_f64().unwrap(),
+                        v[1].as_f64().unwrap(),
+                        v[2].as_f64().unwrap(),
+                    ]
+                })
+                .unwrap(),
             shade: v.get("shade").and_then(|v| v.as_bool()).unwrap_or(false),
             faces: [None, None, None, None, None, None],
             rotation: None,
@@ -390,50 +452,58 @@ impl Factory {
                                 let mut uv = [0.0, 0.0, 16.0, 16.0];
                                 match dir {
                                     Direction::North | Direction::South => {
-                                            uv[0] = element.from[0];
-                                            uv[2] = element.to[0];
-                                            uv[1] = 16.0 - element.to[1];
-                                            uv[3] = 16.0 - element.from[1];
-                                    },
+                                        uv[0] = element.from[0];
+                                        uv[2] = element.to[0];
+                                        uv[1] = 16.0 - element.to[1];
+                                        uv[3] = 16.0 - element.from[1];
+                                    }
                                     Direction::West | Direction::East => {
-                                            uv[0] = element.from[2];
-                                            uv[2] = element.to[2];
-                                            uv[1] = 16.0 - element.to[1];
-                                            uv[3] = 16.0 - element.from[1];
-                                    },
+                                        uv[0] = element.from[2];
+                                        uv[2] = element.to[2];
+                                        uv[1] = 16.0 - element.to[1];
+                                        uv[3] = 16.0 - element.from[1];
+                                    }
                                     Direction::Down | Direction::Up => {
-                                            uv[0] = element.from[0];
-                                            uv[2] = element.to[0];
-                                            uv[1] = 16.0 - element.to[2];
-                                            uv[3] = 16.0 - element.from[2];
-                                    },
+                                        uv[0] = element.from[0];
+                                        uv[2] = element.to[0];
+                                        uv[1] = 16.0 - element.to[2];
+                                        uv[3] = 16.0 - element.from[2];
+                                    }
                                     _ => unreachable!(),
                                 }
                                 uv
                             },
-                            |v| [
-                                v[0].as_f64().unwrap(),
-                                v[1].as_f64().unwrap(),
-                                v[2].as_f64().unwrap(),
-                                v[3].as_f64().unwrap()
-                            ]
+                            |v| {
+                                [
+                                    v[0].as_f64().unwrap(),
+                                    v[1].as_f64().unwrap(),
+                                    v[2].as_f64().unwrap(),
+                                    v[3].as_f64().unwrap(),
+                                ]
+                            },
                         ),
-                        texture: face.get("texture")
+                        texture: face
+                            .get("texture")
                             .and_then(|v| v.as_str())
-                            .map(|v| if v.starts_with('#') {
-                                v.to_owned()
-                            } else {
-                                "#".to_owned() + v
-                            }).unwrap(),
+                            .map(|v| {
+                                if v.starts_with('#') {
+                                    v.to_owned()
+                                } else {
+                                    "#".to_owned() + v
+                                }
+                            })
+                            .unwrap(),
                         cull_face: Direction::from_string(
-                                face.get("cullface")
-                                    .and_then(|v| v.as_str())
-                                    .unwrap_or("invalid")
-                            ),
-                        rotation: face.get("rotation")
+                            face.get("cullface")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("invalid"),
+                        ),
+                        rotation: face
+                            .get("rotation")
                             .and_then(|v| v.as_i64())
                             .map_or(0, |v| v as i32),
-                        tint_index: face.get("tintindex")
+                        tint_index: face
+                            .get("tintindex")
                             .and_then(|v| v.as_i64())
                             .map_or(-1, |v| v as i32),
                     });
@@ -443,14 +513,29 @@ impl Factory {
 
         if let Some(rotation) = v.get("rotation") {
             element.rotation = Some(BlockRotation {
-                origin: rotation.get("origin").and_then(|v| v.as_array()).map_or([8.0, 8.0, 8.0], |v| [
-                    v[0].as_f64().unwrap(),
-                    v[1].as_f64().unwrap(),
-                    v[2].as_f64().unwrap()
-                ]),
-                axis: rotation.get("axis").and_then(|v| v.as_str()).unwrap_or("").to_owned(),
-                angle: rotation.get("angle").and_then(|v| v.as_f64()).unwrap_or(0.0),
-                rescale: rotation.get("rescale").and_then(|v| v.as_bool()).unwrap_or(false),
+                origin: rotation.get("origin").and_then(|v| v.as_array()).map_or(
+                    [8.0, 8.0, 8.0],
+                    |v| {
+                        [
+                            v[0].as_f64().unwrap(),
+                            v[1].as_f64().unwrap(),
+                            v[2].as_f64().unwrap(),
+                        ]
+                    },
+                ),
+                axis: rotation
+                    .get("axis")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_owned(),
+                angle: rotation
+                    .get("angle")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.0),
+                rescale: rotation
+                    .get("rescale")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
             });
         }
 
@@ -480,29 +565,33 @@ impl Factory {
                     };
                     if raw.x > 0.0 {
                         let o = (raw.x as i32) / 90;
-                        processed_face.cull_face = rotate_direction(processed_face.cull_face, o, FACE_ROTATION_X, &[
-                            Direction::East,
-                            Direction::West,
-                            Direction::Invalid,
-                        ]);
-                        processed_face.facing = rotate_direction(processed_face.facing, o, FACE_ROTATION_X, &[
-                            Direction::East,
-                            Direction::West,
-                            Direction::Invalid,
-                        ]);
+                        processed_face.cull_face = rotate_direction(
+                            processed_face.cull_face,
+                            o,
+                            FACE_ROTATION_X,
+                            &[Direction::East, Direction::West, Direction::Invalid],
+                        );
+                        processed_face.facing = rotate_direction(
+                            processed_face.facing,
+                            o,
+                            FACE_ROTATION_X,
+                            &[Direction::East, Direction::West, Direction::Invalid],
+                        );
                     }
                     if raw.y > 0.0 {
                         let o = (raw.y as i32) / 90;
-                        processed_face.cull_face = rotate_direction(processed_face.cull_face, o, FACE_ROTATION, &[
-                            Direction::Up,
-                            Direction::Down,
-                            Direction::Invalid,
-                        ]);
-                        processed_face.facing = rotate_direction(processed_face.facing, o, FACE_ROTATION, &[
-                            Direction::Up,
-                            Direction::Down,
-                            Direction::Invalid,
-                        ]);
+                        processed_face.cull_face = rotate_direction(
+                            processed_face.cull_face,
+                            o,
+                            FACE_ROTATION,
+                            &[Direction::Up, Direction::Down, Direction::Invalid],
+                        );
+                        processed_face.facing = rotate_direction(
+                            processed_face.facing,
+                            o,
+                            FACE_ROTATION,
+                            &[Direction::Up, Direction::Down, Direction::Invalid],
+                        );
                     }
 
                     let mut verts = BlockVertex::face_by_direction(all_dirs[i]).to_vec();
@@ -523,24 +612,24 @@ impl Factory {
                         let oy2 = uy2;
                         match face.rotation {
                             270 => {
-                                uy1 = tw*16 - ox2;
-                                uy2 = tw*16 - ox1;
+                                uy1 = tw * 16 - ox2;
+                                uy2 = tw * 16 - ox1;
                                 ux1 = oy1;
                                 ux2 = oy2;
-                            },
+                            }
                             180 => {
-                                uy1 = th*16 - oy2;
-                                uy2 = th*16 - oy1;
-                                ux1 = tw*16 - ox2;
-                                ux2 = tw*16 - ox1;
-                            },
+                                uy1 = th * 16 - oy2;
+                                uy2 = th * 16 - oy1;
+                                ux1 = tw * 16 - ox2;
+                                ux2 = tw * 16 - ox1;
+                            }
                             90 => {
                                 uy1 = ox1;
                                 uy2 = ox2;
-                                ux1 = th*16 - oy2;
-                                ux2 = th*16 - oy1;
-                            },
-                            _ => {},
+                                ux1 = th * 16 - oy2;
+                                ux2 = th * 16 - oy1;
+                            }
+                            _ => {}
                         }
                     }
 
@@ -583,40 +672,40 @@ impl Factory {
                                     let s = angle.sin();
                                     let x = v.x;
                                     let z = v.z;
-                                    v.x = x*c - z*s;
-                                    v.z = z*c + x*s;
+                                    v.x = x * c - z * s;
+                                    v.z = z * c + x * s;
 
                                     if r.rescale {
                                         v.x *= ci;
                                         v.z *= ci;
                                     }
-                                },
+                                }
                                 "x" => {
                                     let c = angle.cos();
                                     let s = angle.sin();
                                     let z = v.z;
                                     let y = v.y;
-                                    v.z = z*c - y*s;
-                                    v.y = y*c + z*s;
+                                    v.z = z * c - y * s;
+                                    v.y = y * c + z * s;
 
                                     if r.rescale {
                                         v.z *= ci;
                                         v.y *= ci;
                                     }
-                                },
+                                }
                                 "z" => {
                                     let c = angle.cos();
                                     let s = angle.sin();
                                     let x = v.x;
                                     let y = v.y;
-                                    v.x = x*c - y*s;
-                                    v.y = y*c + x*s;
+                                    v.x = x * c - y * s;
+                                    v.y = y * c + x * s;
 
                                     if r.rescale {
                                         v.x *= ci;
                                         v.y *= ci;
                                     }
-                                },
+                                }
                                 _ => {}
                             }
                             v.x += (r.origin[0] / 16.0) as f32;
@@ -630,8 +719,8 @@ impl Factory {
                             let s = rot_x.sin();
                             let z = v.z - 0.5;
                             let y = v.y - 0.5;
-                            v.z = 0.5 + (z*c - y*s);
-                            v.y = 0.5 + (y*c + z*s);
+                            v.z = 0.5 + (z * c - y * s);
+                            v.y = 0.5 + (y * c + z * s);
                         }
 
                         if raw.y > 0.0 {
@@ -640,8 +729,8 @@ impl Factory {
                             let s = rot_y.sin();
                             let x = v.x - 0.5;
                             let z = v.z - 0.5;
-                            v.x = 0.5 + (x*c - z*s);
-                            v.z = 0.5 + (z*c + x*s);
+                            v.x = 0.5 + (x * c - z * s);
+                            v.z = 0.5 + (z * c + x * s);
                         }
 
                         if v.toffsetx == 0 {
@@ -657,35 +746,42 @@ impl Factory {
                         }
 
                         if face.rotation > 0 {
-                            let rot_y = (-face.rotation as f64 * (::std::f64::consts::PI / 180.0)) as f32;
+                            let rot_y =
+                                (-face.rotation as f64 * (::std::f64::consts::PI / 180.0)) as f32;
                             let c = rot_y.cos() as i16;
                             let s = rot_y.sin() as i16;
-                            let x = v.toffsetx - 8*tw;
-                            let y = v.toffsety - 8*th;
-                            v.toffsetx = 8*tw + (x*c - y*s);
-                            v.toffsety = 8*th + (y*c + x*s);
+                            let x = v.toffsetx - 8 * tw;
+                            let y = v.toffsety - 8 * th;
+                            v.toffsetx = 8 * tw + (x * c - y * s);
+                            v.toffsety = 8 * th + (y * c + x * s);
                         }
 
-                        if raw.uvlock && raw.y > 0.0
-                            && (processed_face.facing == Direction::Up || processed_face.facing == Direction::Down) {
+                        if raw.uvlock
+                            && raw.y > 0.0
+                            && (processed_face.facing == Direction::Up
+                                || processed_face.facing == Direction::Down)
+                        {
                             let rot_y = (raw.y * (::std::f64::consts::PI / 180.0)) as f32;
                             let c = rot_y.cos() as i16;
                             let s = rot_y.sin() as i16;
-                            let x = v.toffsetx - 8*tw;
-                            let y = v.toffsety - 8*th;
-                            v.toffsetx = 8*tw + (x*c - y*s);
-                            v.toffsety = 8*th + (y*c + x*s);
+                            let x = v.toffsetx - 8 * tw;
+                            let y = v.toffsety - 8 * th;
+                            v.toffsetx = 8 * tw + (x * c - y * s);
+                            v.toffsety = 8 * th + (y * c + x * s);
                         }
 
-                        if raw.uvlock && raw.x > 0.0
-                            && (processed_face.facing != Direction::Up && processed_face.facing != Direction::Down) {
+                        if raw.uvlock
+                            && raw.x > 0.0
+                            && (processed_face.facing != Direction::Up
+                                && processed_face.facing != Direction::Down)
+                        {
                             let rot_x = (raw.x * (::std::f64::consts::PI / 180.0)) as f32;
                             let c = rot_x.cos() as i16;
                             let s = rot_x.sin() as i16;
-                            let x = v.toffsetx - 8*tw;
-                            let y = v.toffsety - 8*th;
-                            v.toffsetx = 8*tw + (x*c - y*s);
-                            v.toffsety = 8*th + (y*c + x*s);
+                            let x = v.toffsetx - 8 * tw;
+                            let y = v.toffsety - 8 * th;
+                            v.toffsetx = 8 * tw + (x * c - y * s);
+                            v.toffsety = 8 * th + (y * c + x * s);
                         }
                     }
 
@@ -713,15 +809,18 @@ const FACE_ROTATION_X: &[Direction] = &[
     Direction::Up,
 ];
 
-fn rotate_direction(val: Direction, offset: i32, rots: &[Direction], invalid: &[Direction]) -> Direction {
+fn rotate_direction(
+    val: Direction,
+    offset: i32,
+    rots: &[Direction],
+    invalid: &[Direction],
+) -> Direction {
     for d in invalid {
         if *d == val {
             return val;
         }
     }
-    let pos = rots.iter()
-        .position(|v| *v == val)
-        .unwrap_or(0) as i32;
+    let pos = rots.iter().position(|v| *v == val).unwrap_or(0) as i32;
     rots[(rots.len() as i32 + pos + offset) as usize % rots.len()]
 }
 
@@ -767,7 +866,7 @@ enum BuiltinType {
     Generated,
     Entity,
     Compass,
-    Clock
+    Clock,
 }
 
 #[derive(Debug)]
@@ -789,7 +888,11 @@ struct RawModel {
 impl RawModel {
     fn lookup_texture(&self, name: &str) -> String {
         if !name.is_empty() && name.starts_with('#') {
-            let tex = self.texture_vars.get(&name[1..]).cloned().unwrap_or("".to_owned());
+            let tex = self
+                .texture_vars
+                .get(&name[1..])
+                .cloned()
+                .unwrap_or("".to_owned());
             return self.lookup_texture(&tex);
         }
         name.to_owned()
@@ -852,7 +955,15 @@ impl Model {
         self.faces.extend_from_slice(&other.faces);
     }
 
-    fn render<W: Write>(&self, factory: &Factory, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
+    fn render<W: Write>(
+        &self,
+        factory: &Factory,
+        snapshot: &world::Snapshot,
+        x: i32,
+        y: i32,
+        z: i32,
+        buf: &mut W,
+    ) -> usize {
         let this = snapshot.get_block(x, y, z);
         let this_mat = this.get_material();
         let mut indices = 0;
@@ -879,9 +990,19 @@ impl Model {
                 let (mut cr, mut cg, mut cb) = if face.tint_index == 0 {
                     match tint {
                         TintType::Default => (255, 255, 255),
-                        TintType::Color{r, g, b} => (r, g, b),
-                        TintType::Grass => calculate_biome(snapshot, vert.x as i32, vert.z as i32, &factory.grass_colors),
-                        TintType::Foliage => calculate_biome(snapshot, vert.x as i32, vert.z as i32, &factory.foliage_colors),
+                        TintType::Color { r, g, b } => (r, g, b),
+                        TintType::Grass => calculate_biome(
+                            snapshot,
+                            vert.x as i32,
+                            vert.z as i32,
+                            &factory.grass_colors,
+                        ),
+                        TintType::Foliage => calculate_biome(
+                            snapshot,
+                            vert.x as i32,
+                            vert.z as i32,
+                            &factory.foliage_colors,
+                        ),
                     }
                 } else {
                     (255, 255, 255)
@@ -898,13 +1019,15 @@ impl Model {
 
                 let (bl, sl) = calculate_light(
                     snapshot,
-                    x, y, z,
+                    x,
+                    y,
+                    z,
                     vert.x as f64,
                     vert.y as f64,
                     vert.z as f64,
                     face.facing,
                     self.ambient_occlusion,
-                    this_mat.force_shade
+                    this_mat.force_shade,
                 );
                 vert.block_light = bl;
                 vert.sky_light = sl;
@@ -915,15 +1038,20 @@ impl Model {
     }
 }
 
-fn calculate_biome(snapshot: &world::Snapshot, x: i32, z: i32, img: &image::DynamicImage) -> (u8, u8, u8) {
-    use std::cmp::{min, max};
+fn calculate_biome(
+    snapshot: &world::Snapshot,
+    x: i32,
+    z: i32,
+    img: &image::DynamicImage,
+) -> (u8, u8, u8) {
+    use std::cmp::{max, min};
     let mut count = 0;
     let mut r = 0;
     let mut g = 0;
     let mut b = 0;
-    for xx in -1 .. 2 {
-        for zz in -1 .. 2 {
-            let bi = snapshot.get_biome(x+xx, z+zz);
+    for xx in -1..2 {
+        for zz in -1..2 {
+            let bi = snapshot.get_biome(x + xx, z + zz);
             let color_index = bi.get_color_index();
             let ix = color_index & 0xFF;
             let iy = color_index >> 8;
@@ -939,13 +1067,23 @@ fn calculate_biome(snapshot: &world::Snapshot, x: i32, z: i32, img: &image::Dyna
             count += 1;
         }
     }
-    ((r/count) as u8, (g/count) as u8, (b/count) as u8)
+    ((r / count) as u8, (g / count) as u8, (b / count) as u8)
 }
 
-fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z: i32,
-                    x: f64, y: f64, z: f64, face: Direction, smooth: bool, force: bool) -> (u16, u16) {
-    use std::cmp::max;
+fn calculate_light(
+    snapshot: &world::Snapshot,
+    orig_x: i32,
+    orig_y: i32,
+    orig_z: i32,
+    x: f64,
+    y: f64,
+    z: f64,
+    face: Direction,
+    smooth: bool,
+    force: bool,
+) -> (u16, u16) {
     use crate::world::block;
+    use std::cmp::max;
     let (ox, oy, oz) = face.get_offset();
 
     let s_block_light = snapshot.get_block_light(orig_x + ox, orig_y + oy, orig_z + oz);
@@ -973,8 +1111,13 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
                 let lz = (z + oz + dz).round() as i32;
                 let mut bl = snapshot.get_block_light(lx, ly, lz);
                 let mut sl = snapshot.get_sky_light(lx, ly, lz);
-                if (force && match snapshot.get_block(lx, ly, lz) { block::Air{} => false, _ => true })
-                    || (sl == 0 && bl == 0){
+                if (force
+                    && match snapshot.get_block(lx, ly, lz) {
+                        block::Air {} => false,
+                        _ => true,
+                    })
+                    || (sl == 0 && bl == 0)
+                {
                     bl = s_block_light;
                     sl = s_sky_light;
                 }
@@ -985,43 +1128,50 @@ fn calculate_light(snapshot: &world::Snapshot, orig_x: i32, orig_y: i32, orig_z:
         }
     }
 
-    ((((block_light * 4000) / count) as u16), (((sky_light * 4000) / count) as u16))
+    (
+        (((block_light * 4000) / count) as u16),
+        (((sky_light * 4000) / count) as u16),
+    )
 }
 
-
-
 pub const PRECOMPUTED_VERTS: [&[BlockVertex; 4]; 6] = [
-    &[ // Up
+    &[
+        // Up
         BlockVertex::base(0.0, 1.0, 0.0, 0, 0),
         BlockVertex::base(1.0, 1.0, 0.0, 1, 0),
         BlockVertex::base(0.0, 1.0, 1.0, 0, 1),
         BlockVertex::base(1.0, 1.0, 1.0, 1, 1),
     ],
-    &[ // Down
+    &[
+        // Down
         BlockVertex::base(0.0, 0.0, 0.0, 0, 1),
         BlockVertex::base(0.0, 0.0, 1.0, 0, 0),
         BlockVertex::base(1.0, 0.0, 0.0, 1, 1),
         BlockVertex::base(1.0, 0.0, 1.0, 1, 0),
     ],
-    &[ // North
+    &[
+        // North
         BlockVertex::base(0.0, 0.0, 0.0, 1, 1),
         BlockVertex::base(1.0, 0.0, 0.0, 0, 1),
         BlockVertex::base(0.0, 1.0, 0.0, 1, 0),
         BlockVertex::base(1.0, 1.0, 0.0, 0, 0),
     ],
-    &[ // South
+    &[
+        // South
         BlockVertex::base(0.0, 0.0, 1.0, 0, 1),
         BlockVertex::base(0.0, 1.0, 1.0, 0, 0),
         BlockVertex::base(1.0, 0.0, 1.0, 1, 1),
         BlockVertex::base(1.0, 1.0, 1.0, 1, 0),
     ],
-    &[ // West
+    &[
+        // West
         BlockVertex::base(0.0, 0.0, 0.0, 0, 1),
         BlockVertex::base(0.0, 1.0, 0.0, 0, 0),
         BlockVertex::base(0.0, 0.0, 1.0, 1, 1),
         BlockVertex::base(0.0, 1.0, 1.0, 1, 0),
     ],
-    &[ // East
+    &[
+        // East
         BlockVertex::base(1.0, 0.0, 0.0, 1, 1),
         BlockVertex::base(1.0, 0.0, 1.0, 0, 1),
         BlockVertex::base(1.0, 1.0, 0.0, 1, 0),
@@ -1051,11 +1201,21 @@ pub struct BlockVertex {
 impl BlockVertex {
     const fn base(x: f32, y: f32, z: f32, tx: i16, ty: i16) -> BlockVertex {
         BlockVertex {
-            x, y, z,
-            tx: 0, ty: 0, tw: 0, th: 0,
-            toffsetx: tx, toffsety: ty, tatlas: 0,
-            r: 0, g: 0, b: 0,
-            block_light: 0, sky_light: 0,
+            x,
+            y,
+            z,
+            tx: 0,
+            ty: 0,
+            tw: 0,
+            th: 0,
+            toffsetx: tx,
+            toffsety: ty,
+            tatlas: 0,
+            r: 0,
+            g: 0,
+            b: 0,
+            block_light: 0,
+            sky_light: 0,
         }
     }
     pub fn write<W: Write>(&self, w: &mut W) {

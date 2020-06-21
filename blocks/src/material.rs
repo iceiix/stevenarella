@@ -1,4 +1,3 @@
-
 pub struct Material {
     pub renderable: bool,
     pub should_cull_against: bool,

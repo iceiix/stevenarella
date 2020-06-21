@@ -1,4 +1,3 @@
-
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound;
 use crate::protocol::packet::play::serverbound::PluginMessageServerbound_i16;
 use crate::protocol::{Serializable, VarShort};
@@ -34,5 +33,4 @@ impl Brand {
             data: crate::protocol::LenPrefixedBytes::<VarShort>::new(data),
         }
     }
-
 }

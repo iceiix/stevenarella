@@ -1,6 +1,5 @@
-
-use std::fmt;
 use crate::direction::Direction;
+use std::fmt;
 use std::ops;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -12,11 +11,7 @@ pub struct Position {
 
 impl Position {
     pub fn new(x: i32, y: i32, z: i32) -> Position {
-        Position {
-            x,
-            y,
-            z,
-        }
+        Position { x, y, z }
     }
 
     pub fn shift(self, dir: Direction) -> Position {

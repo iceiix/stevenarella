@@ -1,4 +1,3 @@
-
 use image::Rgba;
 use lazy_static::lazy_static;
 
@@ -14,7 +13,7 @@ impl Biome {
         Biome {
             id,
             temperature: t,
-            moisture: m*t,
+            moisture: m * t,
         }
     }
 
@@ -23,21 +22,19 @@ impl Biome {
     }
 
     pub fn get_color_index(self) -> usize {
-        let t = (self.temperature as f64 / 100f64) .min(1.0).max(0.0);
+        let t = (self.temperature as f64 / 100f64).min(1.0).max(0.0);
         let m = (self.moisture as f64 / 100f64).min(1.0).max(0.0);
-        (((1.0 - t) * 255.0) as usize) | ((((1.0 - (m*t)) * 255.0) as usize) << 8)
+        (((1.0 - t) * 255.0) as usize) | ((((1.0 - (m * t)) * 255.0) as usize) << 8)
     }
 
     pub fn process_color(self, col: Rgba<u8>) -> Rgba<u8> {
         if self.id == ROOFED_FOREST.id || self.id == ROOFED_FOREST_MOUNTAINS.id {
-            Rgba (
-                [
-                    ((col.0[0] as u32 + 0x28) / 2) as u8,
-                    ((col.0[1] as u32 + 0x34) / 2) as u8,
-                    ((col.0[2] as u32 + 0x0A) / 2) as u8,
-                    255
-                ]
-            )
+            Rgba([
+                ((col.0[0] as u32 + 0x28) / 2) as u8,
+                ((col.0[1] as u32 + 0x34) / 2) as u8,
+                ((col.0[2] as u32 + 0x0A) / 2) as u8,
+                255,
+            ])
         } else {
             col
         }

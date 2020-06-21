@@ -1,12 +1,19 @@
-
-use std::io::Write;
-use std::sync::{Arc, RwLock};
-use crate::world::{self, block};
-use crate::shared::Direction;
 use crate::model::BlockVertex;
 use crate::render;
+use crate::shared::Direction;
+use crate::world::{self, block};
+use std::io::Write;
+use std::sync::{Arc, RwLock};
 
-pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lava: bool, snapshot: &world::Snapshot, x: i32, y: i32, z: i32, buf: &mut W) -> usize {
+pub fn render_liquid<W: Write>(
+    textures: Arc<RwLock<render::TextureManager>>,
+    lava: bool,
+    snapshot: &world::Snapshot,
+    x: i32,
+    y: i32,
+    z: i32,
+    buf: &mut W,
+) -> usize {
     let get_liquid = if lava {
         get_lava_level
     } else {
@@ -20,17 +27,25 @@ pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lav
     } else {
         (
             average_liquid_level(get_liquid, snapshot, x, y, z),
-            average_liquid_level(get_liquid, snapshot, x+1, y, z),
-            average_liquid_level(get_liquid, snapshot, x, y, z+1),
-            average_liquid_level(get_liquid, snapshot, x+1, y, z+1)
+            average_liquid_level(get_liquid, snapshot, x + 1, y, z),
+            average_liquid_level(get_liquid, snapshot, x, y, z + 1),
+            average_liquid_level(get_liquid, snapshot, x + 1, y, z + 1),
         )
     };
 
     let tex = match snapshot.get_block(x, y, z) {
-        block::Block::Water{..} => render::Renderer::get_texture(&textures, "minecraft:blocks/water_still"),
-        block::Block::FlowingWater{..} => render::Renderer::get_texture(&textures, "minecraft:blocks/water_flow"),
-        block::Block::Lava{..} => render::Renderer::get_texture(&textures, "minecraft:blocks/lava_still"),
-        block::Block::FlowingLava{..} => render::Renderer::get_texture(&textures, "minecraft:blocks/lava_flow"),
+        block::Block::Water { .. } => {
+            render::Renderer::get_texture(&textures, "minecraft:blocks/water_still")
+        }
+        block::Block::FlowingWater { .. } => {
+            render::Renderer::get_texture(&textures, "minecraft:blocks/water_flow")
+        }
+        block::Block::Lava { .. } => {
+            render::Renderer::get_texture(&textures, "minecraft:blocks/lava_still")
+        }
+        block::Block::FlowingLava { .. } => {
+            render::Renderer::get_texture(&textures, "minecraft:blocks/lava_flow")
+        }
         _ => unreachable!(),
     };
     let ux1 = 0i16;
@@ -41,8 +56,11 @@ pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lav
     for dir in Direction::all() {
         let (ox, oy, oz) = dir.get_offset();
         let special = dir == Direction::Up && (tl < 8 || tr < 8 || bl < 8 || br < 8);
-        let block = snapshot.get_block(x+ox, y+oy, z+oz);
-        if special || (!block.get_material().should_cull_against && get_liquid(snapshot, x+ox, y+oy, z+oz).is_none()) {
+        let block = snapshot.get_block(x + ox, y + oy, z + oz);
+        if special
+            || (!block.get_material().should_cull_against
+                && get_liquid(snapshot, x + ox, y + oy, z + oz).is_none())
+        {
             let verts = BlockVertex::face_by_direction(dir);
             for vert in verts {
                 let mut vert = vert.clone();
@@ -64,7 +82,7 @@ pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lav
                         (0, _) => ((16.0 / 8.0) * (bl as f32)) as i32,
                         (_, _) => ((16.0 / 8.0) * (br as f32)) as i32,
                     };
-                    vert.y = (height as f32)/16.0 + (y as f32);
+                    vert.y = (height as f32) / 16.0 + (y as f32);
                 }
 
                 vert.x += x as f32;
@@ -72,13 +90,15 @@ pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lav
 
                 let (bl, sl) = super::calculate_light(
                     snapshot,
-                    x, y, z,
+                    x,
+                    y,
+                    z,
                     vert.x as f64,
                     vert.y as f64,
                     vert.z as f64,
                     dir,
                     !lava,
-                    false
+                    false,
                 );
                 vert.block_light = bl;
                 vert.sky_light = sl;
@@ -106,15 +126,18 @@ pub fn render_liquid<W: Write>(textures: Arc<RwLock<render::TextureManager>>,lav
 
 fn average_liquid_level(
     get: fn(&world::Snapshot, i32, i32, i32) -> Option<i32>,
-    snapshot: &world::Snapshot, x: i32, y: i32, z: i32
+    snapshot: &world::Snapshot,
+    x: i32,
+    y: i32,
+    z: i32,
 ) -> i32 {
     let mut level = 0;
-    for xx in -1 .. 1 {
-        for zz in -1 .. 1 {
-            if get(snapshot, x+xx, y+1, z+zz).is_some() {
+    for xx in -1..1 {
+        for zz in -1..1 {
+            if get(snapshot, x + xx, y + 1, z + zz).is_some() {
                 return 8;
             }
-            if let Some(l) = get(snapshot, x+xx, y, z+zz) {
+            if let Some(l) = get(snapshot, x + xx, y, z + zz) {
                 let nl = 7 - (l & 0x7);
                 if nl > level {
                     level = nl;
@@ -127,14 +150,14 @@ fn average_liquid_level(
 
 fn get_water_level(snapshot: &world::Snapshot, x: i32, y: i32, z: i32) -> Option<i32> {
     match snapshot.get_block(x, y, z) {
-        block::Block::Water{level} | block::Block::FlowingWater{level} => Some(level as i32),
+        block::Block::Water { level } | block::Block::FlowingWater { level } => Some(level as i32),
         _ => None,
     }
 }
 
 fn get_lava_level(snapshot: &world::Snapshot, x: i32, y: i32, z: i32) -> Option<i32> {
     match snapshot.get_block(x, y, z) {
-        block::Block::Lava{level} | block::Block::FlowingLava{level} => Some(level as i32),
+        block::Block::Lava { level } | block::Block::FlowingLava { level } => Some(level as i32),
         _ => None,
     }
 }

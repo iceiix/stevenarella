@@ -12,32 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::protocol::{self, mojang, packet, forge};
-use crate::world;
-use crate::world::block;
-use rand::{self, Rng};
-use std::sync::{Arc, RwLock};
-use std::sync::mpsc;
-use std::thread;
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
-use crate::types::hash::FNVHash;
-use crate::resources;
-use crate::render;
-use crate::settings::Stevenkey;
 use crate::ecs;
 use crate::entity;
-use cgmath::prelude::*;
-use crate::types::Gamemode;
-use crate::shared::{Axis, Position};
 use crate::format;
-use rsa_public_encrypt_pkcs1;
-use log::{error, debug, warn};
+use crate::protocol::{self, forge, mojang, packet};
+use crate::render;
+use crate::resources;
+use crate::settings::Stevenkey;
+use crate::shared::{Axis, Position};
+use crate::types::hash::FNVHash;
+use crate::types::Gamemode;
+use crate::world;
+use crate::world::block;
 use base64;
+use cgmath::prelude::*;
+use log::{debug, error, warn};
+use rand::{self, Rng};
+use rsa_public_encrypt_pkcs1;
 use serde_json;
+use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
+use std::sync::mpsc;
+use std::sync::{Arc, RwLock};
+use std::thread;
 
-mod sun;
 pub mod plugin_messages;
+mod sun;
 pub mod target;
 
 pub struct Server {
@@ -70,7 +70,6 @@ pub struct Server {
     pub rotation: ecs::Key<entity::Rotation>,
     target_rotation: ecs::Key<entity::TargetRotation>,
     //
-
     pub player: Option<ecs::Entity>,
     entity_map: HashMap<i32, ecs::Entity, BuildHasherDefault<FNVHash>>,
     players: HashMap<protocol::UUID, PlayerInfo, BuildHasherDefault<FNVHash>>,
@@ -106,19 +105,24 @@ macro_rules! handle_packet {
 }
 
 impl Server {
-
-    pub fn connect(resources: Arc<RwLock<resources::Manager>>, profile: mojang::Profile, address: &str, protocol_version: i32, forge_mods: Vec<forge::ForgeMod>) -> Result<Server, protocol::Error> {
+    pub fn connect(
+        resources: Arc<RwLock<resources::Manager>>,
+        profile: mojang::Profile,
+        address: &str,
+        protocol_version: i32,
+        forge_mods: Vec<forge::ForgeMod>,
+    ) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
         let tag = if forge_mods.len() != 0 { "\0FML\0" } else { "" };
         let host = conn.host.clone() + tag;
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
-             protocol_version: protocol::VarInt(protocol_version),
-             host,
-             port,
-             next: protocol::VarInt(2),
-         })?;
+            protocol_version: protocol::VarInt(protocol_version),
+            host,
+            port,
+            next: protocol::VarInt(2),
+        })?;
         conn.state = protocol::State::Login;
         conn.write_packet(protocol::packet::login::serverbound::LoginStart {
             username: profile.username.clone(),
@@ -130,19 +134,19 @@ impl Server {
             match conn.read_packet()? {
                 protocol::packet::Packet::SetInitialCompression(val) => {
                     conn.set_compresssion(val.threshold.0);
-                },
+                }
                 protocol::packet::Packet::EncryptionRequest(val) => {
                     server_id = Rc::new(val.server_id);
                     public_key = Rc::new(val.public_key.data);
                     verify_token = Rc::new(val.verify_token.data);
                     break;
-                },
+                }
                 protocol::packet::Packet::EncryptionRequest_i16(val) => {
                     server_id = Rc::new(val.server_id);
                     public_key = Rc::new(val.public_key.data);
                     verify_token = Rc::new(val.verify_token.data);
                     break;
-                },
+                }
                 protocol::packet::Packet::LoginSuccess(val) => {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {}", val.username, val.uuid);
@@ -151,9 +155,18 @@ impl Server {
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
-                    return Ok(Server::new(protocol_version, forge_mods, protocol::UUID::from_str(&val.uuid), resources, Some(write), Some(rx)));
+                    return Ok(Server::new(
+                        protocol_version,
+                        forge_mods,
+                        protocol::UUID::from_str(&val.uuid),
+                        resources,
+                        Some(write),
+                        Some(rx),
+                    ));
                 }
-                protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
+                protocol::packet::Packet::LoginDisconnect(val) => {
+                    return Err(protocol::Error::Disconnect(val.reason))
+                }
                 val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
             };
         }
@@ -176,10 +189,12 @@ impl Server {
                 verify_token: protocol::LenPrefixedBytes::new(token_e),
             })?;
         } else {
-            conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse_i16 {
-                shared_secret: protocol::LenPrefixedBytes::new(shared_e),
-                verify_token: protocol::LenPrefixedBytes::new(token_e),
-            })?;
+            conn.write_packet(
+                protocol::packet::login::serverbound::EncryptionResponse_i16 {
+                    shared_secret: protocol::LenPrefixedBytes::new(shared_e),
+                    verify_token: protocol::LenPrefixedBytes::new(token_e),
+                },
+            )?;
         }
 
         let mut read = conn.clone();
@@ -190,72 +205,134 @@ impl Server {
 
         let uuid;
         loop {
-           match read.read_packet()? {
-               protocol::packet::Packet::SetInitialCompression(val) => {
-                   read.set_compresssion(val.threshold.0);
-                   write.set_compresssion(val.threshold.0);
-               }
-               protocol::packet::Packet::LoginSuccess(val) => {
-                   debug!("Login: {} {}", val.username, val.uuid);
-                   uuid = val.uuid;
-                   read.state = protocol::State::Play;
-                   write.state = protocol::State::Play;
-                   break;
-               }
-               protocol::packet::Packet::LoginDisconnect(val) => return Err(protocol::Error::Disconnect(val.reason)),
-               val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
-           }
+            match read.read_packet()? {
+                protocol::packet::Packet::SetInitialCompression(val) => {
+                    read.set_compresssion(val.threshold.0);
+                    write.set_compresssion(val.threshold.0);
+                }
+                protocol::packet::Packet::LoginSuccess(val) => {
+                    debug!("Login: {} {}", val.username, val.uuid);
+                    uuid = val.uuid;
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    break;
+                }
+                protocol::packet::Packet::LoginDisconnect(val) => {
+                    return Err(protocol::Error::Disconnect(val.reason))
+                }
+                val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
+            }
         }
 
         let rx = Self::spawn_reader(read);
 
-        Ok(Server::new(protocol_version, forge_mods, protocol::UUID::from_str(&uuid), resources, Some(write), Some(rx)))
+        Ok(Server::new(
+            protocol_version,
+            forge_mods,
+            protocol::UUID::from_str(&uuid),
+            resources,
+            Some(write),
+            Some(rx),
+        ))
     }
 
-    fn spawn_reader(mut read: protocol::Conn) -> mpsc::Receiver<Result<packet::Packet, protocol::Error>> {
+    fn spawn_reader(
+        mut read: protocol::Conn,
+    ) -> mpsc::Receiver<Result<packet::Packet, protocol::Error>> {
         let (tx, rx) = mpsc::channel();
-        thread::spawn(move || {
-            loop {
-                let pck = read.read_packet();
-                let was_error = pck.is_err();
-                if let Err(_) = tx.send(pck) {
-                    return;
-                }
-                if was_error {
-                    return;
-                }
+        thread::spawn(move || loop {
+            let pck = read.read_packet();
+            let was_error = pck.is_err();
+            if let Err(_) = tx.send(pck) {
+                return;
+            }
+            if was_error {
+                return;
             }
         });
         rx
     }
 
     pub fn dummy_server(resources: Arc<RwLock<resources::Manager>>) -> Server {
-        let mut server = Server::new(protocol::SUPPORTED_PROTOCOLS[0], vec![], protocol::UUID::default(), resources, None, None);
+        let mut server = Server::new(
+            protocol::SUPPORTED_PROTOCOLS[0],
+            vec![],
+            protocol::UUID::default(),
+            resources,
+            None,
+            None,
+        );
         let mut rng = rand::thread_rng();
-        for x in -7*16 .. 7*16 {
-            for z in -7*16 .. 7*16 {
+        for x in -7 * 16..7 * 16 {
+            for z in -7 * 16..7 * 16 {
                 let h = 5 + (6.0 * (x as f64 / 16.0).cos() * (z as f64 / 16.0).sin()) as i32;
-                for y in 0 .. h {
-                    server.world.set_block(Position::new(x, y, z), block::Dirt{ snowy: false, variant: block::DirtVariant::Normal });
+                for y in 0..h {
+                    server.world.set_block(
+                        Position::new(x, y, z),
+                        block::Dirt {
+                            snowy: false,
+                            variant: block::DirtVariant::Normal,
+                        },
+                    );
                 }
-                server.world.set_block(Position::new(x, h, z), block::Grass{ snowy: false });
+                server
+                    .world
+                    .set_block(Position::new(x, h, z), block::Grass { snowy: false });
 
-                if x*x + z*z > 16*16 && rng.gen_bool(1.0 / 80.0) {
-                    for i in 0 .. 5 {
-                        server.world.set_block(Position::new(x, h + 1 + i, z), block::Log{ axis: Axis::Y, variant: block::TreeVariant::Oak });
+                if x * x + z * z > 16 * 16 && rng.gen_bool(1.0 / 80.0) {
+                    for i in 0..5 {
+                        server.world.set_block(
+                            Position::new(x, h + 1 + i, z),
+                            block::Log {
+                                axis: Axis::Y,
+                                variant: block::TreeVariant::Oak,
+                            },
+                        );
                     }
-                    for xx in -2 .. 3 {
-                        for zz in -2 .. 3 {
+                    for xx in -2..3 {
+                        for zz in -2..3 {
                             if xx == 0 && z == 0 {
                                 continue;
                             }
-                            server.world.set_block(Position::new(x + xx, h + 3, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false, distance: 1 });
-                            server.world.set_block(Position::new(x + xx, h + 4, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false, distance: 1 });
+                            server.world.set_block(
+                                Position::new(x + xx, h + 3, z + zz),
+                                block::Leaves {
+                                    variant: block::TreeVariant::Oak,
+                                    check_decay: false,
+                                    decayable: false,
+                                    distance: 1,
+                                },
+                            );
+                            server.world.set_block(
+                                Position::new(x + xx, h + 4, z + zz),
+                                block::Leaves {
+                                    variant: block::TreeVariant::Oak,
+                                    check_decay: false,
+                                    decayable: false,
+                                    distance: 1,
+                                },
+                            );
                             if xx.abs() <= 1 && zz.abs() <= 1 {
-                                server.world.set_block(Position::new(x + xx, h + 5, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false, distance: 1 });
+                                server.world.set_block(
+                                    Position::new(x + xx, h + 5, z + zz),
+                                    block::Leaves {
+                                        variant: block::TreeVariant::Oak,
+                                        check_decay: false,
+                                        decayable: false,
+                                        distance: 1,
+                                    },
+                                );
                             }
                             if xx * xx + zz * zz <= 1 {
-                                server.world.set_block(Position::new(x + xx, h + 6, z + zz), block::Leaves{ variant: block::TreeVariant::Oak, check_decay: false, decayable: false, distance: 1 });
+                                server.world.set_block(
+                                    Position::new(x + xx, h + 6, z + zz),
+                                    block::Leaves {
+                                        variant: block::TreeVariant::Oak,
+                                        check_decay: false,
+                                        decayable: false,
+                                        distance: 1,
+                                    },
+                                );
                             }
                         }
                     }
@@ -270,7 +347,8 @@ impl Server {
         forge_mods: Vec<forge::ForgeMod>,
         uuid: protocol::UUID,
         resources: Arc<RwLock<resources::Manager>>,
-        conn: Option<protocol::Conn>, read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>
+        conn: Option<protocol::Conn>,
+        read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     ) -> Server {
         let mut entities = ecs::Manager::new();
         entity::add_systems(&mut entities);
@@ -309,7 +387,6 @@ impl Server {
             rotation: entities.get_key(),
             target_rotation: entities.get_key(),
             //
-
             entities,
             player: None,
             entity_map: HashMap::with_hasher(BuildHasherDefault::default()),
@@ -351,7 +428,8 @@ impl Server {
         if let Some(player) = self.player {
             let position = self.entities.get_component(player, self.position).unwrap();
             let rotation = self.entities.get_component(player, self.rotation).unwrap();
-            renderer.camera.pos = cgmath::Point3::from_vec(position.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
+            renderer.camera.pos =
+                cgmath::Point3::from_vec(position.position + cgmath::Vector3::new(0.0, 1.62, 0.0));
             renderer.camera.yaw = rotation.yaw;
             renderer.camera.pitch = rotation.pitch;
         }
@@ -372,7 +450,13 @@ impl Server {
         self.world.tick(&mut self.entities);
 
         if self.player.is_some() {
-            if let Some((pos, bl, _, _)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast().unwrap(), target::test_block) {
+            if let Some((pos, bl, _, _)) = target::trace_ray(
+                &self.world,
+                4.0,
+                renderer.camera.pos.to_vec(),
+                renderer.view_vector.cast().unwrap(),
+                target::test_block,
+            ) {
                 self.target_info.update(renderer, pos, bl);
             } else {
                 self.target_info.clear(renderer);
@@ -385,14 +469,16 @@ impl Server {
     fn entity_tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
         let world_entity = self.entities.get_world();
         // Update the game's state for entities to read
-        self.entities.get_component_mut(world_entity, self.game_info)
-            .unwrap().delta = delta;
+        self.entities
+            .get_component_mut(world_entity, self.game_info)
+            .unwrap()
+            .delta = delta;
 
         // Packets modify entities so need to handled here
         if let Some(rx) = self.read_queue.take() {
             while let Ok(pck) = rx.try_recv() {
                 match pck {
-                    Ok(pck) => handle_packet!{
+                    Ok(pck) => handle_packet! {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
@@ -464,7 +550,8 @@ impl Server {
             }
         }
 
-        if self.is_connected() || self.just_disconnected { // Allow an extra tick when disconnected to clean up
+        if self.is_connected() || self.just_disconnected {
+            // Allow an extra tick when disconnected to clean up
             self.just_disconnected = false;
             self.entity_tick_timer += delta;
             while self.entity_tick_timer >= 3.0 {
@@ -528,9 +615,18 @@ impl Server {
     pub fn minecraft_tick(&mut self) {
         use std::f32::consts::PI;
         if let Some(player) = self.player {
-            let movement = self.entities.get_component_mut(player, self.player_movement).unwrap();
-            let on_ground = self.entities.get_component(player, self.gravity).map_or(false, |v| v.on_ground);
-            let position = self.entities.get_component(player, self.target_position).unwrap();
+            let movement = self
+                .entities
+                .get_component_mut(player, self.player_movement)
+                .unwrap();
+            let on_ground = self
+                .entities
+                .get_component(player, self.gravity)
+                .map_or(false, |v| v.on_ground);
+            let position = self
+                .entities
+                .get_component(player, self.target_position)
+                .unwrap();
             let rotation = self.entities.get_component(player, self.rotation).unwrap();
 
             // Force the server to know when touched the ground
@@ -572,7 +668,10 @@ impl Server {
 
     pub fn key_press(&mut self, down: bool, key: Stevenkey) {
         if let Some(player) = self.player {
-            if let Some(movement) = self.entities.get_component_mut(player, self.player_movement) {
+            if let Some(movement) = self
+                .entities
+                .get_component_mut(player, self.player_movement)
+            {
                 movement.pressed_keys.insert(key, down);
             }
         }
@@ -581,7 +680,13 @@ impl Server {
     pub fn on_right_click(&mut self, renderer: &mut render::Renderer) {
         use crate::shared::Direction;
         if self.player.is_some() {
-            if let Some((pos, _, face, at)) = target::trace_ray(&self.world, 4.0, renderer.camera.pos.to_vec(), renderer.view_vector.cast().unwrap(), target::test_block) {
+            if let Some((pos, _, face, at)) = target::trace_ray(
+                &self.world,
+                4.0,
+                renderer.camera.pos.to_vec(),
+                renderer.view_vector.cast().unwrap(),
+                target::test_block,
+            ) {
                 if self.protocol_version >= 315 {
                     self.write_packet(packet::play::serverbound::PlayerBlockPlacement_f32 {
                         location: pos,
@@ -634,24 +739,26 @@ impl Server {
                         cursor_z: (at.z * 16.0) as u8,
                     });
                 } else {
-                    self.write_packet(packet::play::serverbound::PlayerBlockPlacement_u8_Item_u8y {
-                        x: pos.x,
-                        y: pos.y as u8,
-                        z: pos.x,
-                        face: match face {
-                            Direction::Down => 0,
-                            Direction::Up => 1,
-                            Direction::North => 2,
-                            Direction::South => 3,
-                            Direction::West => 4,
-                            Direction::East => 5,
-                            _ => unreachable!(),
+                    self.write_packet(
+                        packet::play::serverbound::PlayerBlockPlacement_u8_Item_u8y {
+                            x: pos.x,
+                            y: pos.y as u8,
+                            z: pos.x,
+                            face: match face {
+                                Direction::Down => 0,
+                                Direction::Up => 1,
+                                Direction::North => 2,
+                                Direction::South => 3,
+                                Direction::West => 4,
+                                Direction::East => 5,
+                                _ => unreachable!(),
+                            },
+                            hand: None,
+                            cursor_x: (at.x * 16.0) as u8,
+                            cursor_y: (at.y * 16.0) as u8,
+                            cursor_z: (at.z * 16.0) as u8,
                         },
-                        hand: None,
-                        cursor_x: (at.x * 16.0) as u8,
-                        cursor_y: (at.y * 16.0) as u8,
-                        cursor_z: (at.z * 16.0) as u8,
-                    });
+                    );
                 }
             }
         }
@@ -661,72 +768,121 @@ impl Server {
         let _ = self.conn.as_mut().unwrap().write_packet(p); // TODO handle errors
     }
 
-    fn on_keep_alive_i64(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound_i64) {
+    fn on_keep_alive_i64(
+        &mut self,
+        keep_alive: packet::play::clientbound::KeepAliveClientbound_i64,
+    ) {
         self.write_packet(packet::play::serverbound::KeepAliveServerbound_i64 {
             id: keep_alive.id,
         });
     }
 
-    fn on_keep_alive_varint(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound_VarInt) {
+    fn on_keep_alive_varint(
+        &mut self,
+        keep_alive: packet::play::clientbound::KeepAliveClientbound_VarInt,
+    ) {
         self.write_packet(packet::play::serverbound::KeepAliveServerbound_VarInt {
             id: keep_alive.id,
         });
     }
 
-    fn on_keep_alive_i32(&mut self, keep_alive: packet::play::clientbound::KeepAliveClientbound_i32) {
+    fn on_keep_alive_i32(
+        &mut self,
+        keep_alive: packet::play::clientbound::KeepAliveClientbound_i32,
+    ) {
         self.write_packet(packet::play::serverbound::KeepAliveServerbound_i32 {
             id: keep_alive.id,
         });
     }
 
-    fn on_plugin_message_clientbound_i16(&mut self, msg: packet::play::clientbound::PluginMessageClientbound_i16) {
+    fn on_plugin_message_clientbound_i16(
+        &mut self,
+        msg: packet::play::clientbound::PluginMessageClientbound_i16,
+    ) {
         self.on_plugin_message_clientbound(&msg.channel, msg.data.data.as_slice())
     }
 
-    fn on_plugin_message_clientbound_1(&mut self, msg: packet::play::clientbound::PluginMessageClientbound) {
+    fn on_plugin_message_clientbound_1(
+        &mut self,
+        msg: packet::play::clientbound::PluginMessageClientbound,
+    ) {
         self.on_plugin_message_clientbound(&msg.channel, &msg.data)
     }
 
     fn on_plugin_message_clientbound(&mut self, channel: &str, data: &[u8]) {
         if protocol::is_network_debug() {
-            debug!("Received plugin message: channel={}, data={:?}", channel, data);
+            debug!(
+                "Received plugin message: channel={}, data={:?}",
+                channel, data
+            );
         }
 
         match channel {
-            // TODO: "REGISTER" => 
+            // TODO: "REGISTER" =>
             // TODO: "UNREGISTER" =>
             "FML|HS" => {
-                let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data)).unwrap();
+                let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data))
+                    .unwrap();
                 //debug!("FML|HS msg={:?}", msg);
 
                 use forge::FmlHs::*;
                 use forge::Phase::*;
                 match msg {
-                    ServerHello { fml_protocol_version, override_dimension } => {
-                        debug!("Received FML|HS ServerHello {} {:?}", fml_protocol_version, override_dimension);
+                    ServerHello {
+                        fml_protocol_version,
+                        override_dimension,
+                    } => {
+                        debug!(
+                            "Received FML|HS ServerHello {} {:?}",
+                            fml_protocol_version, override_dimension
+                        );
 
-                        self.write_plugin_message("REGISTER", "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes());
-                        self.write_fmlhs_plugin_message(&ClientHello { fml_protocol_version });
+                        self.write_plugin_message(
+                            "REGISTER",
+                            "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes(),
+                        );
+                        self.write_fmlhs_plugin_message(&ClientHello {
+                            fml_protocol_version,
+                        });
                         // Send stashed mods list received from ping packet, client matching server
-                        let mods = crate::protocol::LenPrefixed::<crate::protocol::VarInt, forge::ForgeMod>::new(self.forge_mods.clone());
+                        let mods = crate::protocol::LenPrefixed::<
+                            crate::protocol::VarInt,
+                            forge::ForgeMod,
+                        >::new(self.forge_mods.clone());
                         self.write_fmlhs_plugin_message(&ModList { mods });
-                    },
+                    }
                     ModList { mods } => {
                         debug!("Received FML|HS ModList: {:?}", mods);
 
-                        self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerData });
-                    },
-                    ModIdData { mappings, block_substitutions: _, item_substitutions: _ } => {
+                        self.write_fmlhs_plugin_message(&HandshakeAck {
+                            phase: WaitingServerData,
+                        });
+                    }
+                    ModIdData {
+                        mappings,
+                        block_substitutions: _,
+                        item_substitutions: _,
+                    } => {
                         debug!("Received FML|HS ModIdData");
                         for m in mappings.data {
                             let (namespace, name) = m.name.split_at(1);
                             if namespace == protocol::forge::BLOCK_NAMESPACE {
-                                self.world.modded_block_ids.insert(m.id.0 as usize, name.to_string());
+                                self.world
+                                    .modded_block_ids
+                                    .insert(m.id.0 as usize, name.to_string());
                             }
                         }
-                        self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
-                    },
-                    RegistryData { has_more, name, ids, substitutions: _, dummies: _ } => {
+                        self.write_fmlhs_plugin_message(&HandshakeAck {
+                            phase: WaitingServerComplete,
+                        });
+                    }
+                    RegistryData {
+                        has_more,
+                        name,
+                        ids,
+                        substitutions: _,
+                        dummies: _,
+                    } => {
                         debug!("Received FML|HS RegistryData for {}", name);
                         if name == "minecraft:blocks" {
                             for m in ids.data {
@@ -734,24 +890,26 @@ impl Server {
                             }
                         }
                         if !has_more {
-                            self.write_fmlhs_plugin_message(&HandshakeAck { phase: WaitingServerComplete });
+                            self.write_fmlhs_plugin_message(&HandshakeAck {
+                                phase: WaitingServerComplete,
+                            });
                         }
-                    },
-                    HandshakeAck { phase } => {
-                        match phase {
-                            WaitingCAck => {
-                                self.write_fmlhs_plugin_message(&HandshakeAck { phase: PendingComplete });
-                            },
-                            Complete => {
-                                debug!("FML|HS handshake complete!");
-                            },
-                            _ => unimplemented!(),
+                    }
+                    HandshakeAck { phase } => match phase {
+                        WaitingCAck => {
+                            self.write_fmlhs_plugin_message(&HandshakeAck {
+                                phase: PendingComplete,
+                            });
                         }
+                        Complete => {
+                            debug!("FML|HS handshake complete!");
+                        }
+                        _ => unimplemented!(),
                     },
                     _ => (),
                 }
             }
-            _ => ()
+            _ => (),
         }
     }
 
@@ -766,7 +924,10 @@ impl Server {
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
         if protocol::is_network_debug() {
-            debug!("Sending plugin message: channel={}, data={:?}", channel, data);
+            debug!(
+                "Sending plugin message: channel={}, data={:?}",
+                channel, data
+            );
         }
         if self.protocol_version >= 47 {
             self.write_packet(packet::play::serverbound::PluginMessageServerbound {
@@ -781,11 +942,17 @@ impl Server {
         }
     }
 
-    fn on_game_join_hashedseed_respawn(&mut self, join: packet::play::clientbound::JoinGame_HashedSeed_Respawn) {
+    fn on_game_join_hashedseed_respawn(
+        &mut self,
+        join: packet::play::clientbound::JoinGame_HashedSeed_Respawn,
+    ) {
         self.on_game_join(join.gamemode, join.entity_id)
     }
 
-    fn on_game_join_i32_viewdistance(&mut self, join: packet::play::clientbound::JoinGame_i32_ViewDistance) {
+    fn on_game_join_i32_viewdistance(
+        &mut self,
+        join: packet::play::clientbound::JoinGame_i32_ViewDistance,
+    ) {
         self.on_game_join(join.gamemode, join.entity_id)
     }
 
@@ -801,25 +968,33 @@ impl Server {
         self.on_game_join(join.gamemode, join.entity_id)
     }
 
-
     fn on_game_join(&mut self, gamemode: u8, entity_id: i32) {
         let gamemode = Gamemode::from_int((gamemode & 0x7) as i32);
         let player = entity::player::create_local(&mut self.entities);
         if let Some(info) = self.players.get(&self.uuid) {
-            let model = self.entities.get_component_mut_direct::<entity::player::PlayerModel>(player).unwrap();
+            let model = self
+                .entities
+                .get_component_mut_direct::<entity::player::PlayerModel>(player)
+                .unwrap();
             model.set_skin(info.skin_url.clone());
         }
-        *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
+        *self
+            .entities
+            .get_component_mut(player, self.gamemode)
+            .unwrap() = gamemode;
         // TODO: Temp
-        self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
+        self.entities
+            .get_component_mut(player, self.player_movement)
+            .unwrap()
+            .flying = gamemode.can_fly();
 
         self.entity_map.insert(entity_id, player);
         self.player = Some(player);
 
         // Let the server know who we are
         let brand = plugin_messages::Brand {
-                brand: "Steven".into(),
-            };
+            brand: "Steven".into(),
+        };
         // TODO: refactor with write_plugin_message
         if self.protocol_version >= 47 {
             self.write_packet(brand.as_message());
@@ -841,9 +1016,15 @@ impl Server {
         let gamemode = Gamemode::from_int((gamemode_u8 & 0x7) as i32);
 
         if let Some(player) = self.player {
-            *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
+            *self
+                .entities
+                .get_component_mut(player, self.gamemode)
+                .unwrap() = gamemode;
             // TODO: Temp
-            self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
+            self.entities
+                .get_component_mut(player, self.player_movement)
+                .unwrap()
+                .flying = gamemode.can_fly();
         }
     }
 
@@ -866,9 +1047,15 @@ impl Server {
         if game_state.reason == 3 {
             if let Some(player) = self.player {
                 let gamemode = Gamemode::from_int(game_state.value as i32);
-                *self.entities.get_component_mut(player, self.gamemode).unwrap() = gamemode;
+                *self
+                    .entities
+                    .get_component_mut(player, self.gamemode)
+                    .unwrap() = gamemode;
                 // TODO: Temp
-                self.entities.get_component_mut(player, self.player_movement).unwrap().flying = gamemode.can_fly();
+                self.entities
+                    .get_component_mut(player, self.player_movement)
+                    .unwrap()
+                    .flying = gamemode.can_fly();
             }
         }
     }
@@ -881,7 +1068,10 @@ impl Server {
         }
     }
 
-    fn on_entity_destroy_u8(&mut self, entity_destroy: packet::play::clientbound::EntityDestroy_u8) {
+    fn on_entity_destroy_u8(
+        &mut self,
+        entity_destroy: packet::play::clientbound::EntityDestroy_u8,
+    ) {
         for id in entity_destroy.entity_ids.data {
             if let Some(entity) = self.entity_map.remove(&id) {
                 self.entities.remove_entity(entity);
@@ -889,25 +1079,72 @@ impl Server {
         }
     }
 
-    fn on_entity_teleport_f64(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_f64) {
-        self.on_entity_teleport(entity_telport.entity_id.0, entity_telport.x, entity_telport.y, entity_telport.z, entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
+    fn on_entity_teleport_f64(
+        &mut self,
+        entity_telport: packet::play::clientbound::EntityTeleport_f64,
+    ) {
+        self.on_entity_teleport(
+            entity_telport.entity_id.0,
+            entity_telport.x,
+            entity_telport.y,
+            entity_telport.z,
+            entity_telport.yaw as f64,
+            entity_telport.pitch as f64,
+            entity_telport.on_ground,
+        )
     }
 
-    fn on_entity_teleport_i32(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_i32) {
-        self.on_entity_teleport(entity_telport.entity_id.0, f64::from(entity_telport.x), f64::from(entity_telport.y), f64::from(entity_telport.z), entity_telport.yaw as f64, entity_telport.pitch as f64, entity_telport.on_ground)
+    fn on_entity_teleport_i32(
+        &mut self,
+        entity_telport: packet::play::clientbound::EntityTeleport_i32,
+    ) {
+        self.on_entity_teleport(
+            entity_telport.entity_id.0,
+            f64::from(entity_telport.x),
+            f64::from(entity_telport.y),
+            f64::from(entity_telport.z),
+            entity_telport.yaw as f64,
+            entity_telport.pitch as f64,
+            entity_telport.on_ground,
+        )
     }
 
-    fn on_entity_teleport_i32_i32_noground(&mut self, entity_telport: packet::play::clientbound::EntityTeleport_i32_i32_NoGround) {
+    fn on_entity_teleport_i32_i32_noground(
+        &mut self,
+        entity_telport: packet::play::clientbound::EntityTeleport_i32_i32_NoGround,
+    ) {
         let on_ground = true; // TODO: how is this supposed to be set? (for 1.7)
-        self.on_entity_teleport(entity_telport.entity_id, f64::from(entity_telport.x), f64::from(entity_telport.y), f64::from(entity_telport.z), entity_telport.yaw as f64, entity_telport.pitch as f64, on_ground)
+        self.on_entity_teleport(
+            entity_telport.entity_id,
+            f64::from(entity_telport.x),
+            f64::from(entity_telport.y),
+            f64::from(entity_telport.z),
+            entity_telport.yaw as f64,
+            entity_telport.pitch as f64,
+            on_ground,
+        )
     }
 
-
-    fn on_entity_teleport(&mut self, entity_id: i32, x: f64, y: f64, z: f64, yaw: f64, pitch: f64, _on_ground: bool) {
+    fn on_entity_teleport(
+        &mut self,
+        entity_id: i32,
+        x: f64,
+        y: f64,
+        z: f64,
+        yaw: f64,
+        pitch: f64,
+        _on_ground: bool,
+    ) {
         use std::f64::consts::PI;
         if let Some(entity) = self.entity_map.get(&entity_id) {
-            let target_position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
-            let target_rotation = self.entities.get_component_mut(*entity, self.target_rotation).unwrap();
+            let target_position = self
+                .entities
+                .get_component_mut(*entity, self.target_position)
+                .unwrap();
+            let target_rotation = self
+                .entities
+                .get_component_mut(*entity, self.target_rotation)
+                .unwrap();
             target_position.position.x = x;
             target_position.position.y = y;
             target_position.position.z = z;
@@ -917,21 +1154,41 @@ impl Server {
     }
 
     fn on_entity_move_i16(&mut self, m: packet::play::clientbound::EntityMove_i16) {
-        self.on_entity_move(m.entity_id.0, f64::from(m.delta_x), f64::from(m.delta_y), f64::from(m.delta_z))
+        self.on_entity_move(
+            m.entity_id.0,
+            f64::from(m.delta_x),
+            f64::from(m.delta_y),
+            f64::from(m.delta_z),
+        )
     }
 
     fn on_entity_move_i8(&mut self, m: packet::play::clientbound::EntityMove_i8) {
-        self.on_entity_move(m.entity_id.0, f64::from(m.delta_x), f64::from(m.delta_y), f64::from(m.delta_z))
+        self.on_entity_move(
+            m.entity_id.0,
+            f64::from(m.delta_x),
+            f64::from(m.delta_y),
+            f64::from(m.delta_z),
+        )
     }
 
-    fn on_entity_move_i8_i32_noground(&mut self, m: packet::play::clientbound::EntityMove_i8_i32_NoGround) {
-        self.on_entity_move(m.entity_id, f64::from(m.delta_x), f64::from(m.delta_y), f64::from(m.delta_z))
+    fn on_entity_move_i8_i32_noground(
+        &mut self,
+        m: packet::play::clientbound::EntityMove_i8_i32_NoGround,
+    ) {
+        self.on_entity_move(
+            m.entity_id,
+            f64::from(m.delta_x),
+            f64::from(m.delta_y),
+            f64::from(m.delta_z),
+        )
     }
-
 
     fn on_entity_move(&mut self, entity_id: i32, delta_x: f64, delta_y: f64, delta_z: f64) {
         if let Some(entity) = self.entity_map.get(&entity_id) {
-            let position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
+            let position = self
+                .entities
+                .get_component_mut(*entity, self.target_position)
+                .unwrap();
             position.position.x += delta_x;
             position.position.y += delta_y;
             position.position.z += delta_z;
@@ -941,7 +1198,10 @@ impl Server {
     fn on_entity_look(&mut self, entity_id: i32, yaw: f64, pitch: f64) {
         use std::f64::consts::PI;
         if let Some(entity) = self.entity_map.get(&entity_id) {
-            let rotation = self.entities.get_component_mut(*entity, self.target_rotation).unwrap();
+            let rotation = self
+                .entities
+                .get_component_mut(*entity, self.target_rotation)
+                .unwrap();
             rotation.yaw = -(yaw / 256.0) * PI * 2.0;
             rotation.pitch = -(pitch / 256.0) * PI * 2.0;
         }
@@ -951,33 +1211,74 @@ impl Server {
         self.on_entity_look(look.entity_id.0, look.yaw as f64, look.pitch as f64)
     }
 
-    fn on_entity_look_i32_noground(&mut self, look: packet::play::clientbound::EntityLook_i32_NoGround) {
+    fn on_entity_look_i32_noground(
+        &mut self,
+        look: packet::play::clientbound::EntityLook_i32_NoGround,
+    ) {
         self.on_entity_look(look.entity_id, look.yaw as f64, look.pitch as f64)
     }
 
-    fn on_entity_look_and_move_i16(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i16) {
-        self.on_entity_look_and_move(lookmove.entity_id.0,
-                                     f64::from(lookmove.delta_x), f64::from(lookmove.delta_y), f64::from(lookmove.delta_z),
-                                     lookmove.yaw as f64, lookmove.pitch as f64)
+    fn on_entity_look_and_move_i16(
+        &mut self,
+        lookmove: packet::play::clientbound::EntityLookAndMove_i16,
+    ) {
+        self.on_entity_look_and_move(
+            lookmove.entity_id.0,
+            f64::from(lookmove.delta_x),
+            f64::from(lookmove.delta_y),
+            f64::from(lookmove.delta_z),
+            lookmove.yaw as f64,
+            lookmove.pitch as f64,
+        )
     }
 
-    fn on_entity_look_and_move_i8(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i8) {
-        self.on_entity_look_and_move(lookmove.entity_id.0,
-                                     f64::from(lookmove.delta_x), f64::from(lookmove.delta_y), f64::from(lookmove.delta_z),
-                                     lookmove.yaw as f64, lookmove.pitch as f64)
+    fn on_entity_look_and_move_i8(
+        &mut self,
+        lookmove: packet::play::clientbound::EntityLookAndMove_i8,
+    ) {
+        self.on_entity_look_and_move(
+            lookmove.entity_id.0,
+            f64::from(lookmove.delta_x),
+            f64::from(lookmove.delta_y),
+            f64::from(lookmove.delta_z),
+            lookmove.yaw as f64,
+            lookmove.pitch as f64,
+        )
     }
 
-    fn on_entity_look_and_move_i8_i32_noground(&mut self, lookmove: packet::play::clientbound::EntityLookAndMove_i8_i32_NoGround) {
-        self.on_entity_look_and_move(lookmove.entity_id,
-                                     f64::from(lookmove.delta_x), f64::from(lookmove.delta_y), f64::from(lookmove.delta_z),
-                                     lookmove.yaw as f64, lookmove.pitch as f64)
+    fn on_entity_look_and_move_i8_i32_noground(
+        &mut self,
+        lookmove: packet::play::clientbound::EntityLookAndMove_i8_i32_NoGround,
+    ) {
+        self.on_entity_look_and_move(
+            lookmove.entity_id,
+            f64::from(lookmove.delta_x),
+            f64::from(lookmove.delta_y),
+            f64::from(lookmove.delta_z),
+            lookmove.yaw as f64,
+            lookmove.pitch as f64,
+        )
     }
 
-    fn on_entity_look_and_move(&mut self, entity_id: i32, delta_x: f64, delta_y: f64, delta_z: f64, yaw: f64, pitch: f64) {
+    fn on_entity_look_and_move(
+        &mut self,
+        entity_id: i32,
+        delta_x: f64,
+        delta_y: f64,
+        delta_z: f64,
+        yaw: f64,
+        pitch: f64,
+    ) {
         use std::f64::consts::PI;
         if let Some(entity) = self.entity_map.get(&entity_id) {
-            let position = self.entities.get_component_mut(*entity, self.target_position).unwrap();
-            let rotation = self.entities.get_component_mut(*entity, self.target_rotation).unwrap();
+            let position = self
+                .entities
+                .get_component_mut(*entity, self.target_position)
+                .unwrap();
+            let rotation = self
+                .entities
+                .get_component_mut(*entity, self.target_rotation)
+                .unwrap();
             position.position.x += delta_x;
             position.position.y += delta_y;
             position.position.z += delta_z;
@@ -987,31 +1288,93 @@ impl Server {
     }
 
     fn on_player_spawn_f64(&mut self, spawn: packet::play::clientbound::SpawnPlayer_f64) {
-        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, spawn.x, spawn.y, spawn.z, spawn.yaw as f64, spawn.pitch as f64)
+        self.on_player_spawn(
+            spawn.entity_id.0,
+            spawn.uuid,
+            spawn.x,
+            spawn.y,
+            spawn.z,
+            spawn.yaw as f64,
+            spawn.pitch as f64,
+        )
     }
 
     fn on_player_spawn_i32(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32) {
-        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, f64::from(spawn.x), f64::from(spawn.y), f64::from(spawn.z), spawn.yaw as f64, spawn.pitch as f64)
+        self.on_player_spawn(
+            spawn.entity_id.0,
+            spawn.uuid,
+            f64::from(spawn.x),
+            f64::from(spawn.y),
+            f64::from(spawn.z),
+            spawn.yaw as f64,
+            spawn.pitch as f64,
+        )
     }
 
-    fn on_player_spawn_i32_helditem(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem) {
-        self.on_player_spawn(spawn.entity_id.0, spawn.uuid, f64::from(spawn.x), f64::from(spawn.y), f64::from(spawn.z), spawn.yaw as f64, spawn.pitch as f64)
+    fn on_player_spawn_i32_helditem(
+        &mut self,
+        spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem,
+    ) {
+        self.on_player_spawn(
+            spawn.entity_id.0,
+            spawn.uuid,
+            f64::from(spawn.x),
+            f64::from(spawn.y),
+            f64::from(spawn.z),
+            spawn.yaw as f64,
+            spawn.pitch as f64,
+        )
     }
 
-    fn on_player_spawn_i32_helditem_string(&mut self, spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_String) {
-        self.on_player_spawn(spawn.entity_id.0, protocol::UUID::from_str(&spawn.uuid), f64::from(spawn.x), f64::from(spawn.y), f64::from(spawn.z), spawn.yaw as f64, spawn.pitch as f64)
+    fn on_player_spawn_i32_helditem_string(
+        &mut self,
+        spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_String,
+    ) {
+        self.on_player_spawn(
+            spawn.entity_id.0,
+            protocol::UUID::from_str(&spawn.uuid),
+            f64::from(spawn.x),
+            f64::from(spawn.y),
+            f64::from(spawn.z),
+            spawn.yaw as f64,
+            spawn.pitch as f64,
+        )
     }
 
-    fn on_player_spawn(&mut self, entity_id: i32, uuid: protocol::UUID, x: f64, y: f64, z: f64, pitch: f64, yaw: f64) {
+    fn on_player_spawn(
+        &mut self,
+        entity_id: i32,
+        uuid: protocol::UUID,
+        x: f64,
+        y: f64,
+        z: f64,
+        pitch: f64,
+        yaw: f64,
+    ) {
         use std::f64::consts::PI;
         if let Some(entity) = self.entity_map.remove(&entity_id) {
             self.entities.remove_entity(entity);
         }
-        let entity = entity::player::create_remote(&mut self.entities, self.players.get(&uuid).map_or("MISSING", |v| &v.name));
-        let position = self.entities.get_component_mut(entity, self.position).unwrap();
-        let target_position = self.entities.get_component_mut(entity, self.target_position).unwrap();
-        let rotation = self.entities.get_component_mut(entity, self.rotation).unwrap();
-        let target_rotation = self.entities.get_component_mut(entity, self.target_rotation).unwrap();
+        let entity = entity::player::create_remote(
+            &mut self.entities,
+            self.players.get(&uuid).map_or("MISSING", |v| &v.name),
+        );
+        let position = self
+            .entities
+            .get_component_mut(entity, self.position)
+            .unwrap();
+        let target_position = self
+            .entities
+            .get_component_mut(entity, self.target_position)
+            .unwrap();
+        let rotation = self
+            .entities
+            .get_component_mut(entity, self.rotation)
+            .unwrap();
+        let target_rotation = self
+            .entities
+            .get_component_mut(entity, self.target_rotation)
+            .unwrap();
         position.position.x = x;
         position.position.y = y;
         position.position.z = z;
@@ -1023,43 +1386,106 @@ impl Server {
         target_rotation.yaw = rotation.yaw;
         target_rotation.pitch = rotation.pitch;
         if let Some(info) = self.players.get(&uuid) {
-            let model = self.entities.get_component_mut_direct::<entity::player::PlayerModel>(entity).unwrap();
+            let model = self
+                .entities
+                .get_component_mut_direct::<entity::player::PlayerModel>(entity)
+                .unwrap();
             model.set_skin(info.skin_url.clone());
         }
         self.entity_map.insert(entity_id, entity);
     }
 
-    fn on_teleport_player_withconfirm(&mut self, teleport: packet::play::clientbound::TeleportPlayer_WithConfirm) {
-        self.on_teleport_player(teleport.x, teleport.y, teleport.z, teleport.yaw as f64, teleport.pitch as f64, teleport.flags, Some(teleport.teleport_id))
+    fn on_teleport_player_withconfirm(
+        &mut self,
+        teleport: packet::play::clientbound::TeleportPlayer_WithConfirm,
+    ) {
+        self.on_teleport_player(
+            teleport.x,
+            teleport.y,
+            teleport.z,
+            teleport.yaw as f64,
+            teleport.pitch as f64,
+            teleport.flags,
+            Some(teleport.teleport_id),
+        )
     }
 
-    fn on_teleport_player_noconfirm(&mut self, teleport: packet::play::clientbound::TeleportPlayer_NoConfirm) {
-        self.on_teleport_player(teleport.x, teleport.y, teleport.z, teleport.yaw as f64, teleport.pitch as f64, teleport.flags, None)
+    fn on_teleport_player_noconfirm(
+        &mut self,
+        teleport: packet::play::clientbound::TeleportPlayer_NoConfirm,
+    ) {
+        self.on_teleport_player(
+            teleport.x,
+            teleport.y,
+            teleport.z,
+            teleport.yaw as f64,
+            teleport.pitch as f64,
+            teleport.flags,
+            None,
+        )
     }
 
-    fn on_teleport_player_onground(&mut self, teleport: packet::play::clientbound::TeleportPlayer_OnGround) {
+    fn on_teleport_player_onground(
+        &mut self,
+        teleport: packet::play::clientbound::TeleportPlayer_OnGround,
+    ) {
         let flags: u8 = 0; // always absolute
-        self.on_teleport_player(teleport.x, teleport.eyes_y - 1.62, teleport.z, teleport.yaw as f64, teleport.pitch as f64, flags, None)
+        self.on_teleport_player(
+            teleport.x,
+            teleport.eyes_y - 1.62,
+            teleport.z,
+            teleport.yaw as f64,
+            teleport.pitch as f64,
+            flags,
+            None,
+        )
     }
 
-    fn on_teleport_player(&mut self, x: f64, y: f64, z: f64, yaw: f64, pitch: f64, flags: u8, teleport_id: Option<protocol::VarInt>) {
+    fn on_teleport_player(
+        &mut self,
+        x: f64,
+        y: f64,
+        z: f64,
+        yaw: f64,
+        pitch: f64,
+        flags: u8,
+        teleport_id: Option<protocol::VarInt>,
+    ) {
         use std::f64::consts::PI;
         if let Some(player) = self.player {
-            let position = self.entities.get_component_mut(player, self.target_position).unwrap();
-            let rotation = self.entities.get_component_mut(player, self.rotation).unwrap();
-            let velocity = self.entities.get_component_mut(player, self.velocity).unwrap();
+            let position = self
+                .entities
+                .get_component_mut(player, self.target_position)
+                .unwrap();
+            let rotation = self
+                .entities
+                .get_component_mut(player, self.rotation)
+                .unwrap();
+            let velocity = self
+                .entities
+                .get_component_mut(player, self.velocity)
+                .unwrap();
 
-            position.position.x = calculate_relative_teleport(TeleportFlag::RelX, flags, position.position.x, x);
-            position.position.y = calculate_relative_teleport(TeleportFlag::RelY, flags, position.position.y, y);
-            position.position.z = calculate_relative_teleport(TeleportFlag::RelZ, flags, position.position.z, z);
-            rotation.yaw = calculate_relative_teleport(TeleportFlag::RelYaw, flags, rotation.yaw, -yaw as f64 * (PI / 180.0));
+            position.position.x =
+                calculate_relative_teleport(TeleportFlag::RelX, flags, position.position.x, x);
+            position.position.y =
+                calculate_relative_teleport(TeleportFlag::RelY, flags, position.position.y, y);
+            position.position.z =
+                calculate_relative_teleport(TeleportFlag::RelZ, flags, position.position.z, z);
+            rotation.yaw = calculate_relative_teleport(
+                TeleportFlag::RelYaw,
+                flags,
+                rotation.yaw,
+                -yaw as f64 * (PI / 180.0),
+            );
 
             rotation.pitch = -((calculate_relative_teleport(
                 TeleportFlag::RelPitch,
                 flags,
                 (-rotation.pitch) * (180.0 / PI) + 180.0,
-                pitch
-            ) - 180.0) * (PI / 180.0));
+                pitch,
+            ) - 180.0)
+                * (PI / 180.0));
 
             if (flags & (TeleportFlag::RelX as u8)) == 0 {
                 velocity.velocity.x = 0.0;
@@ -1072,21 +1498,23 @@ impl Server {
             }
 
             if let Some(teleport_id) = teleport_id {
-                self.write_packet(packet::play::serverbound::TeleportConfirm {
-                    teleport_id,
-                });
+                self.write_packet(packet::play::serverbound::TeleportConfirm { teleport_id });
             }
         }
     }
 
-    fn on_block_entity_update(&mut self, block_update: packet::play::clientbound::UpdateBlockEntity) {
+    fn on_block_entity_update(
+        &mut self,
+        block_update: packet::play::clientbound::UpdateBlockEntity,
+    ) {
         match block_update.nbt {
             None => {
                 // NBT is null, so we need to remove the block entity
-                self.world.add_block_entity_action(world::BlockEntityAction::Remove(
-                    block_update.location,
-                ));
-            },
+                self.world
+                    .add_block_entity_action(world::BlockEntityAction::Remove(
+                        block_update.location,
+                    ));
+            }
             Some(nbt) => {
                 match block_update.action {
                     // TODO: support more block update actions
@@ -1098,32 +1526,46 @@ impl Server {
                     //6 => // Banner
                     //7 => // Structure
                     //8 => // Gateway
-                    9 => { // Sign
-                    let line1 = format::Component::from_string(nbt.1.get("Text1").unwrap().as_str().unwrap());
-                    let line2 = format::Component::from_string(nbt.1.get("Text2").unwrap().as_str().unwrap());
-                    let line3 = format::Component::from_string(nbt.1.get("Text3").unwrap().as_str().unwrap());
-                    let line4 = format::Component::from_string(nbt.1.get("Text4").unwrap().as_str().unwrap());
-                    self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
-                        block_update.location,
-                        line1,
-                        line2,
-                        line3,
-                        line4,
-                    ));
-                    },
+                    9 => {
+                        // Sign
+                        let line1 = format::Component::from_string(
+                            nbt.1.get("Text1").unwrap().as_str().unwrap(),
+                        );
+                        let line2 = format::Component::from_string(
+                            nbt.1.get("Text2").unwrap().as_str().unwrap(),
+                        );
+                        let line3 = format::Component::from_string(
+                            nbt.1.get("Text3").unwrap().as_str().unwrap(),
+                        );
+                        let line4 = format::Component::from_string(
+                            nbt.1.get("Text4").unwrap().as_str().unwrap(),
+                        );
+                        self.world.add_block_entity_action(
+                            world::BlockEntityAction::UpdateSignText(
+                                block_update.location,
+                                line1,
+                                line2,
+                                line3,
+                                line4,
+                            ),
+                        );
+                    }
                     //10 => // Unused
                     //11 => // Jigsaw
                     //12 => // Campfire
                     //14 => // Beehive
                     _ => {
                         debug!("Unsupported block entity action: {}", block_update.action);
-                    },
+                    }
                 }
             }
         }
     }
 
-    fn on_block_entity_update_data(&mut self, _block_update: packet::play::clientbound::UpdateBlockEntity_Data) {
+    fn on_block_entity_update_data(
+        &mut self,
+        _block_update: packet::play::clientbound::UpdateBlockEntity_Data,
+    ) {
         // TODO: handle UpdateBlockEntity_Data for 1.7, decompress gzipped_nbt
     }
 
@@ -1132,13 +1574,14 @@ impl Server {
         format::convert_legacy(&mut update_sign.line2);
         format::convert_legacy(&mut update_sign.line3);
         format::convert_legacy(&mut update_sign.line4);
-        self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
-            update_sign.location,
-            update_sign.line1,
-            update_sign.line2,
-            update_sign.line3,
-            update_sign.line4,
-        ));
+        self.world
+            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+                update_sign.location,
+                update_sign.line1,
+                update_sign.line2,
+                update_sign.line3,
+                update_sign.line4,
+            ));
     }
 
     fn on_sign_update_u16(&mut self, mut update_sign: packet::play::clientbound::UpdateSign_u16) {
@@ -1146,17 +1589,20 @@ impl Server {
         format::convert_legacy(&mut update_sign.line2);
         format::convert_legacy(&mut update_sign.line3);
         format::convert_legacy(&mut update_sign.line4);
-        self.world.add_block_entity_action(world::BlockEntityAction::UpdateSignText(
-            Position::new(update_sign.x, update_sign.y as i32, update_sign.z),
-            update_sign.line1,
-            update_sign.line2,
-            update_sign.line3,
-            update_sign.line4,
-        ));
+        self.world
+            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+                Position::new(update_sign.x, update_sign.y as i32, update_sign.z),
+                update_sign.line1,
+                update_sign.line2,
+                update_sign.line3,
+                update_sign.line4,
+            ));
     }
 
-
-    fn on_player_info_string(&mut self, _player_info: packet::play::clientbound::PlayerInfo_String) {
+    fn on_player_info_string(
+        &mut self,
+        _player_info: packet::play::clientbound::PlayerInfo_String,
+    ) {
         // TODO: support PlayerInfo_String for 1.7
     }
 
@@ -1164,7 +1610,14 @@ impl Server {
         use crate::protocol::packet::PlayerDetail::*;
         for detail in player_info.inner.players {
             match detail {
-                Add { name, uuid, properties, display, gamemode, ping} => {
+                Add {
+                    name,
+                    uuid,
+                    properties,
+                    display,
+                    gamemode,
+                    ping,
+                } => {
                     let info = self.players.entry(uuid.clone()).or_insert(PlayerInfo {
                         name: name.clone(),
                         uuid,
@@ -1195,16 +1648,20 @@ impl Server {
                             Err(err) => {
                                 error!("Failed to decode skin blob, {:?}", err);
                                 continue;
-                            },
+                            }
                         };
-                        let skin_blob: serde_json::Value = match serde_json::from_slice(&skin_blob) {
+                        let skin_blob: serde_json::Value = match serde_json::from_slice(&skin_blob)
+                        {
                             Ok(val) => val,
                             Err(err) => {
                                 error!("Failed to parse skin blob, {:?}", err);
                                 continue;
-                            },
+                            }
                         };
-                        if let Some(skin_url) = skin_blob.pointer("/textures/SKIN/url").and_then(|v| v.as_str()) {
+                        if let Some(skin_url) = skin_blob
+                            .pointer("/textures/SKIN/url")
+                            .and_then(|v| v.as_str())
+                        {
                             info.skin_url = Some(skin_url.to_owned());
                         }
                     }
@@ -1215,28 +1672,33 @@ impl Server {
                     // This isn't an issue for other players because this packet
                     // must come before the spawn player packet.
                     if info.uuid == self.uuid {
-                        let model = self.entities.get_component_mut_direct::<entity::player::PlayerModel>(self.player.unwrap()).unwrap();
+                        let model = self
+                            .entities
+                            .get_component_mut_direct::<entity::player::PlayerModel>(
+                                self.player.unwrap(),
+                            )
+                            .unwrap();
                         model.set_skin(info.skin_url.clone());
                     }
-                },
+                }
                 UpdateGamemode { uuid, gamemode } => {
                     if let Some(info) = self.players.get_mut(&uuid) {
                         info.gamemode = Gamemode::from_int(gamemode.0);
                     }
-                },
+                }
                 UpdateLatency { uuid, ping } => {
                     if let Some(info) = self.players.get_mut(&uuid) {
                         info.ping = ping.0;
                     }
-                },
+                }
                 UpdateDisplayName { uuid, display } => {
                     if let Some(info) = self.players.get_mut(&uuid) {
                         info.display_name = display;
                     }
-                },
+                }
                 Remove { uuid } => {
                     self.players.remove(&uuid);
-                },
+                }
             }
         }
     }
@@ -1264,93 +1726,151 @@ impl Server {
         }
     }
 
-    fn on_chunk_data_biomes3d(&mut self, chunk_data: packet::play::clientbound::ChunkData_Biomes3D) {
-        self.world.load_chunk115(
-            chunk_data.chunk_x,
-            chunk_data.chunk_z,
-            chunk_data.new,
-            chunk_data.bitmask.0 as u16,
-            chunk_data.data.data
-        ).unwrap();
+    fn on_chunk_data_biomes3d(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_Biomes3D,
+    ) {
+        self.world
+            .load_chunk115(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                chunk_data.new,
+                chunk_data.bitmask.0 as u16,
+                chunk_data.data.data,
+            )
+            .unwrap();
         self.load_block_entities(chunk_data.block_entities.data);
     }
-
 
     fn on_chunk_data(&mut self, chunk_data: packet::play::clientbound::ChunkData) {
-        self.world.load_chunk19(
-            chunk_data.chunk_x,
-            chunk_data.chunk_z,
-            chunk_data.new,
-            chunk_data.bitmask.0 as u16,
-            chunk_data.data.data
-        ).unwrap();
+        self.world
+            .load_chunk19(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                chunk_data.new,
+                chunk_data.bitmask.0 as u16,
+                chunk_data.data.data,
+            )
+            .unwrap();
         self.load_block_entities(chunk_data.block_entities.data);
     }
 
-    fn on_chunk_data_heightmap(&mut self, chunk_data: packet::play::clientbound::ChunkData_HeightMap) {
-        self.world.load_chunk19(
-            chunk_data.chunk_x,
-            chunk_data.chunk_z,
-            chunk_data.new,
-            chunk_data.bitmask.0 as u16,
-            chunk_data.data.data
-        ).unwrap();
+    fn on_chunk_data_heightmap(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_HeightMap,
+    ) {
+        self.world
+            .load_chunk19(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                chunk_data.new,
+                chunk_data.bitmask.0 as u16,
+                chunk_data.data.data,
+            )
+            .unwrap();
         self.load_block_entities(chunk_data.block_entities.data);
     }
 
-    fn on_chunk_data_no_entities(&mut self, chunk_data: packet::play::clientbound::ChunkData_NoEntities) {
-        self.world.load_chunk19(
-            chunk_data.chunk_x,
-            chunk_data.chunk_z,
-            chunk_data.new,
-            chunk_data.bitmask.0 as u16,
-            chunk_data.data.data
-        ).unwrap();
+    fn on_chunk_data_no_entities(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_NoEntities,
+    ) {
+        self.world
+            .load_chunk19(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                chunk_data.new,
+                chunk_data.bitmask.0 as u16,
+                chunk_data.data.data,
+            )
+            .unwrap();
     }
 
-    fn on_chunk_data_no_entities_u16(&mut self, chunk_data: packet::play::clientbound::ChunkData_NoEntities_u16) {
+    fn on_chunk_data_no_entities_u16(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_NoEntities_u16,
+    ) {
         let chunk_meta = vec![crate::protocol::packet::ChunkMeta {
             x: chunk_data.chunk_x,
             z: chunk_data.chunk_z,
             bitmask: chunk_data.bitmask,
         }];
         let skylight = false;
-        self.world.load_chunks18(chunk_data.new, skylight, &chunk_meta, chunk_data.data.data).unwrap();
+        self.world
+            .load_chunks18(chunk_data.new, skylight, &chunk_meta, chunk_data.data.data)
+            .unwrap();
     }
 
     fn on_chunk_data_17(&mut self, chunk_data: packet::play::clientbound::ChunkData_17) {
-        self.world.load_chunk17(chunk_data.chunk_x, chunk_data.chunk_z, chunk_data.new, chunk_data.bitmask, chunk_data.add_bitmask, chunk_data.compressed_data.data).unwrap();
+        self.world
+            .load_chunk17(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                chunk_data.new,
+                chunk_data.bitmask,
+                chunk_data.add_bitmask,
+                chunk_data.compressed_data.data,
+            )
+            .unwrap();
     }
 
     fn on_chunk_data_bulk(&mut self, bulk: packet::play::clientbound::ChunkDataBulk) {
         let new = true;
-        self.world.load_chunks18(new, bulk.skylight, &bulk.chunk_meta.data, bulk.chunk_data.to_vec()).unwrap();
+        self.world
+            .load_chunks18(
+                new,
+                bulk.skylight,
+                &bulk.chunk_meta.data,
+                bulk.chunk_data.to_vec(),
+            )
+            .unwrap();
     }
 
     fn on_chunk_data_bulk_17(&mut self, bulk: packet::play::clientbound::ChunkDataBulk_17) {
-        self.world.load_chunks17(bulk.chunk_column_count, bulk.data_length, bulk.skylight, &bulk.chunk_data_and_meta).unwrap();
+        self.world
+            .load_chunks17(
+                bulk.chunk_column_count,
+                bulk.data_length,
+                bulk.skylight,
+                &bulk.chunk_data_and_meta,
+            )
+            .unwrap();
     }
 
     fn on_chunk_unload(&mut self, chunk_unload: packet::play::clientbound::ChunkUnload) {
-        self.world.unload_chunk(chunk_unload.x, chunk_unload.z, &mut self.entities);
+        self.world
+            .unload_chunk(chunk_unload.x, chunk_unload.z, &mut self.entities);
     }
 
     fn on_block_change(&mut self, location: Position, id: i32) {
-        self.world.set_block(location, block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.world.modded_block_ids))
+        self.world.set_block(
+            location,
+            block::Block::by_vanilla_id(
+                id as usize,
+                self.protocol_version,
+                &self.world.modded_block_ids,
+            ),
+        )
     }
 
-    fn on_block_change_varint(&mut self, block_change: packet::play::clientbound::BlockChange_VarInt) {
+    fn on_block_change_varint(
+        &mut self,
+        block_change: packet::play::clientbound::BlockChange_VarInt,
+    ) {
         self.on_block_change(block_change.location, block_change.block_id.0)
     }
 
     fn on_block_change_u8(&mut self, block_change: packet::play::clientbound::BlockChange_u8) {
         self.on_block_change(
             crate::shared::Position::new(block_change.x, block_change.y as i32, block_change.z),
-            (block_change.block_id.0 << 4) | (block_change.block_metadata as i32)
+            (block_change.block_id.0 << 4) | (block_change.block_metadata as i32),
         );
     }
 
-    fn on_multi_block_change_varint(&mut self, block_change: packet::play::clientbound::MultiBlockChange_VarInt) {
+    fn on_multi_block_change_varint(
+        &mut self,
+        block_change: packet::play::clientbound::MultiBlockChange_VarInt,
+    ) {
         let ox = block_change.chunk_x << 4;
         let oz = block_change.chunk_z << 4;
         for record in block_change.records.data {
@@ -1358,20 +1878,27 @@ impl Server {
                 Position::new(
                     ox + (record.xz >> 4) as i32,
                     record.y as i32,
-                    oz + (record.xz & 0xF) as i32
+                    oz + (record.xz & 0xF) as i32,
                 ),
-                block::Block::by_vanilla_id(record.block_id.0 as usize, self.protocol_version, &self.world.modded_block_ids)
+                block::Block::by_vanilla_id(
+                    record.block_id.0 as usize,
+                    self.protocol_version,
+                    &self.world.modded_block_ids,
+                ),
             );
         }
     }
 
-    fn on_multi_block_change_u16(&mut self, block_change: packet::play::clientbound::MultiBlockChange_u16) {
+    fn on_multi_block_change_u16(
+        &mut self,
+        block_change: packet::play::clientbound::MultiBlockChange_u16,
+    ) {
         let ox = block_change.chunk_x << 4;
         let oz = block_change.chunk_z << 4;
 
         let mut data = std::io::Cursor::new(block_change.data);
 
-        for _ in 0 .. block_change.record_count {
+        for _ in 0..block_change.record_count {
             use byteorder::{BigEndian, ReadBytesExt};
 
             let record = data.read_u32::<BigEndian>().unwrap();
@@ -1383,11 +1910,14 @@ impl Server {
 
             self.world.set_block(
                 Position::new(x, y, z),
-                block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.world.modded_block_ids)
+                block::Block::by_vanilla_id(
+                    id as usize,
+                    self.protocol_version,
+                    &self.world.modded_block_ids,
+                ),
             );
         }
     }
-
 }
 
 #[derive(Debug, Clone, Copy)]
