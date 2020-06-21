@@ -1041,19 +1041,9 @@ impl Conn {
     }
 
     pub fn write_packet<T: PacketType>(&mut self, packet: T) -> Result<(), Error> {
-        /* TODO: fix Packet doesn't implement std::fmt::Debug
-        if is_network_debug() {
-            println!("about to send {:?}", packet);
-        }
-        */
-
         let mut buf = Vec::new();
         VarInt(packet.packet_id(self.protocol_version)).write_to(&mut buf)?;
         packet.write(&mut buf)?;
-
-        if is_network_debug()  {
-            println!("sent bytes {:?}", buf);
-        }
 
         let mut extra = if self.compression_threshold >= 0 {
             1
