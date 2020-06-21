@@ -251,6 +251,7 @@ fn main2() {
         .with_title("Stevenarella")
         .with_inner_size(glutin::dpi::LogicalSize::new(854.0, 480.0));
     let window = glutin::ContextBuilder::new()
+        /*
         .with_stencil_buffer(0)
         .with_depth_buffer(24)
         .with_gl(glutin::GlRequest::GlThenGles {
@@ -258,6 +259,7 @@ fn main2() {
             opengles_version: (2, 0),
         })
         .with_gl_profile(glutin::GlProfile::Core)
+        */
         .with_vsync(vsync)
         .build_windowed(window_builder, &events_loop)
         .expect("Could not create glutin window.");
@@ -271,6 +273,9 @@ fn main2() {
     gl::init(&window);
 
     let renderer = render::Renderer::new(resource_manager.clone());
+    println!("main 4");
+    println!("ok");
+    std::process::exit(0);
     let mut ui_container = ui::Container::new();
 
     let mut last_frame = Instant::now();

@@ -158,23 +158,16 @@ init_shader! {
 
 impl Renderer {
     pub fn new(res: Arc<RwLock<resources::Manager>>) -> Renderer {
-        let version = { res.read().unwrap().version() };
+        let version = 0; //{ res.read().unwrap().version() };
         let tex = gl::Texture::new();
         tex.bind(gl::TEXTURE_2D_ARRAY);
-        tex.image_3d(
-            gl::TEXTURE_2D_ARRAY,
-            0,
-            ATLAS_SIZE as u32,
-            ATLAS_SIZE as u32,
-            1,
-            gl::RGBA,
-            gl::UNSIGNED_BYTE,
-            &[0; ATLAS_SIZE * ATLAS_SIZE * 4],
-        );
+        println!("returned 2");
+        /*
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
         tex.set_parameter(gl::TEXTURE_2D_ARRAY, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
+        */
 
         let (textures, skin_req, skin_reply) = TextureManager::new(res.clone());
         let textures = Arc::new(RwLock::new(textures));
@@ -183,10 +176,12 @@ impl Renderer {
         shaders::add_shaders(&mut greg);
         let ui = ui::UIState::new(&greg, textures.clone(), res.clone());
 
+        /*
         gl::enable(gl::DEPTH_TEST);
         gl::enable(gl::CULL_FACE_FLAG);
         gl::cull_face(gl::BACK);
         gl::front_face(gl::CLOCK_WISE);
+        */
 
         // Shaders
         let chunk_shader = ChunkShader::new(&greg);
@@ -197,8 +192,15 @@ impl Renderer {
         // Line Drawer
         // Clouds
 
+        /*
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         gl::depth_func(gl::LESS_OR_EQUAL);
+        */
+
+        unsafe {
+            println!("creating texture");
+            let tex = gl::Texture::new();
+        }
 
         Renderer {
             resource_version: version,
@@ -416,8 +418,8 @@ impl Renderer {
         trans.trans.bind();
         gl::clear_color(0.0, 0.0, 0.0, 1.0);
         gl::clear(gl::ClearFlags::Color);
-        gl::clear_buffer(gl::COLOR, 0, &[0.0, 0.0, 0.0, 1.0]);
-        gl::clear_buffer(gl::COLOR, 1, &[0.0, 0.0, 0.0, 0.0]);
+        gl::clear_buffer(gl::COLOR, 0, &mut [0.0, 0.0, 0.0, 1.0]);
+        gl::clear_buffer(gl::COLOR, 1, &mut [0.0, 0.0, 0.0, 0.0]);
         gl::blend_func_separate(
             gl::ONE_FACTOR,
             gl::ONE_FACTOR,
@@ -954,8 +956,7 @@ pub struct TextureManager {
     free_dynamics: Vec<Texture>,
 
     skins: HashMap<String, AtomicIsize, BuildHasherDefault<FNVHash>>,
-
-    _skin_thread: thread::JoinHandle<()>,
+    //_skin_thread: thread::JoinHandle<()>,
 }
 
 impl TextureManager {
@@ -968,7 +969,7 @@ impl TextureManager {
     ) {
         let (tx, rx) = mpsc::channel();
         let (stx, srx) = mpsc::channel();
-        let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
+        //let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
         let mut tm = TextureManager {
             textures: HashMap::with_hasher(BuildHasherDefault::default()),
             version: {
@@ -983,8 +984,7 @@ impl TextureManager {
             dynamic_textures: HashMap::with_hasher(BuildHasherDefault::default()),
             free_dynamics: Vec::new(),
             skins: HashMap::with_hasher(BuildHasherDefault::default()),
-
-            _skin_thread: skin_thread,
+            //_skin_thread: skin_thread,
         };
         tm.add_defaults();
         (tm, stx, rx)
@@ -1015,6 +1015,7 @@ impl TextureManager {
         recv: mpsc::Receiver<String>,
         reply: mpsc::Sender<(String, Option<image::DynamicImage>)>,
     ) {
+        println!("in process_skins thread");
         let client = reqwest::blocking::Client::new();
         loop {
             let hash = match recv.recv() {
@@ -1082,8 +1083,7 @@ impl TextureManager {
         if height == 32 {
             // Needs changing to the new format
             let mut new = image::DynamicImage::new_rgba8(64, 64);
-            new.copy_from(&img, 0, 0)
-                .expect("Invalid png image in skin");
+            new.copy_from(&img, 0, 0);
             for xx in 0..4 {
                 for yy in 0..16 {
                     for section in 0..4 {

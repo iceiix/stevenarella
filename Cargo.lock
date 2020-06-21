@@ -661,13 +661,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "gl_generator"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+name = "glow"
+version = "0.4.0"
+source = "git+https://github.com/grovesNL/glow?rev=666a7529d0f48a05b32deb919668cd172b0adc94#666a7529d0f48a05b32deb919668cd172b0adc94"
 dependencies = [
- "khronos_api 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "xml-rs 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gl_generator 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slotmap 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen 0.2.63 (registry+https://github.com/rust-lang/crates.io-index)",
+ "web-sys 0.3.40 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1906,6 +1908,11 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "slotmap"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "smallvec"
 version = "0.6.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2022,15 +2029,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "steven_gl"
-version = "0.0.1"
-dependencies = [
- "gl_generator 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "khronos_api 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.71 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "steven_protocol"
 version = "0.0.1"
 dependencies = [
@@ -2068,6 +2066,7 @@ dependencies = [
  "clipboard 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "collision 0.20.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glow 0.4.0 (git+https://github.com/grovesNL/glow?rev=666a7529d0f48a05b32deb919668cd172b0adc94)",
  "glutin 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.23.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2082,7 +2081,6 @@ dependencies = [
  "std_or_web 0.0.1",
  "stdweb 0.4.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "steven_blocks 0.0.1",
- "steven_gl 0.0.1",
  "steven_protocol 0.0.1",
  "steven_resources 0.1.0",
  "steven_shared 0.0.1",
@@ -2685,7 +2683,7 @@ dependencies = [
 "checksum getrandom 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "7abc8dd8451921606d809ba32e95b6111925cd2906060d2dcc29c070220503eb"
 "checksum gif 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)" = "471d90201b3b223f3451cd4ad53e34295f16a1df17b1edf3736d47761c3981af"
 "checksum gl_generator 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ca98bbde17256e02d17336a6bdb5a50f7d0ccacee502e191d3e3d0ec2f96f84a"
-"checksum gl_generator 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1a95dfc23a2b4a9a2f5ab41d194f8bfda3cabec42af4e39f08c339eb2a0c124d"
+"checksum glow 0.4.0 (git+https://github.com/grovesNL/glow?rev=666a7529d0f48a05b32deb919668cd172b0adc94)" = "<none>"
 "checksum glutin 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2e8c40ccddfa5fb8aaad6a152bfa6b17f157d6635928a832211534f87c9877e1"
 "checksum glutin_egl_sys 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "772edef3b28b8ad41e4ea202748e65eefe8e5ffd1f4535f1219793dbb20b3d4c"
 "checksum glutin_emscripten_sys 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "80de4146df76e8a6c32b03007bc764ff3249dcaeb4f675d68a06caf1bac363f1"
@@ -2822,6 +2820,7 @@ dependencies = [
 "checksum shared_library 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "5a9e7e0f2bfae24d8a5b5a66c5b257a83c7412304311512a0c054cd5e619da11"
 "checksum simple_asn1 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "57f6bbbcefb91c0dac9b27c91ba13bd2aa29a815fe980f5b1e07d523fbf7b350"
 "checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
+"checksum slotmap 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "759fd553261805f128e2900bf69ab3d034260bc338caf7f0ee54dbf035c85acd"
 "checksum smallvec 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)" = "f7b0758c52e15a8b5e3691eae6cc559f08eee9406e548a4477ba4e67770a82b6"
 "checksum smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c7cb5678e1615754284ec264d9bb5b4c27d2018577fd90ac0ceb578591ed5ee4"
 "checksum smithay-client-toolkit 0.6.6 (registry+https://github.com/rust-lang/crates.io-index)" = "421c8dc7acf5cb205b88160f8b4cc2c5cfabe210e43b2f80f009f4c1ef910f1d"
