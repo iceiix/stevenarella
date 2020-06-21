@@ -1204,7 +1204,7 @@ impl Conn {
                 }
             }
         }
-        // Forge 1.13+
+        // Forge 1.13+ TODO: update for 1.14+ and test
         if let Some(forge_data) = val.get("forgeData") {
             if let Some(mods) = forge_data.get("mods") {
                 if let Value::Array(items) = mods {
