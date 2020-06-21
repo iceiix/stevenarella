@@ -1,5 +1,3 @@
-
-
 #[doc(hidden)]
 #[macro_export]
 macro_rules! create_ids {

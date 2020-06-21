@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use sha1::{self, Digest};
-use serde_json::json;
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest;
+use serde_json::json;
+use sha1::{self, Digest};
 
 #[derive(Clone, Debug)]
 pub struct Profile {
@@ -33,17 +33,18 @@ const VALIDATE_URL: &str = "https://authserver.mojang.com/validate";
 impl Profile {
     pub fn login(username: &str, password: &str, token: &str) -> Result<Profile, super::Error> {
         let req_msg = json!({
-            "username": username,
-            "password": password,
-            "clientToken": token,
-            "agent": {
-                "name": "Minecraft",
-                "version": 1
-            }});
+        "username": username,
+        "password": password,
+        "clientToken": token,
+        "agent": {
+            "name": "Minecraft",
+            "version": 1
+        }});
         let req = serde_json::to_string(&req_msg)?;
 
         let client = reqwest::blocking::Client::new();
-        let res = client.post(LOGIN_URL)
+        let res = client
+            .post(LOGIN_URL)
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(req)
             .send()?;
@@ -53,33 +54,47 @@ impl Profile {
             return Err(super::Error::Err(format!(
                 "{}: {}",
                 error,
-                ret.get("errorMessage").and_then(|v| v.as_str()).unwrap())
-            ));
+                ret.get("errorMessage").and_then(|v| v.as_str()).unwrap()
+            )));
         }
         Ok(Profile {
-            username: ret.pointer("/selectedProfile/name").and_then(|v| v.as_str()).unwrap().to_owned(),
-            id: ret.pointer("/selectedProfile/id").and_then(|v| v.as_str()).unwrap().to_owned(),
-            access_token: ret.get("accessToken").and_then(|v| v.as_str()).unwrap().to_owned(),
+            username: ret
+                .pointer("/selectedProfile/name")
+                .and_then(|v| v.as_str())
+                .unwrap()
+                .to_owned(),
+            id: ret
+                .pointer("/selectedProfile/id")
+                .and_then(|v| v.as_str())
+                .unwrap()
+                .to_owned(),
+            access_token: ret
+                .get("accessToken")
+                .and_then(|v| v.as_str())
+                .unwrap()
+                .to_owned(),
         })
     }
 
     pub fn refresh(self, token: &str) -> Result<Profile, super::Error> {
         let req_msg = json!({
-            "accessToken": self.access_token.clone(),
-            "clientToken": token
-            });
+        "accessToken": self.access_token.clone(),
+        "clientToken": token
+        });
         let req = serde_json::to_string(&req_msg)?;
 
         let client = reqwest::blocking::Client::new();
-        let res = client.post(VALIDATE_URL)
+        let res = client
+            .post(VALIDATE_URL)
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(req)
             .send()?;
 
         if res.status() != reqwest::StatusCode::NO_CONTENT {
             let req = serde_json::to_string(&req_msg)?; // TODO: fix parsing twice to avoid move
-            // Refresh needed
-            let res = client.post(REFRESH_URL)
+                                                        // Refresh needed
+            let res = client
+                .post(REFRESH_URL)
                 .header(reqwest::header::CONTENT_TYPE, "application/json")
                 .body(req)
                 .send()?;
@@ -89,19 +104,36 @@ impl Profile {
                 return Err(super::Error::Err(format!(
                     "{}: {}",
                     error,
-                    ret.get("errorMessage").and_then(|v| v.as_str()).unwrap())
-                ));
+                    ret.get("errorMessage").and_then(|v| v.as_str()).unwrap()
+                )));
             }
             return Ok(Profile {
-                username: ret.pointer("/selectedProfile/name").and_then(|v| v.as_str()).unwrap().to_owned(),
-                id: ret.pointer("/selectedProfile/id").and_then(|v| v.as_str()).unwrap().to_owned(),
-                access_token: ret.get("accessToken").and_then(|v| v.as_str()).unwrap().to_owned(),
+                username: ret
+                    .pointer("/selectedProfile/name")
+                    .and_then(|v| v.as_str())
+                    .unwrap()
+                    .to_owned(),
+                id: ret
+                    .pointer("/selectedProfile/id")
+                    .and_then(|v| v.as_str())
+                    .unwrap()
+                    .to_owned(),
+                access_token: ret
+                    .get("accessToken")
+                    .and_then(|v| v.as_str())
+                    .unwrap()
+                    .to_owned(),
             });
         }
         Ok(self)
     }
 
-    pub fn join_server(&self, server_id: &str, shared_key: &[u8], public_key: &[u8]) -> Result<(), super::Error> {
+    pub fn join_server(
+        &self,
+        server_id: &str,
+        shared_key: &[u8],
+        public_key: &[u8],
+    ) -> Result<(), super::Error> {
         let mut hasher = sha1::Sha1::new();
         hasher.input(server_id.as_bytes());
         hasher.input(shared_key);
@@ -114,7 +146,11 @@ impl Profile {
         if negative {
             twos_compliment(&mut hash);
         }
-        let hash_str = hash.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join("");
+        let hash_str = hash
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<Vec<String>>()
+            .join("");
         let hash_val = hash_str.trim_start_matches('0');
         let hash_str = if negative {
             "-".to_owned() + &hash_val[..]
@@ -130,7 +166,8 @@ impl Profile {
         let join = serde_json::to_string(&join_msg).unwrap();
 
         let client = reqwest::blocking::Client::new();
-        let res = client.post(JOIN_URL)
+        let res = client
+            .post(JOIN_URL)
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(join)
             .send()?;

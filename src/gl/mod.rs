@@ -14,15 +14,15 @@
 
 extern crate steven_gl as gl;
 
-use std::ops::BitOr;
+use log::{error, info};
 use std::ffi;
 use std::mem;
-use std::ptr;
+use std::ops::BitOr;
 use std::ops::{Deref, DerefMut};
-use log::{error, info};
+use std::ptr;
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(vid: & glutin::WindowedContext<glutin::PossiblyCurrent>) {
+pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
     gl::load_with(|s| vid.get_proc_address(s) as *const _);
 }
 
@@ -54,7 +54,13 @@ pub fn draw_elements(ty: DrawType, count: i32, dty: Type, offset: usize) {
 
 pub fn multi_draw_elements(ty: DrawType, count: &[i32], dty: Type, offsets: &[usize]) {
     unsafe {
-        gl::MultiDrawElements(ty, count.as_ptr(), dty, offsets.as_ptr() as *const _, count.len() as i32);
+        gl::MultiDrawElements(
+            ty,
+            count.as_ptr(),
+            dty,
+            offsets.as_ptr() as *const _,
+            count.len() as i32,
+        );
     }
 }
 
@@ -107,7 +113,9 @@ pub fn clear(flags: ClearFlags) {
 }
 
 pub fn depth_mask(f: bool) {
-    unsafe { gl::DepthMask(f as u8); }
+    unsafe {
+        gl::DepthMask(f as u8);
+    }
 }
 
 /// `Func` is a function to be preformed on two values.
@@ -171,7 +179,12 @@ pub fn blend_func(s_factor: Factor, d_factor: Factor) {
     }
 }
 
-pub fn blend_func_separate(s_factor_rgb: Factor, d_factor_rgb: Factor, s_factor_a: Factor, d_factor_a: Factor) {
+pub fn blend_func_separate(
+    s_factor_rgb: Factor,
+    d_factor_rgb: Factor,
+    s_factor_a: Factor,
+    d_factor_a: Factor,
+) {
     unsafe {
         gl::BlendFuncSeparate(s_factor_rgb, d_factor_rgb, s_factor_a, d_factor_a);
     }
@@ -270,180 +283,208 @@ impl Texture {
         }
     }
 
-    pub fn get_pixels(&self,
-                      target: TextureTarget,
-                      level: i32,
-                      format: TextureFormat,
-                      ty: Type,
-                      pixels: &mut [u8]) {
+    pub fn get_pixels(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        format: TextureFormat,
+        ty: Type,
+        pixels: &mut [u8],
+    ) {
         unsafe {
-            gl::GetTexImage(target,
-                            level,
-                            format,
-                            ty,
-                            pixels.as_mut_ptr() as *mut gl::types::GLvoid);
+            gl::GetTexImage(
+                target,
+                level,
+                format,
+                ty,
+                pixels.as_mut_ptr() as *mut gl::types::GLvoid,
+            );
         }
     }
 
-    pub fn image_2d(&self,
-                    target: TextureTarget,
-                    level: i32,
-                    width: u32,
-                    height: u32,
-                    format: TextureFormat,
-                    ty: Type,
-                    pix: Option<&[u8]>) {
+    pub fn image_2d(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        width: u32,
+        height: u32,
+        format: TextureFormat,
+        ty: Type,
+        pix: Option<&[u8]>,
+    ) {
         unsafe {
             let ptr = match pix {
                 Some(val) => val.as_ptr() as *const gl::types::GLvoid,
                 None => ptr::null(),
             };
-            gl::TexImage2D(target,
-                           level,
-                           format as i32,
-                           width as i32,
-                           height as i32,
-                           0,
-                           format,
-                           ty,
-                           ptr
+            gl::TexImage2D(
+                target,
+                level,
+                format as i32,
+                width as i32,
+                height as i32,
+                0,
+                format,
+                ty,
+                ptr,
             );
         }
     }
 
-    pub fn sub_image_2d(&self,
-                    target: TextureTarget,
-                    level: i32,
-                    x: u32,
-                    y: u32,
-                    width: u32,
-                    height: u32,
-                    format: TextureFormat,
-                    ty: Type,
-                    pix: &[u8]) {
+    pub fn sub_image_2d(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+        format: TextureFormat,
+        ty: Type,
+        pix: &[u8],
+    ) {
         unsafe {
-            gl::TexSubImage2D(target,
-                           level,
-                           x as i32,
-                           y as i32,
-                           width as i32,
-                           height as i32,
-                           format,
-                           ty,
-                           pix.as_ptr() as *const _
+            gl::TexSubImage2D(
+                target,
+                level,
+                x as i32,
+                y as i32,
+                width as i32,
+                height as i32,
+                format,
+                ty,
+                pix.as_ptr() as *const _,
             );
         }
     }
 
-    pub fn image_2d_ex(&self,
-                    target: TextureTarget,
-                    level: i32,
-                    width: u32,
-                    height: u32,
-                    internal_format: TextureFormat,
-                    format: TextureFormat,
-                    ty: Type,
-                    pix: Option<&[u8]>) {
+    pub fn image_2d_ex(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        width: u32,
+        height: u32,
+        internal_format: TextureFormat,
+        format: TextureFormat,
+        ty: Type,
+        pix: Option<&[u8]>,
+    ) {
         unsafe {
             let ptr = match pix {
                 Some(val) => val.as_ptr() as *const gl::types::GLvoid,
                 None => ptr::null(),
             };
-            gl::TexImage2D(target,
-                           level,
-                           internal_format as i32,
-                           width as i32,
-                           height as i32,
-                           0,
-                           format,
-                           ty,
-                           ptr
+            gl::TexImage2D(
+                target,
+                level,
+                internal_format as i32,
+                width as i32,
+                height as i32,
+                0,
+                format,
+                ty,
+                ptr,
             );
         }
     }
 
-    pub fn image_2d_sample(&self,
-                    target: TextureTarget,
-                    samples: i32,
-                    width: u32,
-                    height: u32,
-                    format: TextureFormat,
-                    fixed: bool) {
+    pub fn image_2d_sample(
+        &self,
+        target: TextureTarget,
+        samples: i32,
+        width: u32,
+        height: u32,
+        format: TextureFormat,
+        fixed: bool,
+    ) {
         unsafe {
             let result: &mut [i32] = &mut [0; 1];
             gl::GetIntegerv(gl::MAX_SAMPLES, &mut result[0]);
-            let use_samples =
-                if samples > result[0] {
-                    info!("glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}", samples, result[0]);
-                    result[0]
-                } else {
-                    samples
-                };
+            let use_samples = if samples > result[0] {
+                info!(
+                    "glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}",
+                    samples, result[0]
+                );
+                result[0]
+            } else {
+                samples
+            };
 
-            gl::TexImage2DMultisample(target,
-                           use_samples,
-                           format,
-                           width as i32,
-                           height as i32,
-                           fixed as u8
+            gl::TexImage2DMultisample(
+                target,
+                use_samples,
+                format,
+                width as i32,
+                height as i32,
+                fixed as u8,
             );
         }
     }
 
-    pub fn image_3d(&self,
-                    target: TextureTarget,
-                    level: i32,
-                    width: u32,
-                    height: u32,
-                    depth: u32,
-                    format: TextureFormat,
-                    ty: Type,
-                    pix: &[u8]) {
+    pub fn image_3d(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        width: u32,
+        height: u32,
+        depth: u32,
+        format: TextureFormat,
+        ty: Type,
+        pix: &[u8],
+    ) {
         unsafe {
-            gl::TexImage3D(target,
-                           level,
-                           format as i32,
-                           width as i32,
-                           height as i32,
-                           depth as i32,
-                           0,
-                           format,
-                           ty,
-                           pix.as_ptr() as *const gl::types::GLvoid);
+            gl::TexImage3D(
+                target,
+                level,
+                format as i32,
+                width as i32,
+                height as i32,
+                depth as i32,
+                0,
+                format,
+                ty,
+                pix.as_ptr() as *const gl::types::GLvoid,
+            );
         }
     }
 
-    pub fn sub_image_3d(&self,
-                        target: TextureTarget,
-                        level: i32,
-                        x: u32,
-                        y: u32,
-                        z: u32,
-                        width: u32,
-                        height: u32,
-                        depth: u32,
-                        format: TextureFormat,
-                        ty: Type,
-                        pix: &[u8]) {
+    pub fn sub_image_3d(
+        &self,
+        target: TextureTarget,
+        level: i32,
+        x: u32,
+        y: u32,
+        z: u32,
+        width: u32,
+        height: u32,
+        depth: u32,
+        format: TextureFormat,
+        ty: Type,
+        pix: &[u8],
+    ) {
         unsafe {
-            gl::TexSubImage3D(target,
-                              level,
-                              x as i32,
-                              y as i32,
-                              z as i32,
-                              width as i32,
-                              height as i32,
-                              depth as i32,
-                              format,
-                              ty,
-                              pix.as_ptr() as *const gl::types::GLvoid);
+            gl::TexSubImage3D(
+                target,
+                level,
+                x as i32,
+                y as i32,
+                z as i32,
+                width as i32,
+                height as i32,
+                depth as i32,
+                format,
+                ty,
+                pix.as_ptr() as *const gl::types::GLvoid,
+            );
         }
     }
 
-    pub fn set_parameter(&self,
-                         target: TextureTarget,
-                         param: TextureParameter,
-                         value: TextureValue) {
+    pub fn set_parameter(
+        &self,
+        target: TextureTarget,
+        param: TextureParameter,
+        value: TextureValue,
+    ) {
         unsafe {
             gl::TexParameteri(target, param, value);
         }
@@ -495,9 +536,8 @@ impl Program {
     }
 
     pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
-        let u = unsafe {
-            gl::GetUniformLocation(self.0, ffi::CString::new(name).unwrap().as_ptr())
-        };
+        let u =
+            unsafe { gl::GetUniformLocation(self.0, ffi::CString::new(name).unwrap().as_ptr()) };
         if u != -1 {
             Some(Uniform(u))
         } else {
@@ -536,10 +576,7 @@ impl Shader {
     pub fn set_source(&self, src: &str) {
         unsafe {
             let src_c = ffi::CString::new(src).unwrap();
-            gl::ShaderSource(self.0,
-                             1,
-                             &src_c.as_ptr(),
-                             ptr::null());
+            gl::ShaderSource(self.0, 1, &src_c.as_ptr(), ptr::null());
         }
     }
 
@@ -624,7 +661,8 @@ impl Uniform {
 
     pub fn set_matrix4_multi(&self, m: &[::cgmath::Matrix4<f32>]) {
         unsafe {
-            gl::UniformMatrix4fv(self.0, m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
+            gl::UniformMatrix4fv(self.0, m.len() as i32, false as u8, m.as_ptr() as *const _);
+            // TODO: Most likely isn't safe
         }
     }
 }
@@ -647,22 +685,26 @@ impl Attribute {
 
     pub fn vertex_pointer(&self, size: i32, ty: Type, normalized: bool, stride: i32, offset: i32) {
         unsafe {
-            gl::VertexAttribPointer(self.0 as u32,
-                                    size,
-                                    ty,
-                                    normalized as u8,
-                                    stride,
-                                    offset as *const gl::types::GLvoid);
+            gl::VertexAttribPointer(
+                self.0 as u32,
+                size,
+                ty,
+                normalized as u8,
+                stride,
+                offset as *const gl::types::GLvoid,
+            );
         }
     }
 
     pub fn vertex_pointer_int(&self, size: i32, ty: Type, stride: i32, offset: i32) {
         unsafe {
-            gl::VertexAttribIPointer(self.0 as u32,
-                                     size,
-                                     ty,
-                                     stride,
-                                     offset as *const gl::types::GLvoid);
+            gl::VertexAttribIPointer(
+                self.0 as u32,
+                size,
+                ty,
+                stride,
+                offset as *const gl::types::GLvoid,
+            );
         }
     }
 }
@@ -753,10 +795,12 @@ impl Buffer {
 
     pub fn set_data(&self, target: BufferTarget, data: &[u8], usage: BufferUsage) {
         unsafe {
-            gl::BufferData(target,
-                           data.len() as isize,
-                           data.as_ptr() as *const gl::types::GLvoid,
-                           usage);
+            gl::BufferData(
+                target,
+                data.len() as isize,
+                data.as_ptr() as *const gl::types::GLvoid,
+                usage,
+            );
         }
     }
 
@@ -832,11 +876,12 @@ pub struct Framebuffer(u32);
 pub fn check_framebuffer_status() {
     unsafe {
         let status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
-        let s =
-        match status {
+        let s = match status {
             gl::FRAMEBUFFER_UNDEFINED => "GL_FRAMEBUFFER_UNDEFINED",
             gl::FRAMEBUFFER_INCOMPLETE_ATTACHMENT => "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT",
-            gl::FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT => "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT",
+            gl::FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT => {
+                "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"
+            }
             gl::FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER => "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER",
             gl::FRAMEBUFFER_INCOMPLETE_READ_BUFFER => "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER",
             gl::FRAMEBUFFER_UNSUPPORTED => "GL_FRAMEBUFFER_UNSUPPORTED",
@@ -845,11 +890,14 @@ pub fn check_framebuffer_status() {
 
             gl::FRAMEBUFFER_COMPLETE => "GL_FRAMEBUFFER_COMPLETE",
             //gl::FRAMEBUFFER_INCOMPLETE_DIMENSIONS => "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS",
-            _ => "unknown"
+            _ => "unknown",
         };
 
         if status != gl::FRAMEBUFFER_COMPLETE {
-            panic!("glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}", status, s);
+            panic!(
+                "glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}",
+                status, s
+            );
         }
     }
 }
@@ -859,7 +907,7 @@ pub fn check_gl_error() {
         loop {
             let err = gl::GetError();
             if err == gl::NO_ERROR {
-                break
+                break;
             }
 
             error!("glGetError = {}", err);
@@ -894,7 +942,13 @@ impl Framebuffer {
         }
     }
 
-    pub fn texture_2d(&self, attachment: Attachment, target: TextureTarget, tex: &Texture, level: i32) {
+    pub fn texture_2d(
+        &self,
+        attachment: Attachment,
+        target: TextureTarget,
+        tex: &Texture,
+        level: i32,
+    ) {
         unsafe {
             gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachment, target, tex.0, level);
         }
@@ -929,10 +983,7 @@ pub fn unbind_framebuffer_draw() {
 
 pub fn draw_buffers(bufs: &[Attachment]) {
     unsafe {
-        gl::DrawBuffers(
-                bufs.len() as i32,
-                bufs.as_ptr()
-        );
+        gl::DrawBuffers(bufs.len() as i32, bufs.as_ptr());
     }
 }
 
@@ -944,14 +995,29 @@ pub fn bind_frag_data_location(p: &Program, cn: u32, name: &str) {
 }
 
 pub fn blit_framebuffer(
-    sx0: i32, sy0: i32, sx1: i32, sy1: i32,
-    dx0: i32, dy0: i32, dx1: i32, dy1: i32,
-    mask: ClearFlags, filter: TextureValue) {
+    sx0: i32,
+    sy0: i32,
+    sx1: i32,
+    sy1: i32,
+    dx0: i32,
+    dy0: i32,
+    dx1: i32,
+    dy1: i32,
+    mask: ClearFlags,
+    filter: TextureValue,
+) {
     unsafe {
         gl::BlitFramebuffer(
-            sx0, sy0, sx1, sy1,
-            dx0, dy0, dx1, dy1,
-            mask.internal(), filter as u32
+            sx0,
+            sy0,
+            sx1,
+            sy1,
+            dx0,
+            dy0,
+            dx1,
+            dy1,
+            mask.internal(),
+            filter as u32,
         );
     }
 }

@@ -1,7 +1,6 @@
-
 use crate::render;
 use crate::render::model;
-use cgmath::{Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
+use cgmath::{Decomposed, Matrix4, Quaternion, Rad, Rotation3, Vector3};
 
 pub struct SunModel {
     sun: model::ModelKey,
@@ -12,7 +11,6 @@ pub struct SunModel {
 const SIZE: f32 = 50.0;
 
 impl SunModel {
-
     pub fn new(renderer: &mut render::Renderer) -> SunModel {
         SunModel {
             sun: SunModel::generate_sun(renderer),
@@ -71,26 +69,123 @@ impl SunModel {
         renderer.model.create_model(
             model::SUN,
             vec![vec![
-                model::Vertex{x: 0.0, y: -SIZE, z: -SIZE, texture_x: 0.0, texture_y: 1.0, texture: tex.clone(), r: 255, g: 255, b: 255, a: 0, id: 0},
-                model::Vertex{x: 0.0, y: SIZE, z: -SIZE, texture_x: 0.0, texture_y: 0.0, texture: tex.clone(), r: 255, g: 255, b: 255, a: 0, id: 0},
-                model::Vertex{x: 0.0, y: -SIZE, z: SIZE, texture_x: 1.0, texture_y: 1.0, texture: tex.clone(), r: 255, g: 255, b: 255, a: 0, id: 0},
-                model::Vertex{x: 0.0, y: SIZE, z: SIZE, texture_x: 1.0, texture_y: 0.0, texture: tex.clone(), r: 255, g: 255, b: 255, a: 0, id: 0}
-            ]]
+                model::Vertex {
+                    x: 0.0,
+                    y: -SIZE,
+                    z: -SIZE,
+                    texture_x: 0.0,
+                    texture_y: 1.0,
+                    texture: tex.clone(),
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 0,
+                    id: 0,
+                },
+                model::Vertex {
+                    x: 0.0,
+                    y: SIZE,
+                    z: -SIZE,
+                    texture_x: 0.0,
+                    texture_y: 0.0,
+                    texture: tex.clone(),
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 0,
+                    id: 0,
+                },
+                model::Vertex {
+                    x: 0.0,
+                    y: -SIZE,
+                    z: SIZE,
+                    texture_x: 1.0,
+                    texture_y: 1.0,
+                    texture: tex.clone(),
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 0,
+                    id: 0,
+                },
+                model::Vertex {
+                    x: 0.0,
+                    y: SIZE,
+                    z: SIZE,
+                    texture_x: 1.0,
+                    texture_y: 0.0,
+                    texture: tex.clone(),
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 0,
+                    id: 0,
+                },
+            ]],
         )
     }
 
     pub fn generate_moon(renderer: &mut render::Renderer, phase: i32) -> model::ModelKey {
-        let tex = render::Renderer::get_texture(renderer.get_textures_ref(), "environment/moon_phases");
+        let tex =
+            render::Renderer::get_texture(renderer.get_textures_ref(), "environment/moon_phases");
         let mpx = (phase % 4) as f64 * (1.0 / 4.0);
         let mpy = (phase / 4) as f64 * (1.0 / 2.0);
         renderer.model.create_model(
             model::SUN,
             vec![vec![
-                model::Vertex{x: 0.0, y: -SIZE, z: -SIZE, texture_x: mpx, texture_y: mpy + (1.0 / 2.0), texture: tex.clone(), r: 255, g: 255, b: 255, a: 0, id: 0},
-                model::Vertex{x: 0.0, y: SIZE, z: -SIZE, texture_x: mpx, texture_y: mpy, texture: tex.clone(), r: 255, g: 255, b: 255, a: 0, id: 0},
-                model::Vertex{x: 0.0, y: -SIZE, z: SIZE, texture_x: mpx + (1.0 / 4.0), texture_y: mpy + (1.0 / 2.0), texture: tex.clone(), r: 255, g: 255, b: 255, a: 0, id: 0},
-                model::Vertex{x: 0.0, y: SIZE, z: SIZE, texture_x: mpx + (1.0 / 4.0), texture_y: mpy, texture: tex.clone(), r: 255, g: 255, b: 255, a: 0, id: 0}
-            ]]
+                model::Vertex {
+                    x: 0.0,
+                    y: -SIZE,
+                    z: -SIZE,
+                    texture_x: mpx,
+                    texture_y: mpy + (1.0 / 2.0),
+                    texture: tex.clone(),
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 0,
+                    id: 0,
+                },
+                model::Vertex {
+                    x: 0.0,
+                    y: SIZE,
+                    z: -SIZE,
+                    texture_x: mpx,
+                    texture_y: mpy,
+                    texture: tex.clone(),
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 0,
+                    id: 0,
+                },
+                model::Vertex {
+                    x: 0.0,
+                    y: -SIZE,
+                    z: SIZE,
+                    texture_x: mpx + (1.0 / 4.0),
+                    texture_y: mpy + (1.0 / 2.0),
+                    texture: tex.clone(),
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 0,
+                    id: 0,
+                },
+                model::Vertex {
+                    x: 0.0,
+                    y: SIZE,
+                    z: SIZE,
+                    texture_x: mpx + (1.0 / 4.0),
+                    texture_y: mpy,
+                    texture: tex.clone(),
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 0,
+                    id: 0,
+                },
+            ]],
         )
     }
 }

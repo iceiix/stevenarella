@@ -16,8 +16,8 @@ mod metadata;
 pub use self::metadata::*;
 
 pub mod bit;
-pub mod nibble;
 pub mod hash;
+pub mod nibble;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Gamemode {

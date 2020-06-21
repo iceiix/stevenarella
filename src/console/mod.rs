@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::marker::PhantomData;
-use std::collections::HashMap;
+use log;
 use std::any::Any;
-use std::cell::{RefCell, Ref};
+use std::cell::{Ref, RefCell};
+use std::collections::HashMap;
+use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use std_or_web::fs;
-use std::io::{BufWriter, Write, BufRead, BufReader};
-use log;
 
-use crate::ui;
+use crate::format::{Color, Component, TextComponent};
 use crate::render;
-use crate::format::{Component, TextComponent, Color};
+use crate::ui;
 
 #[cfg(target_arch = "wasm32")]
 use web_sys;
@@ -126,21 +126,26 @@ pub struct Vars {
 }
 
 impl Vars {
-    pub fn new() -> Vars { Default::default() }
+    pub fn new() -> Vars {
+        Default::default()
+    }
 
     pub fn register<T: Sized + Any>(&mut self, var: CVar<T>)
-        where CVar<T>: Var
+    where
+        CVar<T>: Var,
     {
         if self.vars.contains_key(var.name) {
             panic!("Key registered twice {}", var.name);
         }
         self.names.insert(var.name.to_owned(), var.name);
-        self.var_values.insert(var.name, RefCell::new(Box::new((var.default)())));
+        self.var_values
+            .insert(var.name, RefCell::new(Box::new((var.default)())));
         self.vars.insert(var.name, Box::new(var));
     }
 
     pub fn get<T: Sized + Any>(&self, var: CVar<T>) -> Ref<T>
-        where CVar<T>: Var
+    where
+        CVar<T>: Var,
     {
         // Should never fail
         let var = self.var_values.get(var.name).unwrap().borrow();
@@ -148,7 +153,8 @@ impl Vars {
     }
 
     pub fn set<T: Sized + Any>(&self, var: CVar<T>, val: T)
-        where CVar<T>: Var
+    where
+        CVar<T>: Var,
     {
         *self.var_values.get(var.name).unwrap().borrow_mut() = Box::new(val);
         self.save_config();
@@ -162,7 +168,10 @@ impl Vars {
                 if line.starts_with('#') || line.is_empty() {
                     continue;
                 }
-                let parts = line.splitn(2, ' ').map(|v| v.to_owned()).collect::<Vec<String>>();
+                let parts = line
+                    .splitn(2, ' ')
+                    .map(|v| v.to_owned())
+                    .collect::<Vec<String>>();
                 let (name, arg) = (&parts[0], &parts[1]);
                 if let Some(var_name) = self.names.get(name) {
                     let var = self.vars.get(var_name).unwrap();
@@ -184,11 +193,13 @@ impl Vars {
             for line in var.description().lines() {
                 write!(file, "# {}\n", line).unwrap();
             }
-            write!(file,
-                   "{} {}\n\n",
-                   name,
-                   var.serialize(&self.var_values.get(name).unwrap().borrow()))
-                .unwrap();
+            write!(
+                file,
+                "{} {}\n\n",
+                name,
+                var.serialize(&self.var_values.get(name).unwrap().borrow())
+            )
+            .unwrap();
         }
     }
 }
@@ -227,11 +238,13 @@ impl Console {
         self.active = !self.active;
     }
 
-    pub fn tick(&mut self,
-                ui_container: &mut ui::Container,
-                renderer: &render::Renderer,
-                delta: f64,
-                width: f64) {
+    pub fn tick(
+        &mut self,
+        ui_container: &mut ui::Container,
+        renderer: &render::Renderer,
+        delta: f64,
+        width: f64,
+    ) {
         if !self.active && self.position <= -220.0 {
             self.elements = None;
             return;
@@ -281,12 +294,14 @@ impl Console {
                     break;
                 }
                 let (_, height) = ui::Formatted::compute_size(renderer, line, w - 10.0);
-                elements.lines.push(ui::FormattedBuilder::new()
-                    .text(line.clone())
-                    .position(5.0, 5.0 + offset)
-                    .max_width(w - 10.0)
-                    .alignment(ui::VAttach::Bottom, ui::HAttach::Left)
-                    .create(&mut *background));
+                elements.lines.push(
+                    ui::FormattedBuilder::new()
+                        .text(line.clone())
+                        .position(5.0, 5.0 + offset)
+                        .max_width(w - 10.0)
+                        .alignment(ui::VAttach::Bottom, ui::HAttach::Left)
+                        .create(&mut *background),
+                );
                 offset += height;
             }
         }
@@ -304,11 +319,16 @@ impl Console {
             file = &file[pos + 4..];
         }
 
-        println_level(record.level(), format!("[{}:{}][{}] {}",
-                 file,
-                 record.line().unwrap_or(0),
-                 record.level(),
-                 record.args()));
+        println_level(
+            record.level(),
+            format!(
+                "[{}:{}][{}] {}",
+                file,
+                record.line().unwrap_or(0),
+                record.level(),
+                record.args()
+            ),
+        );
         self.history.remove(0);
         let mut msg = TextComponent::new("");
         msg.modifier.extra = Some(vec![
@@ -338,7 +358,7 @@ impl Console {
                 Component::Text(msg)
             },
             Component::Text(TextComponent::new("] ")),
-            Component::Text(TextComponent::new(&format!("{}", record.args())))
+            Component::Text(TextComponent::new(&format!("{}", record.args()))),
         ]);
         self.history.push(Component::Text(msg));
         self.dirty = true;
@@ -366,8 +386,7 @@ impl log::Log for ConsoleProxy {
         }
     }
 
-    fn flush(&self) {
-    }
+    fn flush(&self) {}
 }
 
 unsafe impl Send for ConsoleProxy {}

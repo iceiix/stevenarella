@@ -14,21 +14,21 @@
 
 pub use steven_blocks as block;
 
-use std::collections::HashMap;
-use std::collections::VecDeque;
-use std::hash::BuildHasherDefault;
-use crate::types::{bit, nibble};
-use crate::shared::{Position, Direction};
-use crate::types::hash::FNVHash;
-use crate::protocol;
-use crate::render;
-use collision;
-use cgmath::prelude::*;
 use crate::chunk_builder;
 use crate::ecs;
 use crate::entity::block_entity;
 use crate::format;
+use crate::protocol;
+use crate::render;
+use crate::shared::{Direction, Position};
+use crate::types::hash::FNVHash;
+use crate::types::{bit, nibble};
+use cgmath::prelude::*;
+use collision;
 use flate2::read::ZlibDecoder;
+use std::collections::HashMap;
+use std::collections::VecDeque;
+use std::hash::BuildHasherDefault;
 use std::io::Read;
 
 pub mod biome;
@@ -52,13 +52,19 @@ pub struct World {
 pub enum BlockEntityAction {
     Create(Position),
     Remove(Position),
-    UpdateSignText(Position, format::Component, format::Component, format::Component, format::Component),
+    UpdateSignText(
+        Position,
+        format::Component,
+        format::Component,
+        format::Component,
+        format::Component,
+    ),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum LightType {
     Block,
-    Sky
+    Sky,
 }
 
 impl LightType {
@@ -104,10 +110,12 @@ impl World {
         let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
         if chunk.set_block(pos.x & 0xF, pos.y, pos.z & 0xF, b) {
             if chunk.block_entities.contains_key(&pos) {
-                self.block_entity_actions.push_back(BlockEntityAction::Remove(pos));
+                self.block_entity_actions
+                    .push_back(BlockEntityAction::Remove(pos));
             }
             if block_entity::BlockEntityType::get_block_entity(b).is_some() {
-                self.block_entity_actions.push_back(BlockEntityAction::Create(pos));
+                self.block_entity_actions
+                    .push_back(BlockEntityAction::Create(pos));
             }
             true
         } else {
@@ -116,9 +124,9 @@ impl World {
     }
 
     pub fn update_block(&mut self, pos: Position) {
-        for yy in -1 .. 2 {
-            for zz in -1 .. 2 {
-                for xx in -1 .. 2 {
+        for yy in -1..2 {
+            for zz in -1..2 {
+                for xx in -1..2 {
                     let bp = pos + (xx, yy, zz);
                     let current = self.get_block(bp);
                     let new = current.update_state(self, bp);
@@ -134,9 +142,9 @@ impl World {
     }
 
     fn update_range(&mut self, x1: i32, y1: i32, z1: i32, x2: i32, y2: i32, z2: i32) {
-        for by in y1 .. y2 {
-            for bz in z1 .. z2 {
-                for bx in x1 .. x2 {
+        for by in y1..y2 {
+            for bz in z1..z2 {
+                for bx in x1..x2 {
                     let bp = Position::new(bx, by, bz);
                     let current = self.get_block(bp);
                     let new = current.update_state(self, bp);
@@ -156,7 +164,7 @@ impl World {
     pub fn get_block(&self, pos: Position) -> block::Block {
         match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
             Some(chunk) => chunk.get_block(pos.x & 0xF, pos.y, pos.z & 0xF),
-            None => block::Missing{},
+            None => block::Missing {},
         }
     }
 
@@ -187,10 +195,7 @@ impl World {
     }
 
     fn update_light(&mut self, pos: Position, ty: LightType) {
-        self.light_updates.push_back(LightUpdate {
-            ty,
-            pos,
-        });
+        self.light_updates.push_back(LightUpdate { ty, pos });
     }
 
     pub fn add_block_entity_action(&mut self, action: BlockEntityAction) {
@@ -198,14 +203,15 @@ impl World {
     }
 
     pub fn tick(&mut self, m: &mut ecs::Manager) {
-        use std::time::{Instant};
+        use std::time::Instant;
         let start = Instant::now();
         let mut updates_performed = 0;
         while !self.light_updates.is_empty() {
             updates_performed += 1;
             self.do_light_update();
             if updates_performed & 0xFFF == 0 {
-                if start.elapsed().subsec_nanos() >= 5000000 { // 5 ms for light updates
+                if start.elapsed().subsec_nanos() >= 5000000 {
+                    // 5 ms for light updates
                     break;
                 }
             }
@@ -221,7 +227,7 @@ impl World {
                             m.remove_entity(entity);
                         }
                     }
-                },
+                }
                 BlockEntityAction::Create(pos) => {
                     if let Some(chunk) = self.chunks.get_mut(&CPos(pos.x >> 4, pos.z >> 4)) {
                         // Remove existing entity
@@ -229,22 +235,19 @@ impl World {
                             m.remove_entity(entity);
                         }
                         let block = chunk.get_block(pos.x & 0xF, pos.y, pos.z & 0xF);
-                        if let Some(entity_type) = block_entity::BlockEntityType::get_block_entity(block) {
+                        if let Some(entity_type) =
+                            block_entity::BlockEntityType::get_block_entity(block)
+                        {
                             let entity = entity_type.create_entity(m, pos);
                             chunk.block_entities.insert(pos, entity);
                         }
                     }
-                },
+                }
                 BlockEntityAction::UpdateSignText(pos, line1, line2, line3, line4) => {
                     if let Some(chunk) = self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
                         if let Some(entity) = chunk.block_entities.get(&pos) {
                             if let Some(sign) = m.get_component_mut(*entity, sign_info) {
-                                sign.lines = [
-                                    line1,
-                                    line2,
-                                    line3,
-                                    line4,
-                                ];
+                                sign.lines = [line1, line2, line3, line4];
                                 sign.dirty = true;
                             }
                         }
@@ -257,7 +260,10 @@ impl World {
     fn do_light_update(&mut self) {
         use std::cmp;
         if let Some(update) = self.light_updates.pop_front() {
-            if update.pos.y < 0 || update.pos.y > 255 || !self.is_chunk_loaded(update.pos.x >> 4, update.pos.z >> 4) {
+            if update.pos.y < 0
+                || update.pos.y > 255
+                || !self.is_chunk_loaded(update.pos.x >> 4, update.pos.z >> 4)
+            {
                 return;
             }
 
@@ -280,7 +286,8 @@ impl World {
             // Sky light doesn't decrease when going down at full brightness
             if update.ty == LightType::Sky
                 && block.absorbed_light == 0
-                && update.ty.get_light(self, update.pos.shift(Direction::Up)) == 15 {
+                && update.ty.get_light(self, update.pos.shift(Direction::Up)) == 15
+            {
                 best = 15;
             }
 
@@ -291,9 +298,9 @@ impl World {
             // Use our new light value
             update.ty.set_light(self, update.pos, best);
             // Flag surrounding chunks as dirty
-            for yy in -1 .. 2 {
-                for zz in -1 .. 2 {
-                    for xx in -1 .. 2 {
+            for yy in -1..2 {
+                for zz in -1..2 {
+                    for xx in -1..2 {
                         let bp = update.pos + (xx, yy, zz);
                         self.set_dirty(bp.x >> 4, bp.y >> 4, bp.z >> 4);
                     }
@@ -313,12 +320,11 @@ impl World {
             if c.heightmap_dirty {
                 dirty = true;
                 c.heightmap_dirty = false;
-                for xx in 0 .. 16 {
-                    for zz in 0 .. 16 {
-                        data[
-                            (((c.position.0 << 4) as usize + xx) & 0x1FF) +
-                            ((((c.position.1 << 4) as usize + zz) & 0x1FF) << 9)
-                        ] = c.heightmap[(zz << 4) | xx];
+                for xx in 0..16 {
+                    for zz in 0..16 {
+                        data[(((c.position.0 << 4) as usize + xx) & 0x1FF)
+                            + ((((c.position.1 << 4) as usize + zz) & 0x1FF) << 9)] =
+                            c.heightmap[(zz << 4) | xx];
                     }
                 }
             }
@@ -339,25 +345,37 @@ impl World {
         let start = (
             ((renderer.camera.pos.x as i32) >> 4),
             ((renderer.camera.pos.y as i32) >> 4),
-            ((renderer.camera.pos.z as i32) >> 4)
+            ((renderer.camera.pos.z as i32) >> 4),
         );
 
         let mut process_queue = VecDeque::with_capacity(self.chunks.len() * 16);
         process_queue.push_front((Direction::Invalid, start));
 
         while let Some((from, pos)) = process_queue.pop_front() {
-            let (exists, cull) = if let Some((sec, rendered_on)) = self.get_render_section_mut(pos.0, pos.1, pos.2) {
+            let (exists, cull) = if let Some((sec, rendered_on)) =
+                self.get_render_section_mut(pos.0, pos.1, pos.2)
+            {
                 if *rendered_on == renderer.frame_id {
                     continue;
                 }
                 *rendered_on = renderer.frame_id;
 
-                let min = cgmath::Point3::new(pos.0 as f32 * 16.0, -pos.1 as f32 * 16.0, pos.2 as f32 * 16.0);
-                let bounds = collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
-                if renderer.frustum.contains(&bounds) == collision::Relation::Out && from != Direction::Invalid {
+                let min = cgmath::Point3::new(
+                    pos.0 as f32 * 16.0,
+                    -pos.1 as f32 * 16.0,
+                    pos.2 as f32 * 16.0,
+                );
+                let bounds =
+                    collision::Aabb3::new(min, min + cgmath::Vector3::new(16.0, -16.0, 16.0));
+                if renderer.frustum.contains(&bounds) == collision::Relation::Out
+                    && from != Direction::Invalid
+                {
                     continue;
                 }
-                (sec.is_some(), sec.map_or(chunk_builder::CullInfo::all_vis(), |v| v.cull_info))
+                (
+                    sec.is_some(),
+                    sec.map_or(chunk_builder::CullInfo::all_vis(), |v| v.cull_info),
+                )
             } else {
                 continue;
             };
@@ -369,11 +387,14 @@ impl World {
             for dir in Direction::all() {
                 let (ox, oy, oz) = dir.get_offset();
                 let opos = (pos.0 + ox, pos.1 + oy, pos.2 + oz);
-                if let Some((_, rendered_on)) = self.get_render_section_mut(opos.0, opos.1, opos.2) {
+                if let Some((_, rendered_on)) = self.get_render_section_mut(opos.0, opos.1, opos.2)
+                {
                     if *rendered_on == renderer.frame_id {
                         continue;
                     }
-                    if from == Direction::Invalid || (valid_dirs[dir.index()] && cull.is_visible(from, dir)) {
+                    if from == Direction::Invalid
+                        || (valid_dirs[dir.index()] && cull.is_visible(from, dir))
+                    {
                         process_queue.push_back((dir.opposite(), opos));
                     }
                 }
@@ -382,11 +403,14 @@ impl World {
     }
 
     pub fn get_render_list(&self) -> Vec<((i32, i32, i32), &render::ChunkBuffer)> {
-        self.render_list.iter().map(|v| {
-            let chunk = self.chunks.get(&CPos(v.0, v.2)).unwrap();
-            let sec = chunk.sections[v.1 as usize].as_ref().unwrap();
-            (*v, &sec.render_buffer)
-        }).collect()
+        self.render_list
+            .iter()
+            .map(|v| {
+                let chunk = self.chunks.get(&CPos(v.0, v.2)).unwrap();
+                let sec = chunk.sections[v.1 as usize].as_ref().unwrap();
+                (*v, &sec.render_buffer)
+            })
+            .collect()
     }
 
     pub fn get_section_mut(&mut self, x: i32, y: i32, z: i32) -> Option<&mut Section> {
@@ -398,7 +422,12 @@ impl World {
         None
     }
 
-    fn get_render_section_mut(&mut self, x: i32, y: i32, z: i32) -> Option<(Option<&mut Section>, &mut u32)> {
+    fn get_render_section_mut(
+        &mut self,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> Option<(Option<&mut Section>, &mut u32)> {
         if y < 0 || y > 15 {
             return None;
         }
@@ -471,17 +500,21 @@ impl World {
     }
 
     pub fn capture_snapshot(&self, x: i32, y: i32, z: i32, w: i32, h: i32, d: i32) -> Snapshot {
-        use std::cmp::{min, max};
+        use std::cmp::{max, min};
         let mut snapshot = Snapshot {
-            blocks: storage::BlockStorage::new_default((w * h * d) as usize, block::Missing{}),
+            blocks: storage::BlockStorage::new_default((w * h * d) as usize, block::Missing {}),
             block_light: nibble::Array::new((w * h * d) as usize),
             sky_light: nibble::Array::new((w * h * d) as usize),
             biomes: vec![0; (w * d) as usize],
 
-            x, y, z,
-            w, _h: h, d,
+            x,
+            y,
+            z,
+            w,
+            _h: h,
+            d,
         };
-        for i in 0 .. (w * h * d) as usize {
+        for i in 0..(w * h * d) as usize {
             snapshot.sky_light.set(i, 0xF);
         }
 
@@ -492,48 +525,58 @@ impl World {
         let cy2 = (y + h + 15) >> 4;
         let cz2 = (z + d + 15) >> 4;
 
-        for cx in cx1 .. cx2 {
-            for cz in cz1 .. cz2 {
+        for cx in cx1..cx2 {
+            for cz in cz1..cz2 {
                 let chunk = match self.chunks.get(&CPos(cx, cz)) {
                     Some(val) => val,
                     None => continue,
                 };
 
-                let x1 = min(16, max(0, x - (cx<<4)));
-                let x2 = min(16, max(0, x + w - (cx<<4)));
-                let z1 = min(16, max(0, z - (cz<<4)));
-                let z2 = min(16, max(0, z + d - (cz<<4)));
+                let x1 = min(16, max(0, x - (cx << 4)));
+                let x2 = min(16, max(0, x + w - (cx << 4)));
+                let z1 = min(16, max(0, z - (cz << 4)));
+                let z2 = min(16, max(0, z + d - (cz << 4)));
 
-                for cy in cy1 .. cy2 {
+                for cy in cy1..cy2 {
                     if cy < 0 || cy > 15 {
                         continue;
                     }
                     let section = &chunk.sections[cy as usize];
-                    let y1 = min(16, max(0, y - (cy<<4)));
-                    let y2 = min(16, max(0, y + h - (cy<<4)));
+                    let y1 = min(16, max(0, y - (cy << 4)));
+                    let y2 = min(16, max(0, y + h - (cy << 4)));
 
-                    for yy in y1 .. y2 {
-                        for zz in z1 .. z2 {
-                            for xx in x1 .. x2 {
+                    for yy in y1..y2 {
+                        for zz in z1..z2 {
+                            for xx in x1..x2 {
                                 let ox = xx + (cx << 4);
                                 let oy = yy + (cy << 4);
                                 let oz = zz + (cz << 4);
                                 match section.as_ref() {
                                     Some(sec) => {
                                         snapshot.set_block(ox, oy, oz, sec.get_block(xx, yy, zz));
-                                        snapshot.set_block_light(ox, oy, oz, sec.get_block_light(xx, yy, zz));
-                                        snapshot.set_sky_light(ox, oy, oz, sec.get_sky_light(xx, yy, zz));
-                                    },
+                                        snapshot.set_block_light(
+                                            ox,
+                                            oy,
+                                            oz,
+                                            sec.get_block_light(xx, yy, zz),
+                                        );
+                                        snapshot.set_sky_light(
+                                            ox,
+                                            oy,
+                                            oz,
+                                            sec.get_sky_light(xx, yy, zz),
+                                        );
+                                    }
                                     None => {
-                                        snapshot.set_block(ox, oy, oz, block::Air{});
-                                    },
+                                        snapshot.set_block(ox, oy, oz, block::Air {});
+                                    }
                                 }
                             }
                         }
                     }
                 }
-                for zz in z1 .. z2 {
-                    for xx in x1 .. x2 {
+                for zz in z1..z2 {
+                    for xx in x1..x2 {
                         let ox = xx + (cx << 4);
                         let oz = zz + (cz << 4);
                         snapshot.set_biome(ox, oz, chunk.get_biome(xx, zz));
@@ -553,38 +596,62 @@ impl World {
         }
     }
 
-    pub fn load_chunks18(&mut self, new: bool, skylight: bool, chunk_metas: &[crate::protocol::packet::ChunkMeta], data: Vec<u8>) -> Result<(), protocol::Error> {
-         let mut data = std::io::Cursor::new(data);
+    pub fn load_chunks18(
+        &mut self,
+        new: bool,
+        skylight: bool,
+        chunk_metas: &[crate::protocol::packet::ChunkMeta],
+        data: Vec<u8>,
+    ) -> Result<(), protocol::Error> {
+        let mut data = std::io::Cursor::new(data);
 
-         for chunk_meta in chunk_metas {
-             let x = chunk_meta.x;
-             let z = chunk_meta.z;
-             let mask = chunk_meta.bitmask;
+        for chunk_meta in chunk_metas {
+            let x = chunk_meta.x;
+            let z = chunk_meta.z;
+            let mask = chunk_meta.bitmask;
 
-             self.load_chunk18(x, z, new, skylight, mask, &mut data)?;
-         }
-         Ok(())
+            self.load_chunk18(x, z, new, skylight, mask, &mut data)?;
+        }
+        Ok(())
     }
 
     fn dirty_chunks_by_bitmask(&mut self, x: i32, z: i32, mask: u16) {
-        for i in 0 .. 16 {
+        for i in 0..16 {
             if mask & (1 << i) == 0 {
                 continue;
             }
             for pos in [
-                (-1, 0, 0), (1, 0, 0),
-                (0, -1, 0), (0, 1, 0),
-                (0, 0, -1), (0, 0, 1)].iter() {
+                (-1, 0, 0),
+                (1, 0, 0),
+                (0, -1, 0),
+                (0, 1, 0),
+                (0, 0, -1),
+                (0, 0, 1),
+            ]
+            .iter()
+            {
                 self.flag_section_dirty(x + pos.0, i as i32 + pos.1, z + pos.2);
             }
             self.update_range(
-                (x<<4) - 1, (i<<4) - 1, (z<<4) - 1,
-                (x<<4) + 17, (i<<4) + 17, (z<<4) + 17
+                (x << 4) - 1,
+                (i << 4) - 1,
+                (z << 4) - 1,
+                (x << 4) + 17,
+                (i << 4) + 17,
+                (z << 4) + 17,
             );
         }
     }
 
-    pub fn load_chunk18(&mut self, x: i32, z: i32, new: bool, _skylight: bool, mask: u16, data: &mut std::io::Cursor<Vec<u8>>) -> Result<(), protocol::Error> {
+    pub fn load_chunk18(
+        &mut self,
+        x: i32,
+        z: i32,
+        new: bool,
+        _skylight: bool,
+        mask: u16,
+        data: &mut std::io::Cursor<Vec<u8>>,
+    ) -> Result<(), protocol::Error> {
         use byteorder::ReadBytesExt;
 
         let cpos = CPos(x, z);
@@ -599,11 +666,9 @@ impl World {
                 self.chunks.get_mut(&cpos).unwrap()
             };
 
-            for i in 0 .. 16 {
+            for i in 0..16 {
                 if chunk.sections[i].is_none() {
-                    let mut fill_sky = chunk.sections.iter()
-                        .skip(i)
-                        .all(|v| v.is_none());
+                    let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
                     if !fill_sky || mask & (1 << i) != 0 {
                         chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
@@ -615,9 +680,16 @@ impl World {
                 let section = chunk.sections[i as usize].as_mut().unwrap();
                 section.dirty = true;
 
-                for bi in 0 .. 4096 {
+                for bi in 0..4096 {
                     let id = data.read_u16::<byteorder::LittleEndian>()?;
-                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids));
+                    section.blocks.set(
+                        bi,
+                        block::Block::by_vanilla_id(
+                            id as usize,
+                            self.protocol_version,
+                            &self.modded_block_ids,
+                        ),
+                    );
 
                     // Spawn block entities
                     let b = section.blocks.get(bi);
@@ -625,17 +697,23 @@ impl World {
                         let pos = Position::new(
                             (bi & 0xF) as i32,
                             (bi >> 8) as i32,
-                            ((bi >> 4) & 0xF) as i32
-                        ) + (chunk.position.0 << 4, (i << 4) as i32, chunk.position.1 << 4);
+                            ((bi >> 4) & 0xF) as i32,
+                        ) + (
+                            chunk.position.0 << 4,
+                            (i << 4) as i32,
+                            chunk.position.1 << 4,
+                        );
                         if chunk.block_entities.contains_key(&pos) {
-                            self.block_entity_actions.push_back(BlockEntityAction::Remove(pos))
+                            self.block_entity_actions
+                                .push_back(BlockEntityAction::Remove(pos))
                         }
-                        self.block_entity_actions.push_back(BlockEntityAction::Create(pos))
+                        self.block_entity_actions
+                            .push_back(BlockEntityAction::Create(pos))
                     }
                 }
             }
 
-            for i in 0 .. 16 {
+            for i in 0..16 {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
@@ -644,7 +722,7 @@ impl World {
                 data.read_exact(&mut section.block_light.data)?;
             }
 
-            for i in 0 .. 16 {
+            for i in 0..16 {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
@@ -664,7 +742,13 @@ impl World {
         Ok(())
     }
 
-    pub fn load_chunks17(&mut self, chunk_column_count: u16, data_length: i32, skylight: bool, data: &[u8]) -> Result<(), protocol::Error> {
+    pub fn load_chunks17(
+        &mut self,
+        chunk_column_count: u16,
+        data_length: i32,
+        skylight: bool,
+        data: &[u8],
+    ) -> Result<(), protocol::Error> {
         let compressed_chunk_data = &data[0..data_length as usize];
         let metadata = &data[data_length as usize..];
 
@@ -692,16 +776,41 @@ impl World {
         Ok(())
     }
 
-    pub fn load_chunk17(&mut self, x: i32, z: i32, new: bool, mask: u16, mask_add: u16, compressed_data: Vec<u8>) -> Result<(), protocol::Error> {
-         let mut zlib = ZlibDecoder::new(std::io::Cursor::new(compressed_data.to_vec()));
-         let mut data = Vec::new();
-         zlib.read_to_end(&mut data)?;
+    pub fn load_chunk17(
+        &mut self,
+        x: i32,
+        z: i32,
+        new: bool,
+        mask: u16,
+        mask_add: u16,
+        compressed_data: Vec<u8>,
+    ) -> Result<(), protocol::Error> {
+        let mut zlib = ZlibDecoder::new(std::io::Cursor::new(compressed_data.to_vec()));
+        let mut data = Vec::new();
+        zlib.read_to_end(&mut data)?;
 
-         let skylight = true;
-         self.load_uncompressed_chunk17(x, z, new, skylight, mask, mask_add, &mut std::io::Cursor::new(data))
+        let skylight = true;
+        self.load_uncompressed_chunk17(
+            x,
+            z,
+            new,
+            skylight,
+            mask,
+            mask_add,
+            &mut std::io::Cursor::new(data),
+        )
     }
 
-    fn load_uncompressed_chunk17(&mut self, x: i32, z: i32, new: bool, skylight: bool, mask: u16, mask_add: u16, data: &mut std::io::Cursor<Vec<u8>>) -> Result<(), protocol::Error> {
+    fn load_uncompressed_chunk17(
+        &mut self,
+        x: i32,
+        z: i32,
+        new: bool,
+        skylight: bool,
+        mask: u16,
+        mask_add: u16,
+        data: &mut std::io::Cursor<Vec<u8>>,
+    ) -> Result<(), protocol::Error> {
         let cpos = CPos(x, z);
         {
             let chunk = if new {
@@ -716,11 +825,9 @@ impl World {
 
             // Block type array - whole byte per block
             let mut block_types = [[0u8; 4096]; 16];
-            for i in 0 .. 16 {
+            for i in 0..16 {
                 if chunk.sections[i].is_none() {
-                    let mut fill_sky = chunk.sections.iter()
-                        .skip(i)
-                        .all(|v| v.is_none());
+                    let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
                     if !fill_sky || mask & (1 << i) != 0 {
                         chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
@@ -738,13 +845,25 @@ impl World {
             // Block metadata array - half byte per block
             let mut block_meta: [nibble::Array; 16] = [
                 // TODO: cleanup this initialization
-                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
-                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
-                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
-                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
             ];
 
-            for i in 0 .. 16 {
+            for i in 0..16 {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
@@ -753,7 +872,7 @@ impl World {
             }
 
             // Block light array - half byte per block
-            for i in 0 .. 16 {
+            for i in 0..16 {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
@@ -764,7 +883,7 @@ impl World {
 
             // Sky light array - half byte per block - only if 'skylight' is true
             if skylight {
-                for i in 0 .. 16 {
+                for i in 0..16 {
                     if mask & (1 << i) == 0 {
                         continue;
                     }
@@ -777,13 +896,25 @@ impl World {
             // Add array - half byte per block - uses secondary bitmask
             let mut block_add: [nibble::Array; 16] = [
                 // TODO: cleanup this initialization
-                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
-                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
-                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
-                nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16), nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
+                nibble::Array::new(16 * 16 * 16),
             ];
 
-            for i in 0 .. 16 {
+            for i in 0..16 {
                 if mask_add & (1 << i) == 0 {
                     continue;
                 }
@@ -791,16 +922,25 @@ impl World {
             }
 
             // Now that we have the block types, metadata, and add, combine to initialize the blocks
-            for i in 0 .. 16 {
+            for i in 0..16 {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
 
                 let section = chunk.sections[i as usize].as_mut().unwrap();
 
-                for bi in 0 .. 4096 {
-                    let id = ((block_add[i].get(bi) as u16) << 12) | ((block_types[i][bi] as u16) << 4) | (block_meta[i].get(bi) as u16);
-                    section.blocks.set(bi, block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids));
+                for bi in 0..4096 {
+                    let id = ((block_add[i].get(bi) as u16) << 12)
+                        | ((block_types[i][bi] as u16) << 4)
+                        | (block_meta[i].get(bi) as u16);
+                    section.blocks.set(
+                        bi,
+                        block::Block::by_vanilla_id(
+                            id as usize,
+                            self.protocol_version,
+                            &self.modded_block_ids,
+                        ),
+                    );
 
                     // Spawn block entities
                     let b = section.blocks.get(bi);
@@ -808,12 +948,18 @@ impl World {
                         let pos = Position::new(
                             (bi & 0xF) as i32,
                             (bi >> 8) as i32,
-                            ((bi >> 4) & 0xF) as i32
-                        ) + (chunk.position.0 << 4, (i << 4) as i32, chunk.position.1 << 4);
+                            ((bi >> 4) & 0xF) as i32,
+                        ) + (
+                            chunk.position.0 << 4,
+                            (i << 4) as i32,
+                            chunk.position.1 << 4,
+                        );
                         if chunk.block_entities.contains_key(&pos) {
-                            self.block_entity_actions.push_back(BlockEntityAction::Remove(pos))
+                            self.block_entity_actions
+                                .push_back(BlockEntityAction::Remove(pos))
                         }
-                        self.block_entity_actions.push_back(BlockEntityAction::Create(pos))
+                        self.block_entity_actions
+                            .push_back(BlockEntityAction::Create(pos))
                     }
                 }
             }
@@ -829,18 +975,40 @@ impl World {
         Ok(())
     }
 
-    pub fn load_chunk19(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
+    pub fn load_chunk19(
+        &mut self,
+        x: i32,
+        z: i32,
+        new: bool,
+        mask: u16,
+        data: Vec<u8>,
+    ) -> Result<(), protocol::Error> {
         self.load_chunk19_or_115(true, x, z, new, mask, data)
     }
 
-    pub fn load_chunk115(&mut self, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
+    pub fn load_chunk115(
+        &mut self,
+        x: i32,
+        z: i32,
+        new: bool,
+        mask: u16,
+        data: Vec<u8>,
+    ) -> Result<(), protocol::Error> {
         self.load_chunk19_or_115(false, x, z, new, mask, data)
     }
 
-    fn load_chunk19_or_115(&mut self, read_biomes: bool, x: i32, z: i32, new: bool, mask: u16, data: Vec<u8>) -> Result<(), protocol::Error> {
-        use std::io::Cursor;
+    fn load_chunk19_or_115(
+        &mut self,
+        read_biomes: bool,
+        x: i32,
+        z: i32,
+        new: bool,
+        mask: u16,
+        data: Vec<u8>,
+    ) -> Result<(), protocol::Error> {
+        use crate::protocol::{LenPrefixed, Serializable, VarInt};
         use byteorder::ReadBytesExt;
-        use crate::protocol::{VarInt, Serializable, LenPrefixed};
+        use std::io::Cursor;
 
         let mut data = Cursor::new(data);
 
@@ -856,11 +1024,9 @@ impl World {
                 self.chunks.get_mut(&cpos).unwrap()
             };
 
-            for i in 0 .. 16 {
+            for i in 0..16 {
                 if chunk.sections[i].is_none() {
-                    let mut fill_sky = chunk.sections.iter()
-                        .skip(i)
-                        .all(|v| v.is_none());
+                    let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
                     if !fill_sky || mask & (1 << i) != 0 {
                         chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
@@ -871,21 +1037,26 @@ impl World {
                 }
                 let section = chunk.sections[i as usize].as_mut().unwrap();
                 section.dirty = true;
- 
+
                 if self.protocol_version >= 451 {
                     let _block_count = data.read_u16::<byteorder::LittleEndian>()?;
                     // TODO: use block_count
                 }
 
                 let mut bit_size = data.read_u8()?;
-                let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> = HashMap::with_hasher(BuildHasherDefault::default());
+                let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> =
+                    HashMap::with_hasher(BuildHasherDefault::default());
                 if bit_size == 0 {
                     bit_size = 13;
                 } else {
                     let count = VarInt::read_from(&mut data)?.0;
-                    for i in 0 .. count {
+                    for i in 0..count {
                         let id = VarInt::read_from(&mut data)?.0;
-                        let bl = block::Block::by_vanilla_id(id as usize, self.protocol_version, &self.modded_block_ids);
+                        let bl = block::Block::by_vanilla_id(
+                            id as usize,
+                            self.protocol_version,
+                            &self.modded_block_ids,
+                        );
                         mappings.insert(i as usize, bl);
                     }
                 }
@@ -893,21 +1064,37 @@ impl World {
                 let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
                 let m = bit::Map::from_raw(bits, bit_size as usize);
 
-                for bi in 0 .. 4096 {
+                for bi in 0..4096 {
                     let id = m.get(bi);
-                    section.blocks.set(bi, mappings.get(&id).cloned().unwrap_or(block::Block::by_vanilla_id(id, self.protocol_version, &self.modded_block_ids)));
+                    section.blocks.set(
+                        bi,
+                        mappings
+                            .get(&id)
+                            .cloned()
+                            .unwrap_or(block::Block::by_vanilla_id(
+                                id,
+                                self.protocol_version,
+                                &self.modded_block_ids,
+                            )),
+                    );
                     // Spawn block entities
                     let b = section.blocks.get(bi);
                     if block_entity::BlockEntityType::get_block_entity(b).is_some() {
                         let pos = Position::new(
                             (bi & 0xF) as i32,
                             (bi >> 8) as i32,
-                            ((bi >> 4) & 0xF) as i32
-                        ) + (chunk.position.0 << 4, (i << 4) as i32, chunk.position.1 << 4);
+                            ((bi >> 4) & 0xF) as i32,
+                        ) + (
+                            chunk.position.0 << 4,
+                            (i << 4) as i32,
+                            chunk.position.1 << 4,
+                        );
                         if chunk.block_entities.contains_key(&pos) {
-                            self.block_entity_actions.push_back(BlockEntityAction::Remove(pos))
+                            self.block_entity_actions
+                                .push_back(BlockEntityAction::Remove(pos))
                         }
-                        self.block_entity_actions.push_back(BlockEntityAction::Create(pos))
+                        self.block_entity_actions
+                            .push_back(BlockEntityAction::Create(pos))
                     }
                 }
 
@@ -964,7 +1151,6 @@ pub struct Snapshot {
 }
 
 impl Snapshot {
-
     pub fn make_relative(&mut self, x: i32, y: i32, z: i32) {
         self.x = x;
         self.y = y;
@@ -1033,10 +1219,8 @@ impl Chunk {
         Chunk {
             position: pos,
             sections: [
-                None,None,None,None,
-                None,None,None,None,
-                None,None,None,None,
-                None,None,None,None,
+                None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                None, None,
             ],
             sections_rendered_on: [0; 16],
             biomes: [0; 16 * 16],
@@ -1047,13 +1231,13 @@ impl Chunk {
     }
 
     fn calculate_heightmap(&mut self) {
-        for x in 0 .. 16 {
-            for z in 0 .. 16 {
-                let idx = ((z<<4)|x) as usize;
-                for yy in 0 .. 256 {
+        for x in 0..16 {
+            for z in 0..16 {
+                let idx = ((z << 4) | x) as usize;
+                for yy in 0..256 {
                     let sy = 255 - yy;
-                    if let block::Air{..} = self.get_block(x, sy, z) {
-                        continue
+                    if let block::Air { .. } = self.get_block(x, sy, z) {
+                        continue;
                     }
                     self.heightmap[idx] = sy as u8;
                     break;
@@ -1073,9 +1257,7 @@ impl Chunk {
             if let block::Air {} = b {
                 return false;
             }
-            let fill_sky = self.sections.iter()
-                .skip(s_idx)
-                .all(|v| v.is_none());
+            let fill_sky = self.sections.iter().skip(s_idx).all(|v| v.is_none());
             self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
         }
         {
@@ -1084,16 +1266,16 @@ impl Chunk {
                 return false;
             }
         }
-        let idx = ((z<<4)|x) as usize;
+        let idx = ((z << 4) | x) as usize;
         if self.heightmap[idx] < y as u8 {
             self.heightmap[idx] = y as u8;
             self.heightmap_dirty = true;
         } else if self.heightmap[idx] == y as u8 {
             // Find a new lowest
-            for yy in 0 .. y {
+            for yy in 0..y {
                 let sy = y - yy - 1;
-                if let block::Air{..} = self.get_block(x, sy, z) {
-                    continue
+                if let block::Air { .. } = self.get_block(x, sy, z) {
+                    continue;
                 }
                 self.heightmap[idx] = sy as u8;
                 break;
@@ -1106,11 +1288,11 @@ impl Chunk {
     fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
         let s_idx = y >> 4;
         if s_idx < 0 || s_idx > 15 {
-            return block::Missing{};
+            return block::Missing {};
         }
         match self.sections[s_idx as usize].as_ref() {
             Some(sec) => sec.get_block(x, y & 0xF, z),
-            None => block::Air{},
+            None => block::Air {},
         }
     }
 
@@ -1135,9 +1317,7 @@ impl Chunk {
             if light == 0 {
                 return;
             }
-            let fill_sky = self.sections.iter()
-                .skip(s_idx)
-                .all(|v| v.is_none());
+            let fill_sky = self.sections.iter().skip(s_idx).all(|v| v.is_none());
             self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
         }
         if let Some(sec) = self.sections[s_idx].as_mut() {
@@ -1166,9 +1346,7 @@ impl Chunk {
             if light == 15 {
                 return;
             }
-            let fill_sky = self.sections.iter()
-                .skip(s_idx)
-                .all(|v| v.is_none());
+            let fill_sky = self.sections.iter().skip(s_idx).all(|v| v.is_none());
             self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
         }
         if let Some(sec) = self.sections[s_idx as usize].as_mut() {
@@ -1177,7 +1355,7 @@ impl Chunk {
     }
 
     fn get_biome(&self, x: i32, z: i32) -> biome::Biome {
-        biome::Biome::by_id(self.biomes[((z<<4)|x) as usize] as usize)
+        biome::Biome::by_id(self.biomes[((z << 4) | x) as usize] as usize)
     }
 }
 
@@ -1212,7 +1390,7 @@ impl Section {
             building: false,
         };
         if fill_sky {
-            for i in 0 .. 16*16*16 {
+            for i in 0..16 * 16 * 16 {
                 section.sky_light.set(i, 0xF);
             }
         }

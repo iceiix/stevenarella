@@ -1,4 +1,3 @@
-
 use crate::types::bit;
 use crate::types::hash::FNVHash;
 use crate::world::block;
@@ -14,15 +13,13 @@ pub struct BlockStorage {
 
 impl BlockStorage {
     pub fn new(size: usize) -> BlockStorage {
-        Self::new_default(size, block::Air{})
+        Self::new_default(size, block::Air {})
     }
 
     pub fn new_default(size: usize, def: block::Block) -> BlockStorage {
         let mut storage = BlockStorage {
             blocks: bit::Map::new(size, 4),
-            block_map: vec![
-                (def, size as u32)
-            ],
+            block_map: vec![(def, size as u32)],
             rev_block_map: HashMap::with_hasher(BuildHasherDefault::default()),
         };
         storage.rev_block_map.insert(def, 0);
@@ -45,7 +42,8 @@ impl BlockStorage {
             let idx = *self.rev_block_map.get(&old).unwrap();
             let info = &mut self.block_map[idx];
             info.1 -= 1;
-            if info.1 == 0 { // None left of this type
+            if info.1 == 0 {
+                // None left of this type
                 self.rev_block_map.remove(&old);
             }
         }

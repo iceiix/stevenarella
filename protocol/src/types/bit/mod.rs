@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod set;
 pub mod map;
+pub mod set;
 
-pub use self::set::Set;
 pub use self::map::Map;
+pub use self::set::Set;

@@ -1,10 +1,9 @@
-
 use std::sync::{Arc, RwLock};
 
-use cgmath::{Point3, Matrix4};
-use byteorder::{WriteBytesExt, NativeEndian};
-use crate::gl;
 use super::glsl;
+use crate::gl;
+use byteorder::{NativeEndian, WriteBytesExt};
+use cgmath::{Matrix4, Point3};
 use log::error;
 
 pub struct Clouds {
@@ -115,8 +114,8 @@ impl Clouds {
 
         let mut data = vec![];
         let mut num_points = 0;
-        for x in -160 .. 160 {
-            for z in -160 .. 160 {
+        for x in -160..160 {
+            for z in -160..160 {
                 let _ = data.write_f32::<NativeEndian>(x as f32);
                 let _ = data.write_f32::<NativeEndian>(128.0);
                 let _ = data.write_f32::<NativeEndian>(z as f32);
@@ -126,11 +125,19 @@ impl Clouds {
 
         buffer.set_data(gl::ARRAY_BUFFER, &data, gl::STATIC_DRAW);
 
-        let heightmap_data = vec![0; 512*512];
+        let heightmap_data = vec![0; 512 * 512];
 
         let texture = gl::Texture::new();
         texture.bind(gl::TEXTURE_2D);
-        texture.image_2d(gl::TEXTURE_2D, 0, 512, 512, gl::RED, gl::UNSIGNED_BYTE, Some(&heightmap_data));
+        texture.image_2d(
+            gl::TEXTURE_2D,
+            0,
+            512,
+            512,
+            gl::RED,
+            gl::UNSIGNED_BYTE,
+            Some(&heightmap_data),
+        );
         texture.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST);
         texture.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST);
 
@@ -163,7 +170,15 @@ impl Clouds {
         }
     }
 
-    pub fn draw(&mut self, camera_pos: &Point3<f64>, perspective_matrix: &Matrix4<f32>, camera_matrix: &Matrix4<f32>, light_level: f32, sky_offset: f32, delta: f64) {
+    pub fn draw(
+        &mut self,
+        camera_pos: &Point3<f64>,
+        perspective_matrix: &Matrix4<f32>,
+        camera_matrix: &Matrix4<f32>,
+        light_level: f32,
+        sky_offset: f32,
+        delta: f64,
+    ) {
         self.offset += delta;
 
         let tex = super::Renderer::get_texture(&self.textures, "steven:environment/clouds");
@@ -173,12 +188,16 @@ impl Clouds {
         self.u_camera_matrix.set_matrix4(camera_matrix);
         self.u_sky_offset.set_float(sky_offset);
         self.u_light_level.set_float(light_level);
-        self.u_offset.set_float3(camera_pos.x.floor() as f32, 0.0, camera_pos.z.floor() as f32);
+        self.u_offset.set_float3(
+            camera_pos.x.floor() as f32,
+            0.0,
+            camera_pos.z.floor() as f32,
+        );
         self.u_texture_info.set_float4(
             tex.get_x() as f32,
             tex.get_y() as f32,
             tex.get_width() as f32,
-            tex.get_height() as f32
+            tex.get_height() as f32,
         );
         self.u_atlas.set_float(tex.atlas as f32);
         self.u_cloud_offset.set_float((self.offset / 60.0) as f32);
@@ -187,7 +206,17 @@ impl Clouds {
         gl::active_texture(1);
         self.texture.bind(gl::TEXTURE_2D);
         if self.dirty {
-            self.texture.sub_image_2d(gl::TEXTURE_2D, 0, 0, 0, 512, 512, gl::RED, gl::UNSIGNED_BYTE, &self.heightmap_data);
+            self.texture.sub_image_2d(
+                gl::TEXTURE_2D,
+                0,
+                0,
+                0,
+                512,
+                512,
+                gl::RED,
+                gl::UNSIGNED_BYTE,
+                &self.heightmap_data,
+            );
             self.dirty = false;
         }
         self.u_cloud_map.set_int(1);

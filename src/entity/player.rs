@@ -1,29 +1,20 @@
-
-use crate::ecs;
 use super::{
-    Position,
-    TargetPosition,
-    Velocity,
-    Rotation,
-    TargetRotation,
-    Gravity,
-    Bounds,
-    GameInfo,
-    Light
+    Bounds, GameInfo, Gravity, Light, Position, Rotation, TargetPosition, TargetRotation, Velocity,
 };
-use crate::world;
+use crate::ecs;
+use crate::format;
 use crate::render;
 use crate::render::model::{self, FormatState};
+use crate::settings::Stevenkey;
+use crate::shared::Position as BPosition;
+use crate::types::hash::FNVHash;
 use crate::types::Gamemode;
+use crate::world;
+use cgmath::{self, Decomposed, Matrix4, Point3, Quaternion, Rad, Rotation3, Vector3};
 use collision::{Aabb, Aabb3};
-use cgmath::{self, Point3, Vector3, Matrix4, Decomposed, Rotation3, Rad, Quaternion};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::time::Instant;
-use crate::types::hash::FNVHash;
-use crate::settings::Stevenkey;
-use crate::shared::Position as BPosition;
-use crate::format;
 
 pub fn add_systems(m: &mut ecs::Manager) {
     let sys = MovementHandler::new(m);
@@ -43,10 +34,13 @@ pub fn create_local(m: &mut ecs::Manager) -> ecs::Entity {
     m.add_component_direct(entity, Gamemode::Survival);
     m.add_component_direct(entity, Gravity::new());
     m.add_component_direct(entity, PlayerMovement::new());
-    m.add_component_direct(entity, Bounds::new(Aabb3::new(
-        Point3::new(-0.3, 0.0, -0.3),
-        Point3::new(0.3, 1.8, 0.3)
-    )));
+    m.add_component_direct(
+        entity,
+        Bounds::new(Aabb3::new(
+            Point3::new(-0.3, 0.0, -0.3),
+            Point3::new(0.3, 1.8, 0.3),
+        )),
+    );
     m.add_component_direct(entity, PlayerModel::new("", false, false, true));
     m.add_component_direct(entity, Light::new());
     entity
@@ -59,15 +53,17 @@ pub fn create_remote(m: &mut ecs::Manager, name: &str) -> ecs::Entity {
     m.add_component_direct(entity, Rotation::new(0.0, 0.0));
     m.add_component_direct(entity, TargetRotation::new(0.0, 0.0));
     m.add_component_direct(entity, Velocity::new(0.0, 0.0, 0.0));
-    m.add_component_direct(entity, Bounds::new(Aabb3::new(
-        Point3::new(-0.3, 0.0, -0.3),
-        Point3::new(0.3, 1.8, 0.3)
-    )));
+    m.add_component_direct(
+        entity,
+        Bounds::new(Aabb3::new(
+            Point3::new(-0.3, 0.0, -0.3),
+            Point3::new(0.3, 1.8, 0.3),
+        )),
+    );
     m.add_component_direct(entity, PlayerModel::new(name, true, true, false));
     m.add_component_direct(entity, Light::new());
     entity
 }
-
 
 pub struct PlayerModel {
     model: Option<model::ModelKey>,
@@ -155,16 +151,23 @@ enum PlayerModelPart {
 
 // TODO: Setup culling
 impl ecs::System for PlayerRenderer {
-
     fn filter(&self) -> &ecs::Filter {
         &self.filter
     }
 
-    fn update(&mut self, m: &mut ecs::Manager, world: &mut world::World, renderer: &mut render::Renderer) {
+    fn update(
+        &mut self,
+        m: &mut ecs::Manager,
+        world: &mut world::World,
+        renderer: &mut render::Renderer,
+    ) {
         use std::f32::consts::PI;
         use std::f64::consts::PI as PI64;
         let world_entity = m.get_world();
-        let delta = m.get_component_mut(world_entity, self.game_info).unwrap().delta;
+        let delta = m
+            .get_component_mut(world_entity, self.game_info)
+            .unwrap()
+            .delta;
         for e in m.find(&self.filter) {
             let player_model = m.get_component_mut(e, self.player_model).unwrap();
             let position = m.get_component_mut(e, self.position).unwrap();
@@ -183,8 +186,8 @@ impl ecs::System for PlayerRenderer {
                 mdl.sky_light = light.sky_light;
 
                 let offset = if player_model.first_person {
-                    let ox = (rotation.yaw - PI64/2.0).cos() * 0.25;
-                    let oz = -(rotation.yaw - PI64/2.0).sin() * 0.25;
+                    let ox = (rotation.yaw - PI64 / 2.0).cos() * 0.25;
+                    let oz = -(rotation.yaw - PI64 / 2.0).sin() * 0.25;
                     Vector3::new(
                         position.position.x as f32 - ox as f32,
                         -position.position.y as f32,
@@ -205,24 +208,28 @@ impl ecs::System for PlayerRenderer {
 
                 // TODO This sucks
                 if player_model.has_name_tag {
-                    let ang = (position.position.x - renderer.camera.pos.x).atan2(position.position.z - renderer.camera.pos.z) as f32;
+                    let ang = (position.position.x - renderer.camera.pos.x)
+                        .atan2(position.position.z - renderer.camera.pos.z)
+                        as f32;
                     mdl.matrix[PlayerModelPart::NameTag as usize] = Matrix4::from(Decomposed {
                         scale: 1.0,
                         rot: Quaternion::from_angle_y(Rad(ang)),
-                        disp: offset + Vector3::new(0.0, (-24.0/16.0) - 0.6, 0.0),
+                        disp: offset + Vector3::new(0.0, (-24.0 / 16.0) - 0.6, 0.0),
                     });
                 }
 
-                mdl.matrix[PlayerModelPart::Head as usize] = offset_matrix * Matrix4::from(Decomposed {
-                    scale: 1.0,
-                    rot: Quaternion::from_angle_x(Rad(-rotation.pitch as f32)),
-                    disp: Vector3::new(0.0, -12.0/16.0 - 12.0/16.0, 0.0),
-                });
-                mdl.matrix[PlayerModelPart::Body as usize] = offset_matrix * Matrix4::from(Decomposed {
-                    scale: 1.0,
-                    rot: Quaternion::from_angle_x(Rad(0.0)),
-                    disp: Vector3::new(0.0, -12.0/16.0 - 6.0/16.0, 0.0),
-                });
+                mdl.matrix[PlayerModelPart::Head as usize] = offset_matrix
+                    * Matrix4::from(Decomposed {
+                        scale: 1.0,
+                        rot: Quaternion::from_angle_x(Rad(-rotation.pitch as f32)),
+                        disp: Vector3::new(0.0, -12.0 / 16.0 - 12.0 / 16.0, 0.0),
+                    });
+                mdl.matrix[PlayerModelPart::Body as usize] = offset_matrix
+                    * Matrix4::from(Decomposed {
+                        scale: 1.0,
+                        rot: Quaternion::from_angle_x(Rad(0.0)),
+                        disp: Vector3::new(0.0, -12.0 / 16.0 - 6.0 / 16.0, 0.0),
+                    });
 
                 let mut time = player_model.time;
                 let mut dir = player_model.dir;
@@ -232,16 +239,18 @@ impl ecs::System for PlayerRenderer {
                 }
                 let ang = ((time / 15.0) - 1.0) * (PI64 / 4.0);
 
-                mdl.matrix[PlayerModelPart::LegRight as usize] = offset_matrix * Matrix4::from(Decomposed {
-                    scale: 1.0,
-                    rot: Quaternion::from_angle_x(Rad(ang as f32)),
-                    disp: Vector3::new(2.0/16.0, -12.0/16.0, 0.0),
-                });
-                mdl.matrix[PlayerModelPart::LegLeft as usize] = offset_matrix * Matrix4::from(Decomposed {
-                    scale: 1.0,
-                    rot: Quaternion::from_angle_x(Rad(-ang as f32)),
-                    disp: Vector3::new(-2.0/16.0, -12.0/16.0, 0.0),
-                });
+                mdl.matrix[PlayerModelPart::LegRight as usize] = offset_matrix
+                    * Matrix4::from(Decomposed {
+                        scale: 1.0,
+                        rot: Quaternion::from_angle_x(Rad(ang as f32)),
+                        disp: Vector3::new(2.0 / 16.0, -12.0 / 16.0, 0.0),
+                    });
+                mdl.matrix[PlayerModelPart::LegLeft as usize] = offset_matrix
+                    * Matrix4::from(Decomposed {
+                        scale: 1.0,
+                        rot: Quaternion::from_angle_x(Rad(-ang as f32)),
+                        disp: Vector3::new(-2.0 / 16.0, -12.0 / 16.0, 0.0),
+                    });
 
                 let mut i_time = player_model.idle_time;
                 i_time += delta * 0.02;
@@ -256,17 +265,31 @@ impl ecs::System for PlayerRenderer {
                     player_model.arm_time -= delta;
                 }
 
-                mdl.matrix[PlayerModelPart::ArmRight as usize] = offset_matrix * Matrix4::from_translation(
-                    Vector3::new(6.0/16.0, -12.0/16.0-12.0/16.0, 0.0)
-                ) * Matrix4::from(Quaternion::from_angle_x(Rad(-(ang * 0.75) as f32)))
-                  * Matrix4::from(Quaternion::from_angle_z(Rad((i_time.cos() * 0.06 - 0.06) as f32)))
-                  * Matrix4::from(Quaternion::from_angle_x(Rad((i_time.sin() * 0.06 - ((7.5 - (player_model.arm_time-7.5).abs()) / 7.5)) as f32)));
+                mdl.matrix[PlayerModelPart::ArmRight as usize] = offset_matrix
+                    * Matrix4::from_translation(Vector3::new(
+                        6.0 / 16.0,
+                        -12.0 / 16.0 - 12.0 / 16.0,
+                        0.0,
+                    ))
+                    * Matrix4::from(Quaternion::from_angle_x(Rad(-(ang * 0.75) as f32)))
+                    * Matrix4::from(Quaternion::from_angle_z(Rad(
+                        (i_time.cos() * 0.06 - 0.06) as f32
+                    )))
+                    * Matrix4::from(Quaternion::from_angle_x(Rad((i_time.sin() * 0.06
+                        - ((7.5 - (player_model.arm_time - 7.5).abs()) / 7.5))
+                        as f32)));
 
-                mdl.matrix[PlayerModelPart::ArmLeft as usize] = offset_matrix * Matrix4::from_translation(
-                  Vector3::new(-6.0/16.0, -12.0/16.0-12.0/16.0, 0.0)
-                ) * Matrix4::from(Quaternion::from_angle_x(Rad((ang * 0.75) as f32)))
-                  * Matrix4::from(Quaternion::from_angle_z(Rad(-(i_time.cos() * 0.06 - 0.06) as f32)))
-                  * Matrix4::from(Quaternion::from_angle_x(Rad(-(i_time.sin() * 0.06) as f32)));
+                mdl.matrix[PlayerModelPart::ArmLeft as usize] = offset_matrix
+                    * Matrix4::from_translation(Vector3::new(
+                        -6.0 / 16.0,
+                        -12.0 / 16.0 - 12.0 / 16.0,
+                        0.0,
+                    ))
+                    * Matrix4::from(Quaternion::from_angle_x(Rad((ang * 0.75) as f32)))
+                    * Matrix4::from(Quaternion::from_angle_z(Rad(
+                        -(i_time.cos() * 0.06 - 0.06) as f32
+                    )))
+                    * Matrix4::from(Quaternion::from_angle_x(Rad(-(i_time.sin() * 0.06) as f32)));
 
                 let mut update = true;
                 if position.moved {
@@ -297,7 +320,13 @@ impl ecs::System for PlayerRenderer {
         }
     }
 
-    fn entity_added(&mut self, m: &mut ecs::Manager, e: ecs::Entity, _: &mut world::World, renderer: &mut render::Renderer) {
+    fn entity_added(
+        &mut self,
+        m: &mut ecs::Manager,
+        e: ecs::Entity,
+        _: &mut world::World,
+        renderer: &mut render::Renderer,
+    ) {
         let player_model = m.get_component_mut(e, self.player_model).unwrap();
 
         player_model.dirty = false;
@@ -309,76 +338,133 @@ impl ecs::System for PlayerRenderer {
         };
 
         macro_rules! srel {
-            ($x:expr, $y:expr, $w:expr, $h:expr) => (
+            ($x:expr, $y:expr, $w:expr, $h:expr) => {
                 Some(skin.relative(($x) / 64.0, ($y) / 64.0, ($w) / 64.0, ($h) / 64.0))
-            );
+            };
         }
 
         let mut head_verts = vec![];
         if player_model.has_head {
-            model::append_box(&mut head_verts, -4.0/16.0, 0.0, -4.0/16.0, 8.0/16.0, 8.0/16.0, 8.0/16.0, [
-                srel!(16.0, 0.0, 8.0, 8.0), // Down
-                srel!(8.0, 0.0, 8.0, 8.0), // Up
-                srel!(8.0, 8.0, 8.0, 8.0), // North
-                srel!(24.0, 8.0, 8.0, 8.0), // South
-                srel!(16.0, 8.0, 8.0, 8.0), // West
-                srel!(0.0, 8.0, 8.0, 8.0), // East
-            ]);
-            model::append_box(&mut head_verts, -4.2/16.0, -0.2/16.0, -4.2/16.0, 8.4/16.0, 8.4/16.0, 8.4/16.0, [
-                srel!((16.0 + 32.0), 0.0, 8.0, 8.0), // Down
-                srel!((8.0 + 32.0), 0.0, 8.0, 8.0), // Up
-                srel!((8.0 + 32.0), 8.0, 8.0, 8.0), // North
-                srel!((24.0 + 32.0), 8.0, 8.0, 8.0), // South
-                srel!((16.0 + 32.0), 8.0, 8.0, 8.0), // West
-                srel!((0.0 + 32.0), 8.0, 8.0, 8.0), // East
-            ]);
+            model::append_box(
+                &mut head_verts,
+                -4.0 / 16.0,
+                0.0,
+                -4.0 / 16.0,
+                8.0 / 16.0,
+                8.0 / 16.0,
+                8.0 / 16.0,
+                [
+                    srel!(16.0, 0.0, 8.0, 8.0), // Down
+                    srel!(8.0, 0.0, 8.0, 8.0),  // Up
+                    srel!(8.0, 8.0, 8.0, 8.0),  // North
+                    srel!(24.0, 8.0, 8.0, 8.0), // South
+                    srel!(16.0, 8.0, 8.0, 8.0), // West
+                    srel!(0.0, 8.0, 8.0, 8.0),  // East
+                ],
+            );
+            model::append_box(
+                &mut head_verts,
+                -4.2 / 16.0,
+                -0.2 / 16.0,
+                -4.2 / 16.0,
+                8.4 / 16.0,
+                8.4 / 16.0,
+                8.4 / 16.0,
+                [
+                    srel!((16.0 + 32.0), 0.0, 8.0, 8.0), // Down
+                    srel!((8.0 + 32.0), 0.0, 8.0, 8.0),  // Up
+                    srel!((8.0 + 32.0), 8.0, 8.0, 8.0),  // North
+                    srel!((24.0 + 32.0), 8.0, 8.0, 8.0), // South
+                    srel!((16.0 + 32.0), 8.0, 8.0, 8.0), // West
+                    srel!((0.0 + 32.0), 8.0, 8.0, 8.0),  // East
+                ],
+            );
         }
 
         // TODO: Cape
         let mut body_verts = vec![];
-        model::append_box(&mut body_verts, -4.0/16.0, -6.0/16.0, -2.0/16.0, 8.0/16.0, 12.0/16.0, 4.0/16.0, [
-            srel!(28.0, 16.0, 8.0, 4.0), // Down
-            srel!(20.0, 16.0, 8.0, 4.0), // Up
-            srel!(20.0, 20.0, 8.0, 12.0), // North
-            srel!(32.0, 20.0, 8.0, 12.0), // South
-            srel!(16.0, 20.0, 4.0, 12.0), // West
-            srel!(28.0, 20.0, 4.0, 12.0), // East
-        ]);
-        model::append_box(&mut body_verts, -4.2/16.0, -6.2/16.0, -2.2/16.0, 8.4/16.0, 12.4/16.0, 4.4/16.0, [
-            srel!(28.0, 16.0 + 16.0, 8.0, 4.0), // Down
-            srel!(20.0, 16.0 + 16.0, 8.0, 4.0), // Up
-            srel!(20.0, 20.0 + 16.0, 8.0, 12.0), // North
-            srel!(32.0, 20.0 + 16.0, 8.0, 12.0), // South
-            srel!(16.0, 20.0 + 16.0, 4.0, 12.0), // West
-            srel!(28.0, 20.0 + 16.0, 4.0, 12.0), // East
-        ]);
+        model::append_box(
+            &mut body_verts,
+            -4.0 / 16.0,
+            -6.0 / 16.0,
+            -2.0 / 16.0,
+            8.0 / 16.0,
+            12.0 / 16.0,
+            4.0 / 16.0,
+            [
+                srel!(28.0, 16.0, 8.0, 4.0),  // Down
+                srel!(20.0, 16.0, 8.0, 4.0),  // Up
+                srel!(20.0, 20.0, 8.0, 12.0), // North
+                srel!(32.0, 20.0, 8.0, 12.0), // South
+                srel!(16.0, 20.0, 4.0, 12.0), // West
+                srel!(28.0, 20.0, 4.0, 12.0), // East
+            ],
+        );
+        model::append_box(
+            &mut body_verts,
+            -4.2 / 16.0,
+            -6.2 / 16.0,
+            -2.2 / 16.0,
+            8.4 / 16.0,
+            12.4 / 16.0,
+            4.4 / 16.0,
+            [
+                srel!(28.0, 16.0 + 16.0, 8.0, 4.0),  // Down
+                srel!(20.0, 16.0 + 16.0, 8.0, 4.0),  // Up
+                srel!(20.0, 20.0 + 16.0, 8.0, 12.0), // North
+                srel!(32.0, 20.0 + 16.0, 8.0, 12.0), // South
+                srel!(16.0, 20.0 + 16.0, 4.0, 12.0), // West
+                srel!(28.0, 20.0 + 16.0, 4.0, 12.0), // East
+            ],
+        );
 
         let mut part_verts = vec![vec![]; 4];
 
         for (i, offsets) in [
-            [16.0, 48.0, 0.0, 48.0], // Left left
-            [0.0, 16.0, 0.0, 32.0], // Right Leg
+            [16.0, 48.0, 0.0, 48.0],  // Left left
+            [0.0, 16.0, 0.0, 32.0],   // Right Leg
             [32.0, 48.0, 48.0, 48.0], // Left arm
             [40.0, 16.0, 40.0, 32.0], // Right arm
-        ].iter().enumerate() {
+        ]
+        .iter()
+        .enumerate()
+        {
             let (ox, oy) = (offsets[0], offsets[1]);
-            model::append_box(&mut part_verts[i], -2.0/16.0, -12.0/16.0, -2.0/16.0, 4.0/16.0, 12.0/16.0, 4.0/16.0, [
-                srel!(ox + 8.0, oy + 0.0, 4.0, 4.0), // Down
-                srel!(ox + 4.0, oy + 0.0, 4.0, 4.0), // Up
-                srel!(ox + 4.0, oy + 4.0, 4.0, 12.0), // North
-                srel!(ox + 12.0, oy + 4.0, 4.0, 12.0), // South
-                srel!(ox + 8.0, oy + 4.0, 4.0, 12.0), // West
-                srel!(ox + 0.0, oy + 4.0, 4.0, 12.0), // East
-            ]);
+            model::append_box(
+                &mut part_verts[i],
+                -2.0 / 16.0,
+                -12.0 / 16.0,
+                -2.0 / 16.0,
+                4.0 / 16.0,
+                12.0 / 16.0,
+                4.0 / 16.0,
+                [
+                    srel!(ox + 8.0, oy + 0.0, 4.0, 4.0),   // Down
+                    srel!(ox + 4.0, oy + 0.0, 4.0, 4.0),   // Up
+                    srel!(ox + 4.0, oy + 4.0, 4.0, 12.0),  // North
+                    srel!(ox + 12.0, oy + 4.0, 4.0, 12.0), // South
+                    srel!(ox + 8.0, oy + 4.0, 4.0, 12.0),  // West
+                    srel!(ox + 0.0, oy + 4.0, 4.0, 12.0),  // East
+                ],
+            );
             let (ox, oy) = (offsets[2], offsets[3]);
-            model::append_box(&mut part_verts[i], -2.2/16.0, -12.2/16.0, -2.2/16.0, 4.4/16.0, 12.4/16.0, 4.4/16.0, [
-                srel!(ox + 8.0, oy + 0.0, 4.0, 4.0), // Down
-                srel!(ox + 4.0, oy + 0.0, 4.0, 4.0), // Up
-                srel!(ox + 4.0, oy + 4.0, 4.0, 12.0), // North
-                srel!(ox + 12.0, oy + 4.0, 4.0, 12.0), // South
-                srel!(ox + 8.0, oy + 4.0, 4.0, 12.0), // West
-                srel!(ox + 0.0, oy + 4.0, 4.0, 12.0), // East
-            ]);
+            model::append_box(
+                &mut part_verts[i],
+                -2.2 / 16.0,
+                -12.2 / 16.0,
+                -2.2 / 16.0,
+                4.4 / 16.0,
+                12.4 / 16.0,
+                4.4 / 16.0,
+                [
+                    srel!(ox + 8.0, oy + 0.0, 4.0, 4.0),   // Down
+                    srel!(ox + 4.0, oy + 0.0, 4.0, 4.0),   // Up
+                    srel!(ox + 4.0, oy + 4.0, 4.0, 12.0),  // North
+                    srel!(ox + 12.0, oy + 4.0, 4.0, 12.0), // South
+                    srel!(ox + 8.0, oy + 4.0, 4.0, 12.0),  // West
+                    srel!(ox + 0.0, oy + 4.0, 4.0, 12.0),  // East
+                ],
+            );
         }
 
         let mut name_verts = vec![];
@@ -423,17 +509,27 @@ impl ecs::System for PlayerRenderer {
                 part_verts[1].clone(),
                 part_verts[2].clone(),
                 part_verts[3].clone(),
-                name_verts
-            ]
+                name_verts,
+            ],
         ));
     }
 
-    fn entity_removed(&mut self, m: &mut ecs::Manager, e: ecs::Entity, _: &mut world::World, renderer: &mut render::Renderer) {
+    fn entity_removed(
+        &mut self,
+        m: &mut ecs::Manager,
+        e: ecs::Entity,
+        _: &mut world::World,
+        renderer: &mut render::Renderer,
+    ) {
         let player_model = m.get_component_mut(e, self.player_model).unwrap();
         if let Some(model) = player_model.model.take() {
             renderer.model.remove_model(model);
             if let Some(url) = player_model.skin_url.as_ref() {
-                renderer.get_textures_ref().read().unwrap().release_skin(url);
+                renderer
+                    .get_textures_ref()
+                    .read()
+                    .unwrap()
+                    .release_skin(url);
             }
         }
     }
@@ -450,12 +546,14 @@ pub struct PlayerMovement {
 }
 
 impl PlayerMovement {
-    pub fn new() -> PlayerMovement { Default::default() }
+    pub fn new() -> PlayerMovement {
+        Default::default()
+    }
 
     fn calculate_movement(&self, player_yaw: f64) -> (f64, f64) {
         use std::f64::consts::PI;
         let mut forward = 0.0f64;
-        let mut yaw = player_yaw - (PI/2.0);
+        let mut yaw = player_yaw - (PI / 2.0);
         if self.is_key_pressed(Stevenkey::Forward) || self.is_key_pressed(Stevenkey::Backward) {
             forward = 1.0;
             if self.is_key_pressed(Stevenkey::Backward) {
@@ -466,7 +564,9 @@ impl PlayerMovement {
             (PI / 2.0) / (forward.abs() + 1.0)
         } else if self.is_key_pressed(Stevenkey::Right) {
             -(PI / 2.0) / (forward.abs() + 1.0)
-        } else { 0.0 };
+        } else {
+            0.0
+        };
         if self.is_key_pressed(Stevenkey::Left) || self.is_key_pressed(Stevenkey::Right) {
             forward = 1.0;
         }
@@ -521,7 +621,6 @@ impl MovementHandler {
 }
 
 impl ecs::System for MovementHandler {
-
     fn filter(&self) -> &ecs::Filter {
         &self.filter
     }
@@ -542,8 +641,11 @@ impl ecs::System for MovementHandler {
                 if movement.when_last_jump_pressed.is_none() {
                     movement.when_last_jump_pressed = Some(Instant::now());
                     if !movement.when_last_jump_released.is_none() {
-                        let dt = movement.when_last_jump_pressed.unwrap() - movement.when_last_jump_released.unwrap();
-                        if dt.as_secs() == 0 && dt.subsec_millis() <= crate::settings::DOUBLE_JUMP_MS {
+                        let dt = movement.when_last_jump_pressed.unwrap()
+                            - movement.when_last_jump_released.unwrap();
+                        if dt.as_secs() == 0
+                            && dt.subsec_millis() <= crate::settings::DOUBLE_JUMP_MS
+                        {
                             movement.want_to_fly = !movement.want_to_fly;
                             //info!("double jump! dt={:?} toggle want_to_fly = {}", dt, movement.want_to_fly);
 
@@ -567,11 +669,16 @@ impl ecs::System for MovementHandler {
 
             let mut last_position = position.position;
 
-            if world.is_chunk_loaded((position.position.x as i32) >> 4, (position.position.z as i32) >> 4) {
+            if world.is_chunk_loaded(
+                (position.position.x as i32) >> 4,
+                (position.position.z as i32) >> 4,
+            ) {
                 let (forward, yaw) = movement.calculate_movement(rotation.yaw);
                 let mut speed = if movement.is_key_pressed(Stevenkey::Sprint) {
                     0.2806
-                } else { 0.21585 };
+                } else {
+                    0.21585
+                };
                 if movement.flying {
                     speed *= 2.5;
 
@@ -582,7 +689,8 @@ impl ecs::System for MovementHandler {
                         position.position.y -= speed;
                     }
                 } else if gravity.as_ref().map_or(false, |v| v.on_ground) {
-                    if movement.is_key_pressed(Stevenkey::Jump) && velocity.velocity.y.abs() < 0.001 {
+                    if movement.is_key_pressed(Stevenkey::Jump) && velocity.velocity.y.abs() < 0.001
+                    {
                         velocity.velocity.y = 0.42;
                     }
                 } else {
@@ -604,12 +712,14 @@ impl ecs::System for MovementHandler {
                     // We handle each axis separately to allow for a sliding
                     // effect when pushing up against walls.
 
-                    let (bounds, xhit) = check_collisions(world, position, &last_position, player_bounds);
+                    let (bounds, xhit) =
+                        check_collisions(world, position, &last_position, player_bounds);
                     position.position.x = bounds.min.x + 0.3;
                     last_position.x = position.position.x;
 
                     position.position.z = target.z;
-                    let (bounds, zhit) = check_collisions(world, position, &last_position, player_bounds);
+                    let (bounds, zhit) =
+                        check_collisions(world, position, &last_position, player_bounds);
                     position.position.z = bounds.min.z + 0.3;
                     last_position.z = position.position.z;
 
@@ -624,8 +734,12 @@ impl ecs::System for MovementHandler {
                         let mut oz = position.position.z;
                         position.position.x = target.x;
                         position.position.z = target.z;
-                        for offset in 1 .. 9 {
-                            let mini = player_bounds.add_v(cgmath::Vector3::new(0.0, offset as f64 / 16.0, 0.0));
+                        for offset in 1..9 {
+                            let mini = player_bounds.add_v(cgmath::Vector3::new(
+                                0.0,
+                                offset as f64 / 16.0,
+                                0.0,
+                            ));
                             let (_, hit) = check_collisions(world, position, &last_position, mini);
                             if !hit {
                                 target.y += offset as f64 / 16.0;
@@ -639,7 +753,8 @@ impl ecs::System for MovementHandler {
                     }
 
                     position.position.y = target.y;
-                    let (bounds, yhit) = check_collisions(world, position, &last_position, player_bounds);
+                    let (bounds, yhit) =
+                        check_collisions(world, position, &last_position, player_bounds);
                     position.position.y = bounds.min.y;
                     last_position.y = position.position.y;
                     if yhit {
@@ -647,10 +762,8 @@ impl ecs::System for MovementHandler {
                     }
 
                     if let Some(gravity) = gravity {
-                        let ground = Aabb3::new(
-                            Point3::new(-0.3, -0.005, -0.3),
-                            Point3::new(0.3, 0.0, 0.3)
-                        );
+                        let ground =
+                            Aabb3::new(Point3::new(-0.3, -0.005, -0.3), Point3::new(0.3, 0.0, 0.3));
                         let prev = gravity.on_ground;
                         let (_, hit) = check_collisions(world, position, &last_position, ground);
                         gravity.on_ground = hit;
@@ -664,8 +777,12 @@ impl ecs::System for MovementHandler {
     }
 }
 
-
-fn check_collisions(world: &world::World, position: &mut TargetPosition, last_position: &Vector3<f64>, bounds: Aabb3<f64>) -> (Aabb3<f64>, bool) {
+fn check_collisions(
+    world: &world::World,
+    position: &mut TargetPosition,
+    last_position: &Vector3<f64>,
+    bounds: Aabb3<f64>,
+) -> (Aabb3<f64>, bool) {
     let mut bounds = bounds.add_v(position.position);
 
     let dir = position.position - last_position;
@@ -678,9 +795,9 @@ fn check_collisions(world: &world::World, position: &mut TargetPosition, last_po
     let max_z = (bounds.max.z + 1.0) as i32;
 
     let mut hit = false;
-    for y in min_y .. max_y {
-        for z in min_z .. max_z {
-            for x in min_x .. max_x {
+    for y in min_y..max_y {
+        for z in min_z..max_z {
+            for x in min_x..max_x {
                 let block = world.get_block(BPosition::new(x, y, z));
                 if block.get_material().collidable {
                     for bb in block.get_collision_boxes() {
@@ -705,14 +822,12 @@ trait Collidable<T> {
 
 impl Collidable<Aabb3<f64>> for Aabb3<f64> {
     fn collides(&self, t: &Aabb3<f64>) -> bool {
-        !(
-            t.min.x >= self.max.x ||
-            t.max.x <= self.min.x ||
-            t.min.y >= self.max.y ||
-            t.max.y <= self.min.y ||
-            t.min.z >= self.max.z ||
-            t.max.z <= self.min.z
-        )
+        !(t.min.x >= self.max.x
+            || t.max.x <= self.min.x
+            || t.min.y >= self.max.y
+            || t.max.y <= self.min.y
+            || t.min.z >= self.max.z
+            || t.max.z <= self.min.z)
     }
 
     fn move_out_of(mut self, other: Self, dir: cgmath::Vector3<f64>) -> Self {
