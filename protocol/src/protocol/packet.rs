@@ -473,6 +473,15 @@ state_packets!(
                 field cursor_y: u8 =,
                 field cursor_z: u8 =,
             }
+            packet PlayerBlockPlacement_insideblock {
+                field hand: VarInt =,
+                field location: Position =,
+                field face: VarInt =,
+                field cursor_x: f32 =,
+                field cursor_y: f32 =,
+                field cursor_z: f32 =,
+                field inside_block: bool =, //1.14 added insideblock
+            }
 
             /// UseItem is sent when the client tries to use an item.
             packet UseItem {
@@ -522,6 +531,20 @@ state_packets!(
                 field velocity_x: i16 = when(|p: &SpawnObject_i32_NoUUID| p.data != 0),
                 field velocity_y: i16 = when(|p: &SpawnObject_i32_NoUUID| p.data != 0),
                 field velocity_z: i16 = when(|p: &SpawnObject_i32_NoUUID| p.data != 0),
+            }
+            packet SpawnObject_VarInt {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field ty: VarInt =, //1.14 changed u8 to VarInt
+                field x: f64 =,
+                field y: f64 =,
+                field z: f64 =,
+                field pitch: i8 =,
+                field yaw: i8 =,
+                field data: i32 =,
+                field velocity_x: i16 =,
+                field velocity_y: i16 =,
+                field velocity_z: i16 =,
             }
             /// SpawnExperienceOrb spawns a single experience orb into the world when
             /// it is in range of the client. The count controls the amount of experience

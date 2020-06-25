@@ -52,11 +52,11 @@ protocol_packet_ids!(
             0x29 => SetSign
             0x2a => ArmSwing
             0x2b => SpectateTeleport
-            0x2c => PlayerBlockPlacement_f32
+            0x2c => PlayerBlockPlacement_insideblock
             0x2d => UseItem
         }
         clientbound Clientbound {
-            0x00 => SpawnObject
+            0x00 => SpawnObject_VarInt
             0x01 => SpawnExperienceOrb
             0x02 => SpawnGlobalEntity
             0x03 => SpawnMob_WithMeta
