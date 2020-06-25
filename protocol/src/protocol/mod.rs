@@ -945,7 +945,6 @@ impl Serializable for Position {
         ))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-
         let pos = (((self.x as u64) & 0x3FFFFFF) << 38)
             | ((self.y as u64) & 0xFFF)
             | (((self.z as u64) & 0x3FFFFFF) << 12);
