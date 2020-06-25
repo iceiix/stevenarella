@@ -19,10 +19,10 @@ use std::io;
 
 #[derive(Debug)]
 pub struct Stack {
-    id: isize,
-    count: isize,
-    damage: Option<isize>,
-    tag: Option<nbt::NamedTag>,
+    pub id: isize,
+    pub count: isize,
+    pub damage: Option<isize>,
+    pub tag: Option<nbt::NamedTag>,
 }
 
 impl Default for Stack {
