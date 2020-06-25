@@ -30,7 +30,7 @@ zip = { version = "0.5.6", features = ["deflate"], default-features = false }
 image = "0.23.6"
 rand = "0.7.3"
 rand_pcg = "0.2.1"
-base64 = "0.12.2"
+base64 = "0.12.3"
 log = { version = "0.4.8", features = ["std"] }
 cgmath = "0.17.0"
 lazy_static = "1.4.0"
