@@ -285,6 +285,9 @@ state_packets!(
                 field flying_speed: f32 =,
                 field walking_speed: f32 =,
             }
+            packet ClientAbilities_u8 {
+                field flags: u8 =,
+            }
             /// PlayerDigging is sent when the client starts/stops digging a block.
             /// It also can be sent for droppping items and eating/shooting.
             packet PlayerDigging {
@@ -840,6 +843,12 @@ state_packets!(
             /// ServerMessage is a message sent by the server. It could be from a player
             /// or just a system message. The Type field controls the location the
             /// message is displayed at and when the message is displayed.
+            packet ServerMessage_UUID {
+                field message: format::Component =,
+                /// 0 - Chat message, 1 - System message, 2 - Action bar message
+                field position: u8 =,
+                field sender: UUID =,
+            }
             packet ServerMessage {
                 field message: format::Component =,
                 /// 0 - Chat message, 1 - System message, 2 - Action bar message
@@ -1489,6 +1498,16 @@ state_packets!(
                 field gamemode: u8 =,
                 field level_type: String =,
             }
+            packet Respawn_WorldName {
+                field dimension: String =,
+                field world_name: String =,
+                field hashed_seed: i64 =,
+                field gamemode: u8 =,
+                field previous_gamemode: u8 =,
+                field is_debug: bool =,
+                field is_flat: bool =,
+                field copy_metadata: bool =,
+            }
             /// EntityHeadLook rotates an entity's head to the new angle.
             packet EntityHeadLook {
                 field entity_id: VarInt =,
@@ -1968,6 +1987,10 @@ state_packets!(
             packet LoginSuccess {
                 /// String encoding of a uuid (with hyphens)
                 field uuid: String =,
+                field username: String =,
+            }
+            packet LoginSuccess_UUID {
+                field uuid: UUID =,
                 field username: String =,
             }
             /// SetInitialCompression sets the compression threshold during the
