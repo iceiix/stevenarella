@@ -940,14 +940,15 @@ impl Serializable for Position {
         let pos = buf.read_u64::<BigEndian>()?;
         Ok(Position::new(
             ((pos as i64) >> 38) as i32,
-            (((pos as i64) >> 26) & 0xFFF) as i32,
-            ((pos as i64) << 38 >> 38) as i32,
+            (((pos as i64)) & 0xFFF) as i32,
+            ((pos as i64) << 26 >> 38) as i32
         ))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         let pos = (((self.x as u64) & 0x3FFFFFF) << 38)
-            | (((self.y as u64) & 0xFFF) << 26)
-            | ((self.z as u64) & 0x3FFFFFF);
+            | ((self.y as u64) & 0xFFF)
+            | (((self.z as u64) & 0x3FFFFFF) << 12);
+        
         buf.write_u64::<BigEndian>(pos)?;
         Result::Ok(())
     }
