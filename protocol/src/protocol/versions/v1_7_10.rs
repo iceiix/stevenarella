@@ -27,7 +27,7 @@ protocol_packet_ids!(
             0x10 => CreativeInventoryAction
             0x11 => EnchantItem
             0x12 => SetSign_i16y
-            0x13 => ClientAbilities
+            0x13 => ClientAbilities_f32
             0x14 => TabComplete_NoAssume_NoTarget
             0x15 => ClientSettings_u8_Handsfree_Difficulty
             0x16 => ClientStatus_u8

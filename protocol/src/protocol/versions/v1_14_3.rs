@@ -33,7 +33,7 @@ protocol_packet_ids!(
             0x16 => SteerBoat
             0x17 => PickItem
             0x18 => CraftRecipeRequest
-            0x19 => ClientAbilities
+            0x19 => ClientAbilities_f32
             0x1a => PlayerDigging
             0x1b => PlayerAction
             0x1c => SteerVehicle

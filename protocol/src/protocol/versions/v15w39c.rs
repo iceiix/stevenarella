@@ -23,7 +23,7 @@ protocol_packet_ids!(
             0x0c => PlayerPositionLook
             0x0d => PlayerLook
             0x0e => Player
-            0x0f => ClientAbilities
+            0x0f => ClientAbilities_f32
             0x10 => PlayerDigging_u8
             0x11 => PlayerAction
             0x12 => SteerVehicle

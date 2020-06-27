@@ -280,7 +280,7 @@ state_packets!(
             }
             /// ClientAbilities is used to modify the players current abilities.
             /// Currently flying is the only one
-            packet ClientAbilities {
+            packet ClientAbilities_f32 {
                 field flags: u8 =,
                 field flying_speed: f32 =,
                 field walking_speed: f32 =,
