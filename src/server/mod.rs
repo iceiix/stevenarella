@@ -487,8 +487,9 @@ impl Server {
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
                             JoinGame_i8_NoDebug => on_game_join_i8_nodebug,
-                            Respawn => on_respawn,
+                            Respawn_Gamemode => on_respawn_gamemode,
                             Respawn_HashedSeed => on_respawn_hashedseed,
+                            Respawn_WorldName => on_respawn_worldname,
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
@@ -1007,7 +1008,11 @@ impl Server {
         self.respawn(respawn.gamemode)
     }
 
-    fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
+    fn on_respawn_gamemode(&mut self, respawn: packet::play::clientbound::Respawn_Gamemode) {
+        self.respawn(respawn.gamemode)
+    }
+
+    fn on_respawn_worldname(&mut self, respawn: packet::play::clientbound::Respawn_WorldName) {
         self.respawn(respawn.gamemode)
     }
 

@@ -41,7 +41,7 @@ protocol_packet_ids!(
             0x04 => EntityEquipment_u16_i32
             0x05 => SpawnPosition_i32
             0x06 => UpdateHealth_u16
-            0x07 => Respawn
+            0x07 => Respawn_Gamemode
             0x08 => TeleportPlayer_OnGround
             0x09 => SetCurrentHotbarSlot
             0x0a => EntityUsedBed_i32

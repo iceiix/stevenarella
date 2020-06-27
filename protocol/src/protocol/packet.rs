@@ -1485,7 +1485,7 @@ state_packets!(
                 field hash: String =,
             }
             /// Respawn is sent to respawn the player after death or when they move worlds.
-            packet Respawn {
+            packet Respawn_Gamemode {
                 field dimension: i32 =,
                 field difficulty: u8 =,
                 field gamemode: u8 =,

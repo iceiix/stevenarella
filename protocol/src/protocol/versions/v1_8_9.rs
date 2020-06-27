@@ -43,7 +43,7 @@ protocol_packet_ids!(
             0x04 => EntityEquipment_u16
             0x05 => SpawnPosition
             0x06 => UpdateHealth
-            0x07 => Respawn
+            0x07 => Respawn_Gamemode
             0x08 => TeleportPlayer_NoConfirm
             0x09 => SetCurrentHotbarSlot
             0x0a => EntityUsedBed

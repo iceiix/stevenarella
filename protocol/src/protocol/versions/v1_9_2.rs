@@ -91,7 +91,7 @@ protocol_packet_ids!(
             0x30 => EntityDestroy
             0x31 => EntityRemoveEffect
             0x32 => ResourcePackSend
-            0x33 => Respawn
+            0x33 => Respawn_Gamemode
             0x34 => EntityHeadLook
             0x35 => WorldBorder
             0x36 => Camera

@@ -114,7 +114,7 @@ protocol_packet_ids!(
             0x37 => EntityDestroy
             0x38 => EntityRemoveEffect
             0x39 => ResourcePackSend
-            0x3a => Respawn
+            0x3a => Respawn_Gamemode
             0x3b => EntityHeadLook
             0x3c => SelectAdvancementTab
             0x3d => WorldBorder
