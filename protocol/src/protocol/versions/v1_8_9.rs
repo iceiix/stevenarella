@@ -38,7 +38,7 @@ protocol_packet_ids!(
         clientbound Clientbound {
             0x00 => KeepAliveClientbound_VarInt
             0x01 => JoinGame_i8
-            0x02 => ServerMessage
+            0x02 => ServerMessage_Position
             0x03 => TimeUpdate
             0x04 => EntityEquipment_u16
             0x05 => SpawnPosition

@@ -843,13 +843,13 @@ state_packets!(
             /// ServerMessage is a message sent by the server. It could be from a player
             /// or just a system message. The Type field controls the location the
             /// message is displayed at and when the message is displayed.
-            packet ServerMessage_UUID {
+            packet ServerMessage_Sender {
                 field message: format::Component =,
                 /// 0 - Chat message, 1 - System message, 2 - Action bar message
                 field position: u8 =,
                 field sender: UUID =,
             }
-            packet ServerMessage {
+            packet ServerMessage_Position {
                 field message: format::Component =,
                 /// 0 - Chat message, 1 - System message, 2 - Action bar message
                 field position: u8 =,

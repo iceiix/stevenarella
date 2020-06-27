@@ -71,7 +71,7 @@ protocol_packet_ids!(
             0x0b => BlockChange_VarInt
             0x0c => BossBar
             0x0d => ServerDifficulty_Locked
-            0x0e => ServerMessage_UUID
+            0x0e => ServerMessage_Sender
             0x0f => MultiBlockChange_VarInt
             0x10 => TabCompleteReply
             0x11 => DeclareCommands
