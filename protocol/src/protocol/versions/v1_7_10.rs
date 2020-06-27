@@ -110,7 +110,7 @@ protocol_packet_ids!(
         clientbound Clientbound {
             0x00 => LoginDisconnect
             0x01 => EncryptionRequest_i16
-            0x02 => LoginSuccess
+            0x02 => LoginSuccess_String
         }
     }
     status Status {

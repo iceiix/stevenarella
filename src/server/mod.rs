@@ -147,7 +147,7 @@ impl Server {
                     verify_token = Rc::new(val.verify_token.data);
                     break;
                 }
-                protocol::packet::Packet::LoginSuccess(val) => {
+                protocol::packet::Packet::LoginSuccess_String(val) => {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {}", val.username, val.uuid);
                     let mut read = conn.clone();
@@ -159,6 +159,24 @@ impl Server {
                         protocol_version,
                         forge_mods,
                         protocol::UUID::from_str(&val.uuid),
+                        resources,
+                        Some(write),
+                        Some(rx),
+                    ));
+                }
+                // TODO: avoid duplication
+                protocol::packet::Packet::LoginSuccess_UUID(val) => {
+                    warn!("Server is running in offline mode");
+                    debug!("Login: {} {:?}", val.username, val.uuid);
+                    let mut read = conn.clone();
+                    let mut write = conn.clone();
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    let rx = Self::spawn_reader(read);
+                    return Ok(Server::new(
+                        protocol_version,
+                        forge_mods,
+                        val.uuid,
                         resources,
                         Some(write),
                         Some(rx),
@@ -210,8 +228,15 @@ impl Server {
                     read.set_compresssion(val.threshold.0);
                     write.set_compresssion(val.threshold.0);
                 }
-                protocol::packet::Packet::LoginSuccess(val) => {
+                protocol::packet::Packet::LoginSuccess_String(val) => {
                     debug!("Login: {} {}", val.username, val.uuid);
+                    uuid = protocol::UUID::from_str(&val.uuid);
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    break;
+                }
+                protocol::packet::Packet::LoginSuccess_UUID(val) => {
+                    debug!("Login: {} {:?}", val.username, val.uuid);
                     uuid = val.uuid;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
@@ -229,7 +254,7 @@ impl Server {
         Ok(Server::new(
             protocol_version,
             forge_mods,
-            protocol::UUID::from_str(&uuid),
+            uuid,
             resources,
             Some(write),
             Some(rx),

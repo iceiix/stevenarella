@@ -1984,7 +1984,7 @@ state_packets!(
             /// LoginSuccess is sent by the server if the player successfully
             /// authenicates with the session servers (online mode) or straight
             /// after LoginStart (offline mode).
-            packet LoginSuccess {
+            packet LoginSuccess_String {
                 /// String encoding of a uuid (with hyphens)
                 field uuid: String =,
                 field username: String =,
