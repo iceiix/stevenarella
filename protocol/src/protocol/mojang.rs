@@ -135,10 +135,10 @@ impl Profile {
         public_key: &[u8],
     ) -> Result<(), super::Error> {
         let mut hasher = sha1::Sha1::new();
-        hasher.input(server_id.as_bytes());
-        hasher.input(shared_key);
-        hasher.input(public_key);
-        let mut hash = hasher.result();
+        hasher.update(server_id.as_bytes());
+        hasher.update(shared_key);
+        hasher.update(public_key);
+        let mut hash = hasher.finalize();
 
         // Mojang uses a hex method which allows for
         // negatives so we have to account for that.
