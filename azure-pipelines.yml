@@ -3,7 +3,7 @@ jobs:
    parameters:
      setup:
        - script: sudo apt-get install libxcb-composite0-dev libx11-dev
-         displayName: "Install libxcb"
+         displayName: "Install build dependencies"
          condition: eq(variables['Agent.OS'], 'Linux')
      minrust: 1.44.1
      clippy: -A clippy::temporary_cstring_as_ptr -A clippy::not_unsafe_ptr_arg_deref -A clippy::float_cmp
