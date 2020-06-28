@@ -2,7 +2,7 @@ jobs:
  - template: default.yml@templates
    parameters:
      minrust: 1.44.1
-     clippy: -A clippy::all -A clippy::temporary_cstring_as_ptr -A clippy::not_unsafe_ptr_arg_deref -A clippy::float_cmp
+     clippy: -A clippy::temporary_cstring_as_ptr -A clippy::not_unsafe_ptr_arg_deref -A clippy::float_cmp
 
 resources:
   repositories:
