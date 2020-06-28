@@ -128,7 +128,7 @@ protocol_packet_ids!(
             0x44 => EntityMetadata
             0x45 => EntityAttach
             0x46 => EntityVelocity
-            0x47 => EntityEquipment // TODO
+            0x47 => EntityEquipment_VarInt // TODO: changed to an array, but earlier than 1.16.1
             0x48 => SetExperience
             0x49 => UpdateHealth
             0x4a => ScoreboardObjective

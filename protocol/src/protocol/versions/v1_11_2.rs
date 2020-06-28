@@ -100,7 +100,7 @@ protocol_packet_ids!(
             0x39 => EntityMetadata
             0x3a => EntityAttach
             0x3b => EntityVelocity
-            0x3c => EntityEquipment
+            0x3c => EntityEquipment_VarInt
             0x3d => SetExperience
             0x3e => UpdateHealth
             0x3f => ScoreboardObjective
