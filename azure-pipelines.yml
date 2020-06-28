@@ -1,5 +1,7 @@
 jobs:
  - template: default.yml@templates
+   parameters:
+     minrust: 1.44.1
 
 resources:
   repositories:
