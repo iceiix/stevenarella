@@ -2,11 +2,12 @@ jobs:
  - template: default.yml@templates
    parameters:
      minrust: 1.44.1
+     clippy: false
 
 resources:
   repositories:
     - repository: templates
       type: github
-      name: crate-ci/azure-pipelines
-      ref: refs/heads/v0.4
+      name: iceiix/azure-pipelines
+      ref: refs/heads/clippy
       endpoint: iceiix
