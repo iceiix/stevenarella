@@ -207,6 +207,12 @@ state_packets!(
                 field target_id: i32 =,
                 field ty: u8 =,
             }
+            /// Sent when Generate is pressed on the Jigsaw Block interface.
+            packet GenerateStructure {
+                field location: Position =,
+                field levels: VarInt =,
+                field keep_jigsaws: bool =,
+            }
             /// KeepAliveServerbound is sent by a client as a response to a
             /// KeepAliveClientbound. If the client doesn't reply the server
             /// may disconnect the client.

@@ -23,7 +23,7 @@ protocol_packet_ids!(
             0x0c => EditBook
             0x0d => QueryEntityNBT
             0x0e => UseEntity_Sneakflag
-            //0x0f => GenerateStructure // TODO
+            0x0f => GenerateStructure
             0x10 => KeepAliveServerbound_i64
             0x11 => LockDifficulty
             0x12 => PlayerPosition
