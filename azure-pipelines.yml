@@ -2,7 +2,7 @@ jobs:
  - template: default.yml@templates
    parameters:
      minrust: 1.44.1
-     clippy: -A all
+     clippy: -A clippy::all
 
 resources:
   repositories:
