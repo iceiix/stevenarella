@@ -9,5 +9,5 @@ resources:
     - repository: templates
       type: github
       name: iceiix/azure-pipelines
-      ref: refs/heads/clippy
+      ref: 45be62021ece7ac2776aba48ba88d539bb6b6bf8
       endpoint: iceiix
