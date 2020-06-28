@@ -17,7 +17,7 @@ In action: http://gfycat.com/NeedyElaborateGypsymoth
 
 We have a chatroom on [EsperNet](https://esper.net): `irc.esper.net` server, `#stevenarella` channel.
 
-Join with your favorite IRC client or [Matrix](https://matrix.to/#/#_espernet_#stevenarella:matrix.org).
+Join with your favorite IRC client.
 
 ## Protocol support
 
