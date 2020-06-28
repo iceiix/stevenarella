@@ -970,10 +970,7 @@ impl Server {
         }
     }
 
-    fn on_game_join_worldnames(
-        &mut self,
-        join: packet::play::clientbound::JoinGame_WorldNames,
-    ) {
+    fn on_game_join_worldnames(&mut self, join: packet::play::clientbound::JoinGame_WorldNames) {
         self.on_game_join(join.gamemode, join.entity_id)
     }
 

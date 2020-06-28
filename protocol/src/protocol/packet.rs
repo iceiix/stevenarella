@@ -2698,7 +2698,6 @@ pub enum RecipeData {
         addition: RecipeIngredient,
         result: Option<item::Stack>,
     },
-
 }
 
 impl Default for RecipeData {
