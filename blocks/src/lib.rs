@@ -7264,7 +7264,7 @@ impl TreeVariant {
             TreeVariant::Spruce | TreeVariant::DarkOak => 1,
             TreeVariant::Birch => 2,
             TreeVariant::Jungle => 3,
-            _ => panic!("TreeVariant {:?} has no data (1.13+ only)", self),
+            _ => panic!("TreeVariant {:?} has no data (1.13+ only)"),
         }
     }
 
