@@ -399,7 +399,15 @@ state_packets!(
                 field slot: i16 =,
                 field clicked_item: Option<item::Stack> =,
             }
-            packet UpdateJigsawBlock {
+            packet UpdateJigsawBlock_Joint {
+                field location: Position =,
+                field name: String =,
+                field target: String =,
+                field pool: String =,
+                field final_state: String =,
+                field joint_type: String =,
+            }
+            packet UpdateJigsawBlock_Type {
                 field location: Position =,
                 field attachment_type: String =,
                 field target_pool: String =,

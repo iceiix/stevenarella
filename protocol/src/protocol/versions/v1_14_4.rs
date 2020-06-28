@@ -47,7 +47,7 @@ protocol_packet_ids!(
             0x24 => UpdateCommandBlock
             0x25 => UpdateCommandBlockMinecart
             0x26 => CreativeInventoryAction
-            0x27 => UpdateJigsawBlock
+            0x27 => UpdateJigsawBlock_Type
             0x28 => UpdateStructureBlock
             0x29 => SetSign
             0x2a => ArmSwing
