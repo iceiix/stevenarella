@@ -187,29 +187,7 @@ pub enum Color {
 
 impl fmt::Display for Color {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match *self {
-                Color::Black => "black".to_owned(),
-                Color::DarkBlue => "dark_blue".to_owned(),
-                Color::DarkGreen => "dark_green".to_owned(),
-                Color::DarkAqua => "dark_aqua".to_owned(),
-                Color::DarkRed => "dark_red".to_owned(),
-                Color::DarkPurple => "dark_purple".to_owned(),
-                Color::Gold => "gold".to_owned(),
-                Color::Gray => "gray".to_owned(),
-                Color::DarkGray => "dark_gray".to_owned(),
-                Color::Blue => "blue".to_owned(),
-                Color::Green => "green".to_owned(),
-                Color::Aqua => "aqua".to_owned(),
-                Color::Red => "red".to_owned(),
-                Color::LightPurple => "light_purple".to_owned(),
-                Color::Yellow => "yellow".to_owned(),
-                Color::White => "white".to_owned(),
-                Color::RGB(r, g, b) => format!("#{:02X}{:02X}{:02X}", r, g, b),
-            }
-        )
+        write!(f, "{}", self.to_string())
     }
 }
 
@@ -247,6 +225,28 @@ impl Color {
                 Color::RGB(r, g, b)
             }
             "white" | _ => Color::White,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match *self {
+            Color::Black => "black".to_owned(),
+            Color::DarkBlue => "dark_blue".to_owned(),
+            Color::DarkGreen => "dark_green".to_owned(),
+            Color::DarkAqua => "dark_aqua".to_owned(),
+            Color::DarkRed => "dark_red".to_owned(),
+            Color::DarkPurple => "dark_purple".to_owned(),
+            Color::Gold => "gold".to_owned(),
+            Color::Gray => "gray".to_owned(),
+            Color::DarkGray => "dark_gray".to_owned(),
+            Color::Blue => "blue".to_owned(),
+            Color::Green => "green".to_owned(),
+            Color::Aqua => "aqua".to_owned(),
+            Color::Red => "red".to_owned(),
+            Color::LightPurple => "light_purple".to_owned(),
+            Color::Yellow => "yellow".to_owned(),
+            Color::White => "white".to_owned(),
+            Color::RGB(r, g, b) => format!("#{:02X}{:02X}{:02X}", r, g, b),
         }
     }
 
