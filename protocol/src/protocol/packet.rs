@@ -2645,6 +2645,12 @@ pub enum RecipeData {
         ingredient: RecipeIngredient,
         result: Option<item::Stack>,
     },
+    Smithing {
+        base: RecipeIngredient,
+        addition: RecipeIngredient,
+        result: Option<item::Stack>,
+    },
+
 }
 
 impl Default for RecipeData {
@@ -2757,6 +2763,11 @@ impl Serializable for Recipe {
             "minecraft:stonecutting" => RecipeData::Stonecutting {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
+            },
+            "minecraft:smithing" => RecipeData::Smithing {
+                base: Serializable::read_from(buf)?,
+                addition: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
             },
             _ => panic!("unrecognized recipe type: {}", ty),
