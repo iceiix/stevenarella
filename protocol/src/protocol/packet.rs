@@ -179,6 +179,15 @@ state_packets!(
             }
             /// UseEntity is sent when the user interacts (right clicks) or attacks
             /// (left clicks) an entity.
+            packet UseEntity_Sneakflag {
+                field target_id: VarInt =,
+                field ty: VarInt =,
+                field target_x: f32 = when(|p: &UseEntity_Sneakflag| p.ty.0 == 2),
+                field target_y: f32 = when(|p: &UseEntity_Sneakflag| p.ty.0 == 2),
+                field target_z: f32 = when(|p: &UseEntity_Sneakflag| p.ty.0 == 2),
+                field hand: VarInt = when(|p: &UseEntity_Sneakflag| p.ty.0 == 0 || p.ty.0 == 2),
+                field sneaking: bool =,
+            }
             packet UseEntity_Hand {
                 field target_id: VarInt =,
                 field ty: VarInt =,
