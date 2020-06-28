@@ -13,5 +13,5 @@ resources:
     - repository: templates
       type: github
       name: iceiix/azure-pipelines
-      ref: 402313a6fc7cbe76a8ac2a7efebd279bf3cc5a2c
+      ref: c50d2b8335a6b1856aa2fc4f5f41f6684ef8580c
       endpoint: iceiix
