@@ -22,7 +22,7 @@ protocol_packet_ids!(
             0x0b => PluginMessageServerbound
             0x0c => EditBook
             0x0d => QueryEntityNBT
-            0x0e => UseEntity // TODO
+            0x0e => UseEntity_Hand // TODO
             //0x0f => GenerateStructure // TODO
             0x10 => KeepAliveServerbound_i64
             0x11 => LockDifficulty

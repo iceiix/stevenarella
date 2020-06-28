@@ -18,7 +18,7 @@ protocol_packet_ids!(
             0x07 => ClickWindow
             0x08 => CloseWindow
             0x09 => PluginMessageServerbound
-            0x0a => UseEntity
+            0x0a => UseEntity_Hand
             0x0b => KeepAliveServerbound_i64
             0x0c => Player
             0x0d => PlayerPosition

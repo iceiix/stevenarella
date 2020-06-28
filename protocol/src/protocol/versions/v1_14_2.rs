@@ -22,7 +22,7 @@ protocol_packet_ids!(
             0x0b => PluginMessageServerbound
             0x0c => EditBook
             0x0d => QueryEntityNBT
-            0x0e => UseEntity
+            0x0e => UseEntity_Hand
             0x0f => KeepAliveServerbound_i64
             0x10 => LockDifficulty
             0x11 => PlayerPosition
