@@ -26,6 +26,7 @@ pub fn protocol_name_to_protocol_version(s: String) -> i32 {
     match s.as_ref() {
         "" => SUPPORTED_PROTOCOLS[0],
         "1.16.1" => 736,
+        "1.16" => 735,
         "1.15.2" => 578,
         "1.15.1" => 575,
         "1.14.4" => 498,
@@ -64,6 +65,7 @@ pub fn translate_internal_packet_id_for_version(
 ) -> i32 {
     match version {
         736 => v1_16_1::translate_internal_packet_id(state, dir, id, to_internal),
+        735 => v1_16_1::translate_internal_packet_id(state, dir, id, to_internal),
         578 => v1_15::translate_internal_packet_id(state, dir, id, to_internal),
         575 => v1_15::translate_internal_packet_id(state, dir, id, to_internal),
         498 => v1_14_4::translate_internal_packet_id(state, dir, id, to_internal),
