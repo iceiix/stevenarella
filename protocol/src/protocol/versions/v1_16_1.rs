@@ -93,7 +93,7 @@ protocol_packet_ids!(
             0x21 => ChunkData_Biomes3D_bool
             0x22 => Effect
             0x23 => Particle_f64
-            0x24 => UpdateLight // TODO
+            0x24 => UpdateLight_WithTrust
             0x25 => JoinGame_WorldNames
             0x26 => Maps
             0x27 => TradeList_WithRestock

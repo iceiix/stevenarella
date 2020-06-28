@@ -92,7 +92,7 @@ protocol_packet_ids!(
             0x21 => ChunkData_HeightMap
             0x22 => Effect
             0x23 => Particle_Data
-            0x24 => UpdateLight
+            0x24 => UpdateLight_NoTrust
             0x25 => JoinGame_i32_ViewDistance
             0x26 => Maps
             0x27 => TradeList_WithRestock
