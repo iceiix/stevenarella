@@ -507,6 +507,7 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_WorldNames => on_game_join_worldnames,
                             JoinGame_HashedSeed_Respawn => on_game_join_hashedseed_respawn,
                             JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
                             JoinGame_i32 => on_game_join_i32,
@@ -966,6 +967,13 @@ impl Server {
                 data: crate::protocol::LenPrefixedBytes::<protocol::VarShort>::new(data.to_vec()),
             });
         }
+    }
+
+    fn on_game_join_worldnames(
+        &mut self,
+        join: packet::play::clientbound::JoinGame_WorldNames,
+    ) {
+        self.on_game_join(join.gamemode, join.entity_id)
     }
 
     fn on_game_join_hashedseed_respawn(
