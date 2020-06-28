@@ -147,7 +147,7 @@ impl Server {
                     verify_token = Rc::new(val.verify_token.data);
                     break;
                 }
-                protocol::packet::Packet::LoginSuccess(val) => {
+                protocol::packet::Packet::LoginSuccess_String(val) => {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {}", val.username, val.uuid);
                     let mut read = conn.clone();
@@ -159,6 +159,24 @@ impl Server {
                         protocol_version,
                         forge_mods,
                         protocol::UUID::from_str(&val.uuid),
+                        resources,
+                        Some(write),
+                        Some(rx),
+                    ));
+                }
+                // TODO: avoid duplication
+                protocol::packet::Packet::LoginSuccess_UUID(val) => {
+                    warn!("Server is running in offline mode");
+                    debug!("Login: {} {:?}", val.username, val.uuid);
+                    let mut read = conn.clone();
+                    let mut write = conn.clone();
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    let rx = Self::spawn_reader(read);
+                    return Ok(Server::new(
+                        protocol_version,
+                        forge_mods,
+                        val.uuid,
                         resources,
                         Some(write),
                         Some(rx),
@@ -210,8 +228,15 @@ impl Server {
                     read.set_compresssion(val.threshold.0);
                     write.set_compresssion(val.threshold.0);
                 }
-                protocol::packet::Packet::LoginSuccess(val) => {
+                protocol::packet::Packet::LoginSuccess_String(val) => {
                     debug!("Login: {} {}", val.username, val.uuid);
+                    uuid = protocol::UUID::from_str(&val.uuid);
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    break;
+                }
+                protocol::packet::Packet::LoginSuccess_UUID(val) => {
+                    debug!("Login: {} {:?}", val.username, val.uuid);
                     uuid = val.uuid;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
@@ -229,7 +254,7 @@ impl Server {
         Ok(Server::new(
             protocol_version,
             forge_mods,
-            protocol::UUID::from_str(&uuid),
+            uuid,
             resources,
             Some(write),
             Some(rx),
@@ -482,16 +507,19 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_WorldNames => on_game_join_worldnames,
                             JoinGame_HashedSeed_Respawn => on_game_join_hashedseed_respawn,
                             JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
                             JoinGame_i8_NoDebug => on_game_join_i8_nodebug,
-                            Respawn => on_respawn,
+                            Respawn_Gamemode => on_respawn_gamemode,
                             Respawn_HashedSeed => on_respawn_hashedseed,
+                            Respawn_WorldName => on_respawn_worldname,
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
+                            ChunkData_Biomes3D_bool => on_chunk_data_biomes3d_bool,
                             ChunkData => on_chunk_data,
                             ChunkData_Biomes3D => on_chunk_data_biomes3d,
                             ChunkData_HeightMap => on_chunk_data_heightmap,
@@ -942,6 +970,10 @@ impl Server {
         }
     }
 
+    fn on_game_join_worldnames(&mut self, join: packet::play::clientbound::JoinGame_WorldNames) {
+        self.on_game_join(join.gamemode, join.entity_id)
+    }
+
     fn on_game_join_hashedseed_respawn(
         &mut self,
         join: packet::play::clientbound::JoinGame_HashedSeed_Respawn,
@@ -1007,7 +1039,11 @@ impl Server {
         self.respawn(respawn.gamemode)
     }
 
-    fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
+    fn on_respawn_gamemode(&mut self, respawn: packet::play::clientbound::Respawn_Gamemode) {
+        self.respawn(respawn.gamemode)
+    }
+
+    fn on_respawn_worldname(&mut self, respawn: packet::play::clientbound::Respawn_WorldName) {
         self.respawn(respawn.gamemode)
     }
 
@@ -1724,6 +1760,22 @@ impl Server {
                 });
             }
         }
+    }
+
+    fn on_chunk_data_biomes3d_bool(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_Biomes3D_bool,
+    ) {
+        self.world
+            .load_chunk115(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                chunk_data.new,
+                chunk_data.bitmask.0 as u16,
+                chunk_data.data.data,
+            )
+            .unwrap();
+        self.load_block_entities(chunk_data.block_entities.data);
     }
 
     fn on_chunk_data_biomes3d(
