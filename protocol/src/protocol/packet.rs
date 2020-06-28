@@ -1668,11 +1668,6 @@ state_packets!(
             /// EntityEquipment is sent to display an item on an entity, like a sword
             /// or armor. Slot 0 is the held item and slots 1 to 4 are boots, leggings
             /// chestplate and helmet respectively.
-            packet EntityEquipment_Slotless {
-                field entity_id: VarInt =,
-                field slot: VarInt =,
-                field item: Option<item::Stack> =,
-            }
             packet EntityEquipment_VarInt {
                 field entity_id: VarInt =,
                 field slot: VarInt =,
