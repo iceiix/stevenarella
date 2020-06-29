@@ -1,5 +1,6 @@
 #![recursion_limit = "600"]
 #![allow(clippy::identity_op)]
+#![allow(clippy::collapsible_if)]
 
 extern crate steven_shared as shared;
 
