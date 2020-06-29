@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #[cfg(not(target_arch = "wasm32"))]
-use reqwest;
 use serde_json::json;
 use sha1::{self, Digest};
 

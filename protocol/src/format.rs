@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use serde_json;
 use std::fmt;
 use std::mem;
 
