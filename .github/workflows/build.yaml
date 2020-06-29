@@ -42,7 +42,7 @@ jobs:
         run: rm target/release/stevenarella.d
         shell: bash
       - name: Upload binary
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: stevenarella-${{ matrix.os }}
           path: target/release/stevenarella*
