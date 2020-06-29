@@ -776,7 +776,7 @@ define_blocks! {
         offset if check_decay {
             None
         } else {
-            Some(variant.offset() * (7 * 2) + ((distance as usize - 1) << 1) | (if decayable { 0 } else { 1 }))
+            Some(variant.offset() * (7 * 2) + ((distance as usize - 1) << 1) + (if decayable { 0 } else { 1 }))
         },
         material material::LEAVES,
         model { ("minecraft", format!("{}_leaves", variant.as_string()) ) },
