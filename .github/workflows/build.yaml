@@ -1,0 +1,48 @@
+name: Build
+on:
+  push:
+
+jobs:
+  linux:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: 
+          - windows-latest
+          - ubuntu-latest
+          - macos-latest
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          default: true
+      - name: Enable static CRT linkage # https://stackoverflow.com/a/44387312/7653274
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir .cargo
+          echo '[target.x86_64-pc-windows-msvc]' >> .cargo/config
+          echo 'rustflags = ["-Ctarget-feature=+crt-static"]' >> .cargo/config
+      - name: Build binary
+        run: |
+          cargo build --verbose --release
+        env:
+          MACOSX_DEPLOYMENT_TARGET: 10.14
+      - name: Strip binary
+        if: matrix.os != 'windows-latest'
+        run: strip target/release/stevenarella
+      - name: Upload binary
+        uses: actions/upload-artifact@v1
+        with:
+          name: stevenarella-${{ matrix.os }}
+          path: target/release/stevenarella
+      - name: Release binary
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/release/stevenarella
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
