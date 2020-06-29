@@ -95,14 +95,14 @@ pub struct Modifier {
 impl Modifier {
     pub fn from_value(v: &serde_json::Value) -> Self {
         let mut m = Modifier {
-            bold: v.get("bold").map_or(Option::None, |v| v.as_bool()),
-            italic: v.get("italic").map_or(Option::None, |v| v.as_bool()),
-            underlined: v.get("underlined").map_or(Option::None, |v| v.as_bool()),
-            strikethrough: v.get("strikethrough").map_or(Option::None, |v| v.as_bool()),
-            obfuscated: v.get("obfuscated").map_or(Option::None, |v| v.as_bool()),
+            bold: v.get("bold").and_then(|v| v.as_bool()),
+            italic: v.get("italic").and_then(|v| v.as_bool()),
+            underlined: v.get("underlined").and_then(|v| v.as_bool()),
+            strikethrough: v.get("strikethrough").and_then(|v| v.as_bool()),
+            obfuscated: v.get("obfuscated").and_then(|v| v.as_bool()),
             color: v
                 .get("color")
-                .map_or(Option::None, |v| v.as_str())
+                .and_then(|v| v.as_str())
                 .map(|v| Color::from_string(&v.to_owned())),
             extra: Option::None,
         };

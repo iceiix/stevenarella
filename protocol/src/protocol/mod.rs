@@ -1208,8 +1208,8 @@ impl Conn {
 
         let invalid_status = || Error::Err("Invalid status".to_owned());
 
-        let version = val.get("version").ok_or(invalid_status())?;
-        let players = val.get("players").ok_or(invalid_status())?;
+        let version = val.get("version").ok_or_else(invalid_status)?;
+        let players = val.get("players").ok_or_else(invalid_status)?;
 
         // For modded servers, get the list of Forge mods installed
         let mut forge_mods: std::vec::Vec<crate::protocol::forge::ForgeMod> = vec![];
@@ -1264,26 +1264,26 @@ impl Conn {
                     name: version
                         .get("name")
                         .and_then(Value::as_str)
-                        .ok_or(invalid_status())?
+                        .ok_or_else(invalid_status)?
                         .to_owned(),
                     protocol: version
                         .get("protocol")
                         .and_then(Value::as_i64)
-                        .ok_or(invalid_status())? as i32,
+                        .ok_or_else(invalid_status)? as i32,
                 },
                 players: StatusPlayers {
                     max: players
                         .get("max")
                         .and_then(Value::as_i64)
-                        .ok_or(invalid_status())? as i32,
+                        .ok_or_else(invalid_status)? as i32,
                     online: players
                         .get("online")
                         .and_then(Value::as_i64)
-                        .ok_or(invalid_status())? as i32,
+                        .ok_or_else(invalid_status)? as i32,
                     sample: Vec::new(), /* TODO */
                 },
                 description: format::Component::from_value(
-                    val.get("description").ok_or(invalid_status())?,
+                    val.get("description").ok_or_else(invalid_status)?,
                 ),
                 favicon: val
                     .get("favicon")
