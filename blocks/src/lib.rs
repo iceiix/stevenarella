@@ -7264,7 +7264,7 @@ impl TreeVariant {
             TreeVariant::Spruce | TreeVariant::DarkOak => 1,
             TreeVariant::Birch => 2,
             TreeVariant::Jungle => 3,
-            _ => panic!("TreeVariant {:?} has no data (1.13+ only)"),
+            _ => panic!("TreeVariant {:?} has no data (1.13+ only)", self),
         }
     }
 
@@ -7293,7 +7293,7 @@ impl TreeVariant {
             TreeVariant::Jungle => 3,
             TreeVariant::Acacia => 4,
             TreeVariant::DarkOak => 5,
-            _ => panic!("TreeVariant {:?} has no plank data (1.13+ only)"),
+            _ => panic!("TreeVariant {:?} has no plank data (1.13+ only)", self),
         }
     }
 }
