@@ -245,7 +245,8 @@ impl Color {
                 };
                 Color::RGB(r, g, b)
             }
-            "white" | _ => Color::White,
+            "white" => Color::White,
+            _ => Color::White,
         }
     }
 
