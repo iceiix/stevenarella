@@ -1343,11 +1343,8 @@ impl Write for Conn {
         match self.cipher.as_mut() {
             Option::None => self.stream.write(buf),
             Option::Some(cipher) => {
-                // TODO: avoid copying, but trait requires non-mutable buf
                 let mut data = vec![0; buf.len()];
-                for i in 0..buf.len() {
-                    data[i] = buf[i];
-                }
+                data[..buf.len()].clone_from_slice(&buf[..]);
 
                 cipher.encrypt(&mut data);
 
