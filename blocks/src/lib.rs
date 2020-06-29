@@ -2223,7 +2223,7 @@ define_blocks! {
         data None::<usize>,
         offset mushroom_block_offset(false, west, up, south, north, east, down),
         model { ("minecraft", "mushroom_stem") },
-        variant format!("variant=all_stem"),
+        variant "variant=all_stem".to_string(),
     }
     IronBars {
         props {
