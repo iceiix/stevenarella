@@ -263,7 +263,7 @@ macro_rules! define_blocks {
                                 return $update_state;
                             )?
                             Block::$name {
-                                $($fname: $fname,)?
+                                $($fname,)?
                             }
                         }
                     )+
@@ -378,7 +378,7 @@ macro_rules! define_blocks {
                                     $($fname: $fname.next().unwrap(),)?
                                 },
                                 state: CombinationIterState {
-                                    $($fname: $fname,)?
+                                    $($fname,)?
                                 }
                             }
                         }
