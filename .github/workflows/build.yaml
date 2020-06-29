@@ -3,7 +3,7 @@ on:
   push:
 
 jobs:
-  linux:
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -25,6 +25,11 @@ jobs:
           mkdir .cargo
           echo '[target.x86_64-pc-windows-msvc]' >> .cargo/config
           echo 'rustflags = ["-Ctarget-feature=+crt-static"]' >> .cargo/config
+      - name: Install libxcb-composite
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y libxcb-composite0-dev
       - name: Build binary
         run: |
           cargo build --verbose --release
