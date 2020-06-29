@@ -2569,7 +2569,7 @@ impl Serializable for PlayerInfoData {
                         }
                     },
                 }),
-                4 => m.players.push(PlayerDetail::Remove { uuid: uuid }),
+                4 => m.players.push(PlayerDetail::Remove { uuid }),
                 _ => panic!(),
             }
         }
