@@ -77,7 +77,7 @@ impl Profile {
 
     pub fn refresh(self, token: &str) -> Result<Profile, super::Error> {
         let req_msg = json!({
-        "accessToken": self.access_token.clone(),
+        "accessToken": self.access_token,
         "clientToken": token
         });
         let req = serde_json::to_string(&req_msg)?;
