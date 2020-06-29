@@ -536,8 +536,9 @@ impl Program {
     }
 
     pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
+        let c_name = ffi::CString::new(name).unwrap();
         let u =
-            unsafe { gl::GetUniformLocation(self.0, ffi::CString::new(name).unwrap().as_ptr()) };
+            unsafe { gl::GetUniformLocation(self.0, c_name.as_ptr()) };
         if u != -1 {
             Some(Uniform(u))
         } else {
