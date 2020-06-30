@@ -1970,6 +1970,7 @@ impl Server {
     }
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, Copy)]
 enum TeleportFlag {
     RelX = 0b00001,
