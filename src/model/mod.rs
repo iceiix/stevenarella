@@ -6,7 +6,6 @@ use crate::shared::Direction;
 use crate::world;
 use crate::world::block::{Block, TintType};
 use byteorder::{NativeEndian, WriteBytesExt};
-use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::Write;

@@ -14,7 +14,6 @@
 
 extern crate steven_resources as internal;
 
-use serde_json;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::io;
@@ -23,10 +22,6 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std_or_web::fs;
-
-#[cfg(not(target_arch = "wasm32"))]
-use reqwest;
-use zip;
 
 use crate::types::hash::FNVHash;
 use crate::ui;

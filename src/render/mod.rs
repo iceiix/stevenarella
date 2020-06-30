@@ -25,11 +25,8 @@ use crate::resources;
 use crate::world;
 use byteorder::{NativeEndian, WriteBytesExt};
 use cgmath::prelude::*;
-use collision;
-use image;
 use image::{GenericImage, GenericImageView};
 use log::{error, trace};
-use serde_json;
 use std::collections::HashMap;
 use std::io::Write;
 use std::sync::{Arc, RwLock};
@@ -41,7 +38,6 @@ use std::sync::mpsc;
 use std::thread;
 
 #[cfg(not(target_arch = "wasm32"))]
-use reqwest;
 
 const ATLAS_SIZE: usize = 1024;
 

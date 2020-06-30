@@ -3,7 +3,6 @@ use crate::render::model;
 use crate::shared::{Direction, Position};
 use crate::world;
 use crate::world::block;
-use cgmath;
 use collision::{self, Aabb};
 
 pub struct Info {

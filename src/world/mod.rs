@@ -24,7 +24,6 @@ use crate::shared::{Direction, Position};
 use crate::types::hash::FNVHash;
 use crate::types::{bit, nibble};
 use cgmath::prelude::*;
-use collision;
 use flate2::read::ZlibDecoder;
 use std::collections::HashMap;
 use std::collections::VecDeque;

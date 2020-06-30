@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use log;
 use std::any::Any;
 use std::cell::{Ref, RefCell};
 use std::collections::HashMap;

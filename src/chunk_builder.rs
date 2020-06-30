@@ -6,7 +6,6 @@ use crate::types::bit::Set;
 use crate::world;
 use crate::world::block;
 use rand::{self, Rng, SeedableRng};
-use rand_pcg;
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;

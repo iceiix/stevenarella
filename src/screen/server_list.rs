@@ -24,11 +24,7 @@ use crate::protocol;
 use crate::render;
 use crate::ui;
 
-use base64;
-use image;
-use rand;
 use rand::Rng;
-use serde_json;
 use std::time::Duration;
 
 pub struct ServerList {

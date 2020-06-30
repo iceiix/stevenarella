@@ -43,7 +43,6 @@ pub mod world;
 
 use crate::protocol::mojang;
 use cfg_if::cfg_if;
-use glutin;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::mpsc;
