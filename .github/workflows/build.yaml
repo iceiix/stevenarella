@@ -41,9 +41,9 @@ jobs:
       - name: Move binary
         run: |
           if [[ ${{ matrix.os }} == windows ]]; then
-            mv target/release/stevenarella.exe .
+            mv target/release/stevenarella.exe stevenarella-${{ matrix.os }}.exe
           else
-            mv target/release/stevenarella .
+            mv target/release/stevenarella stevenarella-${{ matrix.os }}
           fi
         shell: bash
       - name: Upload binary
