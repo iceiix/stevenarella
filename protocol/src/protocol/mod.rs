@@ -492,12 +492,12 @@ impl Default for Biomes3D {
 
 impl Serializable for Biomes3D {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Biomes3D, Error> {
-        let mut data: [i32; 1024] = [0; 1024];
+        let data: [i32; 1024] = [0; 1024];
 
         // Non-length-prefixed three-dimensional biome data
-        for i in 0..1024 {
+        for item in &mut data.to_vec() {
             let b: i32 = Serializable::read_from(buf)?;
-            data[i] = b;
+            *item = b;
         }
 
         Result::Ok(Biomes3D { data })
