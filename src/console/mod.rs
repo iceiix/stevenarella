@@ -190,7 +190,7 @@ impl Vars {
                 continue;
             }
             for line in var.description().lines() {
-                write!(file, "# {}\n", line).unwrap();
+                writeln!(file, "# {}", line).unwrap();
             }
             write!(
                 file,
