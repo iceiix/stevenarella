@@ -507,18 +507,16 @@ fn handle_window_event<T>(
                             game.focused = true;
                             window.window().set_cursor_grab(true).unwrap();
                             window.window().set_cursor_visible(false);
-                        } else {
-                            if !game.focused {
-                                window.window().set_cursor_grab(false).unwrap();
-                                window.window().set_cursor_visible(true);
-                                ui_container.click_at(
-                                    game,
-                                    game.last_mouse_x,
-                                    game.last_mouse_y,
-                                    width,
-                                    height,
-                                );
-                            }
+                        } else if !game.focused {
+                            window.window().set_cursor_grab(false).unwrap();
+                            window.window().set_cursor_visible(true);
+                            ui_container.click_at(
+                                game,
+                                game.last_mouse_x,
+                                game.last_mouse_y,
+                                width,
+                                height,
+                            );
                         }
                     }
                     (ElementState::Pressed, MouseButton::Right) => {
