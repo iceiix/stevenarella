@@ -149,7 +149,7 @@ impl Server {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {}", val.username, val.uuid);
                     let mut read = conn.clone();
-                    let mut write = conn.clone();
+                    let mut write = conn;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
@@ -167,7 +167,7 @@ impl Server {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {:?}", val.username, val.uuid);
                     let mut read = conn.clone();
-                    let mut write = conn.clone();
+                    let mut write = conn;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
@@ -214,7 +214,7 @@ impl Server {
         }
 
         let mut read = conn.clone();
-        let mut write = conn.clone();
+        let mut write = conn;
 
         read.enable_encyption(&shared, true);
         write.enable_encyption(&shared, false);

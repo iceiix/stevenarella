@@ -1386,7 +1386,7 @@ impl TextureManager {
             rel_height: 1.0,
             is_rel: false,
         };
-        self.textures.insert(full_name.to_owned(), t.clone());
+        self.textures.insert(full_name, t.clone());
         t
     }
 
@@ -1421,8 +1421,7 @@ impl TextureManager {
                 (height as f32) / (tex.height as f32),
             );
             let old_name = mem::replace(&mut tex.name, format!("steven-dynamic:{}", name));
-            self.dynamic_textures
-                .insert(name.to_owned(), (tex.clone(), img));
+            self.dynamic_textures.insert(name.to_owned(), (tex, img));
             // We need to rename the texture itself so that get_texture calls
             // work with the new name
             let mut old = self.textures.remove(&old_name).unwrap();
