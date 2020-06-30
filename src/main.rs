@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #![recursion_limit = "300"]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::many_single_char_names)]
 
 use log::{error, info, warn};
 use std::time::{Duration, Instant};
