@@ -11,6 +11,12 @@ pub struct Info {
     last_pos: Position,
 }
 
+impl Default for Info {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Info {
     pub fn new() -> Info {
         Info {

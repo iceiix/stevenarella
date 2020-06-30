@@ -282,6 +282,12 @@ pub struct Container {
     last_height: f64,
 }
 
+impl Default for Container {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Container {
     pub fn new() -> Container {
         Container {
@@ -677,6 +683,7 @@ macro_rules! element {
             }
         }
 
+        #[derive(Default)]
         pub struct $builder {
             $(
                 $sname: Option<$sty>,

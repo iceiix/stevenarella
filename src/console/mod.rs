@@ -203,6 +203,7 @@ impl Vars {
     }
 }
 
+#[derive(Default)]
 pub struct Console {
     history: Vec<Component>,
     dirty: bool,

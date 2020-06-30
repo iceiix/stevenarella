@@ -53,6 +53,12 @@ pub struct Filter {
     bits: BSet,
 }
 
+impl Default for Filter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Filter {
     /// Creates an empty filter which matches everything
     pub fn new() -> Filter {
@@ -106,6 +112,7 @@ struct EntityState {
 }
 
 /// Stores and manages a collection of entities.
+#[derive(Default)]
 pub struct Manager {
     num_components: usize,
     entities: Vec<(Option<EntityState>, u32)>,
