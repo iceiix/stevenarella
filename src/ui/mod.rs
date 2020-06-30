@@ -769,7 +769,7 @@ macro_rules! element {
                         $oname: self.$oname.unwrap_or($oval),
                     )*
                     $(
-                        $nname: $nname,
+                        $nname,
                     )*
                     // Base fields
                     draw_index: self.draw_index,
