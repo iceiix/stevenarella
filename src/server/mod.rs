@@ -32,6 +32,7 @@ use rsa_public_encrypt_pkcs1;
 use serde_json;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
+use std::str::FromStr;
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
@@ -158,7 +159,7 @@ impl Server {
                     return Ok(Server::new(
                         protocol_version,
                         forge_mods,
-                        protocol::UUID::from_str(&val.uuid),
+                        protocol::UUID::from_str(&val.uuid).unwrap(),
                         resources,
                         Some(write),
                         Some(rx),
@@ -230,7 +231,7 @@ impl Server {
                 }
                 protocol::packet::Packet::LoginSuccess_String(val) => {
                     debug!("Login: {} {}", val.username, val.uuid);
-                    uuid = protocol::UUID::from_str(&val.uuid);
+                    uuid = protocol::UUID::from_str(&val.uuid).unwrap();
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     break;
@@ -1368,7 +1369,7 @@ impl Server {
     ) {
         self.on_player_spawn(
             spawn.entity_id.0,
-            protocol::UUID::from_str(&spawn.uuid),
+            protocol::UUID::from_str(&spawn.uuid).unwrap(),
             f64::from(spawn.x),
             f64::from(spawn.y),
             f64::from(spawn.z),

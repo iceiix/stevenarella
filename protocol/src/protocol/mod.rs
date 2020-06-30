@@ -419,11 +419,21 @@ impl Serializable for f64 {
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct UUID(u64, u64);
 
-impl UUID {
-    pub fn from_str(s: &str) -> UUID {
-        // TODO: Panics aren't the best idea here
+#[derive(Debug)]
+pub struct UUIDParseError;
+impl std::error::Error for UUIDParseError {}
+
+impl fmt::Display for UUIDParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Invalid UUID format")
+    }
+}
+
+impl std::str::FromStr for UUID {
+    type Err = UUIDParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() != 36 {
-            panic!("Invalid UUID format");
+            return Err(UUIDParseError {});
         }
         let mut parts = hex::decode(&s[..8]).unwrap();
         parts.extend_from_slice(&hex::decode(&s[9..13]).unwrap());
@@ -436,7 +446,7 @@ impl UUID {
             high |= (parts[i] as u64) << (56 - i * 8);
             low |= (parts[i + 8] as u64) << (56 - i * 8);
         }
-        UUID(high, low)
+        Ok(UUID(high, low))
     }
 }
 
