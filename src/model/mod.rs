@@ -891,7 +891,7 @@ impl RawModel {
                 .texture_vars
                 .get(&name[1..])
                 .cloned()
-                .unwrap_or("".to_owned());
+                .unwrap_or_else(|| "".to_owned());
             return self.lookup_texture(&tex);
         }
         name.to_owned()

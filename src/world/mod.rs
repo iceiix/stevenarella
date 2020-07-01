@@ -994,6 +994,7 @@ impl World {
         self.load_chunk19_or_115(false, x, z, new, mask, data)
     }
 
+    #[allow(clippy::or_fun_call)]
     fn load_chunk19_or_115(
         &mut self,
         read_biomes: bool,
@@ -1068,6 +1069,7 @@ impl World {
                         mappings
                             .get(&id)
                             .cloned()
+                            // TODO: fix or_fun_call, but do not re-borrow self
                             .unwrap_or(block::Block::by_vanilla_id(
                                 id,
                                 self.protocol_version,

@@ -299,7 +299,8 @@ fn main2() {
     let textures = renderer.get_textures();
     let dpi_factor = window.window().scale_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
-        opt.default_protocol_version.unwrap_or("".to_string()),
+        opt.default_protocol_version
+            .unwrap_or_else(|| "".to_string()),
     );
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
