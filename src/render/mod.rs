@@ -955,6 +955,7 @@ pub struct TextureManager {
 }
 
 impl TextureManager {
+    #[allow(clippy::let_and_return)]
     fn new(
         res: Arc<RwLock<resources::Manager>>,
     ) -> (
@@ -968,6 +969,7 @@ impl TextureManager {
         let mut tm = TextureManager {
             textures: HashMap::with_hasher(BuildHasherDefault::default()),
             version: {
+                // TODO: fix borrow and remove clippy::let_and_return above
                 let ver = res.read().unwrap().version();
                 ver
             },
