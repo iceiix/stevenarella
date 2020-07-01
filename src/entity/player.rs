@@ -640,7 +640,7 @@ impl ecs::System for MovementHandler {
             if movement.is_key_pressed(Stevenkey::Jump) {
                 if movement.when_last_jump_pressed.is_none() {
                     movement.when_last_jump_pressed = Some(Instant::now());
-                    if !movement.when_last_jump_released.is_none() {
+                    if movement.when_last_jump_released.is_some() {
                         let dt = movement.when_last_jump_pressed.unwrap()
                             - movement.when_last_jump_released.unwrap();
                         if dt.as_secs() == 0
@@ -655,7 +655,7 @@ impl ecs::System for MovementHandler {
                         }
                     }
                 }
-            } else if !movement.when_last_jump_pressed.is_none() {
+            } else if movement.when_last_jump_pressed.is_some() {
                 movement.when_last_jump_released = Some(Instant::now());
                 movement.when_last_jump_pressed = None;
             }
