@@ -626,7 +626,7 @@ impl ComponentMem {
         data.2 += 1;
         data.1.set(rem, true);
         unsafe {
-            ptr::write(data.0.as_mut_ptr().offset(start as isize) as *mut T, val);
+            ptr::write(data.0.as_mut_ptr().add(start) as *mut T, val);
         }
     }
 
@@ -642,7 +642,7 @@ impl ComponentMem {
             // we use the drop_func which stores the type in its closure
             // to handle the dropping for us.
             unsafe {
-                (self.drop_func)(data.0.as_mut_ptr().offset(start as isize));
+                (self.drop_func)(data.0.as_mut_ptr().add(start));
             }
             data.2 -= 1;
             data.2
@@ -657,7 +657,7 @@ impl ComponentMem {
         let rem = index % COMPONENTS_PER_BLOCK;
         let data = self.data[idx].as_ref().unwrap();
         let start = rem * self.component_size;
-        unsafe { &*(data.0.as_ptr().offset(start as isize) as *const T) }
+        unsafe { &*(data.0.as_ptr().add(start) as *const T) }
     }
 
     fn get_mut<T>(&mut self, index: usize) -> &mut T {
@@ -665,7 +665,7 @@ impl ComponentMem {
         let rem = index % COMPONENTS_PER_BLOCK;
         let data = self.data[idx].as_mut().unwrap();
         let start = rem * self.component_size;
-        unsafe { &mut *(data.0.as_mut_ptr().offset(start as isize) as *mut T) }
+        unsafe { &mut *(data.0.as_mut_ptr().add(start) as *mut T) }
     }
 }
 
@@ -677,7 +677,7 @@ impl Drop for ComponentMem {
                     if data.1.get(i) {
                         let start = i * self.component_size;
                         unsafe {
-                            (self.drop_func)(data.0.as_mut_ptr().offset(start as isize));
+                            (self.drop_func)(data.0.as_mut_ptr().add(start));
                         }
                     }
                 }
