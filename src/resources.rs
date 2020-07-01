@@ -131,7 +131,7 @@ impl Manager {
         // (if it was started)
         let mut done = false;
         if let Some(ref recv) = self.vanilla_chan {
-            if let Ok(_) = recv.try_recv() {
+            if recv.try_recv().is_ok() {
                 done = true;
             }
         }
@@ -141,7 +141,7 @@ impl Manager {
         }
         let mut done = false;
         if let Some(ref recv) = self.vanilla_assets_chan {
-            if let Ok(_) = recv.try_recv() {
+            if recv.try_recv().is_ok() {
                 done = true;
             }
         }

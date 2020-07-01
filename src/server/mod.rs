@@ -266,7 +266,7 @@ impl Server {
         thread::spawn(move || loop {
             let pck = read.read_packet();
             let was_error = pck.is_err();
-            if let Err(_) = tx.send(pck) {
+            if tx.send(pck).is_err() {
                 return;
             }
             if was_error {
