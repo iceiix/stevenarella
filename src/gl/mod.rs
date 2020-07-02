@@ -648,10 +648,9 @@ impl Uniform {
         }
     }
 
-    pub fn set_float_mutli_raw(&self, data: *const f32, len: usize) {
-        unsafe {
-            gl::Uniform4fv(self.0, len as i32, data);
-        }
+    #[allow(clippy::missing_safety_doc)]
+    pub unsafe fn set_float_multi_raw(&self, data: *const f32, len: usize) {
+        gl::Uniform4fv(self.0, len as i32, data);
     }
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {

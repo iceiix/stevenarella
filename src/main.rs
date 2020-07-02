@@ -15,7 +15,6 @@
 #![recursion_limit = "300"]
 #![allow(clippy::too_many_arguments)] // match standard gl functions with many arguments
 #![allow(clippy::many_single_char_names)] // short variable names provide concise clarity
-#![warn(clippy::not_unsafe_ptr_arg_deref)] // TODO: fix unsafe warnings
 #![allow(clippy::float_cmp)] // float comparison used to check if changed
 
 use log::{error, info, warn};
