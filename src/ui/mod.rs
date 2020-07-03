@@ -1539,9 +1539,8 @@ impl UIElement for TextBox {
             (VirtualKeyCode::V, true) => {
                 if ctrl_pressed {
                     let mut clipboard: ClipboardContext = ClipboardProvider::new().unwrap();
-                    match clipboard.get_contents() {
-                        Ok(text) => self.input.push_str(&text),
-                        Err(_) => (),
+                    if let Ok(text) = clipboard.get_contents() {
+                        self.input.push_str(&text)
                     }
                 }
             }

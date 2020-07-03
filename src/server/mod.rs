@@ -844,8 +844,8 @@ impl Server {
         }
 
         match channel {
-            // TODO: "REGISTER" =>
-            // TODO: "UNREGISTER" =>
+            "REGISTER" => {}   // TODO
+            "UNREGISTER" => {} // TODO
             "FML|HS" => {
                 let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data))
                     .unwrap();
