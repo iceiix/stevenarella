@@ -18,10 +18,7 @@
 use aes::Aes128;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use cfb8::Cfb8;
-use hex;
 #[cfg(not(target_arch = "wasm32"))]
-use reqwest;
-use serde_json;
 use std_or_web::fs;
 
 pub mod forge;
@@ -422,11 +419,21 @@ impl Serializable for f64 {
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct UUID(u64, u64);
 
-impl UUID {
-    pub fn from_str(s: &str) -> UUID {
-        // TODO: Panics aren't the best idea here
+#[derive(Debug)]
+pub struct UUIDParseError;
+impl std::error::Error for UUIDParseError {}
+
+impl fmt::Display for UUIDParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Invalid UUID format")
+    }
+}
+
+impl std::str::FromStr for UUID {
+    type Err = UUIDParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() != 36 {
-            panic!("Invalid UUID format");
+            return Err(UUIDParseError {});
         }
         let mut parts = hex::decode(&s[..8]).unwrap();
         parts.extend_from_slice(&hex::decode(&s[9..13]).unwrap());
@@ -439,7 +446,7 @@ impl UUID {
             high |= (parts[i] as u64) << (56 - i * 8);
             low |= (parts[i + 8] as u64) << (56 - i * 8);
         }
-        UUID(high, low)
+        Ok(UUID(high, low))
     }
 }
 
@@ -485,12 +492,12 @@ impl Default for Biomes3D {
 
 impl Serializable for Biomes3D {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Biomes3D, Error> {
-        let mut data: [i32; 1024] = [0; 1024];
+        let data: [i32; 1024] = [0; 1024];
 
         // Non-length-prefixed three-dimensional biome data
-        for i in 0..1024 {
+        for item in &mut data.to_vec() {
             let b: i32 = Serializable::read_from(buf)?;
-            data[i] = b;
+            *item = b;
         }
 
         Result::Ok(Biomes3D { data })
@@ -1211,8 +1218,8 @@ impl Conn {
 
         let invalid_status = || Error::Err("Invalid status".to_owned());
 
-        let version = val.get("version").ok_or(invalid_status())?;
-        let players = val.get("players").ok_or(invalid_status())?;
+        let version = val.get("version").ok_or_else(invalid_status)?;
+        let players = val.get("players").ok_or_else(invalid_status)?;
 
         // For modded servers, get the list of Forge mods installed
         let mut forge_mods: std::vec::Vec<crate::protocol::forge::ForgeMod> = vec![];
@@ -1267,26 +1274,26 @@ impl Conn {
                     name: version
                         .get("name")
                         .and_then(Value::as_str)
-                        .ok_or(invalid_status())?
+                        .ok_or_else(invalid_status)?
                         .to_owned(),
                     protocol: version
                         .get("protocol")
                         .and_then(Value::as_i64)
-                        .ok_or(invalid_status())? as i32,
+                        .ok_or_else(invalid_status)? as i32,
                 },
                 players: StatusPlayers {
                     max: players
                         .get("max")
                         .and_then(Value::as_i64)
-                        .ok_or(invalid_status())? as i32,
+                        .ok_or_else(invalid_status)? as i32,
                     online: players
                         .get("online")
                         .and_then(Value::as_i64)
-                        .ok_or(invalid_status())? as i32,
+                        .ok_or_else(invalid_status)? as i32,
                     sample: Vec::new(), /* TODO */
                 },
                 description: format::Component::from_value(
-                    val.get("description").ok_or(invalid_status())?,
+                    val.get("description").ok_or_else(invalid_status)?,
                 ),
                 favicon: val
                     .get("favicon")
@@ -1346,11 +1353,8 @@ impl Write for Conn {
         match self.cipher.as_mut() {
             Option::None => self.stream.write(buf),
             Option::Some(cipher) => {
-                // TODO: avoid copying, but trait requires non-mutable buf
                 let mut data = vec![0; buf.len()];
-                for i in 0..buf.len() {
-                    data[i] = buf[i];
-                }
+                data[..buf.len()].clone_from_slice(&buf[..]);
 
                 cipher.encrypt(&mut data);
 

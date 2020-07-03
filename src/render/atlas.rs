@@ -57,9 +57,7 @@ impl Atlas {
                 }
             }
         }
-        if target.is_none() {
-            return None;
-        }
+        target?;
         let mut t = target.unwrap();
         let ret = Rect {
             x: t.x,

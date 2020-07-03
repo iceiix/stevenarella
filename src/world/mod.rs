@@ -24,8 +24,8 @@ use crate::shared::{Direction, Position};
 use crate::types::hash::FNVHash;
 use crate::types::{bit, nibble};
 use cgmath::prelude::*;
-use collision;
 use flate2::read::ZlibDecoder;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::hash::BuildHasherDefault;
@@ -53,11 +53,13 @@ pub enum BlockEntityAction {
     Create(Position),
     Remove(Position),
     UpdateSignText(
-        Position,
-        format::Component,
-        format::Component,
-        format::Component,
-        format::Component,
+        Box<(
+            Position,
+            format::Component,
+            format::Component,
+            format::Component,
+            format::Component,
+        )>,
     ),
 }
 
@@ -202,6 +204,7 @@ impl World {
         self.block_entity_actions.push_back(action);
     }
 
+    #[allow(clippy::verbose_bit_mask)] // "llvm generates better code" for updates_performed & 0xFFF "on x86"
     pub fn tick(&mut self, m: &mut ecs::Manager) {
         use std::time::Instant;
         let start = Instant::now();
@@ -209,11 +212,9 @@ impl World {
         while !self.light_updates.is_empty() {
             updates_performed += 1;
             self.do_light_update();
-            if updates_performed & 0xFFF == 0 {
-                if start.elapsed().subsec_nanos() >= 5000000 {
-                    // 5 ms for light updates
-                    break;
-                }
+            if (updates_performed & 0xFFF == 0) && start.elapsed().subsec_nanos() >= 5000000 {
+                // 5 ms for light updates
+                break;
             }
         }
 
@@ -243,7 +244,8 @@ impl World {
                         }
                     }
                 }
-                BlockEntityAction::UpdateSignText(pos, line1, line2, line3, line4) => {
+                BlockEntityAction::UpdateSignText(bx) => {
+                    let (pos, line1, line2, line3, line4) = *bx;
                     if let Some(chunk) = self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
                         if let Some(entity) = chunk.block_entities.get(&pos) {
                             if let Some(sign) = m.get_component_mut(*entity, sign_info) {
@@ -316,7 +318,7 @@ impl World {
 
     pub fn copy_cloud_heightmap(&mut self, data: &mut [u8]) -> bool {
         let mut dirty = false;
-        for (_, c) in &mut self.chunks {
+        for c in self.chunks.values_mut() {
             if c.heightmap_dirty {
                 dirty = true;
                 c.heightmap_dirty = false;
@@ -443,7 +445,7 @@ impl World {
 
     pub fn get_dirty_chunk_sections(&mut self) -> Vec<(i32, i32, i32)> {
         let mut out = vec![];
-        for (_, chunk) in &mut self.chunks {
+        for chunk in self.chunks.values_mut() {
             for sec in &mut chunk.sections {
                 if let Some(sec) = sec.as_mut() {
                     if !sec.building && sec.dirty {
@@ -490,7 +492,7 @@ impl World {
     }
 
     pub fn flag_dirty_all(&mut self) {
-        for (_, chunk) in &mut self.chunks {
+        for chunk in self.chunks.values_mut() {
             for sec in &mut chunk.sections {
                 if let Some(sec) = sec.as_mut() {
                     sec.dirty = true;
@@ -801,6 +803,7 @@ impl World {
         )
     }
 
+    #[allow(clippy::needless_range_loop)]
     fn load_uncompressed_chunk17(
         &mut self,
         x: i32,
@@ -997,6 +1000,7 @@ impl World {
         self.load_chunk19_or_115(false, x, z, new, mask, data)
     }
 
+    #[allow(clippy::or_fun_call)]
     fn load_chunk19_or_115(
         &mut self,
         read_biomes: bool,
@@ -1071,6 +1075,7 @@ impl World {
                         mappings
                             .get(&id)
                             .cloned()
+                            // TODO: fix or_fun_call, but do not re-borrow self
                             .unwrap_or(block::Block::by_vanilla_id(
                                 id,
                                 self.protocol_version,
@@ -1267,20 +1272,24 @@ impl Chunk {
             }
         }
         let idx = ((z << 4) | x) as usize;
-        if self.heightmap[idx] < y as u8 {
-            self.heightmap[idx] = y as u8;
-            self.heightmap_dirty = true;
-        } else if self.heightmap[idx] == y as u8 {
-            // Find a new lowest
-            for yy in 0..y {
-                let sy = y - yy - 1;
-                if let block::Air { .. } = self.get_block(x, sy, z) {
-                    continue;
-                }
-                self.heightmap[idx] = sy as u8;
-                break;
+        match self.heightmap[idx].cmp(&(y as u8)) {
+            Ordering::Less => {
+                self.heightmap[idx] = y as u8;
+                self.heightmap_dirty = true;
             }
-            self.heightmap_dirty = true;
+            Ordering::Equal => {
+                // Find a new lowest
+                for yy in 0..y {
+                    let sy = y - yy - 1;
+                    if let block::Air { .. } = self.get_block(x, sy, z) {
+                        continue;
+                    }
+                    self.heightmap[idx] = sy as u8;
+                    break;
+                }
+                self.heightmap_dirty = true;
+            }
+            Ordering::Greater => (),
         }
         true
     }

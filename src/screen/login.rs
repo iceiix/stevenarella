@@ -51,7 +51,7 @@ impl Login {
     pub fn new(vars: Rc<console::Vars>) -> Login {
         Login {
             elements: None,
-            vars: vars,
+            vars,
         }
     }
 }

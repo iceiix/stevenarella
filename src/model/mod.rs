@@ -6,7 +6,6 @@ use crate::shared::Direction;
 use crate::world;
 use crate::world::block::{Block, TintType};
 use byteorder::{NativeEndian, WriteBytesExt};
-use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::Write;
@@ -892,7 +891,7 @@ impl RawModel {
                 .texture_vars
                 .get(&name[1..])
                 .cloned()
-                .unwrap_or("".to_owned());
+                .unwrap_or_else(|| "".to_owned());
             return self.lookup_texture(&tex);
         }
         name.to_owned()

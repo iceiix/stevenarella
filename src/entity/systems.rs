@@ -38,7 +38,7 @@ impl ecs::System for ApplyVelocity {
             }
             let pos = m.get_component_mut(e, self.position).unwrap();
             let vel = m.get_component(e, self.velocity).unwrap();
-            pos.position = pos.position + vel.velocity;
+            pos.position += vel.velocity;
         }
     }
 }

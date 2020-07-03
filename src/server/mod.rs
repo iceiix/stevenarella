@@ -24,14 +24,12 @@ use crate::types::hash::FNVHash;
 use crate::types::Gamemode;
 use crate::world;
 use crate::world::block;
-use base64;
 use cgmath::prelude::*;
 use log::{debug, error, warn};
 use rand::{self, Rng};
-use rsa_public_encrypt_pkcs1;
-use serde_json;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
+use std::str::FromStr;
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
@@ -114,7 +112,11 @@ impl Server {
     ) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
-        let tag = if forge_mods.len() != 0 { "\0FML\0" } else { "" };
+        let tag = if !forge_mods.is_empty() {
+            "\0FML\0"
+        } else {
+            ""
+        };
         let host = conn.host.clone() + tag;
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
@@ -151,14 +153,14 @@ impl Server {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {}", val.username, val.uuid);
                     let mut read = conn.clone();
-                    let mut write = conn.clone();
+                    let mut write = conn;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
                     return Ok(Server::new(
                         protocol_version,
                         forge_mods,
-                        protocol::UUID::from_str(&val.uuid),
+                        protocol::UUID::from_str(&val.uuid).unwrap(),
                         resources,
                         Some(write),
                         Some(rx),
@@ -169,7 +171,7 @@ impl Server {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {:?}", val.username, val.uuid);
                     let mut read = conn.clone();
-                    let mut write = conn.clone();
+                    let mut write = conn;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
@@ -216,7 +218,7 @@ impl Server {
         }
 
         let mut read = conn.clone();
-        let mut write = conn.clone();
+        let mut write = conn;
 
         read.enable_encyption(&shared, true);
         write.enable_encyption(&shared, false);
@@ -230,7 +232,7 @@ impl Server {
                 }
                 protocol::packet::Packet::LoginSuccess_String(val) => {
                     debug!("Login: {} {}", val.username, val.uuid);
-                    uuid = protocol::UUID::from_str(&val.uuid);
+                    uuid = protocol::UUID::from_str(&val.uuid).unwrap();
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     break;
@@ -268,7 +270,7 @@ impl Server {
         thread::spawn(move || loop {
             let pck = read.read_packet();
             let was_error = pck.is_err();
-            if let Err(_) = tx.send(pck) {
+            if tx.send(pck).is_err() {
                 return;
             }
             if was_error {
@@ -846,8 +848,8 @@ impl Server {
         }
 
         match channel {
-            // TODO: "REGISTER" =>
-            // TODO: "UNREGISTER" =>
+            "REGISTER" => {}   // TODO
+            "UNREGISTER" => {} // TODO
             "FML|HS" => {
                 let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data))
                     .unwrap();
@@ -865,10 +867,7 @@ impl Server {
                             fml_protocol_version, override_dimension
                         );
 
-                        self.write_plugin_message(
-                            "REGISTER",
-                            "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes(),
-                        );
+                        self.write_plugin_message("REGISTER", b"FML|HS\0FML\0FML|MP\0FML\0FORGE");
                         self.write_fmlhs_plugin_message(&ClientHello {
                             fml_protocol_version,
                         });
@@ -1029,9 +1028,9 @@ impl Server {
         };
         // TODO: refactor with write_plugin_message
         if self.protocol_version >= 47 {
-            self.write_packet(brand.as_message());
+            self.write_packet(brand.into_message());
         } else {
-            self.write_packet(brand.as_message17());
+            self.write_packet(brand.into_message17());
         }
     }
 
@@ -1368,7 +1367,7 @@ impl Server {
     ) {
         self.on_player_spawn(
             spawn.entity_id.0,
-            protocol::UUID::from_str(&spawn.uuid),
+            protocol::UUID::from_str(&spawn.uuid).unwrap(),
             f64::from(spawn.x),
             f64::from(spawn.y),
             f64::from(spawn.z),
@@ -1577,13 +1576,13 @@ impl Server {
                             nbt.1.get("Text4").unwrap().as_str().unwrap(),
                         );
                         self.world.add_block_entity_action(
-                            world::BlockEntityAction::UpdateSignText(
+                            world::BlockEntityAction::UpdateSignText(Box::new((
                                 block_update.location,
                                 line1,
                                 line2,
                                 line3,
                                 line4,
-                            ),
+                            ))),
                         );
                     }
                     //10 => // Unused
@@ -1611,13 +1610,13 @@ impl Server {
         format::convert_legacy(&mut update_sign.line3);
         format::convert_legacy(&mut update_sign.line4);
         self.world
-            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(Box::new((
                 update_sign.location,
                 update_sign.line1,
                 update_sign.line2,
                 update_sign.line3,
                 update_sign.line4,
-            ));
+            ))));
     }
 
     fn on_sign_update_u16(&mut self, mut update_sign: packet::play::clientbound::UpdateSign_u16) {
@@ -1626,13 +1625,13 @@ impl Server {
         format::convert_legacy(&mut update_sign.line3);
         format::convert_legacy(&mut update_sign.line4);
         self.world
-            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(Box::new((
                 Position::new(update_sign.x, update_sign.y as i32, update_sign.z),
                 update_sign.line1,
                 update_sign.line2,
                 update_sign.line3,
                 update_sign.line4,
-            ));
+            ))));
     }
 
     fn on_player_info_string(
@@ -1972,6 +1971,7 @@ impl Server {
     }
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, Copy)]
 enum TeleportFlag {
     RelX = 0b00001,

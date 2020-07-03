@@ -1,4 +1,6 @@
 #![recursion_limit = "600"]
+#![allow(clippy::identity_op)]
+#![allow(clippy::collapsible_if)]
 
 extern crate steven_shared as shared;
 
@@ -261,7 +263,7 @@ macro_rules! define_blocks {
                                 return $update_state;
                             )?
                             Block::$name {
-                                $($fname: $fname,)?
+                                $($fname,)?
                             }
                         }
                     )+
@@ -376,7 +378,7 @@ macro_rules! define_blocks {
                                     $($fname: $fname.next().unwrap(),)?
                                 },
                                 state: CombinationIterState {
-                                    $($fname: $fname,)?
+                                    $($fname,)?
                                 }
                             }
                         }
@@ -570,9 +572,9 @@ define_blocks! {
             }
         },
         update_state (world, pos) => if variant == DirtVariant::Podzol {
-            Block::Dirt{snowy: is_snowy(world, pos), variant: variant}
+            Block::Dirt{snowy: is_snowy(world, pos), variant}
         } else {
-            Block::Dirt{snowy: snowy, variant: variant}
+            Block::Dirt{snowy, variant}
         },
     }
     Cobblestone {
@@ -774,7 +776,7 @@ define_blocks! {
         offset if check_decay {
             None
         } else {
-            Some(variant.offset() * (7 * 2) + ((distance as usize - 1) << 1) | (if decayable { 0 } else { 1 }))
+            Some(variant.offset() * (7 * 2) + ((distance as usize - 1) << 1) + (if decayable { 0 } else { 1 }))
         },
         material material::LEAVES,
         model { ("minecraft", format!("{}_leaves", variant.as_string()) ) },
@@ -1337,7 +1339,7 @@ define_blocks! {
         collision vec![],
         update_state (world, pos) => {
             Fire{
-                age: age,
+                age,
                 up: can_burn(world, pos.shift(Direction::Up)),
                 north: can_burn(world, pos.shift(Direction::North)),
                 south: can_burn(world, pos.shift(Direction::South)),
@@ -1438,7 +1440,7 @@ define_blocks! {
             south: can_connect_redstone(world, pos, Direction::South),
             west: can_connect_redstone(world, pos, Direction::West),
             east: can_connect_redstone(world, pos, Direction::East),
-            power: power
+            power
         },
         multipart (key, val) => match key {
             "north" => val.contains(north.as_string()),
@@ -1565,7 +1567,7 @@ define_blocks! {
         collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
-            Block::WoodenDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+            Block::WoodenDoor{facing, half, hinge, open, powered}
         },
     }
     Ladder {
@@ -1702,7 +1704,7 @@ define_blocks! {
         collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
-            Block::IronDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+            Block::IronDoor{facing, half, hinge, open, powered}
         },
     }
     WoodenPressurePlate {
@@ -2088,7 +2090,7 @@ define_blocks! {
             Point3::new(0.0, 0.0, 0.0),
             Point3::new(1.0, 1.0/8.0, 1.0)
         )],
-        update_state (world, pos) => RepeaterPowered{delay: delay, facing: facing, locked: update_repeater_state(world, pos, facing)},
+        update_state (world, pos) => RepeaterPowered{delay, facing, locked: update_repeater_state(world, pos, facing)},
     }
     StainedGlass {
         props {
@@ -2222,7 +2224,7 @@ define_blocks! {
         data None::<usize>,
         offset mushroom_block_offset(false, west, up, south, north, east, down),
         model { ("minecraft", "mushroom_stem") },
-        variant format!("variant=all_stem"),
+        variant "variant=all_stem".to_string(),
     }
     IronBars {
         props {
@@ -2380,7 +2382,7 @@ define_blocks! {
                 _ => Direction::Up,
             };
 
-            Block::PumpkinStem{age: age, facing: facing}
+            Block::PumpkinStem{age, facing}
         },
     }
     MelonStem {
@@ -2416,7 +2418,7 @@ define_blocks! {
                 _ => Direction::Up,
             };
 
-            Block::MelonStem{age: age, facing: facing}
+            Block::MelonStem{age, facing}
         },
     }
     Vine {
@@ -2448,7 +2450,7 @@ define_blocks! {
         update_state (world, pos) => {
             let mat = world.get_block(pos.shift(Direction::Up)).get_material();
             let up = mat.renderable && (mat.should_cull_against || mat.never_cull /* Because leaves */);
-            Vine{up: up, south: south, west: west, north: north, east: east}
+            Vine{up, south, west, north, east}
         },
     }
     FenceGate {
@@ -2470,10 +2472,10 @@ define_blocks! {
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
         collision fence_gate_collision(facing, in_wall, open),
         update_state (world, pos) => Block::FenceGate{
-            facing: facing,
+            facing,
             in_wall: fence_gate_update_state(world, pos, facing),
-            open: open,
-            powered: powered
+            open,
+            powered
         },
     }
     BrickStairs {
@@ -2930,14 +2932,14 @@ define_blocks! {
             };
 
             Tripwire{
-                powered: powered,
-                attached: attached,
-                disarmed: disarmed,
+                powered,
+                attached,
+                disarmed,
                 north: f(Direction::North),
                 south: f(Direction::South),
                 west: f(Direction::West),
                 east: f(Direction::East),
-                mojang_cant_even: mojang_cant_even
+                mojang_cant_even
             }
         },
     }
@@ -4206,10 +4208,10 @@ define_blocks! {
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
         collision fence_gate_collision(facing, in_wall, open),
         update_state (world, pos) => Block::SpruceFenceGate{
-            facing: facing,
+            facing,
             in_wall: fence_gate_update_state(world, pos, facing),
-            open: open,
-            powered: powered
+            open,
+            powered
         },
     }
     BirchFenceGate {
@@ -4231,10 +4233,10 @@ define_blocks! {
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
         collision fence_gate_collision(facing, in_wall, open),
         update_state (world, pos) => Block::BirchFenceGate{
-            facing: facing,
+            facing,
             in_wall: fence_gate_update_state(world, pos, facing),
-            open: open,
-            powered: powered
+            open,
+            powered
         },
     }
     JungleFenceGate {
@@ -4256,10 +4258,10 @@ define_blocks! {
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
         collision fence_gate_collision(facing, in_wall, open),
         update_state (world, pos) => Block::JungleFenceGate{
-            facing: facing,
+            facing,
             in_wall: fence_gate_update_state(world, pos, facing),
-            open: open,
-            powered: powered
+            open,
+            powered
         },
     }
     DarkOakFenceGate {
@@ -4281,10 +4283,10 @@ define_blocks! {
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
         collision fence_gate_collision(facing, in_wall, open),
         update_state (world, pos) => Block::DarkOakFenceGate{
-            facing: facing,
+            facing,
             in_wall: fence_gate_update_state(world, pos, facing),
-            open: open,
-            powered: powered
+            open,
+            powered
         },
     }
     AcaciaFenceGate {
@@ -4306,10 +4308,10 @@ define_blocks! {
         variant format!("facing={},in_wall={},open={}", facing.as_string(), in_wall, open),
         collision fence_gate_collision(facing, in_wall, open),
         update_state (world, pos) => Block::AcaciaFenceGate{
-            facing: facing,
+            facing,
             in_wall: fence_gate_update_state(world, pos, facing),
-            open: open,
-            powered: powered
+            open,
+            powered
         },
     }
     SpruceFence {
@@ -4478,7 +4480,7 @@ define_blocks! {
         collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
-            Block::SpruceDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+            Block::SpruceDoor{facing, half, hinge, open, powered}
         },
     }
     BirchDoor {
@@ -4502,7 +4504,7 @@ define_blocks! {
         collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
-            Block::BirchDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+            Block::BirchDoor{facing, half, hinge, open, powered}
         },
     }
     JungleDoor {
@@ -4526,7 +4528,7 @@ define_blocks! {
         collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
-            Block::JungleDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+            Block::JungleDoor{facing, half, hinge, open, powered}
         },
     }
     AcaciaDoor {
@@ -4550,7 +4552,7 @@ define_blocks! {
         collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
-            Block::AcaciaDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+            Block::AcaciaDoor{facing, half, hinge, open, powered}
         },
     }
     DarkOakDoor {
@@ -4574,7 +4576,7 @@ define_blocks! {
         collision door_collision(facing, hinge, open),
         update_state (world, pos) => {
             let (facing, hinge, open, powered) = update_door_state(world, pos, half, facing, hinge, open, powered);
-            Block::DarkOakDoor{facing: facing, half: half, hinge: hinge, open: open, powered: powered}
+            Block::DarkOakDoor{facing, half, hinge, open, powered}
         },
     }
     EndRod {
@@ -7264,7 +7266,7 @@ impl TreeVariant {
             TreeVariant::Spruce | TreeVariant::DarkOak => 1,
             TreeVariant::Birch => 2,
             TreeVariant::Jungle => 3,
-            _ => panic!("TreeVariant {:?} has no data (1.13+ only)"),
+            _ => panic!("TreeVariant {:?} has no data (1.13+ only)", self),
         }
     }
 
@@ -7293,7 +7295,7 @@ impl TreeVariant {
             TreeVariant::Jungle => 3,
             TreeVariant::Acacia => 4,
             TreeVariant::DarkOak => 5,
-            _ => panic!("TreeVariant {:?} has no plank data (1.13+ only)"),
+            _ => panic!("TreeVariant {:?} has no plank data (1.13+ only)", self),
         }
     }
 }
