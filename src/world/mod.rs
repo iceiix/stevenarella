@@ -25,6 +25,7 @@ use crate::types::hash::FNVHash;
 use crate::types::{bit, nibble};
 use cgmath::prelude::*;
 use flate2::read::ZlibDecoder;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::hash::BuildHasherDefault;
@@ -1270,20 +1271,24 @@ impl Chunk {
             }
         }
         let idx = ((z << 4) | x) as usize;
-        if self.heightmap[idx] < y as u8 {
-            self.heightmap[idx] = y as u8;
-            self.heightmap_dirty = true;
-        } else if self.heightmap[idx] == y as u8 {
-            // Find a new lowest
-            for yy in 0..y {
-                let sy = y - yy - 1;
-                if let block::Air { .. } = self.get_block(x, sy, z) {
-                    continue;
-                }
-                self.heightmap[idx] = sy as u8;
-                break;
+        match self.heightmap[idx].cmp(&(y as u8)) {
+            Ordering::Less => {
+                self.heightmap[idx] = y as u8;
+                self.heightmap_dirty = true;
             }
-            self.heightmap_dirty = true;
+            Ordering::Equal => {
+                // Find a new lowest
+                for yy in 0..y {
+                    let sy = y - yy - 1;
+                    if let block::Air { .. } = self.get_block(x, sy, z) {
+                        continue;
+                    }
+                    self.heightmap[idx] = sy as u8;
+                    break;
+                }
+                self.heightmap_dirty = true;
+            }
+            Ordering::Greater => (),
         }
         true
     }
