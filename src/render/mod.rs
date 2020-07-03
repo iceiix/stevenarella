@@ -956,6 +956,7 @@ pub struct TextureManager {
 
 impl TextureManager {
     #[allow(clippy::let_and_return)]
+    #[allow(clippy::type_complexity)]
     fn new(
         res: Arc<RwLock<resources::Manager>>,
     ) -> (

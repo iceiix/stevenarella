@@ -135,6 +135,7 @@ impl Info {
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn test_block(
     world: &world::World,
     pos: Position,
