@@ -266,6 +266,8 @@ impl ServerList {
                         format::convert_legacy(&mut desc);
                         let favicon = if let Some(icon) = res.0.favicon {
                             let data_base64 = &icon["data:image/png;base64,".len()..];
+                            let data_base64: String =
+                                data_base64.chars().filter(|c| !c.is_whitespace()).collect();
                             let data = base64::decode(data_base64).unwrap();
                             Some(image::load_from_memory(&data).unwrap())
                         } else {
