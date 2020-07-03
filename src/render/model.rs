@@ -219,7 +219,7 @@ impl Manager {
         textures: &Arc<RwLock<super::TextureManager>>,
     ) {
         for collection in &mut self.collections {
-            for (_, model) in &mut collection.models {
+            for model in collection.models.values_mut() {
                 for vert in &mut model.verts {
                     vert.texture = if vert.texture.version == version {
                         vert.texture.clone()

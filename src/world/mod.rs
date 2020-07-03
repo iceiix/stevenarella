@@ -313,7 +313,7 @@ impl World {
 
     pub fn copy_cloud_heightmap(&mut self, data: &mut [u8]) -> bool {
         let mut dirty = false;
-        for (_, c) in &mut self.chunks {
+        for c in self.chunks.values_mut() {
             if c.heightmap_dirty {
                 dirty = true;
                 c.heightmap_dirty = false;
@@ -440,7 +440,7 @@ impl World {
 
     pub fn get_dirty_chunk_sections(&mut self) -> Vec<(i32, i32, i32)> {
         let mut out = vec![];
-        for (_, chunk) in &mut self.chunks {
+        for chunk in self.chunks.values_mut() {
             for sec in &mut chunk.sections {
                 if let Some(sec) = sec.as_mut() {
                     if !sec.building && sec.dirty {
@@ -487,7 +487,7 @@ impl World {
     }
 
     pub fn flag_dirty_all(&mut self) {
-        for (_, chunk) in &mut self.chunks {
+        for chunk in self.chunks.values_mut() {
             for sec in &mut chunk.sections {
                 if let Some(sec) = sec.as_mut() {
                     sec.dirty = true;
