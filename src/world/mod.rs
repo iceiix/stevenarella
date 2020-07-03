@@ -204,6 +204,7 @@ impl World {
         self.block_entity_actions.push_back(action);
     }
 
+    #[allow(clippy::verbose_bit_mask)] // "llvm generates better code" for updates_performed & 0xFFF "on x86"
     pub fn tick(&mut self, m: &mut ecs::Manager) {
         use std::time::Instant;
         let start = Instant::now();
