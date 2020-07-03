@@ -1028,9 +1028,9 @@ impl Server {
         };
         // TODO: refactor with write_plugin_message
         if self.protocol_version >= 47 {
-            self.write_packet(brand.as_message());
+            self.write_packet(brand.into_message());
         } else {
-            self.write_packet(brand.as_message17());
+            self.write_packet(brand.into_message17());
         }
     }
 
