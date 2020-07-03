@@ -357,7 +357,10 @@ pub fn convert_legacy(c: &mut Component) {
                                 'n' => modifier.underlined = Some(true),
                                 'o' => modifier.italic = Some(true),
                                 'r' => {}
-                                _ => unimplemented!(),
+                                _ => println!(
+                                    "warning: unsupported color code {:?} in text '{}'",
+                                    color_char, txt
+                                ),
                             }
 
                             current.modifier = modifier;
