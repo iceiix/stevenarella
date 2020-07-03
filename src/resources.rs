@@ -230,11 +230,11 @@ impl Manager {
                 prog = task.progress as f64 / task.total as f64;
             }
             let background = ui.background.borrow();
-            let bar = ui.progress_bar.borrow();
+            let progress_bar = ui.progress_bar.borrow();
             // Let the progress bar finish
             if !found
                 && (background.y - ui.position).abs() < 0.7 * delta
-                && (bar.width - 350.0).abs() < 1.0 * delta
+                && (progress_bar.width - 350.0).abs() < 1.0 * delta
             {
                 ui.closing = true;
                 ui.position = -UI_HEIGHT;
@@ -257,12 +257,13 @@ impl Manager {
             } else {
                 background.y += (ui.position - background.y).signum() * 0.7 * delta;
             }
-            let mut bar = ui.progress_bar.borrow_mut();
+            let mut progress_bar = ui.progress_bar.borrow_mut();
             let target_size = (350.0 * ui.progress).min(350.0);
-            if (bar.width - target_size).abs() < 1.0 * delta {
-                bar.width = target_size;
+            if (progress_bar.width - target_size).abs() < 1.0 * delta {
+                progress_bar.width = target_size;
             } else {
-                bar.width += ((target_size - bar.width).signum() * delta).max(0.0);
+                progress_bar.width +=
+                    ((target_size - progress_bar.width).signum() * delta).max(0.0);
             }
         }
 
