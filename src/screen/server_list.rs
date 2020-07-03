@@ -502,7 +502,7 @@ impl super::Screen for ServerList {
                             }
                             let sm =
                                 format!("{} mods + {}", res.forge_mods.len(), res.protocol_name);
-                            let st = if res.forge_mods.len() > 0 {
+                            let st = if !res.forge_mods.is_empty() {
                                 &sm
                             } else {
                                 &res.protocol_name

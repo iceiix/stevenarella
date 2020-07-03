@@ -112,7 +112,11 @@ impl Server {
     ) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
-        let tag = if forge_mods.len() != 0 { "\0FML\0" } else { "" };
+        let tag = if !forge_mods.is_empty() {
+            "\0FML\0"
+        } else {
+            ""
+        };
         let host = conn.host.clone() + tag;
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
