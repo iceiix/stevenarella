@@ -1576,13 +1576,13 @@ impl Server {
                             nbt.1.get("Text4").unwrap().as_str().unwrap(),
                         );
                         self.world.add_block_entity_action(
-                            world::BlockEntityAction::UpdateSignText(
+                            world::BlockEntityAction::UpdateSignText(Box::new((
                                 block_update.location,
                                 line1,
                                 line2,
                                 line3,
                                 line4,
-                            ),
+                            ))),
                         );
                     }
                     //10 => // Unused
@@ -1610,13 +1610,13 @@ impl Server {
         format::convert_legacy(&mut update_sign.line3);
         format::convert_legacy(&mut update_sign.line4);
         self.world
-            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(Box::new((
                 update_sign.location,
                 update_sign.line1,
                 update_sign.line2,
                 update_sign.line3,
                 update_sign.line4,
-            ));
+            ))));
     }
 
     fn on_sign_update_u16(&mut self, mut update_sign: packet::play::clientbound::UpdateSign_u16) {
@@ -1625,13 +1625,13 @@ impl Server {
         format::convert_legacy(&mut update_sign.line3);
         format::convert_legacy(&mut update_sign.line4);
         self.world
-            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(Box::new((
                 Position::new(update_sign.x, update_sign.y as i32, update_sign.z),
                 update_sign.line1,
                 update_sign.line2,
                 update_sign.line3,
                 update_sign.line4,
-            ));
+            ))));
     }
 
     fn on_player_info_string(
