@@ -801,6 +801,7 @@ impl World {
         )
     }
 
+    #[allow(clippy::needless_range_loop)]
     fn load_uncompressed_chunk17(
         &mut self,
         x: i32,
