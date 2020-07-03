@@ -350,8 +350,7 @@ fn main2() {
 
         let version = {
             let try_res = game.resource_manager.try_write();
-            if try_res.is_ok() {
-                let mut res = try_res.unwrap();
+            if let Ok(mut res) = try_res {
                 res.tick(&mut resui, &mut ui_container, delta);
                 res.version()
             } else {
