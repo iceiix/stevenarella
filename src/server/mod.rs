@@ -867,10 +867,7 @@ impl Server {
                             fml_protocol_version, override_dimension
                         );
 
-                        self.write_plugin_message(
-                            "REGISTER",
-                            "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes(),
-                        );
+                        self.write_plugin_message("REGISTER", b"FML|HS\0FML\0FML|MP\0FML\0FORGE");
                         self.write_fmlhs_plugin_message(&ClientHello {
                             fml_protocol_version,
                         });
