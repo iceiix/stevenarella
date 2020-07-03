@@ -6,7 +6,7 @@ jobs:
          displayName: "Install build dependencies"
          condition: eq(variables['Agent.OS'], 'Linux')
      minrust: 1.44.1
-     clippy:
+     clippy: -D clippy::all
 
 resources:
   repositories:
