@@ -28,8 +28,8 @@ pub struct DeleteServerEntry {
 struct UIElements {
     logo: ui::logo::Logo,
 
+    _prompt: ui::TextRef,
     _name: ui::TextBoxRef,
-    _address: ui::TextBoxRef,
     _confirm: ui::ButtonRef,
     _cancel: ui::ButtonRef,
 }
@@ -97,17 +97,11 @@ impl super::Screen for DeleteServerEntry {
             .attach(&mut *server_name.borrow_mut());
 
         // Address
-        let server_address = ui::TextBoxBuilder::new()
-            .input(self.entry_info.as_ref().map_or("", |v| &v.2))
+        let prompt = ui::TextBuilder::new()
+            .text("Are you sure you wish to delete this server?") // TODO: show name/address
             .position(0.0, 40.0)
-            .size(400.0, 40.0)
             .alignment(ui::VAttach::Middle, ui::HAttach::Center)
             .create(ui_container);
-        ui::TextBox::make_focusable(&server_address, ui_container);
-        ui::TextBuilder::new()
-            .text("Address")
-            .position(0.0, -18.0)
-            .attach(&mut *server_address.borrow_mut());
 
         // Confirm
         let confirm = ui::ButtonBuilder::new()
@@ -124,13 +118,9 @@ impl super::Screen for DeleteServerEntry {
             confirm.add_text(txt);
             let index = self.entry_info.as_ref().map(|v| v.0);
             let server_name = server_name.clone();
-            let server_address = server_address.clone();
             confirm.add_click_func(move |_, game| {
-                Self::save_servers(
-                    index,
-                    &server_name.borrow().input,
-                    &server_address.borrow().input,
-                );
+                let server_address = "TODO";
+                Self::save_servers(index, &server_name.borrow().input, &server_address);
                 game.screen_sys
                     .replace_screen(Box::new(super::ServerList::new(None)));
                 true
@@ -160,7 +150,7 @@ impl super::Screen for DeleteServerEntry {
         self.elements = Some(UIElements {
             logo,
             _name: server_name,
-            _address: server_address,
+            _prompt: prompt,
             _confirm: confirm,
             _cancel: cancel,
         });
