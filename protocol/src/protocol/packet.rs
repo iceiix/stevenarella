@@ -2968,6 +2968,7 @@ pub enum CommandProperty {
     ItemEnchantment,
     EntitySummon,
     Dimension,
+    UUID,
 }
 
 impl Serializable for CommandNode {
@@ -3095,6 +3096,7 @@ impl Serializable for CommandNode {
                 "minecraft:item_enchantment" => CommandProperty::ItemEnchantment,
                 "minecraft:entity_summon" => CommandProperty::EntitySummon,
                 "minecraft:dimension" => CommandProperty::Dimension,
+                "minecraft:uuid" => CommandProperty::UUID,
                 _ => panic!("unsupported command node parser {}", parse),
             })
         } else {
