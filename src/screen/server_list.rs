@@ -207,6 +207,21 @@ impl ServerList {
                     .alignment(ui::VAttach::Middle, ui::HAttach::Center)
                     .attach(&mut *btn);
                 btn.add_text(txt);
+                let index = index;
+                let sname = name.clone();
+                let saddr = address.clone();
+                btn.add_click_func(move |_, game| {
+                    println!("TODO: delete server {}, {}, {}", index, sname, saddr);
+                    // TODO: replace with deletion
+                    game.screen_sys.replace_screen(Box::new(
+                        super::edit_server::EditServerEntry::new(Some((
+                            index,
+                            sname.clone(),
+                            saddr.clone(),
+                        ))),
+                    ));
+                    true
+                })
             }
 
             // Edit entry button
