@@ -212,11 +212,7 @@ impl ServerList {
                 let saddr = address.clone();
                 btn.add_click_func(move |_, game| {
                     game.screen_sys.replace_screen(Box::new(
-                        super::delete_server::DeleteServerEntry::new(Some((
-                            index,
-                            sname.clone(),
-                            saddr.clone(),
-                        ))),
+                        super::delete_server::DeleteServerEntry::new(index, &sname, &saddr),
                     ));
                     true
                 })

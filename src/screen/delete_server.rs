@@ -22,7 +22,9 @@ use serde_json::{self, Value};
 
 pub struct DeleteServerEntry {
     elements: Option<UIElements>,
-    entry_info: Option<(usize, String, String)>,
+    index: usize,
+    name: String,
+    address: String,
 }
 
 struct UIElements {
@@ -34,14 +36,16 @@ struct UIElements {
 }
 
 impl DeleteServerEntry {
-    pub fn new(entry_info: Option<(usize, String, String)>) -> DeleteServerEntry {
+    pub fn new(index: usize, name: &str, address: &str) -> DeleteServerEntry {
         DeleteServerEntry {
             elements: None,
-            entry_info,
+            index,
+            name: name.to_string(),
+            address: address.to_string(),
         }
     }
 
-    fn delete_server(index: Option<usize>) {
+    fn delete_server(index: usize) {
         let mut servers_info = match fs::File::open("servers.json") {
             Ok(val) => serde_json::from_reader(val).unwrap(),
             Err(_) => {
@@ -59,9 +63,7 @@ impl DeleteServerEntry {
                 .unwrap()
                 .as_array_mut()
                 .unwrap();
-            if let Some(index) = index {
-                servers.remove(index);
-            }
+            servers.remove(index);
         }
 
         let mut out = fs::File::create("servers.json").unwrap();
@@ -74,10 +76,11 @@ impl super::Screen for DeleteServerEntry {
         let logo = ui::logo::Logo::new(renderer.resources.clone(), ui_container);
 
         // Prompt
-        let name = self.entry_info.as_ref().map(|v| v.1.clone()).unwrap();
-        let address = self.entry_info.as_ref().map(|v| v.2.clone()).unwrap();
         let prompt = ui::TextBuilder::new()
-            .text(format!("Are you sure you wish to delete {} {}?", name, address))
+            .text(format!(
+                "Are you sure you wish to delete {} {}?",
+                self.name, self.address
+            ))
             .position(0.0, 40.0)
             .alignment(ui::VAttach::Middle, ui::HAttach::Center)
             .create(ui_container);
@@ -95,7 +98,7 @@ impl super::Screen for DeleteServerEntry {
                 .alignment(ui::VAttach::Middle, ui::HAttach::Center)
                 .attach(&mut *confirm);
             confirm.add_text(txt);
-            let index = self.entry_info.as_ref().map(|v| v.0);
+            let index = self.index;
             confirm.add_click_func(move |_, game| {
                 Self::delete_server(index);
                 game.screen_sys
