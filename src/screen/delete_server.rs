@@ -29,7 +29,6 @@ struct UIElements {
     logo: ui::logo::Logo,
 
     _prompt: ui::TextRef,
-    _name: ui::TextBoxRef,
     _confirm: ui::ButtonRef,
     _cancel: ui::ButtonRef,
 }
@@ -83,20 +82,7 @@ impl super::Screen for DeleteServerEntry {
     fn on_active(&mut self, renderer: &mut render::Renderer, ui_container: &mut ui::Container) {
         let logo = ui::logo::Logo::new(renderer.resources.clone(), ui_container);
 
-        // Name
-        let server_name = ui::TextBoxBuilder::new()
-            .input(self.entry_info.as_ref().map_or("", |v| &v.1))
-            .position(0.0, -20.0)
-            .size(400.0, 40.0)
-            .alignment(ui::VAttach::Middle, ui::HAttach::Center)
-            .create(ui_container);
-        ui::TextBox::make_focusable(&server_name, ui_container);
-        ui::TextBuilder::new()
-            .text("Name:")
-            .position(0.0, -18.0)
-            .attach(&mut *server_name.borrow_mut());
-
-        // Address
+        // Prompt
         let prompt = ui::TextBuilder::new()
             .text("Are you sure you wish to delete this server?") // TODO: show name/address
             .position(0.0, 40.0)
@@ -117,10 +103,10 @@ impl super::Screen for DeleteServerEntry {
                 .attach(&mut *confirm);
             confirm.add_text(txt);
             let index = self.entry_info.as_ref().map(|v| v.0);
-            let server_name = server_name.clone();
             confirm.add_click_func(move |_, game| {
                 let server_address = "TODO";
-                Self::save_servers(index, &server_name.borrow().input, &server_address);
+                let server_name = "TODO";
+                Self::save_servers(index, &server_name, &server_address);
                 game.screen_sys
                     .replace_screen(Box::new(super::ServerList::new(None)));
                 true
@@ -149,7 +135,6 @@ impl super::Screen for DeleteServerEntry {
 
         self.elements = Some(UIElements {
             logo,
-            _name: server_name,
             _prompt: prompt,
             _confirm: confirm,
             _cancel: cancel,
