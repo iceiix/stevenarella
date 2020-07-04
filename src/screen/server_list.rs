@@ -211,10 +211,8 @@ impl ServerList {
                 let sname = name.clone();
                 let saddr = address.clone();
                 btn.add_click_func(move |_, game| {
-                    println!("TODO: delete server {}, {}, {}", index, sname, saddr);
-                    // TODO: replace with deletion
                     game.screen_sys.replace_screen(Box::new(
-                        super::edit_server::EditServerEntry::new(Some((
+                        super::delete_server::DeleteServerEntry::new(Some((
                             index,
                             sname.clone(),
                             saddr.clone(),
