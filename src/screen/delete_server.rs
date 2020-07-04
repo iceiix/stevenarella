@@ -41,7 +41,7 @@ impl DeleteServerEntry {
         }
     }
 
-    fn save_servers(index: Option<usize>, name: &str, address: &str) {
+    fn delete_server(index: Option<usize>) {
         let mut servers_info = match fs::File::open("servers.json") {
             Ok(val) => serde_json::from_reader(val).unwrap(),
             Err(_) => {
@@ -49,13 +49,6 @@ impl DeleteServerEntry {
                 info.insert("servers".to_owned(), Value::Array(vec![]));
                 Value::Object(info.into_iter().collect())
             }
-        };
-
-        let new_entry = {
-            let mut entry = BTreeMap::default();
-            entry.insert("name".to_owned(), Value::String(name.to_owned()));
-            entry.insert("address".to_owned(), Value::String(address.to_owned()));
-            Value::Object(entry.into_iter().collect())
         };
 
         {
@@ -67,9 +60,7 @@ impl DeleteServerEntry {
                 .as_array_mut()
                 .unwrap();
             if let Some(index) = index {
-                *servers.get_mut(index).unwrap() = new_entry;
-            } else {
-                servers.push(new_entry);
+                servers.remove(index);
             }
         }
 
@@ -104,9 +95,7 @@ impl super::Screen for DeleteServerEntry {
             confirm.add_text(txt);
             let index = self.entry_info.as_ref().map(|v| v.0);
             confirm.add_click_func(move |_, game| {
-                let server_address = "TODO";
-                let server_name = "TODO";
-                Self::save_servers(index, &server_name, &server_address);
+                Self::delete_server(index);
                 game.screen_sys
                     .replace_screen(Box::new(super::ServerList::new(None)));
                 true
