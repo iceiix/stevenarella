@@ -30,7 +30,7 @@ struct UIElements {
 
     _name: ui::TextBoxRef,
     _address: ui::TextBoxRef,
-    _done: ui::ButtonRef,
+    _confirm: ui::ButtonRef,
     _cancel: ui::ButtonRef,
 }
 
@@ -109,23 +109,23 @@ impl super::Screen for DeleteServerEntry {
             .position(0.0, -18.0)
             .attach(&mut *server_address.borrow_mut());
 
-        // Done
-        let done = ui::ButtonBuilder::new()
+        // Confirm
+        let confirm = ui::ButtonBuilder::new()
             .position(110.0, 100.0)
             .size(200.0, 40.0)
             .alignment(ui::VAttach::Middle, ui::HAttach::Center)
             .create(ui_container);
         {
-            let mut done = done.borrow_mut();
+            let mut confirm = confirm.borrow_mut();
             let txt = ui::TextBuilder::new()
-                .text("Done")
+                .text("Confirm")
                 .alignment(ui::VAttach::Middle, ui::HAttach::Center)
-                .attach(&mut *done);
-            done.add_text(txt);
+                .attach(&mut *confirm);
+            confirm.add_text(txt);
             let index = self.entry_info.as_ref().map(|v| v.0);
             let server_name = server_name.clone();
             let server_address = server_address.clone();
-            done.add_click_func(move |_, game| {
+            confirm.add_click_func(move |_, game| {
                 Self::save_servers(
                     index,
                     &server_name.borrow().input,
@@ -161,7 +161,7 @@ impl super::Screen for DeleteServerEntry {
             logo,
             _name: server_name,
             _address: server_address,
-            _done: done,
+            _confirm: confirm,
             _cancel: cancel,
         });
     }
