@@ -74,8 +74,10 @@ impl super::Screen for DeleteServerEntry {
         let logo = ui::logo::Logo::new(renderer.resources.clone(), ui_container);
 
         // Prompt
+        let name = self.entry_info.as_ref().map(|v| v.1.clone()).unwrap();
+        let address = self.entry_info.as_ref().map(|v| v.2.clone()).unwrap();
         let prompt = ui::TextBuilder::new()
-            .text("Are you sure you wish to delete this server?") // TODO: show name/address
+            .text(format!("Are you sure you wish to delete {} {}?", name, address))
             .position(0.0, 40.0)
             .alignment(ui::VAttach::Middle, ui::HAttach::Center)
             .create(ui_container);
