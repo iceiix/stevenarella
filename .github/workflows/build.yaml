@@ -35,6 +35,11 @@ jobs:
           cargo build --verbose --release
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.14
+      - name: Run clippy
+        uses: actions-rs/clippy-check@v1.0.7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-targets -- -D warnings
       - name: (Linux/MacOS) Strip binary
         if: matrix.os != 'windows-latest'
         run: strip target/release/stevenarella
