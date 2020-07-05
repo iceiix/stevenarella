@@ -59,8 +59,6 @@ Support for older protocols will _not_ be dropped as newer protocols are added.
 Windows users can download pre-compiled builds from here: https://ci.appveyor.com/project/iceiix/stevenarella
 (Select your platform, Click the artifacts tab and download Steven.zip)
 
-The Visual Studio 2017 Redistributable is required to run these builds.
-
 ## Building
 
 Requires Rust stable version 1.44.1 or newer to build.
