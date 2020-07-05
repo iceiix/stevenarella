@@ -1,5 +1,5 @@
 # Stevenarella
-[![builds.sr.ht status](https://builds.sr.ht/~iceiix/stevenarella.svg)](https://builds.sr.ht/~iceiix/stevenarella?)
+[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Ficeiix%2Fstevenarella%2Fbadge%3Fref%3Dmaster&style=plastic)](https://actions-badge.atrox.dev/iceiix/stevenarella/goto?ref=master)
 
 Multi-protocol Minecraft-compatible client written in Rust
 
@@ -56,8 +56,9 @@ Support for older protocols will _not_ be dropped as newer protocols are added.
 
 ## Downloads
 
-Windows users can download pre-compiled builds from here: https://ci.appveyor.com/project/iceiix/stevenarella
-(Select your platform, Click the artifacts tab and download Steven.zip)
+Windows, Ubuntu Linux, and macOS users can download pre-compiled builds
+from [GitHub Actions](https://actions-badge.atrox.dev/iceiix/stevenarella/goto?ref=master).
+(Click the artifacts drop-down and select your platform.)
 
 ## Building
 
