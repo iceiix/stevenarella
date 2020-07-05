@@ -20,7 +20,7 @@ jobs:
           toolchain: 1.44.1
           components: clippy, rustfmt
           default: true
-      - name: (Linux) Install libxcb-composite
+      - name: Install dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
