@@ -30,11 +30,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libxcb-composite0-dev
-      - name: Build binary
+      - name: Build
         run: |
           cargo build --verbose --release
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.14
+      - name: Run clippy
+        uses: actions-rs/clippy-check@v1.0.5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-targets -- -D warnings
+      - name: Check formatting
+        run: cargo fmt --all -- --check
       - name: (Linux/MacOS) Strip binary
         if: matrix.os != 'windows-latest'
         run: strip target/release/stevenarella
