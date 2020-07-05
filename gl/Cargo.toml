@@ -10,4 +10,4 @@ gl_generator = "0.14.0"
 khronos_api = "3.1.0"
 
 [dependencies]
-libc = "0.2.66"
+libc = "0.2.71"
