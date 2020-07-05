@@ -40,11 +40,10 @@ jobs:
       - name: Move binary
         run: |
           if [[ ${{ matrix.os }} == windows ]]; then
-            mv target/release/stevenarella.exe stevenarella.exe
+            mv target/release/stevenarella.exe stevenarella-${{ matrix.os }}.exe
           else
             mv target/release/stevenarella stevenarella-${{ matrix.os }}
           fi
-        # TODO: .app bundle for macOS
         shell: bash
       - name: Upload binary
         uses: actions/upload-artifact@v2
