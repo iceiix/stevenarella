@@ -550,6 +550,7 @@ impl Server {
                             // Entities
                             EntityDestroy => on_entity_destroy,
                             EntityDestroy_u8 => on_entity_destroy_u8,
+                            SpawnPlayer_f64_NoMeta => on_player_spawn_f64_nometa,
                             SpawnPlayer_f64 => on_player_spawn_f64,
                             SpawnPlayer_i32 => on_player_spawn_i32,
                             SpawnPlayer_i32_HeldItem => on_player_spawn_i32_helditem,
@@ -1320,6 +1321,21 @@ impl Server {
             rotation.yaw = -(yaw / 256.0) * PI * 2.0;
             rotation.pitch = -(pitch / 256.0) * PI * 2.0;
         }
+    }
+
+    fn on_player_spawn_f64_nometa(
+        &mut self,
+        spawn: packet::play::clientbound::SpawnPlayer_f64_NoMeta,
+    ) {
+        self.on_player_spawn(
+            spawn.entity_id.0,
+            spawn.uuid,
+            spawn.x,
+            spawn.y,
+            spawn.z,
+            spawn.yaw as f64,
+            spawn.pitch as f64,
+        )
     }
 
     fn on_player_spawn_f64(&mut self, spawn: packet::play::clientbound::SpawnPlayer_f64) {
