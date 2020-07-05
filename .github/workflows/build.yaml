@@ -18,6 +18,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          components: clippy
           default: true
       - name: (Windows) Enable static CRT linkage # https://stackoverflow.com/a/44387312/7653274
         if: matrix.os == 'windows-latest'
