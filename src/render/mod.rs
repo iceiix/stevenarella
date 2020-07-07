@@ -25,11 +25,8 @@ use crate::resources;
 use crate::world;
 use byteorder::{NativeEndian, WriteBytesExt};
 use cgmath::prelude::*;
-use collision;
-use image;
 use image::{GenericImage, GenericImageView};
 use log::{error, trace};
-use serde_json;
 use std::collections::HashMap;
 use std::io::Write;
 use std::sync::{Arc, RwLock};
@@ -41,7 +38,6 @@ use std::sync::mpsc;
 use std::thread;
 
 #[cfg(not(target_arch = "wasm32"))]
-use reqwest;
 
 const ATLAS_SIZE: usize = 1024;
 
@@ -959,6 +955,8 @@ pub struct TextureManager {
 }
 
 impl TextureManager {
+    #[allow(clippy::let_and_return)]
+    #[allow(clippy::type_complexity)]
     fn new(
         res: Arc<RwLock<resources::Manager>>,
     ) -> (
@@ -972,6 +970,7 @@ impl TextureManager {
         let mut tm = TextureManager {
             textures: HashMap::with_hasher(BuildHasherDefault::default()),
             version: {
+                // TODO: fix borrow and remove clippy::let_and_return above
                 let ver = res.read().unwrap().version();
                 ver
             },
@@ -1222,7 +1221,7 @@ impl TextureManager {
     }
 
     fn get_texture(&self, name: &str) -> Option<Texture> {
-        if let Some(_) = name.find(':') {
+        if name.find(':').is_some() {
             self.textures.get(name).cloned()
         } else {
             self.textures.get(&format!("minecraft:{}", name)).cloned()
@@ -1390,7 +1389,7 @@ impl TextureManager {
             rel_height: 1.0,
             is_rel: false,
         };
-        self.textures.insert(full_name.to_owned(), t.clone());
+        self.textures.insert(full_name, t.clone());
         t
     }
 
@@ -1425,8 +1424,7 @@ impl TextureManager {
                 (height as f32) / (tex.height as f32),
             );
             let old_name = mem::replace(&mut tex.name, format!("steven-dynamic:{}", name));
-            self.dynamic_textures
-                .insert(name.to_owned(), (tex.clone(), img));
+            self.dynamic_textures.insert(name.to_owned(), (tex, img));
             // We need to rename the texture itself so that get_texture calls
             // work with the new name
             let mut old = self.textures.remove(&old_name).unwrap();

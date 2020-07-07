@@ -21,7 +21,7 @@ protocol_packet_ids!(
             0x0a => PluginMessageServerbound
             0x0b => EditBook
             0x0c => QueryEntityNBT
-            0x0d => UseEntity
+            0x0d => UseEntity_Hand
             0x0e => KeepAliveServerbound_i64
             0x0f => Player
             0x10 => PlayerPosition
@@ -31,7 +31,7 @@ protocol_packet_ids!(
             0x14 => SteerBoat
             0x15 => PickItem
             0x16 => CraftRecipeRequest
-            0x17 => ClientAbilities
+            0x17 => ClientAbilities_f32
             0x18 => PlayerDigging
             0x19 => PlayerAction
             0x1a => SteerVehicle
@@ -67,7 +67,7 @@ protocol_packet_ids!(
             0x0b => BlockChange_VarInt
             0x0c => BossBar
             0x0d => ServerDifficulty
-            0x0e => ServerMessage
+            0x0e => ServerMessage_Position
             0x0f => MultiBlockChange_VarInt
             0x10 => TabCompleteReply
             0x11 => DeclareCommands
@@ -110,7 +110,7 @@ protocol_packet_ids!(
             0x36 => EntityDestroy
             0x37 => EntityRemoveEffect
             0x38 => ResourcePackSend
-            0x39 => Respawn
+            0x39 => Respawn_Gamemode
             0x3a => EntityHeadLook
             0x3b => SelectAdvancementTab
             0x3c => WorldBorder
@@ -120,7 +120,7 @@ protocol_packet_ids!(
             0x40 => EntityMetadata
             0x41 => EntityAttach
             0x42 => EntityVelocity
-            0x43 => EntityEquipment
+            0x43 => EntityEquipment_VarInt
             0x44 => SetExperience
             0x45 => UpdateHealth
             0x46 => ScoreboardObjective
@@ -140,7 +140,7 @@ protocol_packet_ids!(
             0x55 => EntityEffect
             0x56 => DeclareRecipes
             0x57 => TagsWithEntities
-            0x58 => UpdateLight
+            0x58 => UpdateLight_NoTrust
             0x59 => WindowOpen_VarInt
             0x5a => TradeList_WithoutRestock // TODO: without 1.14 added fields
         }
@@ -154,7 +154,7 @@ protocol_packet_ids!(
         clientbound Clientbound {
             0x00 => LoginDisconnect
             0x01 => EncryptionRequest
-            0x02 => LoginSuccess
+            0x02 => LoginSuccess_String
             0x03 => SetInitialCompression
             0x04 => LoginPluginRequest
         }

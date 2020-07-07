@@ -27,7 +27,7 @@ protocol_packet_ids!(
             0x10 => CreativeInventoryAction
             0x11 => EnchantItem
             0x12 => SetSign
-            0x13 => ClientAbilities
+            0x13 => ClientAbilities_f32
             0x14 => TabComplete_NoAssume
             0x15 => ClientSettings_u8_Handsfree
             0x16 => ClientStatus
@@ -38,12 +38,12 @@ protocol_packet_ids!(
         clientbound Clientbound {
             0x00 => KeepAliveClientbound_VarInt
             0x01 => JoinGame_i8
-            0x02 => ServerMessage
+            0x02 => ServerMessage_Position
             0x03 => TimeUpdate
             0x04 => EntityEquipment_u16
             0x05 => SpawnPosition
             0x06 => UpdateHealth
-            0x07 => Respawn
+            0x07 => Respawn_Gamemode
             0x08 => TeleportPlayer_NoConfirm
             0x09 => SetCurrentHotbarSlot
             0x0a => EntityUsedBed
@@ -120,7 +120,7 @@ protocol_packet_ids!(
         clientbound Clientbound {
             0x00 => LoginDisconnect
             0x01 => EncryptionRequest
-            0x02 => LoginSuccess
+            0x02 => LoginSuccess_String
             0x03 => SetInitialCompression
         }
     }

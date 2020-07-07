@@ -7,7 +7,7 @@ pub struct Brand {
 }
 
 impl Brand {
-    pub fn as_message(self) -> PluginMessageServerbound {
+    pub fn into_message(self) -> PluginMessageServerbound {
         let protocol_version = crate::protocol::current_protocol_version();
 
         let channel_name = if protocol_version >= 404 {
@@ -25,7 +25,7 @@ impl Brand {
     }
 
     // TODO: cleanup this duplication for 1.7, return either message dynamically
-    pub fn as_message17(self) -> PluginMessageServerbound_i16 {
+    pub fn into_message17(self) -> PluginMessageServerbound_i16 {
         let mut data = vec![];
         Serializable::write_to(&self.brand, &mut data).unwrap();
         PluginMessageServerbound_i16 {

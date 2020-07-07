@@ -33,7 +33,8 @@ impl Gamemode {
             3 => Gamemode::Spectator,
             2 => Gamemode::Adventure,
             1 => Gamemode::Creative,
-            0 | _ => Gamemode::Survival,
+            0 => Gamemode::Survival,
+            _ => Gamemode::Survival,
         }
     }
 

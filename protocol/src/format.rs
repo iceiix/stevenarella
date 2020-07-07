@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use serde_json;
 use std::fmt;
 use std::mem;
 
@@ -96,14 +95,14 @@ pub struct Modifier {
 impl Modifier {
     pub fn from_value(v: &serde_json::Value) -> Self {
         let mut m = Modifier {
-            bold: v.get("bold").map_or(Option::None, |v| v.as_bool()),
-            italic: v.get("italic").map_or(Option::None, |v| v.as_bool()),
-            underlined: v.get("underlined").map_or(Option::None, |v| v.as_bool()),
-            strikethrough: v.get("strikethrough").map_or(Option::None, |v| v.as_bool()),
-            obfuscated: v.get("obfuscated").map_or(Option::None, |v| v.as_bool()),
+            bold: v.get("bold").and_then(|v| v.as_bool()),
+            italic: v.get("italic").and_then(|v| v.as_bool()),
+            underlined: v.get("underlined").and_then(|v| v.as_bool()),
+            strikethrough: v.get("strikethrough").and_then(|v| v.as_bool()),
+            obfuscated: v.get("obfuscated").and_then(|v| v.as_bool()),
             color: v
                 .get("color")
-                .map_or(Option::None, |v| v.as_str())
+                .and_then(|v| v.as_str())
                 .map(|v| Color::from_string(&v.to_owned())),
             extra: Option::None,
         };
@@ -187,7 +186,29 @@ pub enum Color {
 
 impl fmt::Display for Color {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(
+            f,
+            "{}",
+            match *self {
+                Color::Black => "black".to_owned(),
+                Color::DarkBlue => "dark_blue".to_owned(),
+                Color::DarkGreen => "dark_green".to_owned(),
+                Color::DarkAqua => "dark_aqua".to_owned(),
+                Color::DarkRed => "dark_red".to_owned(),
+                Color::DarkPurple => "dark_purple".to_owned(),
+                Color::Gold => "gold".to_owned(),
+                Color::Gray => "gray".to_owned(),
+                Color::DarkGray => "dark_gray".to_owned(),
+                Color::Blue => "blue".to_owned(),
+                Color::Green => "green".to_owned(),
+                Color::Aqua => "aqua".to_owned(),
+                Color::Red => "red".to_owned(),
+                Color::LightPurple => "light_purple".to_owned(),
+                Color::Yellow => "yellow".to_owned(),
+                Color::White => "white".to_owned(),
+                Color::RGB(r, g, b) => format!("#{:02X}{:02X}{:02X}", r, g, b),
+            }
+        )
     }
 }
 
@@ -224,29 +245,8 @@ impl Color {
                 };
                 Color::RGB(r, g, b)
             }
-            "white" | _ => Color::White,
-        }
-    }
-
-    pub fn to_string(&self) -> String {
-        match *self {
-            Color::Black => "black".to_owned(),
-            Color::DarkBlue => "dark_blue".to_owned(),
-            Color::DarkGreen => "dark_green".to_owned(),
-            Color::DarkAqua => "dark_aqua".to_owned(),
-            Color::DarkRed => "dark_red".to_owned(),
-            Color::DarkPurple => "dark_purple".to_owned(),
-            Color::Gold => "gold".to_owned(),
-            Color::Gray => "gray".to_owned(),
-            Color::DarkGray => "dark_gray".to_owned(),
-            Color::Blue => "blue".to_owned(),
-            Color::Green => "green".to_owned(),
-            Color::Aqua => "aqua".to_owned(),
-            Color::Red => "red".to_owned(),
-            Color::LightPurple => "light_purple".to_owned(),
-            Color::Yellow => "yellow".to_owned(),
-            Color::White => "white".to_owned(),
-            Color::RGB(r, g, b) => format!("#{:02X}{:02X}{:02X}", r, g, b),
+            "white" => Color::White,
+            _ => Color::White,
         }
     }
 
@@ -357,7 +357,10 @@ pub fn convert_legacy(c: &mut Component) {
                                 'n' => modifier.underlined = Some(true),
                                 'o' => modifier.italic = Some(true),
                                 'r' => {}
-                                _ => unimplemented!(),
+                                _ => println!(
+                                    "warning: unsupported color code {:?} in text '{}'",
+                                    color_char, txt
+                                ),
                             }
 
                             current.modifier = modifier;

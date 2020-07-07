@@ -179,13 +179,22 @@ state_packets!(
             }
             /// UseEntity is sent when the user interacts (right clicks) or attacks
             /// (left clicks) an entity.
-            packet UseEntity {
+            packet UseEntity_Sneakflag {
                 field target_id: VarInt =,
                 field ty: VarInt =,
-                field target_x: f32 = when(|p: &UseEntity| p.ty.0 == 2),
-                field target_y: f32 = when(|p: &UseEntity| p.ty.0 == 2),
-                field target_z: f32 = when(|p: &UseEntity| p.ty.0 == 2),
-                field hand: VarInt = when(|p: &UseEntity| p.ty.0 == 0 || p.ty.0 == 2),
+                field target_x: f32 = when(|p: &UseEntity_Sneakflag| p.ty.0 == 2),
+                field target_y: f32 = when(|p: &UseEntity_Sneakflag| p.ty.0 == 2),
+                field target_z: f32 = when(|p: &UseEntity_Sneakflag| p.ty.0 == 2),
+                field hand: VarInt = when(|p: &UseEntity_Sneakflag| p.ty.0 == 0 || p.ty.0 == 2),
+                field sneaking: bool =,
+            }
+            packet UseEntity_Hand {
+                field target_id: VarInt =,
+                field ty: VarInt =,
+                field target_x: f32 = when(|p: &UseEntity_Hand| p.ty.0 == 2),
+                field target_y: f32 = when(|p: &UseEntity_Hand| p.ty.0 == 2),
+                field target_z: f32 = when(|p: &UseEntity_Hand| p.ty.0 == 2),
+                field hand: VarInt = when(|p: &UseEntity_Hand| p.ty.0 == 0 || p.ty.0 == 2),
             }
             packet UseEntity_Handsfree {
                 field target_id: VarInt =,
@@ -197,6 +206,12 @@ state_packets!(
             packet UseEntity_Handsfree_i32 {
                 field target_id: i32 =,
                 field ty: u8 =,
+            }
+            /// Sent when Generate is pressed on the Jigsaw Block interface.
+            packet GenerateStructure {
+                field location: Position =,
+                field levels: VarInt =,
+                field keep_jigsaws: bool =,
             }
             /// KeepAliveServerbound is sent by a client as a response to a
             /// KeepAliveClientbound. If the client doesn't reply the server
@@ -280,10 +295,13 @@ state_packets!(
             }
             /// ClientAbilities is used to modify the players current abilities.
             /// Currently flying is the only one
-            packet ClientAbilities {
+            packet ClientAbilities_f32 {
                 field flags: u8 =,
                 field flying_speed: f32 =,
                 field walking_speed: f32 =,
+            }
+            packet ClientAbilities_u8 {
+                field flags: u8 =,
             }
             /// PlayerDigging is sent when the client starts/stops digging a block.
             /// It also can be sent for droppping items and eating/shooting.
@@ -381,7 +399,15 @@ state_packets!(
                 field slot: i16 =,
                 field clicked_item: Option<item::Stack> =,
             }
-            packet UpdateJigsawBlock {
+            packet UpdateJigsawBlock_Joint {
+                field location: Position =,
+                field name: String =,
+                field target: String =,
+                field pool: String =,
+                field final_state: String =,
+                field joint_type: String =,
+            }
+            packet UpdateJigsawBlock_Type {
                 field location: Position =,
                 field attachment_type: String =,
                 field target_pool: String =,
@@ -473,6 +499,15 @@ state_packets!(
                 field cursor_y: u8 =,
                 field cursor_z: u8 =,
             }
+            packet PlayerBlockPlacement_insideblock {
+                field hand: VarInt =,
+                field location: Position =,
+                field face: VarInt =,
+                field cursor_x: f32 =,
+                field cursor_y: f32 =,
+                field cursor_z: f32 =,
+                field inside_block: bool =, //1.14 added insideblock
+            }
 
             /// UseItem is sent when the client tries to use an item.
             packet UseItem {
@@ -522,6 +557,20 @@ state_packets!(
                 field velocity_x: i16 = when(|p: &SpawnObject_i32_NoUUID| p.data != 0),
                 field velocity_y: i16 = when(|p: &SpawnObject_i32_NoUUID| p.data != 0),
                 field velocity_z: i16 = when(|p: &SpawnObject_i32_NoUUID| p.data != 0),
+            }
+            packet SpawnObject_VarInt {
+                field entity_id: VarInt =,
+                field uuid: UUID =,
+                field ty: VarInt =, //1.14 changed u8 to VarInt
+                field x: f64 =,
+                field y: f64 =,
+                field z: f64 =,
+                field pitch: i8 =,
+                field yaw: i8 =,
+                field data: i32 =,
+                field velocity_x: i16 =,
+                field velocity_y: i16 =,
+                field velocity_z: i16 =,
             }
             /// SpawnExperienceOrb spawns a single experience orb into the world when
             /// it is in range of the client. The count controls the amount of experience
@@ -817,7 +866,13 @@ state_packets!(
             /// ServerMessage is a message sent by the server. It could be from a player
             /// or just a system message. The Type field controls the location the
             /// message is displayed at and when the message is displayed.
-            packet ServerMessage {
+            packet ServerMessage_Sender {
+                field message: format::Component =,
+                /// 0 - Chat message, 1 - System message, 2 - Action bar message
+                field position: u8 =,
+                field sender: UUID =,
+            }
+            packet ServerMessage_Position {
                 field message: format::Component =,
                 /// 0 - Chat message, 1 - System message, 2 - Action bar message
                 field position: u8 =,
@@ -992,6 +1047,17 @@ state_packets!(
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
+            packet ChunkData_Biomes3D_bool {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field new: bool =,
+                field ignore_old_data: bool =,
+                field bitmask: VarInt =,
+                field heightmaps: Option<nbt::NamedTag> =,
+                field biomes: Biomes3D = when(|p: &ChunkData_Biomes3D_bool| p.new),
+                field data: LenPrefixedBytes<VarInt> =,
+                field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =,
+            }
             packet ChunkData_Biomes3D {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,
@@ -1134,6 +1200,38 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
+            packet JoinGame_WorldNames {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The previous gamemode of the client
+                field previous_gamemode: u8 =,
+                /// Identifiers for all worlds on the server
+                field world_names: LenPrefixed<VarInt, String> =,
+                /// Represents a dimension registry
+                field dimension_codec: Option<nbt::NamedTag> =,
+                /// The dimension the client is starting in
+                field dimension: String =,
+                /// The world being spawned into
+                field world_name: String =,
+                /// Truncated SHA-256 hash of world's seed
+                field hashed_seed: i64 =,
+                /// The max number of players on the server
+                field max_players: u8 =,
+                /// The render distance (2-32)
+                field view_distance: VarInt =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+                /// Whether to prompt or immediately respawn
+                field enable_respawn_screen: bool =,
+                /// Whether the world is in debug mode
+                field is_debug: bool =,
+                /// Whether the world is a superflat world
+                field is_flat: bool =,
+            }
+
             packet JoinGame_HashedSeed_Respawn {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -1453,7 +1551,7 @@ state_packets!(
                 field hash: String =,
             }
             /// Respawn is sent to respawn the player after death or when they move worlds.
-            packet Respawn {
+            packet Respawn_Gamemode {
                 field dimension: i32 =,
                 field difficulty: u8 =,
                 field gamemode: u8 =,
@@ -1465,6 +1563,16 @@ state_packets!(
                 field difficulty: u8 =,
                 field gamemode: u8 =,
                 field level_type: String =,
+            }
+            packet Respawn_WorldName {
+                field dimension: String =,
+                field world_name: String =,
+                field hashed_seed: i64 =,
+                field gamemode: u8 =,
+                field previous_gamemode: u8 =,
+                field is_debug: bool =,
+                field is_flat: bool =,
+                field copy_metadata: bool =,
             }
             /// EntityHeadLook rotates an entity's head to the new angle.
             packet EntityHeadLook {
@@ -1560,7 +1668,7 @@ state_packets!(
             /// EntityEquipment is sent to display an item on an entity, like a sword
             /// or armor. Slot 0 is the held item and slots 1 to 4 are boots, leggings
             /// chestplate and helmet respectively.
-            packet EntityEquipment {
+            packet EntityEquipment_VarInt {
                 field entity_id: VarInt =,
                 field slot: VarInt =,
                 field item: Option<item::Stack> =,
@@ -1857,7 +1965,16 @@ state_packets!(
                 field status: VarInt =,
                 field successful: bool =,
             }
-            packet UpdateLight {
+            packet UpdateLight_WithTrust {
+                field chunk_x: VarInt =,
+                field chunk_z: VarInt =,
+                field trust_edges: bool =,
+                field sky_light_mask: VarInt =,
+                field block_light_mask: VarInt =,
+                field empty_sky_light_mask: VarInt =,
+                field light_arrays: Vec<u8> =,
+            }
+            packet UpdateLight_NoTrust {
                 field chunk_x: VarInt =,
                 field chunk_z: VarInt =,
                 field sky_light_mask: VarInt =,
@@ -1942,9 +2059,13 @@ state_packets!(
             /// LoginSuccess is sent by the server if the player successfully
             /// authenicates with the session servers (online mode) or straight
             /// after LoginStart (offline mode).
-            packet LoginSuccess {
+            packet LoginSuccess_String {
                 /// String encoding of a uuid (with hyphens)
                 field uuid: String =,
+                field username: String =,
+            }
+            packet LoginSuccess_UUID {
+                field uuid: UUID =,
                 field username: String =,
             }
             /// SetInitialCompression sets the compression threshold during the
@@ -2448,7 +2569,7 @@ impl Serializable for PlayerInfoData {
                         }
                     },
                 }),
-                4 => m.players.push(PlayerDetail::Remove { uuid: uuid }),
+                4 => m.players.push(PlayerDetail::Remove { uuid }),
                 _ => panic!(),
             }
         }
@@ -2567,6 +2688,11 @@ pub enum RecipeData {
         ingredient: RecipeIngredient,
         result: Option<item::Stack>,
     },
+    Smithing {
+        base: RecipeIngredient,
+        addition: RecipeIngredient,
+        result: Option<item::Stack>,
+    },
 }
 
 impl Default for RecipeData {
@@ -2679,6 +2805,11 @@ impl Serializable for Recipe {
             "minecraft:stonecutting" => RecipeData::Stonecutting {
                 group: Serializable::read_from(buf)?,
                 ingredient: Serializable::read_from(buf)?,
+                result: Serializable::read_from(buf)?,
+            },
+            "minecraft:smithing" => RecipeData::Smithing {
+                base: Serializable::read_from(buf)?,
+                addition: Serializable::read_from(buf)?,
                 result: Serializable::read_from(buf)?,
             },
             _ => panic!("unrecognized recipe type: {}", ty),
@@ -2837,6 +2968,7 @@ pub enum CommandProperty {
     ItemEnchantment,
     EntitySummon,
     Dimension,
+    UUID,
 }
 
 impl Serializable for CommandNode {
@@ -2964,6 +3096,7 @@ impl Serializable for CommandNode {
                 "minecraft:item_enchantment" => CommandProperty::ItemEnchantment,
                 "minecraft:entity_summon" => CommandProperty::EntitySummon,
                 "minecraft:dimension" => CommandProperty::Dimension,
+                "minecraft:uuid" => CommandProperty::UUID,
                 _ => panic!("unsupported command node parser {}", parse),
             })
         } else {

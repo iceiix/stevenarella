@@ -21,7 +21,7 @@ impl SettingsMenu {
         SettingsMenu {
             _vars: vars,
             elements: None,
-            show_disconnect_button: show_disconnect_button,
+            show_disconnect_button,
         }
     }
 }

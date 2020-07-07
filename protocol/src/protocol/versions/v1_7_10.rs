@@ -27,7 +27,7 @@ protocol_packet_ids!(
             0x10 => CreativeInventoryAction
             0x11 => EnchantItem
             0x12 => SetSign_i16y
-            0x13 => ClientAbilities
+            0x13 => ClientAbilities_f32
             0x14 => TabComplete_NoAssume_NoTarget
             0x15 => ClientSettings_u8_Handsfree_Difficulty
             0x16 => ClientStatus_u8
@@ -41,7 +41,7 @@ protocol_packet_ids!(
             0x04 => EntityEquipment_u16_i32
             0x05 => SpawnPosition_i32
             0x06 => UpdateHealth_u16
-            0x07 => Respawn
+            0x07 => Respawn_Gamemode
             0x08 => TeleportPlayer_OnGround
             0x09 => SetCurrentHotbarSlot
             0x0a => EntityUsedBed_i32
@@ -110,7 +110,7 @@ protocol_packet_ids!(
         clientbound Clientbound {
             0x00 => LoginDisconnect
             0x01 => EncryptionRequest_i16
-            0x02 => LoginSuccess
+            0x02 => LoginSuccess_String
         }
     }
     status Status {
