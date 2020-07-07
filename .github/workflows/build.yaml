@@ -1,0 +1,60 @@
+name: Build
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: 
+          - windows-latest
+          - ubuntu-latest
+          - macos-latest
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.44.1
+          components: clippy, rustfmt
+          default: true
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-composite0-dev
+      - name: Build binary
+        run: |
+          cargo build --verbose --release
+        env:
+          MACOSX_DEPLOYMENT_TARGET: 10.14
+      - name: Run clippy
+        uses: actions-rs/clippy-check@v1.0.7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-targets -- -D warnings
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Move binary
+        run: |
+          if [[ ${{ matrix.os }} == windows ]]; then
+            mv target/release/stevenarella.exe stevenarella-${{ matrix.os }}.exe
+          else
+            mv target/release/stevenarella stevenarella-${{ matrix.os }}
+          fi
+        shell: bash
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: stevenarella-${{ matrix.os }}
+          path: stevenarella*
+      - name: Release binary
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            stevenarella*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

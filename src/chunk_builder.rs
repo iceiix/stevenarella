@@ -6,7 +6,6 @@ use crate::types::bit::Set;
 use crate::world;
 use crate::world::block;
 use rand::{self, Rng, SeedableRng};
-use rand_pcg;
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
@@ -27,10 +26,7 @@ impl ChunkBuilder {
         resources: Arc<RwLock<resources::Manager>>,
         textures: Arc<RwLock<render::TextureManager>>,
     ) -> ChunkBuilder {
-        let models = Arc::new(RwLock::new(model::Factory::new(
-            resources.clone(),
-            textures,
-        )));
+        let models = Arc::new(RwLock::new(model::Factory::new(resources, textures)));
 
         let mut threads = vec![];
         let mut free = vec![];

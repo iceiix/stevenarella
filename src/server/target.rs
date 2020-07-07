@@ -3,13 +3,18 @@ use crate::render::model;
 use crate::shared::{Direction, Position};
 use crate::world;
 use crate::world::block;
-use cgmath;
 use collision::{self, Aabb};
 
 pub struct Info {
     model: Option<model::ModelKey>,
     last_block: block::Block,
     last_pos: Position,
+}
+
+impl Default for Info {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Info {
@@ -130,6 +135,7 @@ impl Info {
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn test_block(
     world: &world::World,
     pos: Position,

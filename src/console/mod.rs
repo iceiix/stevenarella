@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use log;
 use std::any::Any;
 use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
@@ -191,7 +190,7 @@ impl Vars {
                 continue;
             }
             for line in var.description().lines() {
-                write!(file, "# {}\n", line).unwrap();
+                writeln!(file, "# {}", line).unwrap();
             }
             write!(
                 file,
@@ -204,6 +203,7 @@ impl Vars {
     }
 }
 
+#[derive(Default)]
 pub struct Console {
     history: Vec<Component>,
     dirty: bool,

@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #![recursion_limit = "300"]
+#![allow(clippy::too_many_arguments)] // match standard gl functions with many arguments
+#![allow(clippy::many_single_char_names)] // short variable names provide concise clarity
+#![allow(clippy::float_cmp)] // float comparison used to check if changed
 
 use log::{error, info, warn};
 use std::time::{Duration, Instant};
@@ -43,7 +46,6 @@ pub mod world;
 
 use crate::protocol::mojang;
 use cfg_if::cfg_if;
-use glutin;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::mpsc;
@@ -301,7 +303,8 @@ fn main2() {
     let textures = renderer.get_textures();
     let dpi_factor = window.window().scale_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
-        opt.default_protocol_version.unwrap_or("".to_string()),
+        opt.default_protocol_version
+            .unwrap_or_else(|| "".to_string()),
     );
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
@@ -352,8 +355,7 @@ fn main2() {
 
         let version = {
             let try_res = game.resource_manager.try_write();
-            if try_res.is_ok() {
-                let mut res = try_res.unwrap();
+            if let Ok(mut res) = try_res {
                 res.tick(&mut resui, &mut ui_container, delta);
                 res.version()
             } else {
@@ -513,18 +515,16 @@ fn handle_window_event<T>(
                             game.focused = true;
                             window.window().set_cursor_grab(true).unwrap();
                             window.window().set_cursor_visible(false);
-                        } else {
-                            if !game.focused {
-                                window.window().set_cursor_grab(false).unwrap();
-                                window.window().set_cursor_visible(true);
-                                ui_container.click_at(
-                                    game,
-                                    game.last_mouse_x,
-                                    game.last_mouse_y,
-                                    width,
-                                    height,
-                                );
-                            }
+                        } else if !game.focused {
+                            window.window().set_cursor_grab(false).unwrap();
+                            window.window().set_cursor_visible(true);
+                            ui_container.click_at(
+                                game,
+                                game.last_mouse_x,
+                                game.last_mouse_y,
+                                width,
+                                height,
+                            );
                         }
                     }
                     (ElementState::Pressed, MouseButton::Right) => {

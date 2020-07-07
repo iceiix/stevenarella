@@ -18,6 +18,7 @@ mod login;
 pub use self::login::*;
 
 pub mod connecting;
+pub mod delete_server;
 pub mod edit_server;
 
 pub mod settings_menu;

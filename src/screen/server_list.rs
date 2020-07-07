@@ -24,11 +24,7 @@ use crate::protocol;
 use crate::render;
 use crate::ui;
 
-use base64;
-use image;
-use rand;
 use rand::Rng;
-use serde_json;
 use std::time::Duration;
 
 pub struct ServerList {
@@ -211,6 +207,15 @@ impl ServerList {
                     .alignment(ui::VAttach::Middle, ui::HAttach::Center)
                     .attach(&mut *btn);
                 btn.add_text(txt);
+                let index = index;
+                let sname = name.clone();
+                let saddr = address.clone();
+                btn.add_click_func(move |_, game| {
+                    game.screen_sys.replace_screen(Box::new(
+                        super::delete_server::DeleteServerEntry::new(index, &sname, &saddr),
+                    ));
+                    true
+                })
             }
 
             // Edit entry button
@@ -270,6 +275,8 @@ impl ServerList {
                         format::convert_legacy(&mut desc);
                         let favicon = if let Some(icon) = res.0.favicon {
                             let data_base64 = &icon["data:image/png;base64,".len()..];
+                            let data_base64: String =
+                                data_base64.chars().filter(|c| !c.is_whitespace()).collect();
                             let data = base64::decode(data_base64).unwrap();
                             Some(image::load_from_memory(&data).unwrap())
                         } else {
@@ -506,7 +513,7 @@ impl super::Screen for ServerList {
                             }
                             let sm =
                                 format!("{} mods + {}", res.forge_mods.len(), res.protocol_name);
-                            let st = if res.forge_mods.len() > 0 {
+                            let st = if !res.forge_mods.is_empty() {
                                 &sm
                             } else {
                                 &res.protocol_name

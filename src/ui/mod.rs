@@ -282,6 +282,12 @@ pub struct Container {
     last_height: f64,
 }
 
+impl Default for Container {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Container {
     pub fn new() -> Container {
         Container {
@@ -677,6 +683,7 @@ macro_rules! element {
             }
         }
 
+        #[derive(Default)]
         pub struct $builder {
             $(
                 $sname: Option<$sty>,
@@ -769,7 +776,7 @@ macro_rules! element {
                         $oname: self.$oname.unwrap_or($oval),
                     )*
                     $(
-                        $nname: $nname,
+                        $nname,
                     )*
                     // Base fields
                     draw_index: self.draw_index,
@@ -1532,9 +1539,8 @@ impl UIElement for TextBox {
             (VirtualKeyCode::V, true) => {
                 if ctrl_pressed {
                     let mut clipboard: ClipboardContext = ClipboardProvider::new().unwrap();
-                    match clipboard.get_contents() {
-                        Ok(text) => self.input.push_str(&text),
-                        Err(_) => (),
+                    if let Ok(text) = clipboard.get_contents() {
+                        self.input.push_str(&text)
                     }
                 }
             }

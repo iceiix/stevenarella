@@ -22,7 +22,7 @@ protocol_packet_ids!(
             0x0b => PluginMessageServerbound
             0x0c => EditBook
             0x0d => QueryEntityNBT
-            0x0e => UseEntity
+            0x0e => UseEntity_Hand
             0x0f => KeepAliveServerbound_i64
             0x10 => LockDifficulty
             0x11 => PlayerPosition
@@ -33,7 +33,7 @@ protocol_packet_ids!(
             0x16 => SteerBoat
             0x17 => PickItem
             0x18 => CraftRecipeRequest
-            0x19 => ClientAbilities
+            0x19 => ClientAbilities_f32
             0x1a => PlayerDigging
             0x1b => PlayerAction
             0x1c => SteerVehicle
@@ -47,16 +47,16 @@ protocol_packet_ids!(
             0x24 => UpdateCommandBlock
             0x25 => UpdateCommandBlockMinecart
             0x26 => CreativeInventoryAction
-            0x27 => UpdateJigsawBlock
+            0x27 => UpdateJigsawBlock_Type
             0x28 => UpdateStructureBlock
             0x29 => SetSign
             0x2a => ArmSwing
             0x2b => SpectateTeleport
-            0x2c => PlayerBlockPlacement_f32
+            0x2c => PlayerBlockPlacement_insideblock
             0x2d => UseItem
         }
         clientbound Clientbound {
-            0x00 => SpawnObject
+            0x00 => SpawnObject_VarInt
             0x01 => SpawnExperienceOrb
             0x02 => SpawnGlobalEntity
             0x03 => SpawnMob_NoMeta
@@ -71,7 +71,7 @@ protocol_packet_ids!(
             0x0c => BlockChange_VarInt
             0x0d => BossBar
             0x0e => ServerDifficulty_Locked
-            0x0f => ServerMessage
+            0x0f => ServerMessage_Position
             0x10 => MultiBlockChange_VarInt
             0x11 => TabCompleteReply
             0x12 => DeclareCommands
@@ -93,7 +93,7 @@ protocol_packet_ids!(
             0x22 => ChunkData_Biomes3D
             0x23 => Effect
             0x24 => Particle_f64
-            0x25 => UpdateLight
+            0x25 => UpdateLight_NoTrust
             0x26 => JoinGame_HashedSeed_Respawn
             0x27 => Maps
             0x28 => TradeList_WithRestock
@@ -127,7 +127,7 @@ protocol_packet_ids!(
             0x44 => EntityMetadata
             0x45 => EntityAttach
             0x46 => EntityVelocity
-            0x47 => EntityEquipment
+            0x47 => EntityEquipment_VarInt
             0x48 => SetExperience
             0x49 => UpdateHealth
             0x4a => ScoreboardObjective
@@ -160,7 +160,7 @@ protocol_packet_ids!(
         clientbound Clientbound {
             0x00 => LoginDisconnect
             0x01 => EncryptionRequest
-            0x02 => LoginSuccess
+            0x02 => LoginSuccess_String
             0x03 => SetInitialCompression
             0x04 => LoginPluginRequest
         }

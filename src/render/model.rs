@@ -86,31 +86,36 @@ impl Manager {
         let mut model = {
             let collection = &mut self.collections[ckey.0];
             collection.shader.program.use_program();
-            collection.shader.position.map(|v| v.enable());
-            collection.shader.texture_info.map(|v| v.enable());
-            collection.shader.texture_offset.map(|v| v.enable());
-            collection.shader.color.map(|v| v.enable());
-            collection.shader.id.map(|v| v.enable());
-            collection
-                .shader
-                .position
-                .map(|v| v.vertex_pointer(3, gl::FLOAT, false, 36, 0));
-            collection
-                .shader
-                .texture_info
-                .map(|v| v.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 36, 12));
-            collection
-                .shader
-                .texture_offset
-                .map(|v| v.vertex_pointer_int(3, gl::SHORT, 36, 20));
-            collection
-                .shader
-                .color
-                .map(|v| v.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 36, 28));
-            collection
-                .shader
-                .id
-                .map(|v| v.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32));
+            if let Some(v) = collection.shader.position {
+                v.enable()
+            }
+            if let Some(v) = collection.shader.texture_info {
+                v.enable()
+            }
+            if let Some(v) = collection.shader.texture_offset {
+                v.enable()
+            }
+            if let Some(v) = collection.shader.color {
+                v.enable()
+            }
+            if let Some(v) = collection.shader.id {
+                v.enable()
+            }
+            if let Some(v) = collection.shader.position {
+                v.vertex_pointer(3, gl::FLOAT, false, 36, 0)
+            }
+            if let Some(v) = collection.shader.texture_info {
+                v.vertex_pointer(4, gl::UNSIGNED_SHORT, false, 36, 12)
+            }
+            if let Some(v) = collection.shader.texture_offset {
+                v.vertex_pointer_int(3, gl::SHORT, 36, 20)
+            }
+            if let Some(v) = collection.shader.color {
+                v.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 36, 28)
+            }
+            if let Some(v) = collection.shader.id {
+                v.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32)
+            }
 
             let mut model = Model {
                 // For culling only
@@ -214,7 +219,7 @@ impl Manager {
         textures: &Arc<RwLock<super::TextureManager>>,
     ) {
         for collection in &mut self.collections {
-            for (_, model) in &mut collection.models {
+            for model in collection.models.values_mut() {
                 for vert in &mut model.verts {
                     vert.texture = if vert.texture.version == version {
                         vert.texture.clone()
@@ -244,23 +249,21 @@ impl Manager {
         gl::enable(gl::BLEND);
         for collection in &self.collections {
             collection.shader.program.use_program();
-            collection
-                .shader
-                .perspective_matrix
-                .map(|v| v.set_matrix4(perspective_matrix));
-            collection
-                .shader
-                .camera_matrix
-                .map(|v| v.set_matrix4(camera_matrix));
-            collection.shader.texture.map(|v| v.set_int(0));
-            collection
-                .shader
-                .sky_offset
-                .map(|v| v.set_float(sky_offset));
-            collection
-                .shader
-                .light_level
-                .map(|v| v.set_float(light_level));
+            if let Some(v) = collection.shader.perspective_matrix {
+                v.set_matrix4(perspective_matrix)
+            }
+            if let Some(v) = collection.shader.camera_matrix {
+                v.set_matrix4(camera_matrix)
+            }
+            if let Some(v) = collection.shader.texture {
+                v.set_int(0)
+            }
+            if let Some(v) = collection.shader.sky_offset {
+                v.set_float(sky_offset)
+            }
+            if let Some(v) = collection.shader.light_level {
+                v.set_float(light_level)
+            }
             gl::blend_func(collection.blend_s, collection.blend_d);
 
             for model in collection.models.values() {
@@ -273,17 +276,17 @@ impl Manager {
                     continue;
                 }
                 model.array.bind();
-                collection
-                    .shader
-                    .lighting
-                    .map(|v| v.set_float2(model.block_light, model.sky_light));
-                collection
-                    .shader
-                    .model_matrix
-                    .map(|v| v.set_matrix4_multi(&model.matrix));
-                collection.shader.color_mul.map(|v| {
-                    v.set_float_mutli_raw(model.colors.as_ptr() as *const _, model.colors.len())
-                });
+                if let Some(v) = collection.shader.lighting {
+                    v.set_float2(model.block_light, model.sky_light)
+                }
+                if let Some(v) = collection.shader.model_matrix {
+                    v.set_matrix4_multi(&model.matrix)
+                }
+                if let Some(v) = collection.shader.color_mul {
+                    unsafe {
+                        v.set_float_multi_raw(model.colors.as_ptr() as *const _, model.colors.len())
+                    }
+                }
                 gl::draw_elements(gl::TRIANGLES, model.count, self.index_type, 0);
             }
         }

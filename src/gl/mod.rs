@@ -268,6 +268,7 @@ pub const NEAREST_MIPMAP_LINEAR: TextureValue = gl::NEAREST_MIPMAP_LINEAR as Tex
 pub const CLAMP_TO_EDGE: TextureValue = gl::CLAMP_TO_EDGE as TextureValue;
 
 /// `Texture` is a buffer of data used by fragment shaders.
+#[derive(Default)]
 pub struct Texture(u32);
 
 impl Texture {
@@ -515,6 +516,7 @@ pub type ShaderParameter = u32;
 pub const COMPILE_STATUS: ShaderParameter = gl::COMPILE_STATUS;
 pub const INFO_LOG_LENGTH: ShaderParameter = gl::INFO_LOG_LENGTH;
 
+#[derive(Default)]
 pub struct Program(u32);
 
 impl Program {
@@ -542,8 +544,9 @@ impl Program {
 
     pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
         /*
+        let c_name = ffi::CString::new(name).unwrap();
         let u = unsafe {
-            glow_context().get_uniform_location(self.0, name)
+            glow_context().get_uniform_location(self.0, c_name.as_ptr())
         };
         if let Some(u) = u {
             Some(Uniform(u))
@@ -657,11 +660,10 @@ impl Uniform {
         }
     }
 
-    pub fn set_float_mutli_raw(&self, data: *const f32, len: usize) {
-        unsafe {
-            // TODO: takes a slice, not a raw pointer
-            //TODO glow_context().uniform_4_f32_slice(Some(&self.0), len as i32, data);
-        }
+    #[allow(clippy::missing_safety_doc)]
+    pub unsafe fn set_float_multi_raw(&self, data: *const f32, len: usize) {
+        // TODO: takes a slice, not a raw pointer
+        //TODO glow_context().uniform_4_f32_slice(Some(&self.0), len as i32, data);
     }
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
@@ -725,6 +727,7 @@ impl Attribute {
 // VertexArray is used to store state needed to render vertices.
 // This includes buffers, the format of the buffers and enabled
 // attributes.
+#[derive(Default)]
 pub struct VertexArray(u32);
 
 impl VertexArray {
@@ -781,6 +784,7 @@ pub const READ_ONLY: Access = gl::READ_ONLY;
 pub const WRITE_ONLY: Access = gl::WRITE_ONLY;
 
 /// `Buffer` is a storage for vertex data.
+#[derive(Default)]
 pub struct Buffer(u32);
 
 impl Buffer {
@@ -875,6 +879,7 @@ pub const COLOR_ATTACHMENT_1: Attachment = gl::COLOR_ATTACHMENT1;
 pub const COLOR_ATTACHMENT_2: Attachment = gl::COLOR_ATTACHMENT2;
 pub const DEPTH_ATTACHMENT: Attachment = gl::DEPTH_ATTACHMENT;
 
+#[derive(Default)]
 pub struct Framebuffer(u32);
 
 pub fn check_framebuffer_status() {

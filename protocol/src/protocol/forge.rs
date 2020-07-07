@@ -84,8 +84,8 @@ impl Serializable for ModIdMapping {
     }
 }
 
-pub static BLOCK_NAMESPACE: &'static str = "\u{1}";
-pub static ITEM_NAMESPACE: &'static str = "\u{2}";
+pub static BLOCK_NAMESPACE: &str = "\u{1}";
+pub static ITEM_NAMESPACE: &str = "\u{2}";
 
 #[derive(Debug)]
 pub enum FmlHs {

@@ -13,12 +13,12 @@ fn main() {
     build_map(&mut out, &base);
 
     let mut file = BufWriter::new(fs::File::create(&dest.join("resources.rs")).unwrap());
-    write!(
+    writeln!(
         file,
-        "pub fn get_file(name: &str) -> Option<&'static [u8]> {{\n"
+        "pub fn get_file(name: &str) -> Option<&'static [u8]> {{"
     )
     .unwrap();
-    write!(file, "    match name {{\n").unwrap();
+    writeln!(file, "    match name {{").unwrap();
     for path in &out {
         let mut absolute_path = std::env::current_dir().unwrap();
         absolute_path.push(path);
@@ -26,9 +26,9 @@ fn main() {
         let absolute = absolute_path.to_str().unwrap().replace("\\", "/");
         let relative = path.to_str().unwrap().replace("\\", "/");
 
-        write!(
+        writeln!(
             file,
-            "        {:?} => Some(include_bytes!(\"{}\")),\n",
+            "        {:?} => Some(include_bytes!(\"{}\")),",
             relative, absolute
         )
         .unwrap();

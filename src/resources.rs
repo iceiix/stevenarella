@@ -14,7 +14,6 @@
 
 extern crate steven_resources as internal;
 
-use serde_json;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::io;
@@ -23,10 +22,6 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std_or_web::fs;
-
-#[cfg(not(target_arch = "wasm32"))]
-use reqwest;
-use zip;
 
 use crate::types::hash::FNVHash;
 use crate::ui;
@@ -136,7 +131,7 @@ impl Manager {
         // (if it was started)
         let mut done = false;
         if let Some(ref recv) = self.vanilla_chan {
-            if let Ok(_) = recv.try_recv() {
+            if recv.try_recv().is_ok() {
                 done = true;
             }
         }
@@ -146,7 +141,7 @@ impl Manager {
         }
         let mut done = false;
         if let Some(ref recv) = self.vanilla_assets_chan {
-            if let Ok(_) = recv.try_recv() {
+            if recv.try_recv().is_ok() {
                 done = true;
             }
         }
@@ -235,11 +230,11 @@ impl Manager {
                 prog = task.progress as f64 / task.total as f64;
             }
             let background = ui.background.borrow();
-            let bar = ui.progress_bar.borrow();
+            let progress_bar = ui.progress_bar.borrow();
             // Let the progress bar finish
             if !found
                 && (background.y - ui.position).abs() < 0.7 * delta
-                && (bar.width - 350.0).abs() < 1.0 * delta
+                && (progress_bar.width - 350.0).abs() < 1.0 * delta
             {
                 ui.closing = true;
                 ui.position = -UI_HEIGHT;
@@ -262,12 +257,13 @@ impl Manager {
             } else {
                 background.y += (ui.position - background.y).signum() * 0.7 * delta;
             }
-            let mut bar = ui.progress_bar.borrow_mut();
+            let mut progress_bar = ui.progress_bar.borrow_mut();
             let target_size = (350.0 * ui.progress).min(350.0);
-            if (bar.width - target_size).abs() < 1.0 * delta {
-                bar.width = target_size;
+            if (progress_bar.width - target_size).abs() < 1.0 * delta {
+                progress_bar.width = target_size;
             } else {
-                bar.width += ((target_size - bar.width).signum() * delta).max(0.0);
+                progress_bar.width +=
+                    ((target_size - progress_bar.width).signum() * delta).max(0.0);
             }
         }
 

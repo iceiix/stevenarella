@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #[cfg(not(target_arch = "wasm32"))]
-use reqwest;
 use serde_json::json;
 use sha1::{self, Digest};
 
@@ -78,7 +77,7 @@ impl Profile {
 
     pub fn refresh(self, token: &str) -> Result<Profile, super::Error> {
         let req_msg = json!({
-        "accessToken": self.access_token.clone(),
+        "accessToken": self.access_token,
         "clientToken": token
         });
         let req = serde_json::to_string(&req_msg)?;
@@ -135,10 +134,10 @@ impl Profile {
         public_key: &[u8],
     ) -> Result<(), super::Error> {
         let mut hasher = sha1::Sha1::new();
-        hasher.input(server_id.as_bytes());
-        hasher.input(shared_key);
-        hasher.input(public_key);
-        let mut hash = hasher.result();
+        hasher.update(server_id.as_bytes());
+        hasher.update(shared_key);
+        hasher.update(public_key);
+        let mut hash = hasher.finalize();
 
         // Mojang uses a hex method which allows for
         // negatives so we have to account for that.

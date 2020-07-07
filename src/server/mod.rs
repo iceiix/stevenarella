@@ -24,14 +24,12 @@ use crate::types::hash::FNVHash;
 use crate::types::Gamemode;
 use crate::world;
 use crate::world::block;
-use base64;
 use cgmath::prelude::*;
 use log::{debug, error, warn};
 use rand::{self, Rng};
-use rsa_public_encrypt_pkcs1;
-use serde_json;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
+use std::str::FromStr;
 use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
@@ -114,7 +112,11 @@ impl Server {
     ) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
-        let tag = if forge_mods.len() != 0 { "\0FML\0" } else { "" };
+        let tag = if !forge_mods.is_empty() {
+            "\0FML\0"
+        } else {
+            ""
+        };
         let host = conn.host.clone() + tag;
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
@@ -147,18 +149,36 @@ impl Server {
                     verify_token = Rc::new(val.verify_token.data);
                     break;
                 }
-                protocol::packet::Packet::LoginSuccess(val) => {
+                protocol::packet::Packet::LoginSuccess_String(val) => {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {}", val.username, val.uuid);
                     let mut read = conn.clone();
-                    let mut write = conn.clone();
+                    let mut write = conn;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
                     let rx = Self::spawn_reader(read);
                     return Ok(Server::new(
                         protocol_version,
                         forge_mods,
-                        protocol::UUID::from_str(&val.uuid),
+                        protocol::UUID::from_str(&val.uuid).unwrap(),
+                        resources,
+                        Some(write),
+                        Some(rx),
+                    ));
+                }
+                // TODO: avoid duplication
+                protocol::packet::Packet::LoginSuccess_UUID(val) => {
+                    warn!("Server is running in offline mode");
+                    debug!("Login: {} {:?}", val.username, val.uuid);
+                    let mut read = conn.clone();
+                    let mut write = conn;
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    let rx = Self::spawn_reader(read);
+                    return Ok(Server::new(
+                        protocol_version,
+                        forge_mods,
+                        val.uuid,
                         resources,
                         Some(write),
                         Some(rx),
@@ -198,7 +218,7 @@ impl Server {
         }
 
         let mut read = conn.clone();
-        let mut write = conn.clone();
+        let mut write = conn;
 
         read.enable_encyption(&shared, true);
         write.enable_encyption(&shared, false);
@@ -210,8 +230,15 @@ impl Server {
                     read.set_compresssion(val.threshold.0);
                     write.set_compresssion(val.threshold.0);
                 }
-                protocol::packet::Packet::LoginSuccess(val) => {
+                protocol::packet::Packet::LoginSuccess_String(val) => {
                     debug!("Login: {} {}", val.username, val.uuid);
+                    uuid = protocol::UUID::from_str(&val.uuid).unwrap();
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    break;
+                }
+                protocol::packet::Packet::LoginSuccess_UUID(val) => {
+                    debug!("Login: {} {:?}", val.username, val.uuid);
                     uuid = val.uuid;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
@@ -229,7 +256,7 @@ impl Server {
         Ok(Server::new(
             protocol_version,
             forge_mods,
-            protocol::UUID::from_str(&uuid),
+            uuid,
             resources,
             Some(write),
             Some(rx),
@@ -243,7 +270,7 @@ impl Server {
         thread::spawn(move || loop {
             let pck = read.read_packet();
             let was_error = pck.is_err();
-            if let Err(_) = tx.send(pck) {
+            if tx.send(pck).is_err() {
                 return;
             }
             if was_error {
@@ -482,16 +509,19 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_WorldNames => on_game_join_worldnames,
                             JoinGame_HashedSeed_Respawn => on_game_join_hashedseed_respawn,
                             JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
                             JoinGame_i8_NoDebug => on_game_join_i8_nodebug,
-                            Respawn => on_respawn,
+                            Respawn_Gamemode => on_respawn_gamemode,
                             Respawn_HashedSeed => on_respawn_hashedseed,
+                            Respawn_WorldName => on_respawn_worldname,
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
+                            ChunkData_Biomes3D_bool => on_chunk_data_biomes3d_bool,
                             ChunkData => on_chunk_data,
                             ChunkData_Biomes3D => on_chunk_data_biomes3d,
                             ChunkData_HeightMap => on_chunk_data_heightmap,
@@ -520,6 +550,7 @@ impl Server {
                             // Entities
                             EntityDestroy => on_entity_destroy,
                             EntityDestroy_u8 => on_entity_destroy_u8,
+                            SpawnPlayer_f64_NoMeta => on_player_spawn_f64_nometa,
                             SpawnPlayer_f64 => on_player_spawn_f64,
                             SpawnPlayer_i32 => on_player_spawn_i32,
                             SpawnPlayer_i32_HeldItem => on_player_spawn_i32_helditem,
@@ -818,8 +849,8 @@ impl Server {
         }
 
         match channel {
-            // TODO: "REGISTER" =>
-            // TODO: "UNREGISTER" =>
+            "REGISTER" => {}   // TODO
+            "UNREGISTER" => {} // TODO
             "FML|HS" => {
                 let msg = crate::protocol::Serializable::read_from(&mut std::io::Cursor::new(data))
                     .unwrap();
@@ -837,10 +868,7 @@ impl Server {
                             fml_protocol_version, override_dimension
                         );
 
-                        self.write_plugin_message(
-                            "REGISTER",
-                            "FML|HS\0FML\0FML|MP\0FML\0FORGE".as_bytes(),
-                        );
+                        self.write_plugin_message("REGISTER", b"FML|HS\0FML\0FML|MP\0FML\0FORGE");
                         self.write_fmlhs_plugin_message(&ClientHello {
                             fml_protocol_version,
                         });
@@ -942,6 +970,10 @@ impl Server {
         }
     }
 
+    fn on_game_join_worldnames(&mut self, join: packet::play::clientbound::JoinGame_WorldNames) {
+        self.on_game_join(join.gamemode, join.entity_id)
+    }
+
     fn on_game_join_hashedseed_respawn(
         &mut self,
         join: packet::play::clientbound::JoinGame_HashedSeed_Respawn,
@@ -997,9 +1029,9 @@ impl Server {
         };
         // TODO: refactor with write_plugin_message
         if self.protocol_version >= 47 {
-            self.write_packet(brand.as_message());
+            self.write_packet(brand.into_message());
         } else {
-            self.write_packet(brand.as_message17());
+            self.write_packet(brand.into_message17());
         }
     }
 
@@ -1007,7 +1039,11 @@ impl Server {
         self.respawn(respawn.gamemode)
     }
 
-    fn on_respawn(&mut self, respawn: packet::play::clientbound::Respawn) {
+    fn on_respawn_gamemode(&mut self, respawn: packet::play::clientbound::Respawn_Gamemode) {
+        self.respawn(respawn.gamemode)
+    }
+
+    fn on_respawn_worldname(&mut self, respawn: packet::play::clientbound::Respawn_WorldName) {
         self.respawn(respawn.gamemode)
     }
 
@@ -1287,6 +1323,21 @@ impl Server {
         }
     }
 
+    fn on_player_spawn_f64_nometa(
+        &mut self,
+        spawn: packet::play::clientbound::SpawnPlayer_f64_NoMeta,
+    ) {
+        self.on_player_spawn(
+            spawn.entity_id.0,
+            spawn.uuid,
+            spawn.x,
+            spawn.y,
+            spawn.z,
+            spawn.yaw as f64,
+            spawn.pitch as f64,
+        )
+    }
+
     fn on_player_spawn_f64(&mut self, spawn: packet::play::clientbound::SpawnPlayer_f64) {
         self.on_player_spawn(
             spawn.entity_id.0,
@@ -1332,7 +1383,7 @@ impl Server {
     ) {
         self.on_player_spawn(
             spawn.entity_id.0,
-            protocol::UUID::from_str(&spawn.uuid),
+            protocol::UUID::from_str(&spawn.uuid).unwrap(),
             f64::from(spawn.x),
             f64::from(spawn.y),
             f64::from(spawn.z),
@@ -1541,13 +1592,13 @@ impl Server {
                             nbt.1.get("Text4").unwrap().as_str().unwrap(),
                         );
                         self.world.add_block_entity_action(
-                            world::BlockEntityAction::UpdateSignText(
+                            world::BlockEntityAction::UpdateSignText(Box::new((
                                 block_update.location,
                                 line1,
                                 line2,
                                 line3,
                                 line4,
-                            ),
+                            ))),
                         );
                     }
                     //10 => // Unused
@@ -1575,13 +1626,13 @@ impl Server {
         format::convert_legacy(&mut update_sign.line3);
         format::convert_legacy(&mut update_sign.line4);
         self.world
-            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(Box::new((
                 update_sign.location,
                 update_sign.line1,
                 update_sign.line2,
                 update_sign.line3,
                 update_sign.line4,
-            ));
+            ))));
     }
 
     fn on_sign_update_u16(&mut self, mut update_sign: packet::play::clientbound::UpdateSign_u16) {
@@ -1590,13 +1641,13 @@ impl Server {
         format::convert_legacy(&mut update_sign.line3);
         format::convert_legacy(&mut update_sign.line4);
         self.world
-            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(
+            .add_block_entity_action(world::BlockEntityAction::UpdateSignText(Box::new((
                 Position::new(update_sign.x, update_sign.y as i32, update_sign.z),
                 update_sign.line1,
                 update_sign.line2,
                 update_sign.line3,
                 update_sign.line4,
-            ));
+            ))));
     }
 
     fn on_player_info_string(
@@ -1724,6 +1775,22 @@ impl Server {
                 });
             }
         }
+    }
+
+    fn on_chunk_data_biomes3d_bool(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_Biomes3D_bool,
+    ) {
+        self.world
+            .load_chunk115(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                chunk_data.new,
+                chunk_data.bitmask.0 as u16,
+                chunk_data.data.data,
+            )
+            .unwrap();
+        self.load_block_entities(chunk_data.block_entities.data);
     }
 
     fn on_chunk_data_biomes3d(
@@ -1920,6 +1987,7 @@ impl Server {
     }
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, Copy)]
 enum TeleportFlag {
     RelX = 0b00001,
