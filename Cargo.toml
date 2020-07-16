@@ -19,7 +19,7 @@ opt-level = 1
 
 [dependencies]
 cfg-if = "0.1.9"
-wasm-bindgen = "0.2.64"
+wasm-bindgen = "0.2.65"
 glutin = "0.22.0"
 byteorder = "1.3.4"
 serde = "1.0.114"
