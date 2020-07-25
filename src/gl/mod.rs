@@ -602,7 +602,7 @@ impl Shader {
         let mut data = Vec::<u8>::with_capacity(len as usize);
         unsafe {
             data.set_len(len as usize);
-            gl::GetShaderInfoLog(self.0, len, ptr::null_mut(), data.as_mut_ptr() as *mut i8);
+            gl::GetShaderInfoLog(self.0, len, ptr::null_mut(), data.as_mut_ptr() as *mut u8);
         }
         String::from_utf8(data).unwrap()
     }
