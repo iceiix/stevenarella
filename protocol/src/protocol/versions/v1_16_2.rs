@@ -111,7 +111,7 @@ protocol_packet_ids!(
             0x32 => PlayerInfo
             0x33 => FacePlayer
             0x34 => TeleportPlayer_WithConfirm
-            0x35 => UnlockRecipes_WithSmelting
+            0x35 => UnlockRecipes_WithBlastSmoker
             0x36 => EntityDestroy
             0x37 => EntityRemoveEffect
             0x38 => ResourcePackSend

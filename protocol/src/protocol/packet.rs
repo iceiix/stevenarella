@@ -1579,6 +1579,19 @@ state_packets!(
                 field recipe_ids: LenPrefixed<VarInt, String> =,
                 field recipe_ids2: LenPrefixed<VarInt, String> = when(|p: &UnlockRecipes_WithSmelting| p.action.0 == 0),
             }
+            packet UnlockRecipes_WithBlastSmoker {
+                field action: VarInt =,
+                field crafting_book_open: bool =,
+                field filtering_craftable: bool =,
+                field smelting_book_open: bool =,
+                field filtering_smeltable: bool =,
+                field blast_furnace_open: bool =,
+                field filtering_blast_furnace: bool =,
+                field smoker_open: bool =,
+                field filtering_smoker: bool =,
+                field recipe_ids: LenPrefixed<VarInt, String> =,
+                field recipe_ids2: LenPrefixed<VarInt, String> = when(|p: &UnlockRecipes_WithBlastSmoker| p.action.0 == 0),
+            }
             /// EntityDestroy destroys the entities with the ids in the provided slice.
             packet EntityDestroy {
                 field entity_ids: LenPrefixed<VarInt, VarInt> =,
