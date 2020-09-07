@@ -1057,6 +1057,16 @@ state_packets!(
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
+            packet ChunkData_Biomes3D_bool_NoIgnore {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field new: bool =,
+                field bitmask: VarInt =,
+                field heightmaps: Option<nbt::NamedTag> =,
+                field biomes: LenPrefixed<VarInt, VarInt> = when(|p: &ChunkData_Biomes3D_bool_NoIgnore| p.new),
+                field data: LenPrefixedBytes<VarInt> =,
+                field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =,
+            }
             packet ChunkData_Biomes3D_bool {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,
