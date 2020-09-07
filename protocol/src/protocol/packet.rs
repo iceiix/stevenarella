@@ -1220,6 +1220,39 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
+            packet JoinGame_WorldNames_IsHard {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// Whether hardcore mode is enabled
+                field is_hardcore: bool =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The previous gamemode of the client
+                field previous_gamemode: u8 =,
+                /// Identifiers for all worlds on the server
+                field world_names: LenPrefixed<VarInt, String> =,
+                /// Represents a dimension registry
+                field dimension_codec: Option<nbt::NamedTag> =,
+                /// The dimension the client is starting in
+                field dimension: Option<nbt::NamedTag> =,
+                /// The world being spawned into
+                field world_name: String =,
+                /// Truncated SHA-256 hash of world's seed
+                field hashed_seed: i64 =,
+                /// The max number of players on the server
+                field max_players: VarInt =,
+                /// The render distance (2-32)
+                field view_distance: VarInt =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+                /// Whether to prompt or immediately respawn
+                field enable_respawn_screen: bool =,
+                /// Whether the world is in debug mode
+                field is_debug: bool =,
+                /// Whether the world is a superflat world
+                field is_flat: bool =,
+            }
             packet JoinGame_WorldNames {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -1251,7 +1284,6 @@ state_packets!(
                 /// Whether the world is a superflat world
                 field is_flat: bool =,
             }
-
             packet JoinGame_HashedSeed_Respawn {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
