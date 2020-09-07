@@ -38,8 +38,8 @@ protocol_packet_ids!(
             0x1b => PlayerDigging
             0x1c => PlayerAction
             0x1d => SteerVehicle
-            //0x1e => SetDisplayedRecipeName // TODO
-            //0x1f => SetRecipeBookName // TODO
+            0x1e => SetDisplayedRecipe
+            0x1f => SetRecipeBookState
             0x20 => NameItem
             0x21 => ResourcePackStatus
             0x22 => AdvancementTab

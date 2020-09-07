@@ -353,6 +353,16 @@ state_packets!(
                 field crafting_book_open: bool = when(|p: &CraftingBookData| p.action.0 == 1),
                 field crafting_filter: bool = when(|p: &CraftingBookData| p.action.0 == 1),
             }
+            /// SetDisplayedRecipe replaces CraftingBookData, type 0.
+            packet SetDisplayedRecipe {
+                field recipe_id: String =,
+            }
+            /// SetRecipeBookState replaces CraftingBookData, type 1.
+            packet SetRecipeBookState {
+                field book_id: VarInt =, // TODO: enum, 0: crafting, 1: furnace, 2: blast furnace, 3: smoker
+                field book_open: bool =,
+                field filter_active: bool =,
+            }
             packet NameItem {
                 field item_name: String =,
             }
