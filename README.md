@@ -67,7 +67,7 @@ Requires Rust stable version 1.44.1 or newer.
 **Debian/Ubuntu**
 
 ```bash
-sudo apt-get install libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+sudo apt-get install libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxcb-composite0-dev
 ```
 
 **Alpine Linux**
