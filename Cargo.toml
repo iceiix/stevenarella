@@ -26,10 +26,10 @@ serde = "1.0.116"
 serde_json = "1.0.56"
 flate2 = { version = "1.0.18", features = ["rust_backend"], default-features = false }
 zip = { version = "0.5.6", features = ["deflate"], default-features = false }
-image = "0.23.6"
+image = "0.23.10"
 rand = "0.7.3"
 rand_pcg = "0.2.1"
-base64 = "0.12.3"
+base64 = "0.13.0"
 log = { version = "0.4.11", features = ["std"] }
 cgmath = "0.17.0"
 lazy_static = "1.4.0"
