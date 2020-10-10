@@ -1,7 +1,7 @@
 # Stevenarella
 [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Ficeiix%2Fstevenarella%2Fbadge%3Fref%3Dmaster&style=plastic)](https://actions-badge.atrox.dev/iceiix/stevenarella/goto?ref=master)
 
-Multi-protocol Minecraft-compatible client written in Rust
+Multi-protocol Minecraft-compatible client written in Rust.
 
 Don't expect it to go anywhere, just doing this for fun.
 
@@ -60,9 +60,23 @@ Windows, Ubuntu Linux, and macOS users can download pre-compiled builds
 from [GitHub Actions](https://actions-badge.atrox.dev/iceiix/stevenarella/goto?ref=master).
 (Click the artifacts drop-down and select your platform.)
 
-## Building
+## Dependencies
 
-Requires Rust stable version 1.44.1 or newer to build.
+Requires Rust stable version 1.44.1 or newer.
+
+**Debian/Ubuntu**
+
+```bash
+sudo apt-get install libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+```
+
+**Alpine Linux**
+
+```bash
+sudo apk add openssl-dev xcb-util-dev
+```
+
+## Building
 
 Compile and run:
 ```bash
