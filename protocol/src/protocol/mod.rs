@@ -119,7 +119,7 @@ macro_rules! state_packets {
                             packet::versions::translate_internal_packet_id_for_version(version, State::$stateName, Direction::$dirName, internal_ids::$name, false)
                         }
 
-                        fn write<W: io::Write>(self, buf: &mut W) -> Result<(), Error> {
+                        fn write<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
                             $(
                                 if true $(&& ($cond(&self)))* {
                                     self.$field.write_to(buf)?;
@@ -1387,5 +1387,5 @@ impl Clone for Conn {
 pub trait PacketType {
     fn packet_id(&self, protocol_version: i32) -> i32;
 
-    fn write<W: io::Write>(self, buf: &mut W) -> Result<(), Error>;
+    fn write<W: io::Write>(&self, buf: &mut W) -> Result<(), Error>;
 }
