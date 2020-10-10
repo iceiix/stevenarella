@@ -399,13 +399,13 @@ fn main2() {
         game.console
             .lock()
             .unwrap()
-            .tick(&mut ui_container, &game.renderer, delta, width as f64);
-        ui_container.tick(&mut game.renderer, delta, width as f64, height as f64);
+            .tick(&mut ui_container, &game.renderer, delta, width);
+        ui_container.tick(&mut game.renderer, delta, width, height);
         game.renderer.tick(
             &mut game.server.world,
             delta,
-            width,
-            height,
+            width as u32,
+            height as u32,
             physical_width,
             physical_height,
         );
@@ -435,11 +435,6 @@ fn handle_window_event<T>(
     match event {
         Event::MainEventsCleared => return true,
         Event::DeviceEvent { event, .. } => match event {
-            DeviceEvent::ModifiersChanged(modifiers_state) => {
-                game.is_ctrl_pressed = modifiers_state.ctrl();
-                game.is_logo_pressed = modifiers_state.logo();
-            }
-
             DeviceEvent::MouseMotion {
                 delta: (xrel, yrel),
             } => {
@@ -492,6 +487,10 @@ fn handle_window_event<T>(
 
         Event::WindowEvent { event, .. } => {
             match event {
+                WindowEvent::ModifiersChanged(modifiers_state) => {
+                    game.is_ctrl_pressed = modifiers_state.ctrl();
+                    game.is_logo_pressed = modifiers_state.logo();
+                }
                 WindowEvent::CloseRequested => game.should_close = true,
                 WindowEvent::Resized(physical_size) => {
                     window.resize(physical_size);
@@ -508,11 +507,7 @@ fn handle_window_event<T>(
 
                 WindowEvent::MouseInput { state, button, .. } => match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let (width, height) = window
-                            .window()
-                            .inner_size()
-                            .to_logical::<f64>(game.dpi_factor)
-                            .into();
+                        let (width, height) = window.window().inner_size().into();
 
                         if game.server.is_connected()
                             && !game.focused
@@ -546,11 +541,7 @@ fn handle_window_event<T>(
                     game.last_mouse_y = y;
 
                     if !game.focused {
-                        let (width, height) = window
-                            .window()
-                            .inner_size()
-                            .to_logical::<f64>(game.dpi_factor)
-                            .into();
+                        let (width, height) = window.window().inner_size().into();
                         ui_container.hover_at(game, x, y, width, height);
                     }
                 }
