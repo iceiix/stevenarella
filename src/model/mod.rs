@@ -1110,11 +1110,7 @@ fn calculate_light(
                 let lz = (z + oz + dz).round() as i32;
                 let mut bl = snapshot.get_block_light(lx, ly, lz);
                 let mut sl = snapshot.get_sky_light(lx, ly, lz);
-                if (force
-                    && match snapshot.get_block(lx, ly, lz) {
-                        block::Air {} => false,
-                        _ => true,
-                    })
+                if (force && !matches!(snapshot.get_block(lx, ly, lz), block::Air {}))
                     || (sl == 0 && bl == 0)
                 {
                     bl = s_block_light;
