@@ -1723,13 +1723,14 @@ impl Server {
                     // This isn't an issue for other players because this packet
                     // must come before the spawn player packet.
                     if info.uuid == self.uuid {
-                        let model = self
-                            .entities
-                            .get_component_mut_direct::<entity::player::PlayerModel>(
-                                self.player.unwrap(),
-                            )
-                            .unwrap();
-                        model.set_skin(info.skin_url.clone());
+                        if let Some(player) = self.player {
+                            let model = self
+                                .entities
+                                .get_component_mut_direct::<entity::player::PlayerModel>(player).unwrap();
+                            model.set_skin(info.skin_url.clone());
+                        } else {
+                            warn!("Received player info for ourself {:?} but self.player not yet initialized", self.uuid)
+                        }
                     }
                 }
                 UpdateGamemode { uuid, gamemode } => {
