@@ -533,6 +533,7 @@ impl Server {
                             ChunkUnload => on_chunk_unload,
                             BlockChange_VarInt => on_block_change_varint,
                             BlockChange_u8 => on_block_change_u8,
+                            MultiBlockChange_Packed => on_multi_block_change_packed,
                             MultiBlockChange_VarInt => on_multi_block_change_varint,
                             MultiBlockChange_u16 => on_multi_block_change_u16,
                             TeleportPlayer_WithConfirm => on_teleport_player_withconfirm,
@@ -1726,7 +1727,8 @@ impl Server {
                         if let Some(player) = self.player {
                             let model = self
                                 .entities
-                                .get_component_mut_direct::<entity::player::PlayerModel>(player).unwrap();
+                                .get_component_mut_direct::<entity::player::PlayerModel>(player)
+                                .unwrap();
                             model.set_skin(info.skin_url.clone());
                         } else {
                             warn!("Received player info for ourself {:?} but self.player not yet initialized", self.uuid)
@@ -1933,6 +1935,31 @@ impl Server {
             crate::shared::Position::new(block_change.x, block_change.y as i32, block_change.z),
             (block_change.block_id.0 << 4) | (block_change.block_metadata as i32),
         );
+    }
+
+    fn on_multi_block_change_packed(
+        &mut self,
+        block_change: packet::play::clientbound::MultiBlockChange_Packed,
+    ) {
+        let sx = (block_change.chunk_section_pos >> 42) as i32;
+        let sy = ((block_change.chunk_section_pos << 44) >> 44) as i32;
+        let sz = ((block_change.chunk_section_pos << 22) >> 42) as i32;
+
+        for record in block_change.records.data {
+            let block_raw_id = record.0 >> 12;
+            let lz = (record.0 & 0xf) as i32;
+            let ly = ((record.0 >> 4) & 0xf) as i32;
+            let lx = ((record.0 >> 8) & 0xf) as i32;
+
+            self.world.set_block(
+                Position::new(sx + lx as i32, sy + ly as i32, sz + lz as i32),
+                block::Block::by_vanilla_id(
+                    block_raw_id as usize,
+                    self.protocol_version,
+                    &self.world.modded_block_ids,
+                ),
+            );
+        }
     }
 
     fn on_multi_block_change_varint(

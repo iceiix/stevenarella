@@ -117,7 +117,7 @@ protocol_packet_ids!(
             0x38 => ResourcePackSend
             0x39 => Respawn_WorldName
             0x3a => EntityHeadLook
-            0x3b => MultiBlockChange_VarInt
+            0x3b => MultiBlockChange_Packed
             0x3c => SelectAdvancementTab
             0x3d => WorldBorder
             0x3e => Camera

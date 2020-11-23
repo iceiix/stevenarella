@@ -891,6 +891,11 @@ state_packets!(
                 field message: format::Component =,
             }
             /// MultiBlockChange is used to update a batch of blocks in a single packet.
+            packet MultiBlockChange_Packed {
+                field chunk_section_pos: u64 =,
+                field no_trust_edges: bool =,
+                field records: LenPrefixed<VarInt, VarLong> =,
+            }
             packet MultiBlockChange_VarInt {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,

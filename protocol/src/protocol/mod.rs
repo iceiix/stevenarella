@@ -1156,6 +1156,8 @@ impl Conn {
                 let pos = buf.position() as usize;
                 let ibuf = buf.into_inner();
                 if ibuf.len() != pos {
+                    debug!("pos = {:?}", pos);
+                    debug!("ibuf = {:?}", ibuf);
                     return Result::Err(Error::Err(format!(
                         "Failed to read all of packet 0x{:X}, \
                                                            had {} bytes left",
