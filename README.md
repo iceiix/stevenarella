@@ -23,6 +23,9 @@ Join with your favorite IRC client.
 
 | Game version | Protocol version | Supported? |
 | ------ | --- | --- |
+| 1.16.4 | 754 | ✓ |
+| 1.16.3 | 753 | ✓ |
+| 1.16.2 | 751 | ✓ |
 | 1.16.1 | 736 | ✓ |
 | 1.16 | 735 | ✓ |
 | 1.15.2 | 578 | ✓ |

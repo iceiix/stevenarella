@@ -1066,7 +1066,8 @@ impl World {
                 }
 
                 let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-                let m = bit::Map::from_raw(bits, bit_size as usize);
+                let padded = self.protocol_version >= 736;
+                let m = bit::Map::from_raw(bits, bit_size as usize, padded);
 
                 for bi in 0..4096 {
                     let id = m.get(bi);
