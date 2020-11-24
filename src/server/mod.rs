@@ -509,6 +509,7 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_WorldNames_IsHard => on_game_join_worldnames_ishard,
                             JoinGame_WorldNames => on_game_join_worldnames,
                             JoinGame_HashedSeed_Respawn => on_game_join_hashedseed_respawn,
                             JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
@@ -970,6 +971,13 @@ impl Server {
                 data: crate::protocol::LenPrefixedBytes::<protocol::VarShort>::new(data.to_vec()),
             });
         }
+    }
+
+    fn on_game_join_worldnames_ishard(
+        &mut self,
+        join: packet::play::clientbound::JoinGame_WorldNames_IsHard,
+    ) {
+        self.on_game_join(join.gamemode, join.entity_id)
     }
 
     fn on_game_join_worldnames(&mut self, join: packet::play::clientbound::JoinGame_WorldNames) {
@@ -1725,15 +1733,13 @@ impl Server {
                     // This isn't an issue for other players because this packet
                     // must come before the spawn player packet.
                     if info.uuid == self.uuid {
-                        if let Some(player) = self.player {
-                            let model = self
-                                .entities
-                                .get_component_mut_direct::<entity::player::PlayerModel>(player)
-                                .unwrap();
-                            model.set_skin(info.skin_url.clone());
-                        } else {
-                            warn!("Received player info for ourself {:?} but self.player not yet initialized", self.uuid)
-                        }
+                        let model = self
+                            .entities
+                            .get_component_mut_direct::<entity::player::PlayerModel>(
+                                self.player.unwrap(),
+                            )
+                            .unwrap();
+                        model.set_skin(info.skin_url.clone());
                     }
                 }
                 UpdateGamemode { uuid, gamemode } => {
