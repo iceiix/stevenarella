@@ -1143,8 +1143,7 @@ impl TextureManager {
         self.add_defaults();
 
         for name in map.keys() {
-            if name.starts_with("steven-dynamic:") {
-                let n = &name["steven-dynamic:".len()..];
+            if let Some(n) = name.strip_prefix("steven-dynamic:") {
                 let (width, height, data) = {
                     let dynamic_texture = match self.dynamic_textures.get(n) {
                         Some(val) => val,
@@ -1332,7 +1331,7 @@ impl TextureManager {
 
         let mut full_name = String::new();
         full_name.push_str(plugin);
-        full_name.push_str(":");
+        full_name.push(':');
         full_name.push_str(name);
 
         let tex = Texture {
@@ -1372,7 +1371,7 @@ impl TextureManager {
 
         let mut full_name = String::new();
         full_name.push_str(plugin);
-        full_name.push_str(":");
+        full_name.push(':');
         full_name.push_str(name);
 
         let t = Texture {
