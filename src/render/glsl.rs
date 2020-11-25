@@ -44,7 +44,7 @@ impl Registry {
         out.push_str("#version 150\n");
         out.push_str("#define ");
         out.push_str(define);
-        out.push_str("\n");
+        out.push('\n');
         self.get_internal(&mut out, name);
         out
     }
@@ -58,7 +58,7 @@ impl Registry {
                 continue;
             }
             out.push_str(line);
-            out.push_str("\n");
+            out.push('\n');
         }
     }
 }

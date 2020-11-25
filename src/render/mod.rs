@@ -1332,7 +1332,7 @@ impl TextureManager {
 
         let mut full_name = String::new();
         full_name.push_str(plugin);
-        full_name.push_str(":");
+        full_name.push(':');
         full_name.push_str(name);
 
         let tex = Texture {
@@ -1372,7 +1372,7 @@ impl TextureManager {
 
         let mut full_name = String::new();
         full_name.push_str(plugin);
-        full_name.push_str(":");
+        full_name.push(':');
         full_name.push_str(name);
 
         let t = Texture {
