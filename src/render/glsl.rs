@@ -52,8 +52,8 @@ impl Registry {
     fn get_internal(&self, out: &mut String, name: &str) {
         let src = self.shaders.get(name).unwrap();
         for line in src.lines() {
-            if line.starts_with("#include ") {
-                let inc = line["#include ".len()..].trim();
+            if let Some(stripped) = line.strip_prefix("#include ") {
+                let inc = stripped.trim();
                 self.get_internal(out, inc);
                 continue;
             }
