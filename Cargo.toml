@@ -44,7 +44,7 @@ reqwest = { version = "0.10.9", features = [ "blocking" ]}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 stdweb = "0.4.20"
-winit = { version = "0.20.0", features = [ "stdweb" ]}
+winit = { version = "0.24.0", features = [ "stdweb" ]}
 
 [dependencies.steven_gl]
 path = "./gl"
