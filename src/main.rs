@@ -18,6 +18,7 @@
 #![allow(clippy::float_cmp)] // float comparison used to check if changed
 
 use log::{error, info, warn};
+use std::fs;
 use std::time::{Duration, Instant};
 extern crate steven_shared as shared;
 
@@ -193,6 +194,10 @@ struct Opt {
     #[structopt(short = "n", long = "network-debug")]
     network_debug: bool,
 
+    /// Parse a network packet from a file
+    #[structopt(short = "N", long = "network-parse-packet")]
+    network_parse_packet: Option<String>,
+
     /// Protocol version to use in the autodetection ping
     #[structopt(short = "p", long = "default-protocol-version")]
     default_protocol_version: Option<String>,
@@ -326,6 +331,12 @@ fn main2() {
 
     if opt.network_debug {
         protocol::enable_network_debug();
+    }
+
+    if let Some(filename) = opt.network_parse_packet {
+        let data = fs::read(filename).unwrap();
+        protocol::try_parse_packet(data, default_protocol_version);
+        return;
     }
 
     if opt.server.is_some() {
