@@ -1738,6 +1738,10 @@ state_packets!(
             /// EntityEquipment is sent to display an item on an entity, like a sword
             /// or armor. Slot 0 is the held item and slots 1 to 4 are boots, leggings
             /// chestplate and helmet respectively.
+            packet EntityEquipment_Array {
+                field entity_id: VarInt =,
+                field equipments: packet::EntityEquipments =,
+            }
             packet EntityEquipment_VarInt {
                 field entity_id: VarInt =,
                 field slot: VarInt =,
@@ -2502,6 +2506,57 @@ impl Serializable for CriterionProgress {
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         self.id.write_to(buf)?;
         self.date_of_achieving.write_to(buf)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct EntityEquipment {
+    pub slot: u8,
+    pub item: Option<item::Stack>,
+}
+
+impl Serializable for EntityEquipment {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(EntityEquipment {
+            slot: Serializable::read_from(buf)?,
+            item: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.slot.write_to(buf)?;
+        self.item.write_to(buf)
+    }
+}
+
+// Top-bit terminated array of EntityEquipment
+#[derive(Debug, Default)]
+pub struct EntityEquipments {
+    pub equipments: Vec<EntityEquipment>,
+}
+
+impl Serializable for EntityEquipments {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let mut equipments: Vec<EntityEquipment> = vec![];
+
+        loop {
+            let e: EntityEquipment = Serializable::read_from(buf)?;
+            equipments.push(EntityEquipment {
+                slot: e.slot & 0x7f,
+                item: e.item,
+            });
+
+            if e.slot & 0x80 == 0 {
+                break;
+            }
+            // TODO: detect infinite loop
+        }
+
+        Ok(EntityEquipments { equipments })
+    }
+
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), Error> {
+        unimplemented!()
     }
 }
 
