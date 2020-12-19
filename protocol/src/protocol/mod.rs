@@ -1326,6 +1326,22 @@ pub fn try_parse_packet(ibuf: Vec<u8>, protocol_version: i32) {
     let packet = packet::packet_by_id(protocol_version, state, dir, id, &mut buf).unwrap();
 
     println!("packet = {:?}", packet);
+
+    match packet {
+        Some(_val) => {
+            let pos = buf.position() as usize;
+            let ibuf = buf.into_inner();
+            if ibuf.len() != pos {
+                println!("pos = {:?}", pos);
+                println!("ibuf = {:?}", ibuf);
+                println!("Failed to read all of packet 0x{:X}, \
+                                                       had {} bytes left",
+                    id,
+                    ibuf.len() - pos)
+            }
+        }
+        None => println!("missing packet")
+    }
 }
 
 #[derive(Debug)]
