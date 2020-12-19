@@ -2541,14 +2541,14 @@ impl Serializable for EntityEquipments {
 
         loop {
             let e: EntityEquipment = Serializable::read_from(buf)?;
-            if e.slot & 0x80 != 0 {
-                equipments.push(EntityEquipment {
-                    slot: e.slot & 0x7f,
-                    item: e.item,
-                });
+            equipments.push(EntityEquipment {
+                slot: e.slot & 0x7f,
+                item: e.item,
+            });
+
+            if e.slot & 0x80 == 0 {
                 break;
             }
-            equipments.push(e);
             // TODO: detect infinite loop
         }
 
