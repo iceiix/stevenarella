@@ -1334,13 +1334,15 @@ pub fn try_parse_packet(ibuf: Vec<u8>, protocol_version: i32) {
             if ibuf.len() != pos {
                 println!("pos = {:?}", pos);
                 println!("ibuf = {:?}", ibuf);
-                println!("Failed to read all of packet 0x{:X}, \
+                println!(
+                    "Failed to read all of packet 0x{:X}, \
                                                        had {} bytes left",
                     id,
-                    ibuf.len() - pos)
+                    ibuf.len() - pos
+                )
             }
         }
-        None => println!("missing packet")
+        None => println!("missing packet"),
     }
 }
 
