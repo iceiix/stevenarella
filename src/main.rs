@@ -507,7 +507,9 @@ fn handle_window_event<T>(
 
                 WindowEvent::MouseInput { state, button, .. } => match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let (width, height) = window.window().inner_size().into();
+                        let physical_size = window.window().inner_size();
+                        let (width, height) =
+                            physical_size.to_logical::<f64>(game.dpi_factor).into();
 
                         if game.server.is_connected()
                             && !game.focused
@@ -536,12 +538,14 @@ fn handle_window_event<T>(
                     (_, _) => (),
                 },
                 WindowEvent::CursorMoved { position, .. } => {
-                    let (x, y) = position.into();
+                    let (x, y) = position.to_logical::<f64>(game.dpi_factor).into();
                     game.last_mouse_x = x;
                     game.last_mouse_y = y;
 
                     if !game.focused {
-                        let (width, height) = window.window().inner_size().into();
+                        let physical_size = window.window().inner_size();
+                        let (width, height) =
+                            physical_size.to_logical::<f64>(game.dpi_factor).into();
                         ui_container.hover_at(game, x, y, width, height);
                     }
                 }
