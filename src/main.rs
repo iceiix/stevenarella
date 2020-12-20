@@ -434,10 +434,11 @@ fn handle_window_event<T>(
     use glutin::event::*;
     match event {
         Event::MainEventsCleared => return true,
-        Event::DeviceEvent { event, .. } => match event {
-            DeviceEvent::MouseMotion {
+        Event::DeviceEvent { event, .. } => {
+            if let DeviceEvent::MouseMotion {
                 delta: (xrel, yrel),
-            } => {
+            } = event
+            {
                 let (rx, ry) = if xrel > 1000.0 || yrel > 1000.0 {
                     // Heuristic for if we were passed an absolute value instead of relative
                     // Workaround https://github.com/tomaka/glutin/issues/1084 MouseMotion event returns absolute instead of relative values, when running Linux in a VM
@@ -481,9 +482,7 @@ fn handle_window_event<T>(
                     window.window().set_cursor_visible(true);
                 }
             }
-
-            _ => (),
-        },
+        }
 
         Event::WindowEvent { event, .. } => {
             match event {
