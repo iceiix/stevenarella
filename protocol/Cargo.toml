@@ -5,8 +5,8 @@ authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>", "iceiix <ice_ix@protonma
 edition = "2018"
 
 [dependencies]
-serde = "1.0.117"
-serde_json = "1.0.59"
+serde = "1.0.118"
+serde_json = "1.0.60"
 hex = "0.4.2"
 sha-1 = "0.9.1"
 aes = "0.4.0"
@@ -25,4 +25,4 @@ path = "../std_or_web"
 version = "0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-reqwest = { version = "0.10.9", features = [ "blocking" ]}
+reqwest = { version = "0.10.10", features = [ "blocking" ]}
