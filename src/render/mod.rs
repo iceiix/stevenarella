@@ -1143,8 +1143,7 @@ impl TextureManager {
         self.add_defaults();
 
         for name in map.keys() {
-            if name.starts_with("steven-dynamic:") {
-                let n = &name["steven-dynamic:".len()..];
+            if let Some(n) = name.strip_prefix("steven-dynamic:") {
                 let (width, height, data) = {
                     let dynamic_texture = match self.dynamic_textures.get(n) {
                         Some(val) => val,
@@ -1152,7 +1151,7 @@ impl TextureManager {
                     };
                     let img = &dynamic_texture.1;
                     let (width, height) = img.dimensions();
-                    (width, height, img.to_rgba().into_vec())
+                    (width, height, img.to_rgba8().into_vec())
                 };
                 let new_tex =
                     self.put_texture("steven-dynamic", n, width as u32, height as u32, data);
@@ -1213,7 +1212,7 @@ impl TextureManager {
         };
 
         self.pending_uploads
-            .push((tex.atlas, rect, img.to_rgba().into_vec()));
+            .push((tex.atlas, rect, img.to_rgba8().into_vec()));
         self.dynamic_textures
             .get_mut(&format!("skin-{}", hash))
             .unwrap()
@@ -1243,7 +1242,7 @@ impl TextureManager {
                 let (width, height) = img.dimensions();
                 // Might be animated
                 if (name.starts_with("blocks/") || name.starts_with("items/")) && width != height {
-                    let id = img.to_rgba().into_vec();
+                    let id = img.to_rgba8().into_vec();
                     let frame = id[..(width * width * 4) as usize].to_owned();
                     if let Some(mut ani) = self.load_animation(plugin, name, &img, id) {
                         ani.texture = self.put_texture(plugin, name, width, width, frame);
@@ -1251,7 +1250,7 @@ impl TextureManager {
                         return;
                     }
                 }
-                self.put_texture(plugin, name, width, height, img.to_rgba().into_vec());
+                self.put_texture(plugin, name, width, height, img.to_rgba8().into_vec());
                 return;
             }
         }
@@ -1332,7 +1331,7 @@ impl TextureManager {
 
         let mut full_name = String::new();
         full_name.push_str(plugin);
-        full_name.push_str(":");
+        full_name.push(':');
         full_name.push_str(name);
 
         let tex = Texture {
@@ -1372,7 +1371,7 @@ impl TextureManager {
 
         let mut full_name = String::new();
         full_name.push_str(plugin);
-        full_name.push_str(":");
+        full_name.push(':');
         full_name.push_str(name);
 
         let t = Texture {
@@ -1406,7 +1405,7 @@ impl TextureManager {
                 rect_pos = Some(i);
             }
         }
-        let data = img.to_rgba().into_vec();
+        let data = img.to_rgba8().into_vec();
 
         if let Some(rect_pos) = rect_pos {
             let mut tex = self.free_dynamics.remove(rect_pos);

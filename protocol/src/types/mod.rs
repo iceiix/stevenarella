@@ -39,23 +39,14 @@ impl Gamemode {
     }
 
     pub fn can_fly(&self) -> bool {
-        match *self {
-            Gamemode::Creative | Gamemode::Spectator => true,
-            _ => false,
-        }
+        matches!(*self, Gamemode::Creative | Gamemode::Spectator)
     }
 
     pub fn always_fly(&self) -> bool {
-        match *self {
-            Gamemode::Spectator => true,
-            _ => false,
-        }
+        matches!(*self, Gamemode::Spectator)
     }
 
     pub fn noclip(&self) -> bool {
-        match *self {
-            Gamemode::Spectator => true,
-            _ => false,
-        }
+        matches!(*self, Gamemode::Spectator)
     }
 }

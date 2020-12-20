@@ -16,6 +16,7 @@ pub struct Map {
     bits: Vec<u64>,
     pub bit_size: usize,
     length: usize,
+    padded: bool,
 }
 
 #[test]
@@ -53,17 +54,20 @@ impl Map {
             bit_size: size,
             length: len,
             bits: Vec::with_capacity((len * size) / 64),
+            padded: false,
         };
         for _ in 0..len {
             map.bits.push(0)
         }
         map
     }
-    pub fn from_raw(bits: Vec<u64>, size: usize) -> Map {
+
+    pub fn from_raw(bits: Vec<u64>, size: usize, padded: bool) -> Map {
         Map {
             length: (bits.len() * 64 + (size - 1)) / size,
             bit_size: size,
             bits,
+            padded,
         }
     }
 
@@ -75,8 +79,17 @@ impl Map {
         n
     }
 
+    fn get_bit_offset(&self, i: usize) -> usize {
+        let padding = if self.padded {
+            i / (64 / self.bit_size) * (64 % self.bit_size)
+        } else {
+            0
+        };
+        i * self.bit_size + padding
+    }
+
     pub fn set(&mut self, i: usize, val: usize) {
-        let i = i * self.bit_size;
+        let i = self.get_bit_offset(i);
         let pos = i / 64;
         let mask = (1u64 << self.bit_size) - 1;
         let ii = i % 64;
@@ -90,7 +103,7 @@ impl Map {
     }
 
     pub fn get(&self, i: usize) -> usize {
-        let i = i * self.bit_size;
+        let i = self.get_bit_offset(i);
         let pos = i / 64;
         let mask = (1 << self.bit_size) - 1;
         let ii = i % 64;

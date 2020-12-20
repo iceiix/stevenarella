@@ -72,10 +72,7 @@ impl Tag {
     }
 
     pub fn is_compound(&self) -> bool {
-        match *self {
-            Tag::Compound(_) => true,
-            _ => false,
-        }
+        matches!(*self, Tag::Compound(_))
     }
 
     pub fn as_byte(&self) -> Option<i8> {

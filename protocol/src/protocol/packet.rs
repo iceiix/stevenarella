@@ -353,6 +353,16 @@ state_packets!(
                 field crafting_book_open: bool = when(|p: &CraftingBookData| p.action.0 == 1),
                 field crafting_filter: bool = when(|p: &CraftingBookData| p.action.0 == 1),
             }
+            /// SetDisplayedRecipe replaces CraftingBookData, type 0.
+            packet SetDisplayedRecipe {
+                field recipe_id: String =,
+            }
+            /// SetRecipeBookState replaces CraftingBookData, type 1.
+            packet SetRecipeBookState {
+                field book_id: VarInt =, // TODO: enum, 0: crafting, 1: furnace, 2: blast furnace, 3: smoker
+                field book_open: bool =,
+                field filter_active: bool =,
+            }
             packet NameItem {
                 field item_name: String =,
             }
@@ -881,6 +891,11 @@ state_packets!(
                 field message: format::Component =,
             }
             /// MultiBlockChange is used to update a batch of blocks in a single packet.
+            packet MultiBlockChange_Packed {
+                field chunk_section_pos: u64 =,
+                field no_trust_edges: bool =,
+                field records: LenPrefixed<VarInt, VarLong> =,
+            }
             packet MultiBlockChange_VarInt {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,
@@ -1047,6 +1062,16 @@ state_packets!(
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
+            packet ChunkData_Biomes3D_VarInt {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field new: bool =,
+                field bitmask: VarInt =,
+                field heightmaps: Option<nbt::NamedTag> =,
+                field biomes: LenPrefixed<VarInt, VarInt> = when(|p: &ChunkData_Biomes3D_VarInt| p.new),
+                field data: LenPrefixedBytes<VarInt> =,
+                field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =,
+            }
             packet ChunkData_Biomes3D_bool {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,
@@ -1200,6 +1225,39 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
+            packet JoinGame_WorldNames_IsHard {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// Whether hardcore mode is enabled
+                field is_hardcore: bool =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The previous gamemode of the client
+                field previous_gamemode: u8 =,
+                /// Identifiers for all worlds on the server
+                field world_names: LenPrefixed<VarInt, String> =,
+                /// Represents a dimension registry
+                field dimension_codec: Option<nbt::NamedTag> =,
+                /// The dimension the client is starting in
+                field dimension: Option<nbt::NamedTag> =,
+                /// The world being spawned into
+                field world_name: String =,
+                /// Truncated SHA-256 hash of world's seed
+                field hashed_seed: i64 =,
+                /// The max number of players on the server
+                field max_players: VarInt =,
+                /// The render distance (2-32)
+                field view_distance: VarInt =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+                /// Whether to prompt or immediately respawn
+                field enable_respawn_screen: bool =,
+                /// Whether the world is in debug mode
+                field is_debug: bool =,
+                /// Whether the world is a superflat world
+                field is_flat: bool =,
+            }
             packet JoinGame_WorldNames {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -1231,7 +1289,6 @@ state_packets!(
                 /// Whether the world is a superflat world
                 field is_flat: bool =,
             }
-
             packet JoinGame_HashedSeed_Respawn {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -1527,6 +1584,19 @@ state_packets!(
                 field recipe_ids: LenPrefixed<VarInt, String> =,
                 field recipe_ids2: LenPrefixed<VarInt, String> = when(|p: &UnlockRecipes_WithSmelting| p.action.0 == 0),
             }
+            packet UnlockRecipes_WithBlastSmoker {
+                field action: VarInt =,
+                field crafting_book_open: bool =,
+                field filtering_craftable: bool =,
+                field smelting_book_open: bool =,
+                field filtering_smeltable: bool =,
+                field blast_furnace_open: bool =,
+                field filtering_blast_furnace: bool =,
+                field smoker_open: bool =,
+                field filtering_smoker: bool =,
+                field recipe_ids: LenPrefixed<VarInt, String> =,
+                field recipe_ids2: LenPrefixed<VarInt, String> = when(|p: &UnlockRecipes_WithBlastSmoker| p.action.0 == 0),
+            }
             /// EntityDestroy destroys the entities with the ids in the provided slice.
             packet EntityDestroy {
                 field entity_ids: LenPrefixed<VarInt, VarInt> =,
@@ -1668,6 +1738,10 @@ state_packets!(
             /// EntityEquipment is sent to display an item on an entity, like a sword
             /// or armor. Slot 0 is the held item and slots 1 to 4 are boots, leggings
             /// chestplate and helmet respectively.
+            packet EntityEquipment_Array {
+                field entity_id: VarInt =,
+                field equipments: packet::EntityEquipments =,
+            }
             packet EntityEquipment_VarInt {
                 field entity_id: VarInt =,
                 field slot: VarInt =,
@@ -2432,6 +2506,57 @@ impl Serializable for CriterionProgress {
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         self.id.write_to(buf)?;
         self.date_of_achieving.write_to(buf)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct EntityEquipment {
+    pub slot: u8,
+    pub item: Option<item::Stack>,
+}
+
+impl Serializable for EntityEquipment {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(EntityEquipment {
+            slot: Serializable::read_from(buf)?,
+            item: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.slot.write_to(buf)?;
+        self.item.write_to(buf)
+    }
+}
+
+// Top-bit terminated array of EntityEquipment
+#[derive(Debug, Default)]
+pub struct EntityEquipments {
+    pub equipments: Vec<EntityEquipment>,
+}
+
+impl Serializable for EntityEquipments {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let mut equipments: Vec<EntityEquipment> = vec![];
+
+        loop {
+            let e: EntityEquipment = Serializable::read_from(buf)?;
+            equipments.push(EntityEquipment {
+                slot: e.slot & 0x7f,
+                item: e.item,
+            });
+
+            if e.slot & 0x80 == 0 {
+                break;
+            }
+            // TODO: detect infinite loop
+        }
+
+        Ok(EntityEquipments { equipments })
+    }
+
+    fn write_to<W: io::Write>(&self, _buf: &mut W) -> Result<(), Error> {
+        unimplemented!()
     }
 }
 

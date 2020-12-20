@@ -44,7 +44,7 @@ impl Registry {
         out.push_str("#version 150\n");
         out.push_str("#define ");
         out.push_str(define);
-        out.push_str("\n");
+        out.push('\n');
         self.get_internal(&mut out, name);
         out
     }
@@ -52,13 +52,13 @@ impl Registry {
     fn get_internal(&self, out: &mut String, name: &str) {
         let src = self.shaders.get(name).unwrap();
         for line in src.lines() {
-            if line.starts_with("#include ") {
-                let inc = line["#include ".len()..].trim();
+            if let Some(stripped) = line.strip_prefix("#include ") {
+                let inc = stripped.trim();
                 self.get_internal(out, inc);
                 continue;
             }
             out.push_str(line);
-            out.push_str("\n");
+            out.push('\n');
         }
     }
 }
