@@ -13,11 +13,12 @@ Don't expect it to go anywhere, just doing this for fun.
 
 In action: http://gfycat.com/NeedyElaborateGypsymoth
 
-## Community chatroom
+## Community
 
-We have a chatroom on [EsperNet](https://esper.net): `irc.esper.net` server, `#stevenarella` channel.
+IRC channels: `#stevenarella` on [irc.freenode.net](https://freenode.net), or `#stevenarella` on [irc.esper.net](https://esper.net).
 
-Join with your favorite IRC client.
+Discussion forum: [https://github.com/iceiix/stevenarella/discussions](https://github.com/iceiix/stevenarella/discussions).
+
 
 ## Protocol support
 
