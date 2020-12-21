@@ -24,10 +24,12 @@ static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
 /// Inits the gl library. This should be called once a context is ready.
 pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
     unsafe {
-        CONTEXT = &mut (gl::Context::from_loader_function(|s| {
+        let mut context = Box::new(gl::Context::from_loader_function(|s| {
             println!("Loaded {} = {:?}", s, vid.get_proc_address(s));
             vid.get_proc_address(s) as *const _
-        })) as *mut glow::Context;
+        }));
+        println!("context = {:?}", context);
+        CONTEXT = Box::into_raw(context);
     }
 }
 

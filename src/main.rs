@@ -282,7 +282,6 @@ fn main2() {
     let renderer = render::Renderer::new(resource_manager.clone());
     println!("main 4");
     println!("ok");
-    std::process::exit(0);
     let mut ui_container = ui::Container::new();
 
     let mut last_frame = Instant::now();
