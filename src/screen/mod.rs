@@ -70,7 +70,6 @@ impl ScreenSystem {
     }
 
     pub fn add_screen(&mut self, screen: Box<dyn Screen>) {
-        return; // TODO: fix crash
         self.screens.push(ScreenInfo {
             screen,
             init: false,

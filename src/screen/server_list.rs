@@ -99,6 +99,7 @@ impl ServerList {
         renderer: &mut render::Renderer,
         ui_container: &mut ui::Container,
     ) {
+        println!("reload_server_list");
         let elements = self.elements.as_mut().unwrap();
         *self.needs_reload.borrow_mut() = false;
         {
