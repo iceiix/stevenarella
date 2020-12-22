@@ -278,9 +278,11 @@ impl Texture {
     pub fn new() -> Texture {
         println!("create_texture");
         Texture(unsafe {
-            glow_context()
+            0
+            /*glow_context()
                 .create_texture()
                 .expect("create texture failed")
+                */
         })
     }
 
@@ -288,7 +290,7 @@ impl Texture {
     pub fn bind(&self, target: TextureTarget) {
         println!("bind_texture");
         unsafe {
-            glow_context().bind_texture(target, Some(self.0));
+            //glow_context().bind_texture(target, Some(self.0));
         }
     }
 
@@ -886,6 +888,8 @@ pub struct Framebuffer(u32);
 
 pub fn check_framebuffer_status() {
     unsafe {
+        return;
+        println!("check_framebuffer_status()");
         let status = glow_context().check_framebuffer_status(gl::FRAMEBUFFER);
         let s = match status {
             gl::FRAMEBUFFER_UNDEFINED => "GL_FRAMEBUFFER_UNDEFINED",
