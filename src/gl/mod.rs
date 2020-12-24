@@ -18,6 +18,7 @@ use log::{error, info};
 use std::mem;
 use std::ops::BitOr;
 use std::ops::{Deref, DerefMut};
+use backtrace::Backtrace;
 
 static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
 
@@ -36,6 +37,8 @@ pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
 fn glow_context() -> &'static glow::Context {
     unsafe {
         println!("glow_context = {:?}", CONTEXT);
+        let bt = Backtrace::new();
+        println!("\tbt = {:?}", bt);
         CONTEXT.as_ref().unwrap()
     }
 }
@@ -286,7 +289,7 @@ impl Texture {
 
     /// Binds the texture to the passed target.
     pub fn bind(&self, target: TextureTarget) {
-        println!("bind_texture");
+        println!("bind_texture {} target {:?}", self.0, target);
         unsafe {
             glow_context().bind_texture(target, Some(self.0));
         }
