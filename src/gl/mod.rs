@@ -38,7 +38,7 @@ fn glow_context() -> &'static glow::Context {
     unsafe {
         println!("glow_context = {:?}", CONTEXT);
         let bt = Backtrace::new();
-        println!("\tbt = {:?}", bt);
+        //println!("\tbt = {:?}", bt);
         CONTEXT.as_ref().unwrap()
     }
 }
@@ -493,11 +493,9 @@ impl Texture {
         param: TextureParameter,
         value: TextureValue,
     ) {
-        /* TODO
         unsafe {
             glow_context().tex_parameter_i32(target, param, value);
         }
-        */
     }
 }
 
@@ -550,17 +548,14 @@ impl Program {
     }
 
     pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
-        /* TODO: ffi?
-        let c_name = ffi::CString::new(name).unwrap();
         let u = unsafe {
-            glow_context().get_uniform_location(self.0, c_name.as_ptr())
+            glow_context().get_uniform_location(self.0, name)
         };
         if let Some(u) = u {
             Some(Uniform(u))
         } else {
-        */
             None
-        //}
+        }
     }
 
     pub fn attribute_location(&self, name: &str) -> Option<Attribute> {
