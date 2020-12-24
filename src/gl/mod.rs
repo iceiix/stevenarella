@@ -957,7 +957,37 @@ impl Framebuffer {
             gl::FramebufferTexture2D(gl::FRAMEBUFFER, attachment, target, tex.0, level);
         }
     }
+
+    pub fn renderbuffer(
+        &self,
+        attachment: Attachment,
+        rb: Renderbuffer,
+    ) {
+        unsafe {
+            gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, attachment, gl::RENDERBUFFER, rb.0);
+        }
+    }
 }
+
+#[derive(Default)]
+pub struct Renderbuffer(u32);
+
+impl Renderbuffer {
+    pub fn new() -> Renderbuffer {
+        let mut rb = Renderbuffer(0);
+        unsafe {
+            gl::GenRenderbuffers(1, &mut rb.0)
+        }
+        rb
+    }
+
+    pub fn bind(&self) {
+        unsafe {
+            gl::BindRenderbuffer(gl::RENDERBUFFER, self.0);
+        }
+    }
+}
+
 
 impl Drop for Framebuffer {
     fn drop(&mut self) {
