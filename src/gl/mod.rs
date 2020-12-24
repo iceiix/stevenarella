@@ -986,6 +986,24 @@ impl Renderbuffer {
             gl::BindRenderbuffer(gl::RENDERBUFFER, self.0);
         }
     }
+
+    pub fn storage_multisample(
+        &self,
+        samples: i32,
+        width: u32,
+        height: u32,
+        format: TextureFormat,
+    ) {
+        unsafe {
+            gl::RenderbufferStorageMultisample(
+                gl::RENDERBUFFER,
+                samples,
+                format,
+                width as i32,
+                height as i32
+            );
+        }
+    }
 }
 
 
