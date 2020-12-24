@@ -352,7 +352,6 @@ impl Container {
             let (w, h) = e.get_size();
             let (ox, oy) = e.get_position();
             println!("draw  w={}, h={}, ox={}, oy={}", w,h,ox,oy);
-            if oy as i32==0{ println!("skip 0"); continue;}
 
             println!("compute_draw_region {}x{}", sw, sh);
             if oy as i32==100{
