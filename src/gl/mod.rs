@@ -405,7 +405,6 @@ impl Texture {
         fixed: bool,
     ) {
         unsafe {
-            /*
                         let result: i32 = glow_context().get_parameter_i32(gl::MAX_SAMPLES);
                         let use_samples =
                             if samples > result {
@@ -414,18 +413,14 @@ impl Texture {
                             } else {
                                 samples
                             };
-            */
-            // TODO: switch to glRenderbufferStorageMultisample?
-            // from glTexImage2DMultisample which isn't in WebGL
-            /*
+            // TODO: switch to glRenderbufferStorageMultisample https://github.com/iceiix/stevenarella/pull/442
             glow_context().tex_image_2d_multisample(target,
                            use_samples,
                            format,
                            width as i32,
                            height as i32,
-                           fixed as u8
+                           fixed
             );
-            */
         }
     }
 
