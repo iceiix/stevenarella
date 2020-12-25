@@ -239,7 +239,7 @@ fn main2() {
 
     info!("Starting steven");
 
-    let (vars, vsync) = {
+    let (vars, mut vsync) = {
         let mut vars = console::Vars::new();
         vars.register(CL_BRAND);
         auth::register_vars(&mut vars);
@@ -320,7 +320,6 @@ fn main2() {
     let mut ui_container = ui::Container::new();
 
     let mut last_frame = Instant::now();
-    let frame_time = 1e9f64 / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
     if opt.server.is_none() {
@@ -398,78 +397,100 @@ fn main2() {
             return;
         }
 
-        let now = Instant::now();
-        let diff = now.duration_since(last_frame);
-        last_frame = now;
-        let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let physical_size = window.window().inner_size();
-        let (physical_width, physical_height) = physical_size.into();
-        let (width, height) = physical_size.to_logical::<f64>(game.dpi_factor).into();
-
-        let version = {
-            let try_res = game.resource_manager.try_write();
-            if let Ok(mut res) = try_res {
-                res.tick(&mut resui, &mut ui_container, delta);
-                res.version()
-            } else {
-                // TODO: why does game.resource_manager.write() sometimes deadlock?
-                //warn!("Failed to obtain mutable reference to resource manager!");
-                last_resource_version
-            }
-        };
-        last_resource_version = version;
-
-        let vsync_changed = *game.vars.get(settings::R_VSYNC);
-        if vsync != vsync_changed {
-            error!("Changing vsync currently requires restarting");
-            game.should_close = true;
-            // TODO: after https://github.com/tomaka/glutin/issues/693 Allow changing vsync on a Window
-            //vsync = vsync_changed;
-        }
-        let fps_cap = *game.vars.get(settings::R_MAX_FPS);
-
-        game.tick(delta);
-        game.server.tick(&mut game.renderer, delta);
-
-        // Check if window is valid, it might be minimized
-        if physical_width == 0 || physical_height == 0 {
-            return;
-        }
-
-        game.renderer.update_camera(physical_width, physical_height);
-        game.server.world.compute_render_list(&mut game.renderer);
-        game.chunk_builder
-            .tick(&mut game.server.world, &mut game.renderer, version);
-
-        game.screen_sys
-            .tick(delta, &mut game.renderer, &mut ui_container);
-        game.console
-            .lock()
-            .unwrap()
-            .tick(&mut ui_container, &game.renderer, delta, width);
-        ui_container.tick(&mut game.renderer, delta, width, height);
-        game.renderer.tick(
-            &mut game.server.world,
-            delta,
-            width as u32,
-            height as u32,
-            physical_width,
-            physical_height,
+        tick_all(
+            &window.window(),
+            &mut game,
+            &mut ui_container,
+            &mut last_frame,
+            &mut resui,
+            &mut last_resource_version,
+            &mut vsync,
         );
 
-        if fps_cap > 0 && !vsync {
-            let frame_time = now.elapsed();
-            let sleep_interval = Duration::from_millis(1000 / fps_cap as u64);
-            if frame_time < sleep_interval {
-                thread::sleep(sleep_interval - frame_time);
-            }
-        }
         window.swap_buffers().expect("Failed to swap GL buffers");
 
         if game.should_close {
             *control_flow = glutin::event_loop::ControlFlow::Exit;
         }
     });
+}
+
+fn tick_all(
+    window: &winit::window::Window,
+    game: &mut Game,
+    mut ui_container: &mut ui::Container,
+    last_frame: &mut Instant,
+    mut resui: &mut resources::ManagerUI,
+    last_resource_version: &mut usize,
+    vsync: &mut bool,
+) {
+    let now = Instant::now();
+    let diff = now.duration_since(*last_frame);
+    *last_frame = now;
+    let frame_time = 1e9f64 / 60.0;
+    let delta = (diff.subsec_nanos() as f64) / frame_time;
+    let physical_size = window.inner_size();
+    let (physical_width, physical_height) = physical_size.into();
+    let (width, height) = physical_size.to_logical::<f64>(game.dpi_factor).into();
+
+    let version = {
+        let try_res = game.resource_manager.try_write();
+        if let Ok(mut res) = try_res {
+            res.tick(&mut resui, &mut ui_container, delta);
+            res.version()
+        } else {
+            // TODO: why does game.resource_manager.write() sometimes deadlock?
+            //warn!("Failed to obtain mutable reference to resource manager!");
+            *last_resource_version
+        }
+    };
+    *last_resource_version = version;
+
+    let vsync_changed = *game.vars.get(settings::R_VSYNC);
+    if *vsync != vsync_changed {
+        error!("Changing vsync currently requires restarting");
+        game.should_close = true;
+        // TODO: after https://github.com/tomaka/glutin/issues/693 Allow changing vsync on a Window
+        //vsync = vsync_changed;
+    }
+    let fps_cap = *game.vars.get(settings::R_MAX_FPS);
+
+    game.tick(delta);
+    game.server.tick(&mut game.renderer, delta);
+
+    // Check if window is valid, it might be minimized
+    if physical_width == 0 || physical_height == 0 {
+        return;
+    }
+
+    game.renderer.update_camera(physical_width, physical_height);
+    game.server.world.compute_render_list(&mut game.renderer);
+    game.chunk_builder
+        .tick(&mut game.server.world, &mut game.renderer, version);
+
+    game.screen_sys
+        .tick(delta, &mut game.renderer, &mut ui_container);
+    game.console
+        .lock()
+        .unwrap()
+        .tick(&mut ui_container, &game.renderer, delta, width);
+    ui_container.tick(&mut game.renderer, delta, width, height);
+    game.renderer.tick(
+        &mut game.server.world,
+        delta,
+        width as u32,
+        height as u32,
+        physical_width,
+        physical_height,
+    );
+
+    if fps_cap > 0 && !*vsync {
+        let frame_time = now.elapsed();
+        let sleep_interval = Duration::from_millis(1000 / fps_cap as u64);
+        if frame_time < sleep_interval {
+            thread::sleep(sleep_interval - frame_time);
+        }
+    }
 }
 
 fn handle_window_event<T>(
