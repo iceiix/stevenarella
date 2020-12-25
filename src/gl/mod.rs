@@ -939,7 +939,7 @@ impl Framebuffer {
 
     pub fn renderbuffer(&self, attachment: Attachment, rb: Renderbuffer) {
         unsafe {
-            gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, attachment, gl::RENDERBUFFER, rb.0);
+            glow_context().framebuffer_renderbuffer(gl::FRAMEBUFFER, attachment, gl::RENDERBUFFER, Some(rb.0));
         }
     }
 }
@@ -949,14 +949,14 @@ pub struct Renderbuffer(u32);
 
 impl Renderbuffer {
     pub fn new() -> Renderbuffer {
-        let mut rb = Renderbuffer(0);
-        unsafe { gl::GenRenderbuffers(1, &mut rb.0) }
-        rb
+        Renderbuffer(unsafe {
+            glow_context().create_renderbuffer().unwrap()
+        })
     }
 
     pub fn bind(&self) {
         unsafe {
-            gl::BindRenderbuffer(gl::RENDERBUFFER, self.0);
+            glow_context().bind_renderbuffer(gl::RENDERBUFFER, Some(self.0));
         }
     }
 
@@ -968,7 +968,7 @@ impl Renderbuffer {
         format: TextureFormat,
     ) {
         unsafe {
-            gl::RenderbufferStorageMultisample(
+            glow_context().renderbuffer_storage_multisample(
                 gl::RENDERBUFFER,
                 samples,
                 format,
