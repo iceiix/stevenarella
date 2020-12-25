@@ -623,9 +623,8 @@ impl Uniform {
     }
 
     #[allow(clippy::missing_safety_doc)]
-    pub unsafe fn set_float_multi_raw(&self, _data: *const f32, _len: usize) {
-        // TODO: takes a slice, not a raw pointer
-        //TODO glow_context().uniform_4_f32_slice(Some(&self.0), len as i32, data);
+    pub unsafe fn set_float_multi_raw(&self, data: *const f32, len: usize) {
+        glow_context().uniform_4_f32_slice(Some(&self.0), std::slice::from_raw_parts(data, len));
     }
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
@@ -633,16 +632,19 @@ impl Uniform {
             glow_context().uniform_matrix_4_f32_slice(
                 Some(&self.0),
                 false,
-                &*(m as *const cgmath::Matrix4<f32> as *const [f32; 16]),
+                &*(m as *const cgmath::Matrix4<f32> as *const [f32; 4 * 4]),
             );
         }
     }
 
-    pub fn set_matrix4_multi(&self, _m: &[::cgmath::Matrix4<f32>]) {
-        /* TODO: transmute all slices
+    pub fn set_matrix4_multi(&self, m: &[::cgmath::Matrix4<f32>]) {
         unsafe {
-            //TODO glow_context().uniform_matrix_4_f32_slice(Some(&self.0), m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
-        }*/
+            glow_context().uniform_matrix_4_f32_slice(
+                Some(&self.0),
+                false,
+                std::slice::from_raw_parts(m.as_ptr() as *const _, m.len() * 4 * 4),
+            ); // TODO: Most likely isn't safe
+        }
     }
 }
 
