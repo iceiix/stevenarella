@@ -279,7 +279,7 @@ fn main2() {
     };
 
     #[cfg(not(target_arch = "wasm32"))]
-    let (context, shader_version, dpi_factor, events_loop, mut window) = {
+    let (context, shader_version, dpi_factor, events_loop, window) = {
         let events_loop = glutin::event_loop::EventLoop::new();
         let window_builder = glutin::window::WindowBuilder::new()
             .with_title("Stevenarella")
@@ -385,7 +385,7 @@ fn main2() {
     events_loop.run(move |event, _event_loop, control_flow| {
         *control_flow = glutin::event_loop::ControlFlow::Poll;
 
-        if !handle_window_event(&mut window, &mut game, &mut ui_container, event) {
+        if !handle_window_event(&window.window(), &mut game, &mut ui_container, event) {
             return;
         }
 
@@ -464,7 +464,7 @@ fn main2() {
 }
 
 fn handle_window_event<T>(
-    window: &mut glutin::WindowedContext<glutin::PossiblyCurrent>,
+    window: &winit::window::Window,
     game: &mut Game,
     ui_container: &mut ui::Container,
     event: glutin::event::Event<T>,
@@ -498,8 +498,8 @@ fn handle_window_event<T>(
                 use std::f64::consts::PI;
 
                 if game.focused {
-                    window.window().set_cursor_grab(true).unwrap();
-                    window.window().set_cursor_visible(false);
+                    window.set_cursor_grab(true).unwrap();
+                    window.set_cursor_visible(false);
                     if let Some(player) = game.server.player {
                         let rotation = game
                             .server
@@ -516,8 +516,8 @@ fn handle_window_event<T>(
                         }
                     }
                 } else {
-                    window.window().set_cursor_grab(false).unwrap();
-                    window.window().set_cursor_visible(true);
+                    window.set_cursor_grab(false).unwrap();
+                    window.set_cursor_visible(true);
                 }
             }
         }
@@ -530,7 +530,11 @@ fn handle_window_event<T>(
                 }
                 WindowEvent::CloseRequested => game.should_close = true,
                 WindowEvent::Resized(physical_size) => {
-                    window.resize(physical_size);
+                    // TODO: resize() is on glutin not winit, https://docs.rs/glutin/0.26.0/glutin/struct.ContextWrapper.html#method.resize
+                    // This is the only use of the glutin context in the window handling so it
+                    // breaks the abstraction here TODO: special case for glutin, handle elsewhere
+                    // or pass both and only use on glutin?
+                    //window.resize(physical_size);
                 }
                 WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                     game.dpi_factor = scale_factor;
@@ -544,7 +548,7 @@ fn handle_window_event<T>(
 
                 WindowEvent::MouseInput { state, button, .. } => match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let physical_size = window.window().inner_size();
+                        let physical_size = window.inner_size();
                         let (width, height) =
                             physical_size.to_logical::<f64>(game.dpi_factor).into();
 
@@ -553,11 +557,11 @@ fn handle_window_event<T>(
                             && !game.screen_sys.is_current_closable()
                         {
                             game.focused = true;
-                            window.window().set_cursor_grab(true).unwrap();
-                            window.window().set_cursor_visible(false);
+                            window.set_cursor_grab(true).unwrap();
+                            window.set_cursor_visible(false);
                         } else if !game.focused {
-                            window.window().set_cursor_grab(false).unwrap();
-                            window.window().set_cursor_visible(true);
+                            window.set_cursor_grab(false).unwrap();
+                            window.set_cursor_visible(true);
                             ui_container.click_at(
                                 game,
                                 game.last_mouse_x,
@@ -580,7 +584,7 @@ fn handle_window_event<T>(
                     game.last_mouse_y = y;
 
                     if !game.focused {
-                        let physical_size = window.window().inner_size();
+                        let physical_size = window.inner_size();
                         let (width, height) =
                             physical_size.to_logical::<f64>(game.dpi_factor).into();
                         ui_container.hover_at(game, x, y, width, height);
@@ -602,15 +606,15 @@ fn handle_window_event<T>(
                     match (input.state, input.virtual_keycode) {
                         (ElementState::Released, Some(VirtualKeyCode::Escape)) => {
                             if game.focused {
-                                window.window().set_cursor_grab(false).unwrap();
-                                window.window().set_cursor_visible(true);
+                                window.set_cursor_grab(false).unwrap();
+                                window.set_cursor_visible(true);
                                 game.focused = false;
                                 game.screen_sys.replace_screen(Box::new(
                                     screen::SettingsMenu::new(game.vars.clone(), true),
                                 ));
                             } else if game.screen_sys.is_current_closable() {
-                                window.window().set_cursor_grab(true).unwrap();
-                                window.window().set_cursor_visible(false);
+                                window.set_cursor_grab(true).unwrap();
+                                window.set_cursor_visible(false);
                                 game.focused = true;
                                 game.screen_sys.pop_screen();
                             }
@@ -622,13 +626,13 @@ fn handle_window_event<T>(
                             if !game.is_fullscreen {
                                 // TODO: support options for exclusive and simple fullscreen
                                 // see https://docs.rs/glutin/0.22.0-alpha5/glutin/window/struct.Window.html#method.set_fullscreen
-                                window.window().set_fullscreen(Some(
+                                window.set_fullscreen(Some(
                                     glutin::window::Fullscreen::Borderless(
-                                        window.window().current_monitor(),
+                                        window.current_monitor(),
                                     ),
                                 ));
                             } else {
-                                window.window().set_fullscreen(None);
+                                window.set_fullscreen(None);
                             }
 
                             game.is_fullscreen = !game.is_fullscreen;
