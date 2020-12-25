@@ -385,6 +385,15 @@ fn main2() {
     events_loop.run(move |event, _event_loop, control_flow| {
         *control_flow = glutin::event_loop::ControlFlow::Poll;
 
+        #[cfg(not(target_arch = "wasm32"))]
+        if let glutin::event::Event::WindowEvent {
+            event: glutin::event::WindowEvent::Resized(physical_size),
+            ..
+        } = event
+        {
+            window.resize(physical_size);
+        }
+
         if !handle_window_event(&window.window(), &mut game, &mut ui_container, event) {
             return;
         }
@@ -529,13 +538,6 @@ fn handle_window_event<T>(
                     game.is_logo_pressed = modifiers_state.logo();
                 }
                 WindowEvent::CloseRequested => game.should_close = true,
-                WindowEvent::Resized(physical_size) => {
-                    // TODO: resize() is on glutin not winit, https://docs.rs/glutin/0.26.0/glutin/struct.ContextWrapper.html#method.resize
-                    // This is the only use of the glutin context in the window handling so it
-                    // breaks the abstraction here TODO: special case for glutin, handle elsewhere
-                    // or pass both and only use on glutin?
-                    //window.resize(physical_size);
-                }
                 WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                     game.dpi_factor = scale_factor;
                 }
