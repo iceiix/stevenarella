@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use std::collections::BTreeMap;
-use std_or_web::fs;
+use std::fs;
 
 use crate::render;
 use crate::ui;

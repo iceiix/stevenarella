@@ -16,7 +16,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::mpsc;
 use std::thread;
-use std_or_web::fs;
+use std::fs;
 
 use crate::format;
 use crate::format::{Component, TextComponent};

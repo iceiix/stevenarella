@@ -21,6 +21,7 @@ opt-level = 1
 cfg-if = "1.0.0"
 wasm-bindgen = "0.2.69"
 glutin = "0.26.0"
+winit = { version = "0.24.0", features = [ "web-sys" ]}
 glow = { git = "https://github.com/iceiix/glow", rev = "45c808678735e03737d5e1b9d6ed0e21070edcd9" }
 byteorder = "1.3.4"
 serde = "1.0.118"
@@ -44,8 +45,7 @@ clipboard = "0.5.0"
 reqwest = { version = "0.10.10", features = [ "blocking" ]}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-stdweb = "0.4.20"
-winit = { version = "0.24.0", features = [ "stdweb" ]}
+web-sys = "0.3.46"
 
 [dependencies.steven_resources]
 path = "./resources"
@@ -61,8 +61,4 @@ version = "0"
 
 [dependencies.steven_protocol]
 path = "./protocol"
-version = "0"
-
-[dependencies.std_or_web]
-path = "./std_or_web"
 version = "0"

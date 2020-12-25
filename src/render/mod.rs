@@ -1040,7 +1040,7 @@ impl TextureManager {
         use std::io::Read;
         use std::io::{Error, ErrorKind};
         use std::path::Path;
-        use std_or_web::fs;
+        use std::fs;
         let path = format!("skin-cache/{}/{}.png", &hash[..2], hash);
         let cache_path = Path::new(&path);
         fs::create_dir_all(cache_path.parent().unwrap())?;

@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use std_or_web::fs;
+use std::fs;
 
 use crate::format::{Color, Component, TextComponent};
 use crate::render;
