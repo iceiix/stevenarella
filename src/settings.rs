@@ -1,5 +1,5 @@
 use crate::console;
-use glutin::event::VirtualKeyCode;
+use winit::event::VirtualKeyCode;
 use std::marker::PhantomData;
 // Might just rename this to settings.rs
 
