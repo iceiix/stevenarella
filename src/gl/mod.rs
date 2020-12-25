@@ -325,7 +325,6 @@ impl Texture {
         pix: Option<&[u8]>,
     ) {
         unsafe {
-            /*
             glow_context().tex_image_2d(target,
                            level,
                            format as i32,
@@ -336,7 +335,6 @@ impl Texture {
                            ty,
                            pix
             );
-            */
         }
     }
 
@@ -380,7 +378,6 @@ impl Texture {
         pix: Option<&[u8]>,
     ) {
         unsafe {
-            /*
             glow_context().tex_image_2d(target,
                            level,
                            internal_format as i32,
@@ -391,7 +388,6 @@ impl Texture {
                            ty,
                            pix
             );
-            */
         }
     }
 
@@ -436,7 +432,6 @@ impl Texture {
         pix: &[u8],
     ) {
         unsafe {
-            /*
             glow_context().tex_image_3d(target,
                            level,
                            format as i32,
@@ -447,7 +442,6 @@ impl Texture {
                            format,
                            ty,
                            Some(pix));
-                           */
         }
     }
 
