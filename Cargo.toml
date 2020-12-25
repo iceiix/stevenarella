@@ -15,11 +15,9 @@ path = "src/main.rs"
 # Steven runs horrendously slow with no optimizations, and often freezes.
 # However, building with full -O3 optimizations takes too long for a debug build.
 # Use an -O1 optimization level strikes a good compromise between build and program performance.
-#opt-level = 1
+opt-level = 1
 
 [dependencies]
-backtrace = "*"
-trace = "*"
 cfg-if = "1.0.0"
 wasm-bindgen = "0.2.69"
 glutin = "0.26.0"
