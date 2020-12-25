@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use glow as gl;
-use glow::HasContext;
+use glow::{HasContext, PixelUnpackData};
 use log::{error, info};
 use std::mem;
 use std::ops::BitOr;
@@ -460,8 +460,7 @@ impl Texture {
         pix: &[u8],
     ) {
         unsafe {
-            /*
-            glow_context().tex_sub_image_3d_u8_slice(target,
+            glow_context().tex_sub_image_3d(target,
                               level,
                               x as i32,
                               y as i32,
@@ -471,8 +470,7 @@ impl Texture {
                               depth as i32,
                               format,
                               ty,
-                              Some(pix));
-                              */
+                              PixelUnpackData::Slice(pix));
         }
     }
 
@@ -650,7 +648,8 @@ impl Uniform {
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
         use cgmath::Matrix;
         unsafe {
-            //TODO glow_context().uniform_matrix_4_f32_slice(Some(&self.0), 1, false as u8, m.as_ptr());
+            // TODO: cgmath::Matrix<f32> to &[f32]
+            //TODO glow_context().uniform_matrix_4_f32_slice(Some(&self.0), false, m.as_ptr());
         }
     }
 
