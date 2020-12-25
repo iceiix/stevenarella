@@ -386,8 +386,8 @@ fn main2() {
         *control_flow = glutin::event_loop::ControlFlow::Poll;
 
         #[cfg(not(target_arch = "wasm32"))]
-        if let glutin::event::Event::WindowEvent {
-            event: glutin::event::WindowEvent::Resized(physical_size),
+        if let winit::event::Event::WindowEvent {
+            event: winit::event::WindowEvent::Resized(physical_size),
             ..
         } = event
         {
@@ -476,9 +476,9 @@ fn handle_window_event<T>(
     window: &winit::window::Window,
     game: &mut Game,
     ui_container: &mut ui::Container,
-    event: glutin::event::Event<T>,
+    event: winit::event::Event<T>,
 ) -> bool {
-    use glutin::event::*;
+    use winit::event::*;
     match event {
         Event::MainEventsCleared => return true,
         Event::DeviceEvent { event, .. } => {
@@ -628,11 +628,9 @@ fn handle_window_event<T>(
                             if !game.is_fullscreen {
                                 // TODO: support options for exclusive and simple fullscreen
                                 // see https://docs.rs/glutin/0.22.0-alpha5/glutin/window/struct.Window.html#method.set_fullscreen
-                                window.set_fullscreen(Some(
-                                    glutin::window::Fullscreen::Borderless(
-                                        window.current_monitor(),
-                                    ),
-                                ));
+                                window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(
+                                    window.current_monitor(),
+                                )));
                             } else {
                                 window.set_fullscreen(None);
                             }
