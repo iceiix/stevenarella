@@ -18,14 +18,13 @@ use log::{error, info};
 use std::mem;
 use std::ops::BitOr;
 use std::ops::{Deref, DerefMut};
-use backtrace::Backtrace;
 
 static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
 
 /// Inits the gl library. This should be called once a context is ready.
 pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
     unsafe {
-        let mut context = Box::new(gl::Context::from_loader_function(|s| {
+        let context = Box::new(gl::Context::from_loader_function(|s| {
             println!("Loaded {} = {:?}", s, vid.get_proc_address(s));
             vid.get_proc_address(s) as *const _
         }));
@@ -37,7 +36,7 @@ pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
 fn glow_context() -> &'static glow::Context {
     unsafe {
         println!("glow_context = {:?}", CONTEXT);
-        //let bt = Backtrace::new(); println!("\tbt = {:?}", bt);
+        //use backtrace::Backtrace; let bt = Backtrace::new(); println!("\tbt = {:?}", bt);
         CONTEXT.as_ref().unwrap()
     }
 }
@@ -348,8 +347,7 @@ impl Texture {
         pix: &[u8],
     ) {
         unsafe {
-            /*
-            glow_context().tex_sub_image_2d_u8_slice(target,
+            glow_context().tex_sub_image_2d(target,
                            level,
                            x as i32,
                            y as i32,
@@ -357,9 +355,8 @@ impl Texture {
                            height as i32,
                            format,
                            ty,
-                           Some(pix)
+                           PixelUnpackData::Slice(pix)
             );
-            */
         }
     }
 
@@ -637,7 +634,7 @@ impl Uniform {
     }
 
     #[allow(clippy::missing_safety_doc)]
-    pub unsafe fn set_float_multi_raw(&self, data: *const f32, len: usize) {
+    pub unsafe fn set_float_multi_raw(&self, _data: *const f32, _len: usize) {
         // TODO: takes a slice, not a raw pointer
         //TODO glow_context().uniform_4_f32_slice(Some(&self.0), len as i32, data);
     }
@@ -649,10 +646,11 @@ impl Uniform {
         }
     }
 
-    pub fn set_matrix4_multi(&self, m: &[::cgmath::Matrix4<f32>]) {
+    pub fn set_matrix4_multi(&self, _m: &[::cgmath::Matrix4<f32>]) {
+        /* TODO: transmute all slices
         unsafe {
             //TODO glow_context().uniform_matrix_4_f32_slice(Some(&self.0), m.len() as i32, false as u8, m.as_ptr() as *const _); // TODO: Most likely isn't safe
-        }
+        }*/
     }
 }
 
