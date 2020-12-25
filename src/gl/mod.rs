@@ -25,18 +25,14 @@ static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
 pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
     unsafe {
         let context = Box::new(gl::Context::from_loader_function(|s| {
-            println!("Loaded {} = {:?}", s, vid.get_proc_address(s));
             vid.get_proc_address(s) as *const _
         }));
-        println!("context = {:?}", context);
         CONTEXT = Box::into_raw(context);
     }
 }
 
 fn glow_context() -> &'static glow::Context {
     unsafe {
-        println!("glow_context = {:?}", CONTEXT);
-        //use backtrace::Backtrace; let bt = Backtrace::new(); println!("\tbt = {:?}", bt);
         CONTEXT.as_ref().unwrap()
     }
 }
@@ -273,7 +269,6 @@ pub struct Texture(u32);
 impl Texture {
     // Allocates a new texture.
     pub fn new() -> Texture {
-        println!("create_texture");
         Texture(unsafe {
             glow_context()
                 .create_texture()
@@ -283,7 +278,6 @@ impl Texture {
 
     /// Binds the texture to the passed target.
     pub fn bind(&self, target: TextureTarget) {
-        println!("bind_texture {} target {:?}", self.0, target);
         unsafe {
             glow_context().bind_texture(target, Some(self.0));
         }
@@ -485,7 +479,6 @@ impl Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
-            println!("delete_texture");
             glow_context().delete_texture(self.0);
         }
     }
