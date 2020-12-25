@@ -412,8 +412,8 @@ impl Renderer {
         trans.trans.bind();
         gl::clear_color(0.0, 0.0, 0.0, 1.0);
         gl::clear(gl::ClearFlags::Color);
-        gl::clear_buffer(gl::COLOR, 0, &[0.0, 0.0, 0.0, 1.0]);
-        gl::clear_buffer(gl::COLOR, 1, &[0.0, 0.0, 0.0, 0.0]);
+        gl::clear_buffer(gl::COLOR, 0, &mut [0.0, 0.0, 0.0, 1.0]);
+        gl::clear_buffer(gl::COLOR, 1, &mut [0.0, 0.0, 0.0, 0.0]);
         gl::blend_func_separate(
             gl::ONE_FACTOR,
             gl::ONE_FACTOR,
