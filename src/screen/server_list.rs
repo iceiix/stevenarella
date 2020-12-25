@@ -13,10 +13,10 @@
 // limitations under the License.
 
 use std::cell::RefCell;
+use std::fs;
 use std::rc::Rc;
 use std::sync::mpsc;
 use std::thread;
-use std::fs;
 
 use crate::format;
 use crate::format::{Component, TextComponent};
