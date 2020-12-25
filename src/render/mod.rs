@@ -41,6 +41,9 @@ use std::thread;
 
 const ATLAS_SIZE: usize = 1024;
 
+// TEMP
+const NUM_SAMPLES: i32 = 2;
+
 pub struct Camera {
     pub pos: cgmath::Point3<f64>,
     pub yaw: f64,
@@ -774,6 +777,7 @@ init_shader! {
             required accum => "taccum",
             required revealage => "trevealage",
             required color => "tcolor",
+            required samples => "samples",
         },
     }
 }
@@ -846,30 +850,38 @@ impl TransInfo {
         main.bind();
 
         let fb_color = gl::Texture::new();
-        fb_color.bind(gl::TEXTURE_2D);
-        fb_color.image_2d(
-            gl::TEXTURE_2D,
-            0,
+        fb_color.bind(gl::TEXTURE_2D_MULTISAMPLE);
+        fb_color.image_2d_sample(
+            gl::TEXTURE_2D_MULTISAMPLE,
+            NUM_SAMPLES,
             width,
             height,
-            gl::RGBA,
-            gl::UNSIGNED_BYTE,
-            None,
+            gl::RGBA8,
+            false,
         );
-        main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &fb_color, 0);
+        main.texture_2d(
+            gl::COLOR_ATTACHMENT_0,
+            gl::TEXTURE_2D_MULTISAMPLE,
+            &fb_color,
+            0,
+        );
 
         let fb_depth = gl::Texture::new();
-        fb_depth.bind(gl::TEXTURE_2D);
-        fb_depth.image_2d(
-            gl::TEXTURE_2D,
-            0,
+        fb_depth.bind(gl::TEXTURE_2D_MULTISAMPLE);
+        fb_depth.image_2d_sample(
+            gl::TEXTURE_2D_MULTISAMPLE,
+            NUM_SAMPLES,
             width,
             height,
-            gl::DEPTH_COMPONENT,
-            gl::UNSIGNED_BYTE,
-            None,
+            gl::DEPTH_COMPONENT24,
+            false,
         );
-        main.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &fb_depth, 0);
+        main.texture_2d(
+            gl::DEPTH_ATTACHMENT,
+            gl::TEXTURE_2D_MULTISAMPLE,
+            &fb_depth,
+            0,
+        );
         gl::check_framebuffer_status();
 
         gl::unbind_framebuffer();
@@ -913,12 +925,13 @@ impl TransInfo {
         gl::active_texture(1);
         self.revealage.bind(gl::TEXTURE_2D);
         gl::active_texture(2);
-        self.fb_color.bind(gl::TEXTURE_2D);
+        self.fb_color.bind(gl::TEXTURE_2D_MULTISAMPLE);
 
         shader.program.use_program();
         shader.accum.set_int(0);
         shader.revealage.set_int(1);
         shader.color.set_int(2);
+        shader.samples.set_int(NUM_SAMPLES);
         self.array.bind();
         gl::draw_arrays(gl::TRIANGLES, 0, 6);
     }
