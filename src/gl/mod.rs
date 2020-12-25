@@ -639,8 +639,11 @@ impl Uniform {
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
         unsafe {
-            let slice: &[f32; 4 * 4] = std::mem::transmute(m);
-            glow_context().uniform_matrix_4_f32_slice(Some(&self.0), false, slice);
+            glow_context().uniform_matrix_4_f32_slice(
+                Some(&self.0),
+                false,
+                &*(m as *const cgmath::Matrix4<f32> as *const [f32; 16]),
+            );
         }
     }
 
