@@ -939,7 +939,12 @@ impl Framebuffer {
 
     pub fn renderbuffer(&self, attachment: Attachment, rb: Renderbuffer) {
         unsafe {
-            glow_context().framebuffer_renderbuffer(gl::FRAMEBUFFER, attachment, gl::RENDERBUFFER, Some(rb.0));
+            glow_context().framebuffer_renderbuffer(
+                gl::FRAMEBUFFER,
+                attachment,
+                gl::RENDERBUFFER,
+                Some(rb.0),
+            );
         }
     }
 }
@@ -949,9 +954,7 @@ pub struct Renderbuffer(u32);
 
 impl Renderbuffer {
     pub fn new() -> Renderbuffer {
-        Renderbuffer(unsafe {
-            glow_context().create_renderbuffer().unwrap()
-        })
+        Renderbuffer(unsafe { glow_context().create_renderbuffer().unwrap() })
     }
 
     pub fn bind(&self) {
