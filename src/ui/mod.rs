@@ -862,7 +862,6 @@ impl UIElement for Image {
         delta: f64,
     ) -> &mut [u8] {
         println!("UIImage Image draw()");
-        return &mut self.data;
         if self.check_rebuild() {
             self.data.clear();
             let texture = render::Renderer::get_texture(renderer.get_textures_ref(), &self.texture);

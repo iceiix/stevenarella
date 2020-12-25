@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use glow as gl;
-use glow::{HasContext, PixelUnpackData};
+use glow::{HasContext, PixelPackData, PixelUnpackData};
 use log::{error, info};
 use std::mem;
 use std::ops::BitOr;
@@ -37,8 +37,7 @@ pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
 fn glow_context() -> &'static glow::Context {
     unsafe {
         println!("glow_context = {:?}", CONTEXT);
-        let bt = Backtrace::new();
-        //println!("\tbt = {:?}", bt);
+        //let bt = Backtrace::new(); println!("\tbt = {:?}", bt);
         CONTEXT.as_ref().unwrap()
     }
 }
@@ -304,13 +303,11 @@ impl Texture {
         pixels: &mut [u8],
     ) {
         unsafe {
-            /*
-            glow_context().get_tex_image_u8_slice(target,
+            glow_context().get_tex_image(target,
                             level,
                             format,
                             ty,
-                            Some(pixels));
-                            */
+                            PixelPackData::Slice(pixels));
         }
     }
 
@@ -646,7 +643,6 @@ impl Uniform {
     }
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
-        use cgmath::Matrix;
         unsafe {
             let slice: &[f32; 4*4] = std::mem::transmute(m);
             glow_context().uniform_matrix_4_f32_slice(Some(&self.0), false, slice);
