@@ -856,12 +856,7 @@ impl TransInfo {
             gl::UNSIGNED_BYTE,
             None,
         );
-        main.texture_2d(
-            gl::COLOR_ATTACHMENT_0,
-            gl::TEXTURE_2D,
-            &fb_color,
-            0,
-        );
+        main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &fb_color, 0);
 
         let fb_depth = gl::Texture::new();
         fb_depth.bind(gl::TEXTURE_2D);
@@ -874,12 +869,7 @@ impl TransInfo {
             gl::UNSIGNED_BYTE,
             None,
         );
-        main.texture_2d(
-            gl::DEPTH_ATTACHMENT,
-            gl::TEXTURE_2D,
-            &fb_depth,
-            0,
-        );
+        main.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &fb_depth, 0);
         gl::check_framebuffer_status();
 
         gl::unbind_framebuffer();

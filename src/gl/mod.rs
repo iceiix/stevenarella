@@ -958,11 +958,7 @@ impl Framebuffer {
         }
     }
 
-    pub fn renderbuffer(
-        &self,
-        attachment: Attachment,
-        rb: Renderbuffer,
-    ) {
+    pub fn renderbuffer(&self, attachment: Attachment, rb: Renderbuffer) {
         unsafe {
             gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, attachment, gl::RENDERBUFFER, rb.0);
         }
@@ -975,9 +971,7 @@ pub struct Renderbuffer(u32);
 impl Renderbuffer {
     pub fn new() -> Renderbuffer {
         let mut rb = Renderbuffer(0);
-        unsafe {
-            gl::GenRenderbuffers(1, &mut rb.0)
-        }
+        unsafe { gl::GenRenderbuffers(1, &mut rb.0) }
         rb
     }
 
@@ -1000,12 +994,11 @@ impl Renderbuffer {
                 samples,
                 format,
                 width as i32,
-                height as i32
+                height as i32,
             );
         }
     }
 }
-
 
 impl Drop for Framebuffer {
     fn drop(&mut self) {
