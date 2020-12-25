@@ -22,12 +22,9 @@ use std::ops::{Deref, DerefMut};
 static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
+pub fn init(context: glow::Context) {
     unsafe {
-        let context = Box::new(gl::Context::from_loader_function(|s| {
-            vid.get_proc_address(s) as *const _
-        }));
-        CONTEXT = Box::into_raw(context);
+        CONTEXT = Box::into_raw(Box::new(context));
     }
 }
 

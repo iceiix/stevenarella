@@ -15,10 +15,10 @@
 use std::any::Any;
 use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
+use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use std::fs;
 
 use crate::format::{Color, Component, TextComponent};
 use crate::render;

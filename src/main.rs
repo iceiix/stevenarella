@@ -253,29 +253,68 @@ fn main2() {
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
 
-    let events_loop = glutin::event_loop::EventLoop::new();
-    let window_builder = glutin::window::WindowBuilder::new()
-        .with_title("Stevenarella")
-        .with_inner_size(glutin::dpi::LogicalSize::new(854.0, 480.0));
-    let window = glutin::ContextBuilder::new()
-        .with_stencil_buffer(0)
-        .with_depth_buffer(24)
-        .with_gl(glutin::GlRequest::GlThenGles {
-            opengl_version: (3, 2),
-            opengles_version: (2, 0),
-        })
-        .with_gl_profile(glutin::GlProfile::Core)
-        .with_vsync(vsync)
-        .build_windowed(window_builder, &events_loop)
-        .expect("Could not create glutin window.");
-
-    let mut window = unsafe {
-        window
-            .make_current()
-            .expect("Could not set current context.")
+    #[cfg(target_arch = "wasm32")]
+    let (context, shader_version, dpi_factor, render_loop) = {
+        use wasm_bindgen::JsCast;
+        let canvas = web_sys::window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .get_element_by_id("canvas")
+            .unwrap()
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .unwrap();
+        let webgl2_context = canvas
+            .get_context("webgl2")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<web_sys::WebGl2RenderingContext>()
+            .unwrap();
+        (
+            glow::Context::from_webgl2_context(webgl2_context),
+            1,
+            "#version 300 es",
+            glow::RenderLoop::from_request_animation_frame(),
+        )
     };
 
-    gl::init(&window);
+    #[cfg(not(target_arch = "wasm32"))]
+    let (context, shader_version, dpi_factor, events_loop, mut window) = {
+        let events_loop = glutin::event_loop::EventLoop::new();
+        let window_builder = glutin::window::WindowBuilder::new()
+            .with_title("Stevenarella")
+            .with_inner_size(glutin::dpi::LogicalSize::new(854.0, 480.0));
+        let window = glutin::ContextBuilder::new()
+            .with_stencil_buffer(0)
+            .with_depth_buffer(24)
+            .with_gl(glutin::GlRequest::GlThenGles {
+                opengl_version: (3, 2),
+                opengles_version: (2, 0),
+            })
+            .with_gl_profile(glutin::GlProfile::Core)
+            .with_vsync(vsync)
+            .build_windowed(window_builder, &events_loop)
+            .expect("Could not create glutin window.");
+
+        let window = unsafe {
+            window
+                .make_current()
+                .expect("Could not set current context.")
+        };
+
+        let context = unsafe {
+            glow::Context::from_loader_function(|s| window.get_proc_address(s) as *const _)
+        };
+        (
+            context,
+            "#version 410",
+            window.window().scale_factor(),
+            events_loop,
+            window,
+        )
+    };
+
+    gl::init(context);
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
@@ -301,7 +340,6 @@ fn main2() {
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = window.window().scale_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
         opt.default_protocol_version
             .unwrap_or_else(|| "".to_string()),
