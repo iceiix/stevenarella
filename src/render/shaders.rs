@@ -131,7 +131,7 @@ pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
     v.set_source(vertex);
     v.compile();
 
-    if v.get_parameter(gl::COMPILE_STATUS) == 0 {
+    if !v.get_shader_compile_status() {
         error!("Src: {}", vertex);
         panic!("Shader error: {}", v.get_info_log());
     } else {
@@ -146,7 +146,7 @@ pub fn create_program(vertex: &str, fragment: &str) -> gl::Program {
     f.set_source(fragment);
     f.compile();
 
-    if f.get_parameter(gl::COMPILE_STATUS) == 0 {
+    if !f.get_shader_compile_status() {
         error!("Src: {}", fragment);
         panic!("Shader error: {}", f.get_info_log());
     } else {
