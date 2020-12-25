@@ -112,9 +112,7 @@ impl BitOr for ClearFlags {
 
 /// Clears the buffers specified by the passed flags.
 pub fn clear(flags: ClearFlags) {
-    unsafe {
-        glow_context().clear(flags.internal())
-    }
+    unsafe { glow_context().clear(flags.internal()) }
 }
 
 pub fn depth_mask(f: bool) {
@@ -216,9 +214,7 @@ pub const COUNTER_CLOCK_WISE: FaceDirection = gl::CCW;
 /// Sets the direction of vertices used to specify the
 /// front face (e.g. for culling).
 pub fn front_face(dir: FaceDirection) {
-    unsafe {
-        glow_context().front_face(dir)
-    }
+    unsafe { glow_context().front_face(dir) }
 }
 
 /// `Type` is a type of data used by various operations.
@@ -302,11 +298,7 @@ impl Texture {
         pixels: &mut [u8],
     ) {
         unsafe {
-            glow_context().get_tex_image(target,
-                            level,
-                            format,
-                            ty,
-                            PixelPackData::Slice(pixels));
+            glow_context().get_tex_image(target, level, format, ty, PixelPackData::Slice(pixels));
         }
     }
 
@@ -321,15 +313,16 @@ impl Texture {
         pix: Option<&[u8]>,
     ) {
         unsafe {
-            glow_context().tex_image_2d(target,
-                           level,
-                           format as i32,
-                           width as i32,
-                           height as i32,
-                           0,
-                           format,
-                           ty,
-                           pix
+            glow_context().tex_image_2d(
+                target,
+                level,
+                format as i32,
+                width as i32,
+                height as i32,
+                0,
+                format,
+                ty,
+                pix,
             );
         }
     }
@@ -347,15 +340,16 @@ impl Texture {
         pix: &[u8],
     ) {
         unsafe {
-            glow_context().tex_sub_image_2d(target,
-                           level,
-                           x as i32,
-                           y as i32,
-                           width as i32,
-                           height as i32,
-                           format,
-                           ty,
-                           PixelUnpackData::Slice(pix)
+            glow_context().tex_sub_image_2d(
+                target,
+                level,
+                x as i32,
+                y as i32,
+                width as i32,
+                height as i32,
+                format,
+                ty,
+                PixelUnpackData::Slice(pix),
             );
         }
     }
@@ -372,15 +366,16 @@ impl Texture {
         pix: Option<&[u8]>,
     ) {
         unsafe {
-            glow_context().tex_image_2d(target,
-                           level,
-                           internal_format as i32,
-                           width as i32,
-                           height as i32,
-                           0,
-                           format,
-                           ty,
-                           pix
+            glow_context().tex_image_2d(
+                target,
+                level,
+                internal_format as i32,
+                width as i32,
+                height as i32,
+                0,
+                format,
+                ty,
+                pix,
             );
         }
     }
@@ -395,21 +390,24 @@ impl Texture {
         fixed: bool,
     ) {
         unsafe {
-                        let result: i32 = glow_context().get_parameter_i32(gl::MAX_SAMPLES);
-                        let use_samples =
-                            if samples > result {
-                                info!("glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}", samples, result);
-                                result
-                            } else {
-                                samples
-                            };
+            let result: i32 = glow_context().get_parameter_i32(gl::MAX_SAMPLES);
+            let use_samples = if samples > result {
+                info!(
+                    "glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}",
+                    samples, result
+                );
+                result
+            } else {
+                samples
+            };
             // TODO: switch to glRenderbufferStorageMultisample https://github.com/iceiix/stevenarella/pull/442
-            glow_context().tex_image_2d_multisample(target,
-                           use_samples,
-                           format,
-                           width as i32,
-                           height as i32,
-                           fixed
+            glow_context().tex_image_2d_multisample(
+                target,
+                use_samples,
+                format,
+                width as i32,
+                height as i32,
+                fixed,
             );
         }
     }
@@ -426,16 +424,18 @@ impl Texture {
         pix: &[u8],
     ) {
         unsafe {
-            glow_context().tex_image_3d(target,
-                           level,
-                           format as i32,
-                           width as i32,
-                           height as i32,
-                           depth as i32,
-                           0,
-                           format,
-                           ty,
-                           Some(pix));
+            glow_context().tex_image_3d(
+                target,
+                level,
+                format as i32,
+                width as i32,
+                height as i32,
+                depth as i32,
+                0,
+                format,
+                ty,
+                Some(pix),
+            );
         }
     }
 
@@ -454,17 +454,19 @@ impl Texture {
         pix: &[u8],
     ) {
         unsafe {
-            glow_context().tex_sub_image_3d(target,
-                              level,
-                              x as i32,
-                              y as i32,
-                              z as i32,
-                              width as i32,
-                              height as i32,
-                              depth as i32,
-                              format,
-                              ty,
-                              PixelUnpackData::Slice(pix));
+            glow_context().tex_sub_image_3d(
+                target,
+                level,
+                x as i32,
+                y as i32,
+                z as i32,
+                width as i32,
+                height as i32,
+                depth as i32,
+                format,
+                ty,
+                PixelUnpackData::Slice(pix),
+            );
         }
     }
 
@@ -506,7 +508,9 @@ pub struct Program(u32);
 impl Program {
     pub fn new() -> Program {
         Program(unsafe {
-            glow_context().create_program().expect("program creation failed")
+            glow_context()
+                .create_program()
+                .expect("program creation failed")
         })
     }
 
@@ -529,9 +533,7 @@ impl Program {
     }
 
     pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
-        let u = unsafe {
-            glow_context().get_uniform_location(self.0, name)
-        };
+        let u = unsafe { glow_context().get_uniform_location(self.0, name) };
         if let Some(u) = u {
             Some(Uniform(u))
         } else {
@@ -540,9 +542,7 @@ impl Program {
     }
 
     pub fn attribute_location(&self, name: &str) -> Option<Attribute> {
-        let a = unsafe {
-            glow_context().get_attrib_location(self.0, name)
-        };
+        let a = unsafe { glow_context().get_attrib_location(self.0, name) };
         if let Some(a) = a {
             Some(Attribute(a as i32))
         } else {
@@ -564,7 +564,9 @@ pub struct Shader(u32);
 impl Shader {
     pub fn new(ty: ShaderType) -> Shader {
         Shader(unsafe {
-            glow_context().create_shader(ty).expect("failed to create shader")
+            glow_context()
+                .create_shader(ty)
+                .expect("failed to create shader")
         })
     }
 
@@ -581,15 +583,11 @@ impl Shader {
     }
 
     pub fn get_shader_compile_status(&self) -> bool {
-        unsafe {
-            glow_context().get_shader_compile_status(self.0)
-        }
+        unsafe { glow_context().get_shader_compile_status(self.0) }
     }
 
     pub fn get_info_log(&self) -> String {
-        unsafe {
-            glow_context().get_shader_info_log(self.0)
-        }
+        unsafe { glow_context().get_shader_info_log(self.0) }
     }
 }
 
@@ -641,7 +639,7 @@ impl Uniform {
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
         unsafe {
-            let slice: &[f32; 4*4] = std::mem::transmute(m);
+            let slice: &[f32; 4 * 4] = std::mem::transmute(m);
             glow_context().uniform_matrix_4_f32_slice(Some(&self.0), false, slice);
         }
     }
@@ -672,22 +670,20 @@ impl Attribute {
 
     pub fn vertex_pointer(&self, size: i32, ty: Type, normalized: bool, stride: i32, offset: i32) {
         unsafe {
-            glow_context().vertex_attrib_pointer_f32(self.0 as u32,
-                                    size,
-                                    ty,
-                                    normalized,
-                                    stride,
-                                    offset);
+            glow_context().vertex_attrib_pointer_f32(
+                self.0 as u32,
+                size,
+                ty,
+                normalized,
+                stride,
+                offset,
+            );
         }
     }
 
     pub fn vertex_pointer_int(&self, size: i32, ty: Type, stride: i32, offset: i32) {
         unsafe {
-            glow_context().vertex_attrib_pointer_i32(self.0 as u32,
-                                     size,
-                                     ty,
-                                     stride,
-                                     offset);
+            glow_context().vertex_attrib_pointer_i32(self.0 as u32, size, ty, stride, offset);
         }
     }
 }
@@ -702,7 +698,10 @@ impl VertexArray {
     /// Allocates a new `VertexArray`.
     pub fn new() -> VertexArray {
         VertexArray(unsafe {
-            glow_context().create_vertex_array().expect("create vertex array failed") })
+            glow_context()
+                .create_vertex_array()
+                .expect("create vertex array failed")
+        })
     }
 
     /// Marks the `VertexArray` as the currently active one, this
@@ -760,7 +759,10 @@ impl Buffer {
     /// Allocates a new Buffer.
     pub fn new() -> Buffer {
         Buffer(unsafe {
-            glow_context().create_buffer().expect("create buffer failed") })
+            glow_context()
+                .create_buffer()
+                .expect("create buffer failed")
+        })
     }
 
     /// Makes the buffer the currently active one for the given target.
@@ -774,9 +776,7 @@ impl Buffer {
 
     pub fn set_data(&self, target: BufferTarget, data: &[u8], usage: BufferUsage) {
         unsafe {
-            glow_context().buffer_data_u8_slice(target,
-                           data,
-                           usage);
+            glow_context().buffer_data_u8_slice(target, data, usage);
         }
     }
 
@@ -796,7 +796,11 @@ impl Buffer {
     pub fn map(&self, target: BufferTarget, access: Access, length: usize) -> MappedBuffer {
         unsafe {
             MappedBuffer {
-                inner: Vec::from_raw_parts(glow_context().map_buffer_range(target, 0, length as i32, access) as *mut u8, 0, length),
+                inner: Vec::from_raw_parts(
+                    glow_context().map_buffer_range(target, 0, length as i32, access) as *mut u8,
+                    0,
+                    length,
+                ),
                 target,
             }
         }
@@ -884,7 +888,7 @@ pub fn check_gl_error() {
         loop {
             let err = glow_context().get_error();
             if err == gl::NO_ERROR {
-                break
+                break;
             }
 
             error!("glGetError = {}", err);
@@ -895,7 +899,10 @@ pub fn check_gl_error() {
 impl Framebuffer {
     pub fn new() -> Framebuffer {
         Framebuffer(unsafe {
-            glow_context().create_framebuffer().expect("create framebuffer failed") })
+            glow_context()
+                .create_framebuffer()
+                .expect("create framebuffer failed")
+        })
     }
 
     pub fn bind(&self) {
@@ -924,7 +931,13 @@ impl Framebuffer {
         level: i32,
     ) {
         unsafe {
-            glow_context().framebuffer_texture_2d(gl::FRAMEBUFFER, attachment, target, Some(tex.0), level);
+            glow_context().framebuffer_texture_2d(
+                gl::FRAMEBUFFER,
+                attachment,
+                target,
+                Some(tex.0),
+                level,
+            );
         }
     }
 }
@@ -962,9 +975,7 @@ pub fn draw_buffers(bufs: &[Attachment]) {
 }
 
 pub fn bind_frag_data_location(p: &Program, cn: u32, name: &str) {
-    unsafe {
-        glow_context().bind_frag_data_location(p.0, cn, name)
-    }
+    unsafe { glow_context().bind_frag_data_location(p.0, cn, name) }
 }
 
 pub fn blit_framebuffer(
@@ -981,9 +992,16 @@ pub fn blit_framebuffer(
 ) {
     unsafe {
         glow_context().blit_framebuffer(
-            sx0, sy0, sx1, sy1,
-            dx0, dy0, dx1, dy1,
-            mask.internal(), filter as u32
+            sx0,
+            sy0,
+            sx1,
+            sy1,
+            dx0,
+            dy0,
+            dx1,
+            dy1,
+            mask.internal(),
+            filter as u32,
         );
     }
 }

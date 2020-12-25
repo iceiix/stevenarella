@@ -351,15 +351,18 @@ impl Container {
         for e in &self.elements {
             let (w, h) = e.get_size();
             let (ox, oy) = e.get_position();
-            println!("draw  w={}, h={}, ox={}, oy={}", w,h,ox,oy);
+            println!("draw  w={}, h={}, ox={}, oy={}", w, h, ox, oy);
 
             println!("compute_draw_region {}x{}", sw, sh);
-            if oy as i32==100{
+            if oy as i32 == 100 {
                 println!("oy=100"); // crashes 3rd time hits here, drawing an Image UIElement - b src/ui/mod.rs:359
             }
             let r = Self::compute_draw_region(e, sw, sh, &SCREEN);
             if r.intersects(&SCREEN) {
-                println!("\tintersects - drawing {}x{} {}x{} {}",sw,sh,width,height,delta);
+                println!(
+                    "\tintersects - drawing {}x{} {}x{} {}",
+                    sw, sh, width, height, delta
+                );
                 let data = e.draw(renderer, &r, sw, sh, width, height, delta);
                 println!("\tdata={:?}", data);
                 renderer.ui.add_bytes(&data);
