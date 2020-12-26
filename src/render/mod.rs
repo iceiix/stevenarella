@@ -949,7 +949,7 @@ pub struct TextureManager {
 
     skins: HashMap<String, AtomicIsize, BuildHasherDefault<FNVHash>>,
 
-    _skin_thread: thread::JoinHandle<()>,
+    _skin_thread: Option<thread::JoinHandle<()>>,
 }
 
 impl TextureManager {
@@ -964,7 +964,13 @@ impl TextureManager {
     ) {
         let (tx, rx) = mpsc::channel();
         let (stx, srx) = mpsc::channel();
-        let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
+
+        #[cfg(target_arch = "wasm32")]
+        let skin_thread = None;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let skin_thread = Some(thread::spawn(|| Self::process_skins(srx, tx)));
+
         let mut tm = TextureManager {
             textures: HashMap::with_hasher(BuildHasherDefault::default()),
             version: {
