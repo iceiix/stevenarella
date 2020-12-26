@@ -318,8 +318,10 @@ fn main2() {
         (context, "#version 410", glutin_window)
     };
 
-    //let winit_window = glutin_window.window(); // TODO: fix borrow, replace glutin_window.window() -> winit_window
-    let dpi_factor = glutin_window.window().scale_factor();
+    #[cfg(not(target_arch = "wasm32"))]
+    let winit_window = glutin_window.window();
+
+    let dpi_factor = winit_window.scale_factor();
 
     gl::init(context);
     println!("Shader version: {}", shader_version); // TODO: use in shaders, prepend to source
@@ -393,7 +395,7 @@ fn main2() {
     #[cfg(target_arch = "wasm32")]
     render_loop.run(move |running: &mut bool| {
         tick_all(
-            &glutin_window.window(),
+            &winit_window,
             &mut game,
             &mut ui_container,
             &mut last_frame,
@@ -411,9 +413,10 @@ fn main2() {
         }
 
         #[cfg(not(target_arch = "wasm32"))]
-        {
+        let winit_window = {
             *control_flow = winit::event_loop::ControlFlow::Poll;
-        }
+            glutin_window.window()
+        };
 
         #[cfg(not(target_arch = "wasm32"))]
         if let winit::event::Event::WindowEvent {
@@ -424,14 +427,14 @@ fn main2() {
             glutin_window.resize(physical_size);
         }
 
-        if !handle_window_event(&glutin_window.window(), &mut game, &mut ui_container, event) {
+        if !handle_window_event(&winit_window, &mut game, &mut ui_container, event) {
             return;
         }
 
         #[cfg(not(target_arch = "wasm32"))]
         {
             tick_all(
-                &glutin_window.window(),
+                &winit_window,
                 &mut game,
                 &mut ui_container,
                 &mut last_frame,
