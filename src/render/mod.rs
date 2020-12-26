@@ -1035,10 +1035,10 @@ impl TextureManager {
         client: &::reqwest::blocking::Client,
         hash: &str,
     ) -> Result<image::DynamicImage, ::std::io::Error> {
-        use std::fs;
         use std::io::Read;
         use std::io::{Error, ErrorKind};
         use std::path::Path;
+        use std_or_web::fs;
         let path = format!("skin-cache/{}/{}.png", &hash[..2], hash);
         let cache_path = Path::new(&path);
         fs::create_dir_all(cache_path.parent().unwrap())?;

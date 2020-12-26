@@ -18,7 +18,7 @@
 use aes::Aes128;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use cfb8::Cfb8;
-use std::fs;
+use std_or_web::fs;
 
 pub mod forge;
 pub mod mojang;

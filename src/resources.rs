@@ -15,13 +15,13 @@
 extern crate steven_resources as internal;
 
 use std::collections::HashMap;
-use std::fs;
 use std::hash::BuildHasherDefault;
 use std::io;
 use std::path;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std_or_web::fs;
 
 use crate::types::hash::FNVHash;
 use crate::ui;

@@ -15,10 +15,10 @@
 use std::any::Any;
 use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
-use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
+use std_or_web::fs;
 
 use crate::format::{Color, Component, TextComponent};
 use crate::render;
@@ -184,11 +184,6 @@ impl Vars {
     }
 
     pub fn save_config(&self) {
-        #[cfg(target_arch = "wasm32")]
-        {
-            // TODO: web fs::File replacement, save locally
-            return;
-        }
         let mut file = BufWriter::new(fs::File::create("conf.cfg").unwrap());
         for (name, var) in &self.vars {
             if !var.can_serialize() {
