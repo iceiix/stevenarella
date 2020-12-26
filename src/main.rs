@@ -284,7 +284,7 @@ fn main2() {
             .unwrap();
         (
             glow::Context::from_webgl2_context(webgl2_context),
-            "#version 300 es",
+            "#version 300 es", // WebGL 2
             winit_window,
             glow::RenderLoop::from_request_animation_frame(),
         )
@@ -296,8 +296,8 @@ fn main2() {
             .with_stencil_buffer(0)
             .with_depth_buffer(24)
             .with_gl(glutin::GlRequest::GlThenGles {
-                opengl_version: (3, 2),
-                opengles_version: (2, 0),
+                opengl_version: (4, 1),
+                opengles_version: (3, 0),
             })
             .with_gl_profile(glutin::GlProfile::Core)
             .with_vsync(vsync)
@@ -314,7 +314,14 @@ fn main2() {
             glow::Context::from_loader_function(|s| glutin_window.get_proc_address(s) as *const _)
         };
 
-        (context, "#version 410", glutin_window)
+        let shader_version = match glutin_window.get_api() {
+            glutin::Api::OpenGl => "#version 410", // OpenGL 4.1
+            glutin::Api::OpenGlEs => "#version 300 es", // OpenGL ES 3.0 (similar to WebGL 2)
+            glutin::Api::WebGl => panic!("unexpectedly received WebGl API with glutin, expected to use glow codepath")
+        };
+
+        // OpenGL 4.1
+        (context, shader_version, glutin_window)
     };
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -323,9 +330,9 @@ fn main2() {
     let dpi_factor = winit_window.scale_factor();
 
     gl::init(context);
-    println!("Shader version: {}", shader_version); // TODO: use in shaders, prepend to source
+    info!("Shader version: {}", shader_version);
 
-    let renderer = render::Renderer::new(resource_manager.clone());
+    let renderer = render::Renderer::new(resource_manager.clone(), shader_version);
     let mut ui_container = ui::Container::new();
 
     let mut last_frame = Instant::now();

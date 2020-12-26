@@ -151,7 +151,7 @@ init_shader! {
 }
 
 impl Renderer {
-    pub fn new(res: Arc<RwLock<resources::Manager>>) -> Renderer {
+    pub fn new(res: Arc<RwLock<resources::Manager>>, shader_version: &str) -> Renderer {
         let version = { res.read().unwrap().version() };
         let tex = gl::Texture::new();
         tex.bind(gl::TEXTURE_2D_ARRAY);
@@ -173,7 +173,7 @@ impl Renderer {
         let (textures, skin_req, skin_reply) = TextureManager::new(res.clone());
         let textures = Arc::new(RwLock::new(textures));
 
-        let mut greg = glsl::Registry::new();
+        let mut greg = glsl::Registry::new(shader_version);
         shaders::add_shaders(&mut greg);
         let ui = ui::UIState::new(&greg, textures.clone(), res.clone());
 

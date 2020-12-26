@@ -17,11 +17,15 @@ use std::collections::HashMap;
 #[derive(Default)]
 pub struct Registry {
     shaders: HashMap<String, String>,
+    shader_version: String,
 }
 
 impl Registry {
-    pub fn new() -> Registry {
-        Default::default()
+    pub fn new(shader_version: &str) -> Registry {
+        Registry {
+            shaders: Default::default(),
+            shader_version: shader_version.to_string(),
+        }
     }
 
     pub fn register(&mut self, name: &str, source: &str) {
@@ -34,14 +38,16 @@ impl Registry {
 
     pub fn get(&self, name: &str) -> String {
         let mut out = String::new();
-        out.push_str("#version 150\n");
+        out.push_str(&self.shader_version);
+        out.push('\n');
         self.get_internal(&mut out, name);
         out
     }
 
     pub fn get_define(&self, name: &str, define: &str) -> String {
         let mut out = String::new();
-        out.push_str("#version 150\n");
+        out.push_str(&self.shader_version);
+        out.push('\n');
         out.push_str("#define ");
         out.push_str(define);
         out.push('\n');
