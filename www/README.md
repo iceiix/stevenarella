@@ -7,7 +7,15 @@ for progress see: [https://github.com/iceiix/stevenarella/issues/171](https://gi
 
 ## Building
 
-To build for wasm32-unknown-unknown, run:
+To build for wasm32-unknown-unknown, run in the top-level directory (not www):
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli
+wasm-pack build
+```
+
+or:
 
 ```sh
 cargo web start --target wasm32-unknown-unknown
