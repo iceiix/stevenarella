@@ -17,7 +17,6 @@
 #![allow(clippy::many_single_char_names)] // short variable names provide concise clarity
 #![allow(clippy::float_cmp)] // float comparison used to check if changed
 
-use glow::HasRenderLoop;
 use log::{error, info, warn};
 use std::fs;
 use std::time::{Duration, Instant};
@@ -206,6 +205,7 @@ struct Opt {
 
 cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
+        use glow::HasRenderLoop;
         extern crate console_error_panic_hook;
         pub use console_error_panic_hook::set_once as set_panic_hook;
     } else {
@@ -254,17 +254,29 @@ fn main2() {
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
 
+    let events_loop = winit::event_loop::EventLoop::new();
+
+    let window_builder = winit::window::WindowBuilder::new()
+        .with_title("Stevenarella")
+        .with_inner_size(winit::dpi::LogicalSize::new(854.0, 480.0));
+
     #[cfg(target_arch = "wasm32")]
-    let (context, shader_version, dpi_factor, render_loop) = {
+    let (context, shader_version, winit_window, render_loop) = {
+        let winit_window = window_builder.build(&events_loop).unwrap();
+
         use wasm_bindgen::JsCast;
-        let canvas = web_sys::window()
-            .unwrap()
-            .document()
-            .unwrap()
-            .get_element_by_id("canvas")
-            .unwrap()
-            .dyn_into::<web_sys::HtmlCanvasElement>()
-            .unwrap();
+        use winit::platform::web::WindowExtWebSys;
+
+        let canvas = winit_window.canvas();
+
+        let html_window = web_sys::window().unwrap();
+        let document = html_window.document().unwrap();
+        let body = document.body().unwrap();
+
+        body.append_child(&canvas)
+            .expect("Append canvas to HTML body");
+
+        let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
         let webgl2_context = canvas
             .get_context("webgl2")
             .unwrap()
@@ -274,18 +286,14 @@ fn main2() {
         (
             glow::Context::from_webgl2_context(webgl2_context),
             "#version 300 es",
-            1.0,
+            winit_window,
             glow::RenderLoop::from_request_animation_frame(),
         )
     };
 
     #[cfg(not(target_arch = "wasm32"))]
-    let (context, shader_version, dpi_factor, window, events_loop) = {
-        let events_loop = glutin::event_loop::EventLoop::new();
-        let window_builder = glutin::window::WindowBuilder::new()
-            .with_title("Stevenarella")
-            .with_inner_size(glutin::dpi::LogicalSize::new(854.0, 480.0));
-        let window = glutin::ContextBuilder::new()
+    let (context, shader_version, glutin_window) = {
+        let glutin_window = glutin::ContextBuilder::new()
             .with_stencil_buffer(0)
             .with_depth_buffer(24)
             .with_gl(glutin::GlRequest::GlThenGles {
@@ -297,25 +305,24 @@ fn main2() {
             .build_windowed(window_builder, &events_loop)
             .expect("Could not create glutin window.");
 
-        let window = unsafe {
-            window
+        let glutin_window = unsafe {
+            glutin_window
                 .make_current()
                 .expect("Could not set current context.")
         };
 
         let context = unsafe {
-            glow::Context::from_loader_function(|s| window.get_proc_address(s) as *const _)
+            glow::Context::from_loader_function(|s| glutin_window.get_proc_address(s) as *const _)
         };
-        (
-            context,
-            "#version 410",
-            window.window().scale_factor(),
-            window,
-            events_loop,
-        )
+
+        (context, "#version 410", glutin_window)
     };
 
+    //let winit_window = glutin_window.window(); // TODO: fix borrow, replace glutin_window.window() -> winit_window
+    let dpi_factor = glutin_window.window().scale_factor();
+
     gl::init(context);
+    println!("Shader version: {}", shader_version); // TODO: use in shaders, prepend to source
 
     let renderer = render::Renderer::new(resource_manager.clone());
     let mut ui_container = ui::Container::new();
@@ -385,16 +392,8 @@ fn main2() {
 
     #[cfg(target_arch = "wasm32")]
     render_loop.run(move |running: &mut bool| {
-        /* TODO: handle window events
-        if !handle_window_event(&window.window(), &mut game, &mut ui_container, event) {
-            return;
-        }
-        */
-
-        // TODO: create and pass winit window for web
-        /*
         tick_all(
-            &window.window(),
+            &glutin_window.window(),
             &mut game,
             &mut ui_container,
             &mut last_frame,
@@ -402,13 +401,19 @@ fn main2() {
             &mut last_resource_version,
             &mut vsync,
         );
-        */
         println!("render_loop");
     });
 
-    #[cfg(not(target_arch = "wasm32"))]
     events_loop.run(move |event, _event_loop, control_flow| {
-        *control_flow = glutin::event_loop::ControlFlow::Poll;
+        #[cfg(target_arch = "wasm32")]
+        {
+            *control_flow = winit::event_loop::ControlFlow::Wait;
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            *control_flow = winit::event_loop::ControlFlow::Poll;
+        }
 
         #[cfg(not(target_arch = "wasm32"))]
         if let winit::event::Event::WindowEvent {
@@ -416,27 +421,32 @@ fn main2() {
             ..
         } = event
         {
-            window.resize(physical_size);
+            glutin_window.resize(physical_size);
         }
 
-        if !handle_window_event(&window.window(), &mut game, &mut ui_container, event) {
+        if !handle_window_event(&glutin_window.window(), &mut game, &mut ui_container, event) {
             return;
         }
 
-        tick_all(
-            &window.window(),
-            &mut game,
-            &mut ui_container,
-            &mut last_frame,
-            &mut resui,
-            &mut last_resource_version,
-            &mut vsync,
-        );
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            tick_all(
+                &glutin_window.window(),
+                &mut game,
+                &mut ui_container,
+                &mut last_frame,
+                &mut resui,
+                &mut last_resource_version,
+                &mut vsync,
+            );
 
-        window.swap_buffers().expect("Failed to swap GL buffers");
+            glutin_window
+                .swap_buffers()
+                .expect("Failed to swap GL buffers");
+        }
 
         if game.should_close {
-            *control_flow = glutin::event_loop::ControlFlow::Exit;
+            *control_flow = winit::event_loop::ControlFlow::Exit;
         }
     });
 }
