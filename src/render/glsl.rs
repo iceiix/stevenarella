@@ -40,7 +40,12 @@ impl Registry {
         out.push_str(&self.shader_version);
         out.push('\n');
         if self.shader_version.ends_with(" es") {
-            out.push_str("precision mediump float;\nprecision mediump sampler2DArray;\n");
+            out.push_str(
+                r#"precision mediump float;
+precision mediump sampler2DArray;
+#define ES
+"#,
+            );
         }
     }
 
