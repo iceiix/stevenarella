@@ -17,6 +17,7 @@
 #![allow(clippy::many_single_char_names)] // short variable names provide concise clarity
 #![allow(clippy::float_cmp)] // float comparison used to check if changed
 
+use glow::HasRenderLoop;
 use log::{error, info, warn};
 use std::fs;
 use std::time::{Duration, Instant};
@@ -272,14 +273,14 @@ fn main2() {
             .unwrap();
         (
             glow::Context::from_webgl2_context(webgl2_context),
-            1,
             "#version 300 es",
+            1.0,
             glow::RenderLoop::from_request_animation_frame(),
         )
     };
 
     #[cfg(not(target_arch = "wasm32"))]
-    let (context, shader_version, dpi_factor, events_loop, window) = {
+    let (context, shader_version, dpi_factor, window, events_loop) = {
         let events_loop = glutin::event_loop::EventLoop::new();
         let window_builder = glutin::window::WindowBuilder::new()
             .with_title("Stevenarella")
@@ -309,8 +310,8 @@ fn main2() {
             context,
             "#version 410",
             window.window().scale_factor(),
-            events_loop,
             window,
+            events_loop,
         )
     };
 
@@ -381,6 +382,31 @@ fn main2() {
     }
 
     let mut last_resource_version = 0;
+
+    #[cfg(target_arch = "wasm32")]
+    render_loop.run(move |running: &mut bool| {
+        /* TODO: handle window events
+        if !handle_window_event(&window.window(), &mut game, &mut ui_container, event) {
+            return;
+        }
+        */
+
+        // TODO: create and pass winit window for web
+        /*
+        tick_all(
+            &window.window(),
+            &mut game,
+            &mut ui_container,
+            &mut last_frame,
+            &mut resui,
+            &mut last_resource_version,
+            &mut vsync,
+        );
+        */
+        println!("render_loop");
+    });
+
+    #[cfg(not(target_arch = "wasm32"))]
     events_loop.run(move |event, _event_loop, control_flow| {
         *control_flow = glutin::event_loop::ControlFlow::Poll;
 

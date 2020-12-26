@@ -37,8 +37,6 @@ use std::sync::atomic::{AtomicIsize, Ordering};
 use std::sync::mpsc;
 use std::thread;
 
-#[cfg(not(target_arch = "wasm32"))]
-
 const ATLAS_SIZE: usize = 1024;
 
 // TEMP
