@@ -184,6 +184,11 @@ impl Vars {
     }
 
     pub fn save_config(&self) {
+        #[cfg(target_arch = "wasm32")]
+        {
+            // TODO: web fs::File replacement, save locally
+            return;
+        }
         let mut file = BufWriter::new(fs::File::create("conf.cfg").unwrap());
         for (name, var) in &self.vars {
             if !var.can_serialize() {
