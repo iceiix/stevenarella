@@ -579,7 +579,7 @@ impl Shader {
     }
 }
 
-#[derive(Clone)] // TODO: Copy for web
+#[derive(Clone)]
 pub struct Uniform(glow::UniformLocation);
 
 impl Uniform {
