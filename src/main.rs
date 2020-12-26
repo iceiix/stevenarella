@@ -296,7 +296,7 @@ fn main2() {
             .with_stencil_buffer(0)
             .with_depth_buffer(24)
             .with_gl(glutin::GlRequest::GlThenGles {
-                opengl_version: (4, 1),
+                opengl_version: (3, 2),
                 opengles_version: (3, 0),
             })
             .with_gl_profile(glutin::GlProfile::Core)
@@ -315,9 +315,11 @@ fn main2() {
         };
 
         let shader_version = match glutin_window.get_api() {
-            glutin::Api::OpenGl => "#version 410", // OpenGL 4.1
+            glutin::Api::OpenGl => "#version 150",      // OpenGL 3.2
             glutin::Api::OpenGlEs => "#version 300 es", // OpenGL ES 3.0 (similar to WebGL 2)
-            glutin::Api::WebGl => panic!("unexpectedly received WebGl API with glutin, expected to use glow codepath")
+            glutin::Api::WebGl => {
+                panic!("unexpectedly received WebGl API with glutin, expected to use glow codepath")
+            }
         };
 
         // OpenGL 4.1
