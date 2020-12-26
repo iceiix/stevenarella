@@ -215,7 +215,7 @@ cfg_if! {
 }
 
 cfg_if! {
-    if #[cfg(target_os = "unknown")] {
+    if #[cfg(target_arch = "wasm32")] {
         use wasm_bindgen::prelude::*;
 
         #[wasm_bindgen]
