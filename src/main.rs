@@ -230,7 +230,6 @@ fn main2() {
     let opt = Opt::from_args();
 
     set_panic_hook();
-    std::env::set_var("RUST_BACKTRACE", "1");
 
     let con = Arc::new(Mutex::new(console::Console::new()));
     let proxy = console::ConsoleProxy::new(con.clone());
