@@ -579,7 +579,7 @@ impl Shader {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)] // TODO: Copy for web
 pub struct Uniform(glow::UniformLocation);
 
 impl Uniform {
@@ -712,7 +712,7 @@ impl Drop for VertexArray {
         unsafe {
             glow_context().delete_vertex_array(self.0);
         }
-        self.0 = 0;
+        self.0 = glow::VertexArray::default();
     }
 }
 
