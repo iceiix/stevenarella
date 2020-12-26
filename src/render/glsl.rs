@@ -36,18 +36,24 @@ impl Registry {
             .insert(name.to_owned(), source.trim().to_owned());
     }
 
-    pub fn get(&self, name: &str) -> String {
-        let mut out = String::new();
+    fn add_version(&self, out: &mut String) {
         out.push_str(&self.shader_version);
         out.push('\n');
+        if self.shader_version.ends_with(" es") {
+            out.push_str("precision mediump float;\nprecision mediump sampler2DArray;\n");
+        }
+    }
+
+    pub fn get(&self, name: &str) -> String {
+        let mut out = String::new();
+        self.add_version(&mut out);
         self.get_internal(&mut out, name);
         out
     }
 
     pub fn get_define(&self, name: &str, define: &str) -> String {
         let mut out = String::new();
-        out.push_str(&self.shader_version);
-        out.push('\n');
+        self.add_version(&mut out);
         out.push_str("#define ");
         out.push_str(define);
         out.push('\n');

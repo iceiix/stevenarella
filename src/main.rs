@@ -284,7 +284,7 @@ fn main2() {
             .unwrap();
         (
             glow::Context::from_webgl2_context(webgl2_context),
-            "#version 300 es\nprecision mediump float;precision mediump sampler2DArray;", // WebGL 2
+            "#version 300 es", // WebGL 2
             winit_window,
             glow::RenderLoop::from_request_animation_frame(),
         )
@@ -316,7 +316,7 @@ fn main2() {
 
         let shader_version = match glutin_window.get_api() {
             glutin::Api::OpenGl => "#version 150",      // OpenGL 3.2
-            glutin::Api::OpenGlEs => "#version 300 es\nprecision mediump float;precision mediump sampler2DArray;", // OpenGL ES 3.0 (similar to WebGL 2)
+            glutin::Api::OpenGlEs => "#version 300 es", // OpenGL ES 3.0 (similar to WebGL 2)
             glutin::Api::WebGl => {
                 panic!("unexpectedly received WebGl API with glutin, expected to use glow codepath")
             }
