@@ -206,7 +206,6 @@ impl World {
 
     #[allow(clippy::verbose_bit_mask)] // "llvm generates better code" for updates_performed & 0xFFF "on x86"
     pub fn tick(&mut self, m: &mut ecs::Manager) {
-        /* XXX timed lightning updates
         use std::time::Instant;
         let start = Instant::now();
         let mut updates_performed = 0;
@@ -218,7 +217,6 @@ impl World {
                 break;
             }
         }
-        */
 
         let sign_info: ecs::Key<block_entity::sign::SignInfo> = m.get_key();
 

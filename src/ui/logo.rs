@@ -4,7 +4,7 @@ use crate::ui;
 use rand::{self, seq::SliceRandom};
 use std::f64::consts;
 use std::sync::{Arc, RwLock};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH}; // TODO: replace with instant::Instant and Duration?
 
 pub struct Logo {
     _shadow: ui::BatchRef,
