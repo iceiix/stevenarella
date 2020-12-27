@@ -928,6 +928,17 @@ impl Renderbuffer {
         }
     }
 
+    pub fn storage(&self, width: u32, height: u32, format: TextureFormat) {
+        unsafe {
+            glow_context().renderbuffer_storage(
+                gl::RENDERBUFFER,
+                format,
+                width as i32,
+                height as i32,
+            );
+        }
+    }
+
     pub fn storage_multisample(
         &self,
         samples: i32,
