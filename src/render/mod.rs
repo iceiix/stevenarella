@@ -860,11 +860,12 @@ impl TransInfo {
         main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &fb_color, 0);
         let fb_depth = gl::Texture::new();
         fb_depth.bind(gl::TEXTURE_2D);
-        fb_depth.image_2d(
+        fb_depth.image_2d_ex(
             gl::TEXTURE_2D,
             0,
             width,
             height,
+            gl::DEPTH_COMPONENT24,
             gl::DEPTH_COMPONENT,
             gl::UNSIGNED_BYTE,
             None,
@@ -916,7 +917,7 @@ impl TransInfo {
         gl::active_texture(1);
         self.revealage.bind(gl::TEXTURE_2D);
         gl::active_texture(2);
-        self.fb_color.bind(gl::TEXTURE_2D_MULTISAMPLE);
+        self.fb_color.bind(gl::TEXTURE_2D);
 
         shader.program.use_program();
         shader.accum.set_int(0);
