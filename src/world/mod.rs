@@ -206,7 +206,7 @@ impl World {
 
     #[allow(clippy::verbose_bit_mask)] // "llvm generates better code" for updates_performed & 0xFFF "on x86"
     pub fn tick(&mut self, m: &mut ecs::Manager) {
-        use std::time::Instant;
+        use instant::Instant;
         let start = Instant::now();
         let mut updates_performed = 0;
         while !self.light_updates.is_empty() {

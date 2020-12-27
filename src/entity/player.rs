@@ -12,9 +12,9 @@ use crate::types::Gamemode;
 use crate::world;
 use cgmath::{self, Decomposed, Matrix4, Point3, Quaternion, Rad, Rotation3, Vector3};
 use collision::{Aabb, Aabb3};
+use instant::Instant;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
-use std::time::Instant;
 
 pub fn add_systems(m: &mut ecs::Manager) {
     let sys = MovementHandler::new(m);
