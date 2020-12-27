@@ -790,8 +790,9 @@ dependencies = [
 
 [[package]]
 name = "glow"
-version = "0.6.1"
-source = "git+https://github.com/iceiix/glow?rev=b354346dee69ff0ca7ccef67f7580dfbb697423b#b354346dee69ff0ca7ccef67f7580dfbb697423b"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3eac04632dc8c047fb70d658f8479583e1bb084859f67a150227769a10fc161f"
 dependencies = [
  "js-sys",
  "slotmap",
