@@ -51,7 +51,7 @@ pub struct Renderer {
     textures: Arc<RwLock<TextureManager>>,
     pub ui: ui::UIState,
     pub model: model::Manager,
-    pub clouds: clouds::Clouds,
+    pub clouds: Option<clouds::Clouds>,
 
     gl_texture: gl::Texture,
     texture_layers: usize,
@@ -191,10 +191,18 @@ impl Renderer {
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         gl::depth_func(gl::LESS_OR_EQUAL);
 
+        #[cfg(not(target_arch = "wasm32"))]
+        let clouds = Some(clouds::Clouds::new(&greg, textures.clone()));
+
+        // No clouds on wasm since no geo shaders on WebGL
+        // TODO: setting to disable clouds on native, too, if desired
+        #[cfg(target_arch = "wasm32")]
+        let clouds = None;
+
         Renderer {
             resource_version: version,
             model: model::Manager::new(&greg),
-            clouds: clouds::Clouds::new(&greg, textures.clone()),
+            clouds,
             textures,
             ui,
             resources: res,
@@ -358,17 +366,19 @@ impl Renderer {
             self.light_level,
             self.sky_offset,
         );
-        if world.copy_cloud_heightmap(&mut self.clouds.heightmap_data) {
-            self.clouds.dirty = true;
+        if let Some(clouds) = &mut self.clouds {
+            if world.copy_cloud_heightmap(&mut clouds.heightmap_data) {
+                clouds.dirty = true;
+            }
+            clouds.draw(
+                &self.camera.pos,
+                &self.perspective_matrix,
+                &self.camera_matrix,
+                self.light_level,
+                self.sky_offset,
+                delta,
+            );
         }
-        self.clouds.draw(
-            &self.camera.pos,
-            &self.perspective_matrix,
-            &self.camera_matrix,
-            self.light_level,
-            self.sky_offset,
-            delta,
-        );
 
         // Trans chunk rendering
         self.chunk_shader_alpha.program.use_program();
