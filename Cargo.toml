@@ -28,9 +28,9 @@ serde_json = "1.0.60"
 flate2 = { version = "1.0.19", features = ["rust_backend"], default-features = false }
 zip = { version = "0.5.6", features = ["deflate"], default-features = false }
 image = "0.23.12"
-getrandom = { version = "0.1.14", features = ["wasm-bindgen"] }
-rand = { version = "0.7.3", default-features = false }
-rand_pcg = "0.2.1"
+getrandom = { version = "0.2", features = ["js"] }
+rand = "0.8.0"
+rand_pcg = "0.3.0"
 base64 = "0.13.0"
 log = { version = "0.4.11", features = ["std"] }
 cgmath = "0.17.0"

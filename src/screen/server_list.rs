@@ -528,6 +528,7 @@ impl super::Screen for ServerList {
                             let name: String = std::iter::repeat(())
                                 .map(|()| {
                                     rand::thread_rng().sample(&rand::distributions::Alphanumeric)
+                                        as char
                                 })
                                 .take(30)
                                 .collect();
