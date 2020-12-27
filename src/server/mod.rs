@@ -193,7 +193,8 @@ impl Server {
 
         let mut shared = [0; 16];
         // TODO: is this cryptographically secure enough?
-        rand::thread_rng().fill(&mut shared);
+        // XXX: need to skip handshake/encryption for wasm
+        //rand::thread_rng().fill(&mut shared);
 
         let shared_e = rsa_public_encrypt_pkcs1::encrypt(&public_key, &shared).unwrap();
         let token_e = rsa_public_encrypt_pkcs1::encrypt(&public_key, &verify_token).unwrap();
@@ -289,6 +290,7 @@ impl Server {
             None,
             None,
         );
+        return server; // XXX: rand::thread_rng() not supported on wasm
         let mut rng = rand::thread_rng();
         for x in -7 * 16..7 * 16 {
             for z in -7 * 16..7 * 16 {
