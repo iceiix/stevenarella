@@ -760,7 +760,7 @@ impl Renderer {
 
 struct TransInfo {
     main: gl::Framebuffer,
-    fb_color: gl::Renderbuffer,
+    fb_color: gl::Texture,
     _fb_depth: gl::Renderbuffer,
     trans: gl::Framebuffer,
     accum: gl::Texture,
@@ -855,14 +855,21 @@ impl TransInfo {
 
         // TODO: support rendering to a multisample renderbuffer for MSAA, using glRenderbufferStorageMultisample
         // https://github.com/iceiix/stevenarella/pull/442
-        let fb_color = gl::Renderbuffer::new();
-        fb_color.bind();
-        fb_color.storage(width, height, gl::RGBA8);
-        //fb_color.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
-        //fb_color.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
+        let fb_color = gl::Texture::new();
+        fb_color.bind(gl::TEXTURE_2D);
+        fb_color.image_2d(
+            gl::TEXTURE_2D,
+            0,
+            width,
+            height,
+            gl::RGBA,
+            gl::UNSIGNED_BYTE,
+            None,
+        );
+        fb_color.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+        fb_color.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
 
-        //main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &fb_color, 0);
-        main.renderbuffer(gl::COLOR_ATTACHMENT_0, &fb_color);
+        main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &fb_color, 0);
 
         let fb_depth = gl::Renderbuffer::new();
         fb_depth.bind();
@@ -915,7 +922,7 @@ impl TransInfo {
         gl::active_texture(1);
         self.revealage.bind(gl::TEXTURE_2D);
         gl::active_texture(2);
-        self.fb_color.bind();
+        self.fb_color.bind(gl::TEXTURE_2D);
 
         shader.program.use_program();
         shader.accum.set_int(0);
