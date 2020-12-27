@@ -844,6 +844,7 @@ impl TransInfo {
         main.bind();
 
         // TODO: support rendering to a multisample renderbuffer for MSAA, using glRenderbufferStorageMultisample
+        // https://github.com/iceiix/stevenarella/pull/442
         let fb_color = gl::Texture::new();
         fb_color.bind(gl::TEXTURE_2D);
         fb_color.image_2d(
