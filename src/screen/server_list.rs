@@ -24,8 +24,8 @@ use crate::protocol;
 use crate::render;
 use crate::ui;
 
+use instant::Duration;
 use rand::Rng;
-use std::time::Duration;
 
 pub struct ServerList {
     elements: Option<UIElements>,

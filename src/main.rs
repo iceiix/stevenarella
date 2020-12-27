@@ -17,10 +17,9 @@
 #![allow(clippy::many_single_char_names)] // short variable names provide concise clarity
 #![allow(clippy::float_cmp)] // float comparison used to check if changed
 
-use instant::Instant;
+use instant::{Duration, Instant};
 use log::{error, info, warn};
 use std::fs;
-use std::time::Duration;
 extern crate steven_shared as shared;
 
 use structopt::StructOpt;
