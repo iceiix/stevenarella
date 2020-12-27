@@ -26,8 +26,8 @@ void main() {
 
 	vColor = aColor;
 	vTextureInfo = aTextureInfo;
-	vTextureOffset = aTextureOffset.xy / 16.0;
-	vAtlas = aTextureOffset.z;
+	vTextureOffset = vec2(aTextureOffset.xy) / 16.0;
+	vAtlas = float(aTextureOffset.z);
 	vID = float(id);
 
 	vLighting = getLight(lighting);

@@ -18,7 +18,6 @@
 use aes::Aes128;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use cfb8::Cfb8;
-#[cfg(not(target_arch = "wasm32"))]
 use std_or_web::fs;
 
 pub mod forge;

@@ -20,8 +20,8 @@ opt-level = 1
 [dependencies]
 cfg-if = "1.0.0"
 wasm-bindgen = "0.2.69"
-glutin = "0.26.0"
-glow = { git = "https://github.com/iceiix/glow", rev = "45c808678735e03737d5e1b9d6ed0e21070edcd9" }
+winit = { version = "0.24.0", features = [ "web-sys" ]}
+glow = { git = "https://github.com/iceiix/glow", rev = "b354346dee69ff0ca7ccef67f7580dfbb697423b" }
 byteorder = "1.3.4"
 serde = "1.0.118"
 serde_json = "1.0.60"
@@ -42,10 +42,11 @@ clipboard = "0.5.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = { version = "0.10.10", features = [ "blocking" ]}
+glutin = "0.26.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-stdweb = "0.4.20"
-winit = { version = "0.24.0", features = [ "stdweb" ]}
+console_error_panic_hook = "0.1.6"
+web-sys = "0.3.46"
 
 [dependencies.steven_resources]
 path = "./resources"

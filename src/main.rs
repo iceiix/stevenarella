@@ -205,6 +205,7 @@ struct Opt {
 
 cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
+        use glow::HasRenderLoop;
         extern crate console_error_panic_hook;
         pub use console_error_panic_hook::set_once as set_panic_hook;
     } else {
@@ -214,7 +215,7 @@ cfg_if! {
 }
 
 cfg_if! {
-    if #[cfg(target_os = "unknown")] {
+    if #[cfg(target_arch = "wasm32")] {
         use wasm_bindgen::prelude::*;
 
         #[wasm_bindgen]
@@ -229,7 +230,6 @@ fn main2() {
     let opt = Opt::from_args();
 
     set_panic_hook();
-    std::env::set_var("RUST_BACKTRACE", "1");
 
     let con = Arc::new(Mutex::new(console::Console::new()));
     let proxy = console::ConsoleProxy::new(con.clone());
@@ -239,7 +239,7 @@ fn main2() {
 
     info!("Starting steven");
 
-    let (vars, vsync) = {
+    let (vars, mut vsync) = {
         let mut vars = console::Vars::new();
         vars.register(CL_BRAND);
         auth::register_vars(&mut vars);
@@ -253,35 +253,90 @@ fn main2() {
     let (res, mut resui) = resources::Manager::new();
     let resource_manager = Arc::new(RwLock::new(res));
 
-    let events_loop = glutin::event_loop::EventLoop::new();
-    let window_builder = glutin::window::WindowBuilder::new()
-        .with_title("Stevenarella")
-        .with_inner_size(glutin::dpi::LogicalSize::new(854.0, 480.0));
-    let window = glutin::ContextBuilder::new()
-        .with_stencil_buffer(0)
-        .with_depth_buffer(24)
-        .with_gl(glutin::GlRequest::GlThenGles {
-            opengl_version: (3, 2),
-            opengles_version: (2, 0),
-        })
-        .with_gl_profile(glutin::GlProfile::Core)
-        .with_vsync(vsync)
-        .build_windowed(window_builder, &events_loop)
-        .expect("Could not create glutin window.");
+    let events_loop = winit::event_loop::EventLoop::new();
 
-    let mut window = unsafe {
-        window
-            .make_current()
-            .expect("Could not set current context.")
+    let window_builder = winit::window::WindowBuilder::new()
+        .with_title("Stevenarella")
+        .with_inner_size(winit::dpi::LogicalSize::new(854.0, 480.0));
+
+    #[cfg(target_arch = "wasm32")]
+    let (context, shader_version, winit_window, render_loop) = {
+        let winit_window = window_builder.build(&events_loop).unwrap();
+
+        use wasm_bindgen::JsCast;
+        use winit::platform::web::WindowExtWebSys;
+
+        let canvas = winit_window.canvas();
+
+        let html_window = web_sys::window().unwrap();
+        let document = html_window.document().unwrap();
+        let body = document.body().unwrap();
+
+        body.append_child(&canvas)
+            .expect("Append canvas to HTML body");
+
+        let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
+        let webgl2_context = canvas
+            .get_context("webgl2")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<web_sys::WebGl2RenderingContext>()
+            .unwrap();
+        (
+            glow::Context::from_webgl2_context(webgl2_context),
+            "#version 300 es", // WebGL 2
+            winit_window,
+            glow::RenderLoop::from_request_animation_frame(),
+        )
     };
 
-    gl::init(&window);
+    #[cfg(not(target_arch = "wasm32"))]
+    let (context, shader_version, glutin_window) = {
+        let glutin_window = glutin::ContextBuilder::new()
+            .with_stencil_buffer(0)
+            .with_depth_buffer(24)
+            .with_gl(glutin::GlRequest::GlThenGles {
+                opengl_version: (3, 2),
+                opengles_version: (3, 0),
+            })
+            .with_gl_profile(glutin::GlProfile::Core)
+            .with_vsync(vsync)
+            .build_windowed(window_builder, &events_loop)
+            .expect("Could not create glutin window.");
 
-    let renderer = render::Renderer::new(resource_manager.clone());
+        let glutin_window = unsafe {
+            glutin_window
+                .make_current()
+                .expect("Could not set current context.")
+        };
+
+        let context = unsafe {
+            glow::Context::from_loader_function(|s| glutin_window.get_proc_address(s) as *const _)
+        };
+
+        let shader_version = match glutin_window.get_api() {
+            glutin::Api::OpenGl => "#version 150",      // OpenGL 3.2
+            glutin::Api::OpenGlEs => "#version 300 es", // OpenGL ES 3.0 (similar to WebGL 2)
+            glutin::Api::WebGl => {
+                panic!("unexpectedly received WebGl API with glutin, expected to use glow codepath")
+            }
+        };
+
+        (context, shader_version, glutin_window)
+    };
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let winit_window = glutin_window.window();
+
+    let dpi_factor = winit_window.scale_factor();
+
+    gl::init(context);
+    info!("Shader version: {}", shader_version);
+
+    let renderer = render::Renderer::new(resource_manager.clone(), shader_version);
     let mut ui_container = ui::Container::new();
 
     let mut last_frame = Instant::now();
-    let frame_time = 1e9f64 / 60.0;
 
     let mut screen_sys = screen::ScreenSystem::new();
     if opt.server.is_none() {
@@ -301,7 +356,6 @@ fn main2() {
     }
 
     let textures = renderer.get_textures();
-    let dpi_factor = window.window().scale_factor();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
         opt.default_protocol_version
             .unwrap_or_else(|| "".to_string()),
@@ -344,94 +398,156 @@ fn main2() {
     }
 
     let mut last_resource_version = 0;
-    events_loop.run(move |event, _event_loop, control_flow| {
-        *control_flow = glutin::event_loop::ControlFlow::Poll;
 
-        if !handle_window_event(&mut window, &mut game, &mut ui_container, event) {
-            return;
-        }
-
-        let now = Instant::now();
-        let diff = now.duration_since(last_frame);
-        last_frame = now;
-        let delta = (diff.subsec_nanos() as f64) / frame_time;
-        let physical_size = window.window().inner_size();
-        let (physical_width, physical_height) = physical_size.into();
-        let (width, height) = physical_size.to_logical::<f64>(game.dpi_factor).into();
-
-        let version = {
-            let try_res = game.resource_manager.try_write();
-            if let Ok(mut res) = try_res {
-                res.tick(&mut resui, &mut ui_container, delta);
-                res.version()
-            } else {
-                // TODO: why does game.resource_manager.write() sometimes deadlock?
-                //warn!("Failed to obtain mutable reference to resource manager!");
-                last_resource_version
-            }
-        };
-        last_resource_version = version;
-
-        let vsync_changed = *game.vars.get(settings::R_VSYNC);
-        if vsync != vsync_changed {
-            error!("Changing vsync currently requires restarting");
-            game.should_close = true;
-            // TODO: after https://github.com/tomaka/glutin/issues/693 Allow changing vsync on a Window
-            //vsync = vsync_changed;
-        }
-        let fps_cap = *game.vars.get(settings::R_MAX_FPS);
-
-        game.tick(delta);
-        game.server.tick(&mut game.renderer, delta);
-
-        // Check if window is valid, it might be minimized
-        if physical_width == 0 || physical_height == 0 {
-            return;
-        }
-
-        game.renderer.update_camera(physical_width, physical_height);
-        game.server.world.compute_render_list(&mut game.renderer);
-        game.chunk_builder
-            .tick(&mut game.server.world, &mut game.renderer, version);
-
-        game.screen_sys
-            .tick(delta, &mut game.renderer, &mut ui_container);
-        game.console
-            .lock()
-            .unwrap()
-            .tick(&mut ui_container, &game.renderer, delta, width);
-        ui_container.tick(&mut game.renderer, delta, width, height);
-        game.renderer.tick(
-            &mut game.server.world,
-            delta,
-            width as u32,
-            height as u32,
-            physical_width,
-            physical_height,
+    /* TODO: fix move of winit_window
+    #[cfg(target_arch = "wasm32")]
+    render_loop.run(move |running: &mut bool| {
+        tick_all(
+            &winit_window,
+            &mut game,
+            &mut ui_container,
+            &mut last_frame,
+            &mut resui,
+            &mut last_resource_version,
+            &mut vsync,
         );
+        println!("render_loop");
+    });
+    */
 
-        if fps_cap > 0 && !vsync {
-            let frame_time = now.elapsed();
-            let sleep_interval = Duration::from_millis(1000 / fps_cap as u64);
-            if frame_time < sleep_interval {
-                thread::sleep(sleep_interval - frame_time);
-            }
+    events_loop.run(move |event, _event_loop, control_flow| {
+        #[cfg(target_arch = "wasm32")]
+        {
+            *control_flow = winit::event_loop::ControlFlow::Wait;
         }
-        window.swap_buffers().expect("Failed to swap GL buffers");
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let winit_window = {
+            *control_flow = winit::event_loop::ControlFlow::Poll;
+            glutin_window.window()
+        };
+
+        #[cfg(not(target_arch = "wasm32"))]
+        if let winit::event::Event::WindowEvent {
+            event: winit::event::WindowEvent::Resized(physical_size),
+            ..
+        } = event
+        {
+            glutin_window.resize(physical_size);
+        }
+
+        if !handle_window_event(&winit_window, &mut game, &mut ui_container, event) {
+            return;
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            tick_all(
+                &winit_window,
+                &mut game,
+                &mut ui_container,
+                &mut last_frame,
+                &mut resui,
+                &mut last_resource_version,
+                &mut vsync,
+            );
+
+            glutin_window
+                .swap_buffers()
+                .expect("Failed to swap GL buffers");
+        }
 
         if game.should_close {
-            *control_flow = glutin::event_loop::ControlFlow::Exit;
+            *control_flow = winit::event_loop::ControlFlow::Exit;
         }
     });
 }
 
+fn tick_all(
+    window: &winit::window::Window,
+    game: &mut Game,
+    mut ui_container: &mut ui::Container,
+    last_frame: &mut Instant,
+    mut resui: &mut resources::ManagerUI,
+    last_resource_version: &mut usize,
+    vsync: &mut bool,
+) {
+    let now = Instant::now();
+    let diff = now.duration_since(*last_frame);
+    *last_frame = now;
+    let frame_time = 1e9f64 / 60.0;
+    let delta = (diff.subsec_nanos() as f64) / frame_time;
+    let physical_size = window.inner_size();
+    let (physical_width, physical_height) = physical_size.into();
+    let (width, height) = physical_size.to_logical::<f64>(game.dpi_factor).into();
+
+    let version = {
+        let try_res = game.resource_manager.try_write();
+        if let Ok(mut res) = try_res {
+            res.tick(&mut resui, &mut ui_container, delta);
+            res.version()
+        } else {
+            // TODO: why does game.resource_manager.write() sometimes deadlock?
+            //warn!("Failed to obtain mutable reference to resource manager!");
+            *last_resource_version
+        }
+    };
+    *last_resource_version = version;
+
+    let vsync_changed = *game.vars.get(settings::R_VSYNC);
+    if *vsync != vsync_changed {
+        error!("Changing vsync currently requires restarting");
+        game.should_close = true;
+        // TODO: after https://github.com/tomaka/glutin/issues/693 Allow changing vsync on a Window
+        //vsync = vsync_changed;
+    }
+    let fps_cap = *game.vars.get(settings::R_MAX_FPS);
+
+    game.tick(delta);
+    game.server.tick(&mut game.renderer, delta);
+
+    // Check if window is valid, it might be minimized
+    if physical_width == 0 || physical_height == 0 {
+        return;
+    }
+
+    game.renderer.update_camera(physical_width, physical_height);
+    game.server.world.compute_render_list(&mut game.renderer);
+    game.chunk_builder
+        .tick(&mut game.server.world, &mut game.renderer, version);
+
+    game.screen_sys
+        .tick(delta, &mut game.renderer, &mut ui_container);
+    game.console
+        .lock()
+        .unwrap()
+        .tick(&mut ui_container, &game.renderer, delta, width);
+    ui_container.tick(&mut game.renderer, delta, width, height);
+    game.renderer.tick(
+        &mut game.server.world,
+        delta,
+        width as u32,
+        height as u32,
+        physical_width,
+        physical_height,
+    );
+
+    if fps_cap > 0 && !*vsync {
+        let frame_time = now.elapsed();
+        let sleep_interval = Duration::from_millis(1000 / fps_cap as u64);
+        if frame_time < sleep_interval {
+            thread::sleep(sleep_interval - frame_time);
+        }
+    }
+}
+
 fn handle_window_event<T>(
-    window: &mut glutin::WindowedContext<glutin::PossiblyCurrent>,
+    window: &winit::window::Window,
     game: &mut Game,
     ui_container: &mut ui::Container,
-    event: glutin::event::Event<T>,
+    event: winit::event::Event<T>,
 ) -> bool {
-    use glutin::event::*;
+    use winit::event::*;
     match event {
         Event::MainEventsCleared => return true,
         Event::DeviceEvent { event, .. } => {
@@ -460,8 +576,8 @@ fn handle_window_event<T>(
                 use std::f64::consts::PI;
 
                 if game.focused {
-                    window.window().set_cursor_grab(true).unwrap();
-                    window.window().set_cursor_visible(false);
+                    window.set_cursor_grab(true).unwrap();
+                    window.set_cursor_visible(false);
                     if let Some(player) = game.server.player {
                         let rotation = game
                             .server
@@ -478,8 +594,8 @@ fn handle_window_event<T>(
                         }
                     }
                 } else {
-                    window.window().set_cursor_grab(false).unwrap();
-                    window.window().set_cursor_visible(true);
+                    window.set_cursor_grab(false).unwrap();
+                    window.set_cursor_visible(true);
                 }
             }
         }
@@ -491,9 +607,6 @@ fn handle_window_event<T>(
                     game.is_logo_pressed = modifiers_state.logo();
                 }
                 WindowEvent::CloseRequested => game.should_close = true,
-                WindowEvent::Resized(physical_size) => {
-                    window.resize(physical_size);
-                }
                 WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                     game.dpi_factor = scale_factor;
                 }
@@ -506,7 +619,7 @@ fn handle_window_event<T>(
 
                 WindowEvent::MouseInput { state, button, .. } => match (state, button) {
                     (ElementState::Released, MouseButton::Left) => {
-                        let physical_size = window.window().inner_size();
+                        let physical_size = window.inner_size();
                         let (width, height) =
                             physical_size.to_logical::<f64>(game.dpi_factor).into();
 
@@ -515,11 +628,11 @@ fn handle_window_event<T>(
                             && !game.screen_sys.is_current_closable()
                         {
                             game.focused = true;
-                            window.window().set_cursor_grab(true).unwrap();
-                            window.window().set_cursor_visible(false);
+                            window.set_cursor_grab(true).unwrap();
+                            window.set_cursor_visible(false);
                         } else if !game.focused {
-                            window.window().set_cursor_grab(false).unwrap();
-                            window.window().set_cursor_visible(true);
+                            window.set_cursor_grab(false).unwrap();
+                            window.set_cursor_visible(true);
                             ui_container.click_at(
                                 game,
                                 game.last_mouse_x,
@@ -542,7 +655,7 @@ fn handle_window_event<T>(
                     game.last_mouse_y = y;
 
                     if !game.focused {
-                        let physical_size = window.window().inner_size();
+                        let physical_size = window.inner_size();
                         let (width, height) =
                             physical_size.to_logical::<f64>(game.dpi_factor).into();
                         ui_container.hover_at(game, x, y, width, height);
@@ -564,15 +677,15 @@ fn handle_window_event<T>(
                     match (input.state, input.virtual_keycode) {
                         (ElementState::Released, Some(VirtualKeyCode::Escape)) => {
                             if game.focused {
-                                window.window().set_cursor_grab(false).unwrap();
-                                window.window().set_cursor_visible(true);
+                                window.set_cursor_grab(false).unwrap();
+                                window.set_cursor_visible(true);
                                 game.focused = false;
                                 game.screen_sys.replace_screen(Box::new(
                                     screen::SettingsMenu::new(game.vars.clone(), true),
                                 ));
                             } else if game.screen_sys.is_current_closable() {
-                                window.window().set_cursor_grab(true).unwrap();
-                                window.window().set_cursor_visible(false);
+                                window.set_cursor_grab(true).unwrap();
+                                window.set_cursor_visible(false);
                                 game.focused = true;
                                 game.screen_sys.pop_screen();
                             }
@@ -584,13 +697,11 @@ fn handle_window_event<T>(
                             if !game.is_fullscreen {
                                 // TODO: support options for exclusive and simple fullscreen
                                 // see https://docs.rs/glutin/0.22.0-alpha5/glutin/window/struct.Window.html#method.set_fullscreen
-                                window.window().set_fullscreen(Some(
-                                    glutin::window::Fullscreen::Borderless(
-                                        window.window().current_monitor(),
-                                    ),
-                                ));
+                                window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(
+                                    window.current_monitor(),
+                                )));
                             } else {
-                                window.window().set_fullscreen(None);
+                                window.set_fullscreen(None);
                             }
 
                             game.is_fullscreen = !game.is_fullscreen;

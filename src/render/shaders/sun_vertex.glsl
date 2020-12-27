@@ -21,7 +21,7 @@ void main() {
 	gl_Position = perspectiveMatrix * cameraMatrix * modelMatrix[id] * vec4(pos, 1.0);
 
 	vTextureInfo = aTextureInfo;
-	vTextureOffset = aTextureOffset.xy / 16.0;
-	vAtlas = aTextureOffset.z;
+	vTextureOffset = vec2(aTextureOffset.xy) / 16.0;
+	vAtlas = float(aTextureOffset.z);
 	vID = float(id);
 }

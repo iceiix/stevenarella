@@ -9,8 +9,15 @@ in vec3 vLighting;
 #ifndef alpha
 out vec4 fragColor;
 #else
+
+#ifdef ES
+layout(location = 1) out vec4 accum;
+layout(location = 2) out float revealage;
+#else
 out vec4 accum;
 out float revealage;
+#endif
+
 #endif
 
 #include lookup_texture
