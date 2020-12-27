@@ -947,7 +947,7 @@ impl Framebuffer {
 }
 
 #[derive(Default)]
-pub struct Renderbuffer(u32);
+pub struct Renderbuffer(glow::Renderbuffer);
 
 impl Renderbuffer {
     pub fn new() -> Renderbuffer {
