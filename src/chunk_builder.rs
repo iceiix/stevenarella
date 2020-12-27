@@ -10,7 +10,8 @@ use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
 
-const NUM_WORKERS: usize = 8;
+//const NUM_WORKERS: usize = 8;
+const NUM_WORKERS: usize = 0; // XXX: no threads on wasm
 
 pub struct ChunkBuilder {
     threads: Vec<(mpsc::Sender<BuildReq>, thread::JoinHandle<()>)>,
