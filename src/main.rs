@@ -399,22 +399,22 @@ fn main2() {
 
     let mut last_resource_version = 0;
 
-    /* TODO: fix move of winit_window
     #[cfg(target_arch = "wasm32")]
     render_loop.run(move |running: &mut bool| {
         tick_all(
             &winit_window,
             &mut game,
             &mut ui_container,
-            &mut last_frame,
+            //&mut last_frame,
             &mut resui,
             &mut last_resource_version,
             &mut vsync,
         );
         println!("render_loop");
     });
-    */
 
+    // TODO: also run the event loop, fix borrows
+    /*
     events_loop.run(move |event, _event_loop, control_flow| {
         #[cfg(target_arch = "wasm32")]
         {
@@ -461,6 +461,7 @@ fn main2() {
             *control_flow = winit::event_loop::ControlFlow::Exit;
         }
     });
+    */
 }
 
 fn tick_all(
