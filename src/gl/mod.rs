@@ -902,7 +902,7 @@ impl Framebuffer {
         }
     }
 
-    pub fn renderbuffer(&self, attachment: Attachment, rb: Renderbuffer) {
+    pub fn renderbuffer(&self, attachment: Attachment, rb: &Renderbuffer) {
         unsafe {
             glow_context().framebuffer_renderbuffer(
                 gl::FRAMEBUFFER,
