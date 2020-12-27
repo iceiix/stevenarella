@@ -193,7 +193,6 @@ impl Server {
 
         let mut shared = [0; 16];
         // TODO: is this cryptographically secure enough?
-        // XXX: need to skip handshake/encryption for wasm
         rand::thread_rng().fill(&mut shared);
 
         let shared_e = rsa_public_encrypt_pkcs1::encrypt(&public_key, &shared).unwrap();

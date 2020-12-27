@@ -399,6 +399,7 @@ fn main2() {
 
     let mut last_resource_version = 0;
 
+    /* TODO: fix move of winit_window
     #[cfg(target_arch = "wasm32")]
     render_loop.run(move |running: &mut bool| {
         tick_all(
@@ -412,9 +413,8 @@ fn main2() {
         );
         println!("render_loop");
     });
+    */
 
-    // TODO: also run the event loop, fix borrows
-    #[cfg(not(target_arch = "wasm32"))]
     events_loop.run(move |event, _event_loop, control_flow| {
         #[cfg(target_arch = "wasm32")]
         {
