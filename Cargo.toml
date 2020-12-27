@@ -16,6 +16,7 @@ path = "src/main.rs"
 # However, building with full -O3 optimizations takes too long for a debug build.
 # Use an -O1 optimization level strikes a good compromise between build and program performance.
 opt-level = 1
+debug-assertions = true
 
 [dependencies]
 cfg-if = "1.0.0"

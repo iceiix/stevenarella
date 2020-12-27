@@ -901,6 +901,61 @@ impl Framebuffer {
             );
         }
     }
+
+    pub fn renderbuffer(&self, attachment: Attachment, rb: &Renderbuffer) {
+        unsafe {
+            glow_context().framebuffer_renderbuffer(
+                gl::FRAMEBUFFER,
+                attachment,
+                gl::RENDERBUFFER,
+                Some(rb.0),
+            );
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct Renderbuffer(glow::Renderbuffer);
+
+impl Renderbuffer {
+    pub fn new() -> Renderbuffer {
+        Renderbuffer(unsafe { glow_context().create_renderbuffer().unwrap() })
+    }
+
+    pub fn bind(&self) {
+        unsafe {
+            glow_context().bind_renderbuffer(gl::RENDERBUFFER, Some(self.0));
+        }
+    }
+
+    pub fn storage(&self, width: u32, height: u32, format: TextureFormat) {
+        unsafe {
+            glow_context().renderbuffer_storage(
+                gl::RENDERBUFFER,
+                format,
+                width as i32,
+                height as i32,
+            );
+        }
+    }
+
+    pub fn storage_multisample(
+        &self,
+        samples: i32,
+        width: u32,
+        height: u32,
+        format: TextureFormat,
+    ) {
+        unsafe {
+            glow_context().renderbuffer_storage_multisample(
+                gl::RENDERBUFFER,
+                samples,
+                format,
+                width as i32,
+                height as i32,
+            );
+        }
+    }
 }
 
 impl Drop for Framebuffer {

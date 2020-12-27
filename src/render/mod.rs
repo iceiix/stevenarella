@@ -761,7 +761,7 @@ impl Renderer {
 struct TransInfo {
     main: gl::Framebuffer,
     fb_color: gl::Texture,
-    _fb_depth: gl::Texture,
+    _fb_depth: gl::Renderbuffer,
     trans: gl::Framebuffer,
     accum: gl::Texture,
     revealage: gl::Texture,
@@ -870,22 +870,15 @@ impl TransInfo {
         fb_color.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
 
         main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &fb_color, 0);
-        let fb_depth = gl::Texture::new();
-        fb_depth.bind(gl::TEXTURE_2D);
-        fb_depth.image_2d_ex(
-            gl::TEXTURE_2D,
-            0,
-            width,
-            height,
-            gl::DEPTH_COMPONENT24,
-            gl::DEPTH_COMPONENT,
-            gl::UNSIGNED_BYTE,
-            None,
-        );
-        fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
-        fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
 
-        main.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &fb_depth, 0);
+        let fb_depth = gl::Renderbuffer::new();
+        fb_depth.bind();
+        fb_depth.storage(width, height, gl::DEPTH_COMPONENT24);
+        //fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+        //fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
+
+        //main.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &fb_depth, 0);
+        main.renderbuffer(gl::DEPTH_ATTACHMENT, &fb_depth);
         gl::check_framebuffer_status();
 
         gl::unbind_framebuffer();
