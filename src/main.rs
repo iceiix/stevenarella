@@ -336,7 +336,7 @@ fn main2() {
     let renderer = render::Renderer::new(resource_manager.clone(), shader_version);
     let mut ui_container = ui::Container::new();
 
-    let mut last_frame = Instant::now();
+    //let mut last_frame = Instant::now();
 
     let mut screen_sys = screen::ScreenSystem::new();
     if opt.server.is_none() {
@@ -446,7 +446,7 @@ fn main2() {
                 &winit_window,
                 &mut game,
                 &mut ui_container,
-                &mut last_frame,
+                //&mut last_frame,
                 &mut resui,
                 &mut last_resource_version,
                 &mut vsync,
@@ -467,16 +467,19 @@ fn tick_all(
     window: &winit::window::Window,
     game: &mut Game,
     mut ui_container: &mut ui::Container,
-    last_frame: &mut Instant,
+    //last_frame: &mut Instant,
     mut resui: &mut resources::ManagerUI,
     last_resource_version: &mut usize,
     vsync: &mut bool,
 ) {
+    /*
     let now = Instant::now();
     let diff = now.duration_since(*last_frame);
     *last_frame = now;
     let frame_time = 1e9f64 / 60.0;
     let delta = (diff.subsec_nanos() as f64) / frame_time;
+    */
+    let delta = 1.0f64; // TODO
     let physical_size = window.inner_size();
     let (physical_width, physical_height) = physical_size.into();
     let (width, height) = physical_size.to_logical::<f64>(game.dpi_factor).into();
@@ -532,6 +535,7 @@ fn tick_all(
         physical_height,
     );
 
+    /* TODO
     if fps_cap > 0 && !*vsync {
         let frame_time = now.elapsed();
         let sleep_interval = Duration::from_millis(1000 / fps_cap as u64);
@@ -539,6 +543,7 @@ fn tick_all(
             thread::sleep(sleep_interval - frame_time);
         }
     }
+    */
 }
 
 fn handle_window_event<T>(
