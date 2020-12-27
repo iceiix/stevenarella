@@ -406,7 +406,7 @@ fn main2() {
             &winit_window,
             &mut game,
             &mut ui_container,
-            //&mut last_frame,
+            &mut last_frame,
             &mut resui,
             &mut last_resource_version,
             &mut vsync,
@@ -415,7 +415,7 @@ fn main2() {
     });
 
     // TODO: also run the event loop, fix borrows
-    /*
+    #[cfg(not(target_arch = "wasm32"))]
     events_loop.run(move |event, _event_loop, control_flow| {
         #[cfg(target_arch = "wasm32")]
         {
@@ -447,7 +447,7 @@ fn main2() {
                 &winit_window,
                 &mut game,
                 &mut ui_container,
-                //&mut last_frame,
+                &mut last_frame,
                 &mut resui,
                 &mut last_resource_version,
                 &mut vsync,
@@ -462,7 +462,6 @@ fn main2() {
             *control_flow = winit::event_loop::ControlFlow::Exit;
         }
     });
-    */
 }
 
 fn tick_all(
