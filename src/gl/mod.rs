@@ -14,7 +14,7 @@
 
 use glow as gl;
 use glow::{HasContext, PixelPackData, PixelUnpackData};
-use log::{error, info};
+use log::error;
 use std::mem;
 use std::ops::BitOr;
 use std::ops::{Deref, DerefMut};
@@ -365,38 +365,6 @@ impl Texture {
                 format,
                 ty,
                 pix,
-            );
-        }
-    }
-
-    pub fn image_2d_sample(
-        &self,
-        target: TextureTarget,
-        samples: i32,
-        width: u32,
-        height: u32,
-        format: TextureFormat,
-        fixed: bool,
-    ) {
-        unsafe {
-            let result: i32 = glow_context().get_parameter_i32(gl::MAX_SAMPLES);
-            let use_samples = if samples > result {
-                info!(
-                    "glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}",
-                    samples, result
-                );
-                result
-            } else {
-                samples
-            };
-            // TODO: switch to glRenderbufferStorageMultisample https://github.com/iceiix/stevenarella/pull/442
-            glow_context().tex_image_2d_multisample(
-                target,
-                use_samples,
-                format,
-                width as i32,
-                height as i32,
-                fixed,
             );
         }
     }
