@@ -39,9 +39,6 @@ use std::thread;
 
 const ATLAS_SIZE: usize = 1024;
 
-// TEMP
-const NUM_SAMPLES: i32 = 2;
-
 pub struct Camera {
     pub pos: cgmath::Point3<f64>,
     pub yaw: f64,
@@ -775,7 +772,6 @@ init_shader! {
             required accum => "taccum",
             required revealage => "trevealage",
             required color => "tcolor",
-            required samples => "samples",
         },
     }
 }
@@ -848,38 +844,35 @@ impl TransInfo {
         main.bind();
 
         let fb_color = gl::Texture::new();
-        fb_color.bind(gl::TEXTURE_2D_MULTISAMPLE);
-        fb_color.image_2d_sample(
-            gl::TEXTURE_2D_MULTISAMPLE,
-            NUM_SAMPLES,
+        fb_color.bind(gl::TEXTURE_2D);
+        fb_color.image_2d(
+            gl::TEXTURE_2D,
+            0,
             width,
             height,
-            gl::RGBA8,
-            false,
+            gl::RGBA,
+            gl::UNSIGNED_BYTE,
+            None,
         );
-        main.texture_2d(
-            gl::COLOR_ATTACHMENT_0,
-            gl::TEXTURE_2D_MULTISAMPLE,
-            &fb_color,
-            0,
-        );
+        fb_color.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+        fb_color.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
 
+        main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &fb_color, 0);
         let fb_depth = gl::Texture::new();
-        fb_depth.bind(gl::TEXTURE_2D_MULTISAMPLE);
-        fb_depth.image_2d_sample(
-            gl::TEXTURE_2D_MULTISAMPLE,
-            NUM_SAMPLES,
+        fb_depth.bind(gl::TEXTURE_2D);
+        fb_depth.image_2d(
+            gl::TEXTURE_2D,
+            0,
             width,
             height,
-            gl::DEPTH_COMPONENT24,
-            false,
+            gl::DEPTH_COMPONENT,
+            gl::FLOAT,
+            None,
         );
-        main.texture_2d(
-            gl::DEPTH_ATTACHMENT,
-            gl::TEXTURE_2D_MULTISAMPLE,
-            &fb_depth,
-            0,
-        );
+        fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+        fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
+
+        main.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &fb_depth, 0);
         gl::check_framebuffer_status();
 
         gl::unbind_framebuffer();
@@ -929,7 +922,6 @@ impl TransInfo {
         shader.accum.set_int(0);
         shader.revealage.set_int(1);
         shader.color.set_int(2);
-        shader.samples.set_int(NUM_SAMPLES);
         self.array.bind();
         gl::draw_arrays(gl::TRIANGLES, 0, 6);
     }
