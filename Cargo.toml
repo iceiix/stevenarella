@@ -36,7 +36,7 @@ log = { version = "0.4.11", features = ["std"] }
 cgmath = "0.17.0"
 lazy_static = "1.4.0"
 collision = "0.20.1"
-rsa_public_encrypt_pkcs1 = "0.2.0"
+rsa_public_encrypt_pkcs1 = "0.3.0"
 structopt = "0.3.21"
 clipboard = "0.5.0"
 instant = "0.1.9"
