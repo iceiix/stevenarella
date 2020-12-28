@@ -1770,19 +1770,26 @@ impl Server {
                 let x = block_entity.1.get("x").unwrap().as_int().unwrap();
                 let y = block_entity.1.get("y").unwrap().as_int().unwrap();
                 let z = block_entity.1.get("z").unwrap().as_int().unwrap();
-                let tile_id = block_entity.1.get("id").unwrap().as_str().unwrap();
-                let action;
-                match tile_id {
-                    // Fake a sign update
-                    "Sign" => action = 9,
-                    // Not something we care about, so break the loop
-                    _ => continue,
+                if let Some(tile_id) = block_entity.1.get("id") {
+                    let tile_id = tile_id.as_str().unwrap();
+                    let action;
+                    match tile_id {
+                        // Fake a sign update
+                        "Sign" => action = 9,
+                        // Not something we care about, so break the loop
+                        _ => continue,
+                    }
+                    self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
+                        location: Position::new(x, y, z),
+                        action,
+                        nbt: Some(block_entity.clone()),
+                    });
+                } else {
+                    warn!(
+                        "Block entity at ({},{},{}) missing id tag: {:?}",
+                        x, y, z, block_entity
+                    );
                 }
-                self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
-                    location: Position::new(x, y, z),
-                    action,
-                    nbt: Some(block_entity.clone()),
-                });
             }
         }
     }
