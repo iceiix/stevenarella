@@ -10,7 +10,12 @@ use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
 
+#[cfg(not(target_arch = "wasm32"))]
 const NUM_WORKERS: usize = 8;
+
+// TODO: threads or web workers on wasm
+#[cfg(target_arch = "wasm32")]
+const NUM_WORKERS: usize = 0;
 
 pub struct ChunkBuilder {
     threads: Vec<(mpsc::Sender<BuildReq>, thread::JoinHandle<()>)>,
