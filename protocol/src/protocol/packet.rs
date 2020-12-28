@@ -1392,12 +1392,24 @@ state_packets!(
                 field item_damage: VarInt =,
                 field scale: i8 =,
                 field tracking_position: bool =,
+                field locked: bool =,
                 field icons: LenPrefixed<VarInt, packet::MapIcon> =,
                 field columns: u8 =,
                 field rows: Option<u8> = when(|p: &Maps| p.columns > 0),
                 field x: Option<u8> = when(|p: &Maps| p.columns > 0),
                 field z: Option<u8> = when(|p: &Maps| p.columns > 0),
                 field data: Option<LenPrefixedBytes<VarInt>> = when(|p: &Maps| p.columns > 0),
+            }
+            packet Maps_NoLocked {
+                field item_damage: VarInt =,
+                field scale: i8 =,
+                field tracking_position: bool =,
+                field icons: LenPrefixed<VarInt, packet::MapIcon> =,
+                field columns: u8 =,
+                field rows: Option<u8> = when(|p: &Maps_NoLocked| p.columns > 0),
+                field x: Option<u8> = when(|p: &Maps_NoLocked| p.columns > 0),
+                field z: Option<u8> = when(|p: &Maps_NoLocked| p.columns > 0),
+                field data: Option<LenPrefixedBytes<VarInt>> = when(|p: &Maps_NoLocked| p.columns > 0),
             }
             packet Maps_NoTracking {
                 field item_damage: VarInt =,
