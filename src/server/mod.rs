@@ -519,6 +519,7 @@ impl Server {
                             Respawn_Gamemode => on_respawn_gamemode,
                             Respawn_HashedSeed => on_respawn_hashedseed,
                             Respawn_WorldName => on_respawn_worldname,
+                            Respawn_NBT => on_respawn_nbt,
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
@@ -1054,6 +1055,10 @@ impl Server {
     }
 
     fn on_respawn_worldname(&mut self, respawn: packet::play::clientbound::Respawn_WorldName) {
+        self.respawn(respawn.gamemode)
+    }
+
+    fn on_respawn_nbt(&mut self, respawn: packet::play::clientbound::Respawn_NBT) {
         self.respawn(respawn.gamemode)
     }
 

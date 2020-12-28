@@ -1634,6 +1634,16 @@ state_packets!(
                 field gamemode: u8 =,
                 field level_type: String =,
             }
+            packet Respawn_NBT {
+                field dimension: Option<nbt::NamedTag> =,
+                field world_name: String =,
+                field hashed_seed: i64 =,
+                field gamemode: u8 =,
+                field previous_gamemode: u8 =,
+                field is_debug: bool =,
+                field is_flat: bool =,
+                field copy_metadata: bool =,
+            }
             packet Respawn_WorldName {
                 field dimension: String =,
                 field world_name: String =,
