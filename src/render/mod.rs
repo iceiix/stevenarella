@@ -845,8 +845,11 @@ impl TransInfo {
         trans.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &trans_depth, 0);
 
         chunk_shader.program.use_program();
-        gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
-        gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
+        #[cfg(not(target_arch = "wasm32"))] // bound with layout(location=)
+        {
+            gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
+            gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
+        }
         gl::check_framebuffer_status();
         gl::draw_buffers(&[gl::COLOR_ATTACHMENT_0, gl::COLOR_ATTACHMENT_1]);
 
