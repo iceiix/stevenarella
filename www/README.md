@@ -12,7 +12,8 @@ To build for wasm32-unknown-unknown, run in the top-level directory (not www):
 ```sh
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli
-wasm-pack build
+cargo install wasm-pack
+wasm-pack build --dev
 ```
 
 or:
@@ -27,7 +28,7 @@ After building the Rust app, run the NodeJS web server as follows:
 
 ```sh
 cd pkg
-npm link
+sudo npm link
 cd ..
 cd www
 npm link stevenarella
