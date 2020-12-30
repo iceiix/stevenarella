@@ -74,7 +74,7 @@ protocol_packet_ids!(
             0x22 => Particle_VarIntArray
             0x23 => NamedSoundEffect_u8_NoCategory
             0x24 => JoinGame_i8
-            0x25 => Maps
+            0x25 => Maps_NoLocked
             0x26 => EntityMove_i8
             0x27 => EntityLookAndMove_i8
             0x28 => EntityLook_VarInt

@@ -115,7 +115,7 @@ protocol_packet_ids!(
             0x36 => EntityDestroy
             0x37 => EntityRemoveEffect
             0x38 => ResourcePackSend
-            0x39 => Respawn_WorldName
+            0x39 => Respawn_NBT
             0x3a => EntityHeadLook
             0x3b => MultiBlockChange_Packed
             0x3c => SelectAdvancementTab

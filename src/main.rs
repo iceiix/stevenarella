@@ -278,8 +278,8 @@ fn main2() {
         let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
         let webgl2_context = canvas
             .get_context("webgl2")
-            .unwrap()
-            .unwrap()
+            .expect("Failed to get WebGL2 context")
+            .expect("Failed to create WebGL2 context, is WebGL2 support enabled? (https://get.webgl.org/webgl2/)")
             .dyn_into::<web_sys::WebGl2RenderingContext>()
             .unwrap();
         (
