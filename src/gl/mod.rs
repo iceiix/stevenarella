@@ -836,7 +836,7 @@ pub fn check_framebuffer_status() {
         };
 
         if status != gl::FRAMEBUFFER_COMPLETE {
-            error!(
+            panic!(
                 "glBindFramebuffer failed, glCheckFrameBufferStatus(GL_FRAMEBUFFER) = {} {}",
                 status, s
             );

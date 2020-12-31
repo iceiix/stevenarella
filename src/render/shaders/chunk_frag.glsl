@@ -7,7 +7,11 @@ in float vAtlas;
 in vec3 vLighting;
 
 #ifndef alpha
+#ifdef ES
+layout(location = 2) out vec4 fragColor;
+#else
 out vec4 fragColor;
+#endif
 #else
 
 #ifdef ES
