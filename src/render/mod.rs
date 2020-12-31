@@ -316,6 +316,7 @@ impl Renderer {
         gl::active_texture(0);
         self.gl_texture.bind(gl::TEXTURE_2D_ARRAY);
 
+        #[cfg(not(target_arch = "wasm32"))]
         gl::enable(gl::MULTISAMPLE);
 
         let time_offset = self.sky_offset * 0.9;
@@ -453,6 +454,8 @@ impl Renderer {
         gl::enable(gl::DEPTH_TEST);
         gl::depth_mask(true);
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+
+        #[cfg(not(target_arch = "wasm32"))]
         gl::disable(gl::MULTISAMPLE);
 
         self.ui.tick(width, height);
