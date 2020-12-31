@@ -278,8 +278,8 @@ fn main2() {
         let canvas = canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
         let webgl2_context = canvas
             .get_context("webgl2")
-            .unwrap()
-            .unwrap()
+            .expect("Failed to get WebGL2 context")
+            .expect("Failed to create WebGL2 context, is WebGL2 support enabled? (https://get.webgl.org/webgl2/)")
             .dyn_into::<web_sys::WebGl2RenderingContext>()
             .unwrap();
         (
@@ -399,7 +399,6 @@ fn main2() {
 
     let mut last_resource_version = 0;
 
-    /* TODO: fix move of winit_window
     #[cfg(target_arch = "wasm32")]
     render_loop.run(move |running: &mut bool| {
         tick_all(
@@ -413,8 +412,9 @@ fn main2() {
         );
         println!("render_loop");
     });
-    */
 
+    // TODO: enable events_loop for wasm, too, fix borrow with render_loop
+    #[cfg(not(target_arch = "wasm32"))]
     events_loop.run(move |event, _event_loop, control_flow| {
         #[cfg(target_arch = "wasm32")]
         {

@@ -19,7 +19,7 @@ cfg_if! {
 
                 pub fn open<P: AsRef<Path>>(path: P) -> Result<File> {
                     println!("File open {}", path.as_ref().to_str().unwrap());
-                    Ok(File{})
+                    Err(std::io::Error::new(std::io::ErrorKind::Other, "No files exist on web"))
                 }
             }
 

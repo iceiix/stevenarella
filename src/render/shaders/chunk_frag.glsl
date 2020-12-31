@@ -7,12 +7,16 @@ in float vAtlas;
 in vec3 vLighting;
 
 #ifndef alpha
+#ifdef ES
+layout(location = 2) out vec4 fragColor;
+#else
 out vec4 fragColor;
+#endif
 #else
 
 #ifdef ES
-layout(location = 1) out vec4 accum;
-layout(location = 2) out float revealage;
+layout(location = 0) out vec4 accum;
+layout(location = 1) out float revealage;
 #else
 out vec4 accum;
 out float revealage;

@@ -316,6 +316,7 @@ impl Renderer {
         gl::active_texture(0);
         self.gl_texture.bind(gl::TEXTURE_2D_ARRAY);
 
+        #[cfg(not(target_arch = "wasm32"))]
         gl::enable(gl::MULTISAMPLE);
 
         let time_offset = self.sky_offset * 0.9;
@@ -453,6 +454,8 @@ impl Renderer {
         gl::enable(gl::DEPTH_TEST);
         gl::depth_mask(true);
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+
+        #[cfg(not(target_arch = "wasm32"))]
         gl::disable(gl::MULTISAMPLE);
 
         self.ui.tick(width, height);
@@ -809,7 +812,7 @@ impl TransInfo {
             None,
         );
         accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
-        accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
+        accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
         trans.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &accum, 0);
 
         let revealage = gl::Texture::new();
@@ -825,7 +828,7 @@ impl TransInfo {
             None,
         );
         revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
-        revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
+        revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
         trans.texture_2d(gl::COLOR_ATTACHMENT_1, gl::TEXTURE_2D, &revealage, 0);
 
         let trans_depth = gl::Texture::new();
@@ -837,16 +840,19 @@ impl TransInfo {
             height,
             gl::DEPTH_COMPONENT24,
             gl::DEPTH_COMPONENT,
-            gl::UNSIGNED_BYTE,
+            gl::UNSIGNED_INT,
             None,
         );
         trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
-        trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
+        trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
         trans.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &trans_depth, 0);
 
         chunk_shader.program.use_program();
-        gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
-        gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
+        #[cfg(not(target_arch = "wasm32"))] // bound with layout(location=)
+        {
+            gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
+            gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
+        }
         gl::check_framebuffer_status();
         gl::draw_buffers(&[gl::COLOR_ATTACHMENT_0, gl::COLOR_ATTACHMENT_1]);
 
@@ -879,7 +885,7 @@ impl TransInfo {
             height,
             gl::DEPTH_COMPONENT24,
             gl::DEPTH_COMPONENT,
-            gl::UNSIGNED_BYTE,
+            gl::UNSIGNED_INT,
             None,
         );
         fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
