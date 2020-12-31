@@ -26,7 +26,7 @@ use crate::world;
 use byteorder::{NativeEndian, WriteBytesExt};
 use cgmath::prelude::*;
 use image::{GenericImage, GenericImageView};
-use log::{error, trace};
+use log::{error, info, trace};
 use std::collections::HashMap;
 use std::io::Write;
 use std::sync::{Arc, RwLock};
@@ -348,6 +348,7 @@ impl Renderer {
                         .offset
                         .set_int3(pos.0, pos.1 * 4096, pos.2);
                     solid.array.bind();
+                    info!("about to draw_elements chunk shader 1");
                     gl::draw_elements(
                         gl::TRIANGLES,
                         solid.count as i32,
@@ -434,6 +435,7 @@ impl Renderer {
                         .offset
                         .set_int3(pos.0, pos.1 * 4096, pos.2);
                     trans.array.bind();
+                    info!("about to draw_elements trans shader 1");
                     gl::draw_elements(
                         gl::TRIANGLES,
                         trans.count as i32,

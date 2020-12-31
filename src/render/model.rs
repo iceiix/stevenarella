@@ -8,6 +8,7 @@ use crate::types::hash::FNVHash;
 use byteorder::{NativeEndian, WriteBytesExt};
 use cgmath::{Matrix4, Point3, SquareMatrix};
 use collision::{self, Frustum, Sphere};
+use log::info;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::sync::{Arc, RwLock};
@@ -285,6 +286,7 @@ impl Manager {
                 if let Some(v) = &collection.shader.color_mul {
                     v.set_float_multi(&model.colors)
                 }
+                info!("about to draw elements model");
                 gl::draw_elements(gl::TRIANGLES, model.count, self.index_type, 0);
             }
         }

@@ -19,6 +19,7 @@ use crate::render::shaders;
 use crate::resources;
 use byteorder::{NativeEndian, WriteBytesExt};
 use image::GenericImageView;
+use log::info;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
@@ -179,6 +180,7 @@ impl UIState {
             } else {
                 self.buffer.re_set_data(gl::ARRAY_BUFFER, &self.data);
             }
+            info!("about to draw_elements in src/render/ui.rs");
             gl::draw_elements(gl::TRIANGLES, self.count as i32, self.index_type, 0);
         }
 
