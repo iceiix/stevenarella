@@ -2,7 +2,7 @@ in vec3 aPosition;
 in vec4 aTextureInfo;
 in ivec3 aTextureOffset;
 in vec4 aColor;
-in uint id;
+in int id;
 
 uniform mat4 perspectiveMatrix;
 uniform mat4 cameraMatrix;
