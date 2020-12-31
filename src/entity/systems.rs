@@ -151,7 +151,7 @@ impl ecs::System for LerpPosition {
             pos.position = pos.position
                 + (target_pos.position - pos.position) * delta * target_pos.lerp_amount;
             let len = (pos.position - target_pos.position).magnitude2();
-            if len < 0.001 || len > 100.0 * 100.0 {
+            if !(0.001..=100.0 * 100.0).contains(&len) {
                 pos.position = target_pos.position;
             }
         }
