@@ -837,7 +837,7 @@ impl TransInfo {
             height,
             gl::DEPTH_COMPONENT24,
             gl::DEPTH_COMPONENT,
-            gl::UNSIGNED_BYTE,
+            gl::UNSIGNED_INT,
             None,
         );
         trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
@@ -850,9 +850,7 @@ impl TransInfo {
             gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
             gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
         }
-        trace!("checking fb");
         gl::check_framebuffer_status();
-        trace!("fb is ok!");
         gl::draw_buffers(&[gl::COLOR_ATTACHMENT_0, gl::COLOR_ATTACHMENT_1]);
 
         let main = gl::Framebuffer::new();
@@ -884,7 +882,7 @@ impl TransInfo {
             height,
             gl::DEPTH_COMPONENT24,
             gl::DEPTH_COMPONENT,
-            gl::UNSIGNED_BYTE,
+            gl::UNSIGNED_INT,
             None,
         );
         fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
