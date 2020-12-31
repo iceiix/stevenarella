@@ -283,9 +283,7 @@ impl Manager {
                     v.set_matrix4_multi(&model.matrix)
                 }
                 if let Some(v) = &collection.shader.color_mul {
-                    unsafe {
-                        v.set_float_multi_raw(model.colors.as_ptr() as *const _, model.colors.len())
-                    }
+                    v.set_float_multi(&model.colors)
                 }
                 gl::draw_elements(gl::TRIANGLES, model.count, self.index_type, 0);
             }

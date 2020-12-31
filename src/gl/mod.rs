@@ -587,9 +587,10 @@ impl Uniform {
         }
     }
 
-    #[allow(clippy::missing_safety_doc)]
-    pub unsafe fn set_float_multi_raw(&self, data: *const f32, len: usize) {
-        glow_context().uniform_4_f32_slice(Some(&self.0), std::slice::from_raw_parts(data, len));
+    pub fn set_float_multi(&self, v: &Vec<[f32; 4]>) {
+        unsafe {
+            glow_context().uniform_4_f32_slice(Some(&self.0), &*(v as *const Vec<[f32; 4]> as *const [f32; 4]))
+        }
     }
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
