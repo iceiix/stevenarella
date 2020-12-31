@@ -286,8 +286,10 @@ impl Manager {
                 if let Some(v) = &collection.shader.color_mul {
                     v.set_float_multi(&model.colors)
                 }
+                /*
                 info!("about to draw elements model");
                 gl::draw_elements(gl::TRIANGLES, model.count, self.index_type, 0);
+                */
             }
         }
         gl::disable(gl::BLEND);
