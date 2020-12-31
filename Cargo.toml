@@ -21,7 +21,8 @@ opt-level = 1
 cfg-if = "1.0.0"
 wasm-bindgen = "0.2.69"
 winit = { version = "0.24.0", features = [ "web-sys" ]}
-glow = "0.7.1"
+#glow = "0.7.1"
+glow = { git = "https://github.com/iceiix/glow", branch = "i4ui" }
 byteorder = "1.3.4"
 serde = "1.0.118"
 serde_json = "1.0.60"
