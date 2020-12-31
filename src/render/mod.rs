@@ -26,7 +26,7 @@ use crate::world;
 use byteorder::{NativeEndian, WriteBytesExt};
 use cgmath::prelude::*;
 use image::{GenericImage, GenericImageView};
-use log::{error, info, trace};
+use log::{error, trace};
 use std::collections::HashMap;
 use std::io::Write;
 use std::sync::{Arc, RwLock};

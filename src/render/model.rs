@@ -8,7 +8,6 @@ use crate::types::hash::FNVHash;
 use byteorder::{NativeEndian, WriteBytesExt};
 use cgmath::{Matrix4, Point3, SquareMatrix};
 use collision::{self, Frustum, Sphere};
-use log::info;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::sync::{Arc, RwLock};
@@ -88,34 +87,19 @@ impl Manager {
             let collection = &mut self.collections[ckey.0];
             collection.shader.program.use_program();
             if let Some(v) = collection.shader.position {
-                info!("enabling position {:?}", collection.shader.position);
                 v.enable()
-            } else {
-                info!("not enabling position");
             }
             if let Some(v) = collection.shader.texture_info {
-                info!("enabling texture_info {:?}", collection.shader.texture_info);
                 v.enable()
-            } else {
-                info!("not enabling texture_info");
             }
             if let Some(v) = collection.shader.texture_offset {
-                info!("enabling texture_offset {:?}", collection.shader.texture_offset);
                 v.enable()
-            } else {
-                info!("not enabling texture_offset");
             }
             if let Some(v) = collection.shader.color {
-                info!("enabling color");
                 v.enable()
-            } else {
-                info!("not enabling color {:?}", collection.shader.color);
             }
             if let Some(v) = collection.shader.id {
-                info!("enabling id {:?}", collection.shader.id);
                 v.enable()
-            } else {
-                info!("not enabling id");
             }
             if let Some(v) = collection.shader.position {
                 v.vertex_pointer(3, gl::FLOAT, false, 36, 0)
@@ -301,7 +285,6 @@ impl Manager {
                 if let Some(v) = &collection.shader.color_mul {
                     v.set_float_multi(&model.colors)
                 }
-                info!("about to draw elements model");
                 gl::draw_elements(gl::TRIANGLES, model.count, self.index_type, 0);
             }
         }

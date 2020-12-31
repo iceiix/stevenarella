@@ -616,7 +616,7 @@ impl Uniform {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct Attribute(i32);
 
 impl Attribute {

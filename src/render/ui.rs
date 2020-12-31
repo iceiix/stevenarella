@@ -19,7 +19,6 @@ use crate::render::shaders;
 use crate::resources;
 use byteorder::{NativeEndian, WriteBytesExt};
 use image::GenericImageView;
-use log::info;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
