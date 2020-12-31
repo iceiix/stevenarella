@@ -616,7 +616,7 @@ impl Uniform {
 }
 
 #[derive(Clone, Copy)]
-pub struct Attribute(pub i32);
+pub struct Attribute(i32);
 
 impl Attribute {
     pub fn enable(&self) {
@@ -628,12 +628,6 @@ impl Attribute {
     pub fn disable(&self) {
         unsafe {
             glow_context().disable_vertex_attrib_array(self.0 as u32);
-        }
-    }
-
-    pub fn vertex_attrib_i_4_ui(&self, x: u32, y: u32, z: u32, w: u32) {
-        unsafe {
-            glow_context().vertex_attrib_i_4_ui(self.0 as u32, x, y, z, w);
         }
     }
 

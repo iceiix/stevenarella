@@ -117,7 +117,6 @@ impl Manager {
             if let Some(v) = collection.shader.id {
                 v.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32)
             }
-            gl::Attribute(0).vertex_attrib_i_4_ui(0, 0, 0, 0);
 
             let mut model = Model {
                 // For culling only
