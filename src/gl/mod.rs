@@ -213,6 +213,7 @@ pub type Type = u32;
 pub const UNSIGNED_BYTE: Type = gl::UNSIGNED_BYTE;
 pub const UNSIGNED_SHORT: Type = gl::UNSIGNED_SHORT;
 pub const UNSIGNED_INT: Type = gl::UNSIGNED_INT;
+pub const BYTE: Type = gl::BYTE;
 pub const SHORT: Type = gl::SHORT;
 pub const FLOAT: Type = gl::FLOAT;
 

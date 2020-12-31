@@ -130,7 +130,7 @@ impl Manager {
                 v.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 36, 28)
             }
             if let Some(v) = collection.shader.id {
-                v.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32)
+                v.vertex_pointer_int(1, gl::BYTE, 36, 32)
             }
 
             let mut model = Model {
