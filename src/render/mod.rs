@@ -348,7 +348,6 @@ impl Renderer {
                         .offset
                         .set_int3(pos.0, pos.1 * 4096, pos.2);
                     solid.array.bind();
-                    info!("about to draw_elements chunk shader 1");
                     gl::draw_elements(
                         gl::TRIANGLES,
                         solid.count as i32,
@@ -435,7 +434,6 @@ impl Renderer {
                         .offset
                         .set_int3(pos.0, pos.1 * 4096, pos.2);
                     trans.array.bind();
-                    info!("about to draw_elements trans shader 1");
                     gl::draw_elements(
                         gl::TRIANGLES,
                         trans.count as i32,
