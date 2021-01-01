@@ -443,10 +443,9 @@ fn main2() {
         }
 
         #[cfg(not(target_arch = "wasm32"))]
-        let winit_window = {
+        {
             *control_flow = winit::event_loop::ControlFlow::Poll;
-            glutin_window.window()
-        };
+        }
 
         #[cfg(not(target_arch = "wasm32"))]
         if let winit::event::Event::WindowEvent {
