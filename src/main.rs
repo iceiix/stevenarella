@@ -335,7 +335,7 @@ fn main2() {
     info!("Shader version: {}", shader_version);
 
     let renderer = render::Renderer::new(resource_manager.clone(), shader_version);
-    let mut ui_container = ui::Container::new();
+    let ui_container = ui::Container::new();
 
     let mut last_frame = Instant::now();
 
