@@ -406,14 +406,14 @@ fn main2() {
 
     #[cfg(target_arch = "wasm32")]
     {
-        let window_for_render = Rc::clone(&winit_window);
-        let game_for_render = Rc::clone(&game);
-        let ui_container_for_render = Rc::clone(&ui_container);
+        let winit_window = Rc::clone(&winit_window);
+        let game = Rc::clone(&game);
+        let ui_container = Rc::clone(&ui_container);
 
         render_loop.run(move |running: &mut bool| {
-            let winit_window = window_for_render.borrow_mut();
-            let mut game = game_for_render.borrow_mut();
-            let mut ui_container = ui_container_for_render.borrow_mut();
+            let winit_window = winit_window.borrow_mut();
+            let mut game = game.borrow_mut();
+            let mut ui_container = ui_container.borrow_mut();
 
             tick_all(
                 &winit_window,
@@ -429,13 +429,13 @@ fn main2() {
     }
 
     // TODO: enable events_loop for wasm, too, fix borrow with render_loop
-    let window_for_events = Rc::clone(&winit_window);
-    let game_for_events = Rc::clone(&game);
-    let ui_container_for_events = Rc::clone(&ui_container);
+    let winit_window = Rc::clone(&winit_window);
+    let game = Rc::clone(&game);
+    let ui_container = Rc::clone(&ui_container);
     events_loop.run(move |event, _event_loop, control_flow| {
-        let winit_window = window_for_events.borrow_mut();
-        let mut game = game_for_events.borrow_mut();
-        let mut ui_container = ui_container_for_events.borrow_mut();
+        let winit_window = winit_window.borrow_mut();
+        let mut game = game.borrow_mut();
+        let mut ui_container = ui_container.borrow_mut();
 
         #[cfg(target_arch = "wasm32")]
         {
