@@ -47,6 +47,7 @@ pub mod world;
 
 use crate::protocol::mojang;
 use cfg_if::cfg_if;
+use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::mpsc;
@@ -399,22 +400,32 @@ fn main2() {
 
     let mut last_resource_version = 0;
 
+    let winit_window = Rc::new(RefCell::new(winit_window));
+
     #[cfg(target_arch = "wasm32")]
-    render_loop.run(move |running: &mut bool| {
-        tick_all(
-            &winit_window,
-            &mut game,
-            &mut ui_container,
-            &mut last_frame,
-            &mut resui,
-            &mut last_resource_version,
-            &mut vsync,
-        );
-        println!("render_loop");
-    });
+    {
+        let window_for_render = Rc::clone(&winit_window);
+        render_loop.run(move |running: &mut bool| {
+            let winit_window = window_for_render.borrow_mut();
+
+            tick_all(
+                &winit_window,
+                &mut game,
+                &mut ui_container,
+                &mut last_frame,
+                &mut resui,
+                &mut last_resource_version,
+                &mut vsync,
+            );
+            println!("render_loop");
+        });
+    }
 
     // TODO: enable events_loop for wasm, too, fix borrow with render_loop
+    let window_for_events = Rc::clone(&winit_window);
     events_loop.run(move |event, _event_loop, control_flow| {
+        let winit_window = window_for_events.borrow_mut();
+
         #[cfg(target_arch = "wasm32")]
         {
             *control_flow = winit::event_loop::ControlFlow::Wait;
