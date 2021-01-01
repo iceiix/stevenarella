@@ -414,7 +414,6 @@ fn main2() {
     });
 
     // TODO: enable events_loop for wasm, too, fix borrow with render_loop
-    #[cfg(not(target_arch = "wasm32"))]
     events_loop.run(move |event, _event_loop, control_flow| {
         #[cfg(target_arch = "wasm32")]
         {
