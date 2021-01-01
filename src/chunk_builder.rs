@@ -10,11 +10,12 @@ use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
 
+/*
 #[cfg(not(target_arch = "wasm32"))]
 const NUM_WORKERS: usize = 8;
-
+*/
 // TODO: threads or web workers on wasm
-#[cfg(target_arch = "wasm32")]
+//#[cfg(target_arch = "wasm32")]
 const NUM_WORKERS: usize = 0;
 
 pub struct ChunkBuilder {
@@ -38,13 +39,15 @@ impl ChunkBuilder {
         let (built_send, built_recv) = mpsc::channel();
         for i in 0..NUM_WORKERS {
             let built_send = built_send.clone();
-            let (work_send, work_recv) = mpsc::channel();
+            //let (work_send, work_recv) = mpsc::channel();
             let models = models.clone();
             let id = i;
+            /*
             threads.push((
                 work_send,
                 thread::spawn(move || build_func(id, models, work_recv, built_send)),
             ));
+            */
             free.push((i, vec![], vec![]));
         }
         ChunkBuilder {
@@ -69,7 +72,31 @@ impl ChunkBuilder {
             }
         }
 
-        while let Ok((id, mut val)) = self.built_recv.try_recv() {
+        let dirty_sections = world
+            .get_render_list()
+            .iter()
+            .map(|v| v.0)
+            .filter(|v| world.is_section_dirty(*v))
+            .collect::<Vec<_>>();
+        for (x, y, z) in dirty_sections {
+            let t_id = 0; //self.free_builders.pop().unwrap();
+            world.set_building_flag((x, y, z));
+            let (cx, cy, cz) = (x << 4, y << 4, z << 4);
+            let mut snapshot = world.capture_snapshot(cx - 2, cy - 2, cz - 2, 20, 20, 20);
+            snapshot.make_relative(-2, -2, -2);
+
+            let id = 0;
+            let mut val = build_func(
+                id,
+                self.models.clone(),
+                BuildReq {
+                    snapshot,
+                    position: (x, y, z),
+                    solid_buffer: vec![], //t_id.1,
+                    trans_buffer: vec![], //t_id.2,
+                },
+            );
+
             world.reset_building_flag(val.position);
 
             if let Some(sec) = world.get_section_mut(val.position.0, val.position.1, val.position.2)
@@ -89,36 +116,6 @@ impl ChunkBuilder {
 
             val.solid_buffer.clear();
             val.trans_buffer.clear();
-            self.free_builders
-                .push((id, val.solid_buffer, val.trans_buffer));
-        }
-        if self.free_builders.is_empty() {
-            return;
-        }
-        let dirty_sections = world
-            .get_render_list()
-            .iter()
-            .map(|v| v.0)
-            .filter(|v| world.is_section_dirty(*v))
-            .collect::<Vec<_>>();
-        for (x, y, z) in dirty_sections {
-            let t_id = self.free_builders.pop().unwrap();
-            world.set_building_flag((x, y, z));
-            let (cx, cy, cz) = (x << 4, y << 4, z << 4);
-            let mut snapshot = world.capture_snapshot(cx - 2, cy - 2, cz - 2, 20, 20, 20);
-            snapshot.make_relative(-2, -2, -2);
-            self.threads[t_id.0]
-                .0
-                .send(BuildReq {
-                    snapshot,
-                    position: (x, y, z),
-                    solid_buffer: t_id.1,
-                    trans_buffer: t_id.2,
-                })
-                .unwrap();
-            if self.free_builders.is_empty() {
-                return;
-            }
         }
     }
 }
@@ -142,128 +139,131 @@ struct BuildReply {
 fn build_func(
     id: usize,
     models: Arc<RwLock<model::Factory>>,
-    work_recv: mpsc::Receiver<BuildReq>,
-    built_send: mpsc::Sender<(usize, BuildReply)>,
-) {
-    loop {
-        let BuildReq {
-            snapshot,
-            position,
-            mut solid_buffer,
-            mut trans_buffer,
-        } = match work_recv.recv() {
-            Ok(val) => val,
-            Err(_) => return,
-        };
+    work: BuildReq,
+    //work_recv: mpsc::Receiver<BuildReq>,
+    //built_send: mpsc::Sender<(usize, BuildReply)>,
+) -> BuildReply {
+    //loop {
+    let BuildReq {
+        snapshot,
+        position,
+        mut solid_buffer,
+        mut trans_buffer,
+    } = work; /*match work_recv.recv() {
+                  Ok(val) => val,
+                  Err(_) => return,
+              };*/
 
-        let mut rng = rand_pcg::Pcg32::from_seed([
-            ((position.0 as u32) & 0xff) as u8,
-            (((position.0 as u32) >> 8) & 0xff) as u8,
-            (((position.0 as u32) >> 16) & 0xff) as u8,
-            ((position.0 as u32) >> 24) as u8,
-            ((position.1 as u32) & 0xff) as u8,
-            (((position.1 as u32) >> 8) & 0xff) as u8,
-            (((position.1 as u32) >> 16) & 0xff) as u8,
-            ((position.1 as u32) >> 24) as u8,
-            ((position.2 as u32) & 0xff) as u8,
-            (((position.2 as u32) >> 8) & 0xff) as u8,
-            (((position.2 as u32) >> 16) & 0xff) as u8,
-            ((position.2 as u32) >> 24) as u8,
-            (((position.0 as u32 ^ position.2 as u32) | 1) & 0xff) as u8,
-            ((((position.0 as u32 ^ position.2 as u32) | 1) >> 8) & 0xff) as u8,
-            ((((position.0 as u32 ^ position.2 as u32) | 1) >> 16) & 0xff) as u8,
-            (((position.0 as u32 ^ position.2 as u32) | 1) >> 24) as u8,
-        ]);
+    let mut rng = rand_pcg::Pcg32::from_seed([
+        ((position.0 as u32) & 0xff) as u8,
+        (((position.0 as u32) >> 8) & 0xff) as u8,
+        (((position.0 as u32) >> 16) & 0xff) as u8,
+        ((position.0 as u32) >> 24) as u8,
+        ((position.1 as u32) & 0xff) as u8,
+        (((position.1 as u32) >> 8) & 0xff) as u8,
+        (((position.1 as u32) >> 16) & 0xff) as u8,
+        ((position.1 as u32) >> 24) as u8,
+        ((position.2 as u32) & 0xff) as u8,
+        (((position.2 as u32) >> 8) & 0xff) as u8,
+        (((position.2 as u32) >> 16) & 0xff) as u8,
+        ((position.2 as u32) >> 24) as u8,
+        (((position.0 as u32 ^ position.2 as u32) | 1) & 0xff) as u8,
+        ((((position.0 as u32 ^ position.2 as u32) | 1) >> 8) & 0xff) as u8,
+        ((((position.0 as u32 ^ position.2 as u32) | 1) >> 16) & 0xff) as u8,
+        (((position.0 as u32 ^ position.2 as u32) | 1) >> 24) as u8,
+    ]);
 
-        let mut solid_count = 0;
-        let mut trans_count = 0;
+    let mut solid_count = 0;
+    let mut trans_count = 0;
 
-        for y in 0..16 {
-            for x in 0..16 {
-                for z in 0..16 {
-                    let block = snapshot.get_block(x, y, z);
-                    let mat = block.get_material();
-                    if !mat.renderable {
-                        // Use one step of the rng so that
-                        // if a block is placed in an empty
-                        // location is variant doesn't change
-                        let _: u32 = rng.gen();
-                        continue;
-                    }
+    for y in 0..16 {
+        for x in 0..16 {
+            for z in 0..16 {
+                let block = snapshot.get_block(x, y, z);
+                let mat = block.get_material();
+                if !mat.renderable {
+                    // Use one step of the rng so that
+                    // if a block is placed in an empty
+                    // location is variant doesn't change
+                    let _: u32 = rng.gen();
+                    continue;
+                }
 
-                    match block {
-                        block::Block::Water { .. } | block::Block::FlowingWater { .. } => {
-                            let tex = models.read().unwrap().textures.clone();
-                            trans_count += model::liquid::render_liquid(
-                                tex,
-                                false,
-                                &snapshot,
-                                x,
-                                y,
-                                z,
-                                &mut trans_buffer,
-                            );
-                            continue;
-                        }
-                        block::Block::Lava { .. } | block::Block::FlowingLava { .. } => {
-                            let tex = models.read().unwrap().textures.clone();
-                            solid_count += model::liquid::render_liquid(
-                                tex,
-                                true,
-                                &snapshot,
-                                x,
-                                y,
-                                z,
-                                &mut solid_buffer,
-                            );
-                            continue;
-                        }
-                        _ => {}
-                    }
-
-                    if mat.transparent {
-                        trans_count += model::Factory::get_state_model(
-                            &models,
-                            block,
-                            &mut rng,
+                match block {
+                    block::Block::Water { .. } | block::Block::FlowingWater { .. } => {
+                        let tex = models.read().unwrap().textures.clone();
+                        trans_count += model::liquid::render_liquid(
+                            tex,
+                            false,
                             &snapshot,
                             x,
                             y,
                             z,
                             &mut trans_buffer,
                         );
-                    } else {
-                        solid_count += model::Factory::get_state_model(
-                            &models,
-                            block,
-                            &mut rng,
+                        continue;
+                    }
+                    block::Block::Lava { .. } | block::Block::FlowingLava { .. } => {
+                        let tex = models.read().unwrap().textures.clone();
+                        solid_count += model::liquid::render_liquid(
+                            tex,
+                            true,
                             &snapshot,
                             x,
                             y,
                             z,
                             &mut solid_buffer,
                         );
+                        continue;
                     }
+                    _ => {}
+                }
+
+                if mat.transparent {
+                    trans_count += model::Factory::get_state_model(
+                        &models,
+                        block,
+                        &mut rng,
+                        &snapshot,
+                        x,
+                        y,
+                        z,
+                        &mut trans_buffer,
+                    );
+                } else {
+                    solid_count += model::Factory::get_state_model(
+                        &models,
+                        block,
+                        &mut rng,
+                        &snapshot,
+                        x,
+                        y,
+                        z,
+                        &mut solid_buffer,
+                    );
                 }
             }
         }
-
-        let cull_info = build_cull_info(&snapshot);
-
-        built_send
-            .send((
-                id,
-                BuildReply {
-                    position,
-                    solid_buffer,
-                    solid_count,
-                    trans_buffer,
-                    trans_count,
-                    cull_info,
-                },
-            ))
-            .unwrap();
     }
+
+    let cull_info = build_cull_info(&snapshot);
+
+    /*
+    built_send
+        .send((
+            id,
+            */
+    return BuildReply {
+        position,
+        solid_buffer,
+        solid_count,
+        trans_buffer,
+        trans_count,
+        cull_info,
+    }; /*,
+       ))
+       .unwrap();*/
+    //}
 }
 
 fn build_cull_info(snapshot: &world::Snapshot) -> CullInfo {
