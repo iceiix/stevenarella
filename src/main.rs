@@ -654,6 +654,7 @@ fn handle_window_event<T>(
                             window.set_cursor_grab(true).unwrap();
                             window.set_cursor_visible(false);
                         } else if !game.focused {
+                            #[cfg(not(target_arch = "wasm32"))] // TODO: after Pointer Lock https://github.com/rust-windowing/winit/issues/1674
                             window.set_cursor_grab(false).unwrap();
                             window.set_cursor_visible(true);
                             ui_container.click_at(
