@@ -411,6 +411,7 @@ fn main2() {
         let ui_container = Rc::clone(&ui_container);
 
         render_loop.run(move |running: &mut bool| {
+            info!("render_loop start");
             let winit_window = winit_window.borrow_mut();
             let mut game = game.borrow_mut();
             let mut ui_container = ui_container.borrow_mut();
@@ -424,7 +425,7 @@ fn main2() {
                 &mut last_resource_version,
                 &mut vsync,
             );
-            println!("render_loop");
+            info!("render_loop end");
         });
     }
 
@@ -433,6 +434,7 @@ fn main2() {
     let game = Rc::clone(&game);
     let ui_container = Rc::clone(&ui_container);
     events_loop.run(move |event, _event_loop, control_flow| {
+        info!("events_loop start");
         let winit_window = winit_window.borrow_mut();
         let mut game = game.borrow_mut();
         let mut ui_container = ui_container.borrow_mut();
@@ -480,6 +482,7 @@ fn main2() {
         if game.should_close {
             *control_flow = winit::event_loop::ControlFlow::Exit;
         }
+        info!("events_loop end");
     });
 }
 
