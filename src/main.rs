@@ -305,11 +305,11 @@ fn main2() {
             .build_windowed(window_builder, &events_loop)
             .expect("Could not create glutin window.");
 
-        let glutin_window = unsafe {
+        let glutin_window = Box::leak(Box::new(unsafe {
             glutin_window
                 .make_current()
                 .expect("Could not set current context.")
-        };
+        }));
 
         let context = unsafe {
             glow::Context::from_loader_function(|s| glutin_window.get_proc_address(s) as *const _)
@@ -651,7 +651,8 @@ fn handle_window_event<T>(
                             window.set_cursor_grab(true).unwrap();
                             window.set_cursor_visible(false);
                         } else if !game.focused {
-                            #[cfg(not(target_arch = "wasm32"))] // TODO: after Pointer Lock https://github.com/rust-windowing/winit/issues/1674
+                            #[cfg(not(target_arch = "wasm32"))]
+                            // TODO: after Pointer Lock https://github.com/rust-windowing/winit/issues/1674
                             window.set_cursor_grab(false).unwrap();
                             window.set_cursor_visible(true);
                             ui_container.click_at(
