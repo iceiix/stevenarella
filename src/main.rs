@@ -305,11 +305,11 @@ fn main2() {
             .build_windowed(window_builder, &events_loop)
             .expect("Could not create glutin window.");
 
-        let glutin_window = unsafe {
+        let glutin_window = Box::leak(Box::new(unsafe {
             glutin_window
                 .make_current()
                 .expect("Could not set current context.")
-        };
+        }));
 
         let context = unsafe {
             glow::Context::from_loader_function(|s| glutin_window.get_proc_address(s) as *const _)
@@ -327,9 +327,7 @@ fn main2() {
     };
 
     #[cfg(not(target_arch = "wasm32"))]
-    let glutin_window = RefCell::new(Box::leak(Box::new(glutin_window)));
-    #[cfg(not(target_arch = "wasm32"))]
-    let winit_window = Box::leak(Box::new(glutin_window)).borrow().window();
+    let winit_window = glutin_window.window();
 
     let dpi_factor = winit_window.scale_factor();
 
@@ -455,7 +453,7 @@ fn main2() {
             ..
         } = event
         {
-            glutin_window.borrow().resize(physical_size);
+            glutin_window.resize(physical_size);
         }
 
         if !handle_window_event(&winit_window, &mut game, &mut ui_container, event) {
@@ -475,7 +473,6 @@ fn main2() {
             );
 
             glutin_window
-                .borrow()
                 .swap_buffers()
                 .expect("Failed to swap GL buffers");
         }
