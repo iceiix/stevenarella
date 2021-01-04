@@ -308,11 +308,11 @@ fn main2() {
             .expect("Could not create glutin window.");
         let dpi_factor = glutin_window.window().scale_factor();
 
-        let glutin_window = Box::leak(Box::new(unsafe {
+        let glutin_window = unsafe {
             glutin_window
                 .make_current()
                 .expect("Could not set current context.")
-        }));
+        };
 
         let context = unsafe {
             glow::Context::from_loader_function(|s| glutin_window.get_proc_address(s) as *const _)
