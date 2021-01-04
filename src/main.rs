@@ -261,8 +261,9 @@ fn main2() {
         .with_inner_size(winit::dpi::LogicalSize::new(854.0, 480.0));
 
     #[cfg(target_arch = "wasm32")]
-    let (context, shader_version, winit_window, render_loop) = {
+    let (context, shader_version, dpi_factor, winit_window, render_loop) = {
         let winit_window = window_builder.build(&events_loop).unwrap();
+        let dpi_factor = winit_window.scale_factor();
 
         use wasm_bindgen::JsCast;
         use winit::platform::web::WindowExtWebSys;
@@ -286,13 +287,14 @@ fn main2() {
         (
             glow::Context::from_webgl2_context(webgl2_context),
             "#version 300 es", // WebGL 2
+            dpi_factor,
             winit_window,
             glow::RenderLoop::from_request_animation_frame(),
         )
     };
 
     #[cfg(not(target_arch = "wasm32"))]
-    let (context, shader_version, glutin_window) = {
+    let (context, shader_version, dpi_factor, glutin_window) = {
         let glutin_window = glutin::ContextBuilder::new()
             .with_stencil_buffer(0)
             .with_depth_buffer(24)
@@ -304,6 +306,7 @@ fn main2() {
             .with_vsync(vsync)
             .build_windowed(window_builder, &events_loop)
             .expect("Could not create glutin window.");
+        let dpi_factor = glutin_window.window().scale_factor();
 
         let glutin_window = Box::leak(Box::new(unsafe {
             glutin_window
@@ -323,13 +326,8 @@ fn main2() {
             }
         };
 
-        (context, shader_version, glutin_window)
+        (context, shader_version, dpi_factor, glutin_window)
     };
-
-    #[cfg(not(target_arch = "wasm32"))]
-    let winit_window = glutin_window.window();
-
-    let dpi_factor = winit_window.scale_factor();
 
     gl::init(context);
     info!("Shader version: {}", shader_version);
@@ -400,7 +398,9 @@ fn main2() {
 
     let mut last_resource_version = 0;
 
+    #[cfg(target_arch = "wasm32")]
     let winit_window = Rc::new(RefCell::new(winit_window));
+
     let game = Rc::new(RefCell::new(game));
     let ui_container = Rc::new(RefCell::new(ui_container));
 
@@ -428,12 +428,18 @@ fn main2() {
         });
     }
 
-    // TODO: enable events_loop for wasm, too, fix borrow with render_loop
+    #[cfg(target_arch = "wasm32")]
     let winit_window = Rc::clone(&winit_window);
+
     let game = Rc::clone(&game);
     let ui_container = Rc::clone(&ui_container);
     events_loop.run(move |event, _event_loop, control_flow| {
+        #[cfg(target_arch = "wasm32")]
         let winit_window = winit_window.borrow_mut();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let winit_window = glutin_window.window();
+
         let mut game = game.borrow_mut();
         let mut ui_container = ui_container.borrow_mut();
 
