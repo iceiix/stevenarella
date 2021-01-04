@@ -47,6 +47,7 @@ pub mod world;
 
 use crate::protocol::mojang;
 use cfg_if::cfg_if;
+use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::mpsc;
@@ -260,8 +261,9 @@ fn main2() {
         .with_inner_size(winit::dpi::LogicalSize::new(854.0, 480.0));
 
     #[cfg(target_arch = "wasm32")]
-    let (context, shader_version, winit_window, render_loop) = {
+    let (context, shader_version, dpi_factor, winit_window, render_loop) = {
         let winit_window = window_builder.build(&events_loop).unwrap();
+        let dpi_factor = winit_window.scale_factor();
 
         use wasm_bindgen::JsCast;
         use winit::platform::web::WindowExtWebSys;
@@ -285,13 +287,14 @@ fn main2() {
         (
             glow::Context::from_webgl2_context(webgl2_context),
             "#version 300 es", // WebGL 2
+            dpi_factor,
             winit_window,
             glow::RenderLoop::from_request_animation_frame(),
         )
     };
 
     #[cfg(not(target_arch = "wasm32"))]
-    let (context, shader_version, glutin_window) = {
+    let (context, shader_version, dpi_factor, glutin_window) = {
         let glutin_window = glutin::ContextBuilder::new()
             .with_stencil_buffer(0)
             .with_depth_buffer(24)
@@ -303,6 +306,7 @@ fn main2() {
             .with_vsync(vsync)
             .build_windowed(window_builder, &events_loop)
             .expect("Could not create glutin window.");
+        let dpi_factor = glutin_window.window().scale_factor();
 
         let glutin_window = unsafe {
             glutin_window
@@ -322,19 +326,14 @@ fn main2() {
             }
         };
 
-        (context, shader_version, glutin_window)
+        (context, shader_version, dpi_factor, glutin_window)
     };
-
-    #[cfg(not(target_arch = "wasm32"))]
-    let winit_window = glutin_window.window();
-
-    let dpi_factor = winit_window.scale_factor();
 
     gl::init(context);
     info!("Shader version: {}", shader_version);
 
     let renderer = render::Renderer::new(resource_manager.clone(), shader_version);
-    let mut ui_container = ui::Container::new();
+    let ui_container = ui::Container::new();
 
     let mut last_frame = Instant::now();
 
@@ -400,32 +399,59 @@ fn main2() {
     let mut last_resource_version = 0;
 
     #[cfg(target_arch = "wasm32")]
-    render_loop.run(move |running: &mut bool| {
-        tick_all(
-            &winit_window,
-            &mut game,
-            &mut ui_container,
-            &mut last_frame,
-            &mut resui,
-            &mut last_resource_version,
-            &mut vsync,
-        );
-        println!("render_loop");
-    });
+    let winit_window = Rc::new(RefCell::new(winit_window));
 
-    // TODO: enable events_loop for wasm, too, fix borrow with render_loop
-    #[cfg(not(target_arch = "wasm32"))]
+    let game = Rc::new(RefCell::new(game));
+    let ui_container = Rc::new(RefCell::new(ui_container));
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        let winit_window = Rc::clone(&winit_window);
+        let game = Rc::clone(&game);
+        let ui_container = Rc::clone(&ui_container);
+
+        render_loop.run(move |running: &mut bool| {
+            let winit_window = winit_window.borrow_mut();
+            let mut game = game.borrow_mut();
+            let mut ui_container = ui_container.borrow_mut();
+
+            tick_all(
+                &winit_window,
+                &mut game,
+                &mut ui_container,
+                &mut last_frame,
+                &mut resui,
+                &mut last_resource_version,
+                &mut vsync,
+            );
+            println!("render_loop");
+        });
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    let winit_window = Rc::clone(&winit_window);
+
+    let game = Rc::clone(&game);
+    let ui_container = Rc::clone(&ui_container);
     events_loop.run(move |event, _event_loop, control_flow| {
+        #[cfg(target_arch = "wasm32")]
+        let winit_window = winit_window.borrow_mut();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let winit_window = glutin_window.window();
+
+        let mut game = game.borrow_mut();
+        let mut ui_container = ui_container.borrow_mut();
+
         #[cfg(target_arch = "wasm32")]
         {
             *control_flow = winit::event_loop::ControlFlow::Wait;
         }
 
         #[cfg(not(target_arch = "wasm32"))]
-        let winit_window = {
+        {
             *control_flow = winit::event_loop::ControlFlow::Poll;
-            glutin_window.window()
-        };
+        }
 
         #[cfg(not(target_arch = "wasm32"))]
         if let winit::event::Event::WindowEvent {
@@ -631,6 +657,8 @@ fn handle_window_event<T>(
                             window.set_cursor_grab(true).unwrap();
                             window.set_cursor_visible(false);
                         } else if !game.focused {
+                            #[cfg(not(target_arch = "wasm32"))]
+                            // TODO: after Pointer Lock https://github.com/rust-windowing/winit/issues/1674
                             window.set_cursor_grab(false).unwrap();
                             window.set_cursor_visible(true);
                             ui_container.click_at(
