@@ -1859,9 +1859,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a76330fb486679b4ace3670f117bbc9e16204005c4bde9c4bd372f45bed34f12"
+checksum = "c24fcd450d3fa2b592732565aa4f17a27a61c65ece4726353e000939b0edee34"
 dependencies = [
  "libc",
  "rand_chacha 0.3.0",
@@ -2121,7 +2121,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67c5f557ca03d0c2dc8207adb765f6fd18ad535a7031208dd0e9208b8e91caef"
 dependencies = [
  "num 0.3.1",
- "rand 0.8.0",
+ "rand 0.8.1",
  "simple_asn1",
 ]
 
@@ -2479,7 +2479,7 @@ dependencies = [
  "instant",
  "lazy_static",
  "log",
- "rand 0.8.0",
+ "rand 0.8.1",
  "rand_pcg 0.3.0",
  "reqwest",
  "rsa_public_encrypt_pkcs1",
