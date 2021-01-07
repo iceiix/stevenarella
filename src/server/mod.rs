@@ -509,6 +509,7 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_WorldNames_IsHard => on_game_join_worldnames_ishard,
                             JoinGame_WorldNames => on_game_join_worldnames,
                             JoinGame_HashedSeed_Respawn => on_game_join_hashedseed_respawn,
                             JoinGame_i32_ViewDistance => on_game_join_i32_viewdistance,
@@ -518,9 +519,11 @@ impl Server {
                             Respawn_Gamemode => on_respawn_gamemode,
                             Respawn_HashedSeed => on_respawn_hashedseed,
                             Respawn_WorldName => on_respawn_worldname,
+                            Respawn_NBT => on_respawn_nbt,
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
+                            ChunkData_Biomes3D_VarInt => on_chunk_data_biomes3d_varint,
                             ChunkData_Biomes3D_bool => on_chunk_data_biomes3d_bool,
                             ChunkData => on_chunk_data,
                             ChunkData_Biomes3D => on_chunk_data_biomes3d,
@@ -533,6 +536,7 @@ impl Server {
                             ChunkUnload => on_chunk_unload,
                             BlockChange_VarInt => on_block_change_varint,
                             BlockChange_u8 => on_block_change_u8,
+                            MultiBlockChange_Packed => on_multi_block_change_packed,
                             MultiBlockChange_VarInt => on_multi_block_change_varint,
                             MultiBlockChange_u16 => on_multi_block_change_u16,
                             TeleportPlayer_WithConfirm => on_teleport_player_withconfirm,
@@ -970,6 +974,13 @@ impl Server {
         }
     }
 
+    fn on_game_join_worldnames_ishard(
+        &mut self,
+        join: packet::play::clientbound::JoinGame_WorldNames_IsHard,
+    ) {
+        self.on_game_join(join.gamemode, join.entity_id)
+    }
+
     fn on_game_join_worldnames(&mut self, join: packet::play::clientbound::JoinGame_WorldNames) {
         self.on_game_join(join.gamemode, join.entity_id)
     }
@@ -1044,6 +1055,10 @@ impl Server {
     }
 
     fn on_respawn_worldname(&mut self, respawn: packet::play::clientbound::Respawn_WorldName) {
+        self.respawn(respawn.gamemode)
+    }
+
+    fn on_respawn_nbt(&mut self, respawn: packet::play::clientbound::Respawn_NBT) {
         self.respawn(respawn.gamemode)
     }
 
@@ -1760,21 +1775,44 @@ impl Server {
                 let x = block_entity.1.get("x").unwrap().as_int().unwrap();
                 let y = block_entity.1.get("y").unwrap().as_int().unwrap();
                 let z = block_entity.1.get("z").unwrap().as_int().unwrap();
-                let tile_id = block_entity.1.get("id").unwrap().as_str().unwrap();
-                let action;
-                match tile_id {
-                    // Fake a sign update
-                    "Sign" => action = 9,
-                    // Not something we care about, so break the loop
-                    _ => continue,
+                if let Some(tile_id) = block_entity.1.get("id") {
+                    let tile_id = tile_id.as_str().unwrap();
+                    let action;
+                    match tile_id {
+                        // Fake a sign update
+                        "Sign" => action = 9,
+                        // Not something we care about, so break the loop
+                        _ => continue,
+                    }
+                    self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
+                        location: Position::new(x, y, z),
+                        action,
+                        nbt: Some(block_entity.clone()),
+                    });
+                } else {
+                    warn!(
+                        "Block entity at ({},{},{}) missing id tag: {:?}",
+                        x, y, z, block_entity
+                    );
                 }
-                self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
-                    location: Position::new(x, y, z),
-                    action,
-                    nbt: Some(block_entity.clone()),
-                });
             }
         }
+    }
+
+    fn on_chunk_data_biomes3d_varint(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_Biomes3D_VarInt,
+    ) {
+        self.world
+            .load_chunk115(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                chunk_data.new,
+                chunk_data.bitmask.0 as u16,
+                chunk_data.data.data,
+            )
+            .unwrap();
+        self.load_block_entities(chunk_data.block_entities.data);
     }
 
     fn on_chunk_data_biomes3d_bool(
@@ -1932,6 +1970,31 @@ impl Server {
             crate::shared::Position::new(block_change.x, block_change.y as i32, block_change.z),
             (block_change.block_id.0 << 4) | (block_change.block_metadata as i32),
         );
+    }
+
+    fn on_multi_block_change_packed(
+        &mut self,
+        block_change: packet::play::clientbound::MultiBlockChange_Packed,
+    ) {
+        let sx = (block_change.chunk_section_pos >> 42) as i32;
+        let sy = ((block_change.chunk_section_pos << 44) >> 44) as i32;
+        let sz = ((block_change.chunk_section_pos << 22) >> 42) as i32;
+
+        for record in block_change.records.data {
+            let block_raw_id = record.0 >> 12;
+            let lz = (record.0 & 0xf) as i32;
+            let ly = ((record.0 >> 4) & 0xf) as i32;
+            let lx = ((record.0 >> 8) & 0xf) as i32;
+
+            self.world.set_block(
+                Position::new(sx + lx as i32, sy + ly as i32, sz + lz as i32),
+                block::Block::by_vanilla_id(
+                    block_raw_id as usize,
+                    self.protocol_version,
+                    &self.world.modded_block_ids,
+                ),
+            );
+        }
     }
 
     fn on_multi_block_change_varint(

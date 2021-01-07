@@ -2245,10 +2245,7 @@ define_blocks! {
         model { ("minecraft", "iron_bars") },
         collision pane_collision(north, south, east, west),
         update_state (world, pos) => {
-            let f = |block| match block {
-                Block::IronBars{..} => true,
-                _ => false,
-            };
+            let f = |block| matches!(block, Block::IronBars{..});
 
             let (north, south, west, east) = can_connect_sides(world, pos, &f);
             Block::IronBars{north, south, west, east, waterlogged}
@@ -2574,16 +2571,13 @@ define_blocks! {
         model { ("minecraft", "nether_brick_fence") },
         collision fence_collision(north, south, west, east),
         update_state (world, pos) => {
-            let f = |block| match block {
-                Block::NetherBrickFence{..} |
+            let f = |block| matches!(block, Block::NetherBrickFence{..} |
                 Block::FenceGate{..} |
                 Block::SpruceFenceGate{..} |
                 Block::BirchFenceGate{..} |
                 Block::JungleFenceGate{..} |
                 Block::DarkOakFenceGate{..} |
-                Block::AcaciaFenceGate{..} => true,
-                _ => false,
-            };
+                Block::AcaciaFenceGate{..});
 
             let (north, south, west, east) = can_connect_sides(world, pos, &f);
             Block::NetherBrickFence{north, south, west, east, waterlogged}
@@ -3075,22 +3069,17 @@ define_blocks! {
         material material::NON_SOLID,
         model { ("minecraft", format!("{}_wall", variant.as_string())) },
         update_state (world, pos) => {
-            let f = |block| match block {
-                Block::CobblestoneWall{..} |
+            let f = |block| matches!(block, Block::CobblestoneWall{..} |
                 Block::FenceGate{..} |
                 Block::SpruceFenceGate{..} |
                 Block::BirchFenceGate{..} |
                 Block::JungleFenceGate{..} |
                 Block::DarkOakFenceGate{..} |
-                Block::AcaciaFenceGate{..} => true,
-                _ => false,
-            };
+                Block::AcaciaFenceGate{..});
 
             let (north, south, west, east) = can_connect_sides(world, pos, &f);
-            let up = !(match world.get_block(pos.shift(Direction::Up)) {
-                Block::Air{..} => true,
-                _ => false,
-            }) || !((north && south && !west && !east) || (!north && !south && west && east));
+            let up = !(matches!(world.get_block(pos.shift(Direction::Up)), Block::Air{..}))
+            || !((north && south && !west && !east) || (!north && !south && west && east));
             Block::CobblestoneWall{up, north, south, west, east, variant, waterlogged}
         },
         multipart (key, val) => match key {
@@ -4686,12 +4675,12 @@ define_blocks! {
             collision
         },
         update_state (world, pos) => Block::ChorusPlant {
-            up: match world.get_block(pos.shift(Direction::Up)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            down: match world.get_block(pos.shift(Direction::Down)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} | Block::EndStone{..} => true, _ => false,},
-            north: match world.get_block(pos.shift(Direction::North)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            south: match world.get_block(pos.shift(Direction::South)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            west: match world.get_block(pos.shift(Direction::West)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
-            east: match world.get_block(pos.shift(Direction::East)) { Block::ChorusPlant{..} | Block::ChorusFlower{..} => true, _ => false,},
+            up: matches!(world.get_block(pos.shift(Direction::Up)), Block::ChorusPlant{..} | Block::ChorusFlower{..}),
+            down: matches!(world.get_block(pos.shift(Direction::Down)), Block::ChorusPlant{..} | Block::ChorusFlower{..} | Block::EndStone{..}),
+            north: matches!(world.get_block(pos.shift(Direction::North)), Block::ChorusPlant{..} | Block::ChorusFlower{..}),
+            south: matches!(world.get_block(pos.shift(Direction::South)), Block::ChorusPlant{..} | Block::ChorusFlower{..}),
+            west: matches!(world.get_block(pos.shift(Direction::West)), Block::ChorusPlant{..} | Block::ChorusFlower{..}),
+            east: matches!(world.get_block(pos.shift(Direction::East)), Block::ChorusPlant{..} | Block::ChorusFlower{..}),
         },
         multipart (key, val) => match key {
             "up" => up == (val == "true"),
@@ -5626,8 +5615,7 @@ define_blocks! {
 }
 
 fn can_burn<W: WorldAccess>(world: &W, pos: Position) -> bool {
-    match world.get_block(pos) {
-        Block::Planks { .. }
+    matches!(world.get_block(pos), Block::Planks { .. }
         | Block::DoubleWoodenSlab { .. }
         | Block::WoodenSlab { .. }
         | Block::FenceGate { .. }
@@ -5663,16 +5651,11 @@ fn can_burn<W: WorldAccess>(world: &W, pos: Position) -> bool {
         | Block::Vine { .. }
         | Block::CoalBlock { .. }
         | Block::HayBlock { .. }
-        | Block::Carpet { .. } => true,
-        _ => false,
-    }
+        | Block::Carpet { .. })
 }
 
 fn is_snowy<W: WorldAccess>(world: &W, pos: Position) -> bool {
-    match world.get_block(pos.shift(Direction::Up)) {
-        Block::Snow { .. } | Block::SnowLayer { .. } => true,
-        _ => false,
-    }
+    matches!(world.get_block(pos.shift(Direction::Up)), Block::Snow { .. } | Block::SnowLayer { .. })
 }
 
 fn can_connect_sides<F: Fn(Block) -> bool, W: WorldAccess>(
@@ -5694,8 +5677,7 @@ fn can_connect<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f
 }
 
 fn can_connect_fence(block: Block) -> bool {
-    match block {
-        Block::Fence { .. }
+    matches!(block, Block::Fence { .. }
         | Block::SpruceFence { .. }
         | Block::BirchFence { .. }
         | Block::JungleFence { .. }
@@ -5706,19 +5688,14 @@ fn can_connect_fence(block: Block) -> bool {
         | Block::BirchFenceGate { .. }
         | Block::JungleFenceGate { .. }
         | Block::DarkOakFenceGate { .. }
-        | Block::AcaciaFenceGate { .. } => true,
-        _ => false,
-    }
+        | Block::AcaciaFenceGate { .. })
 }
 
 fn can_connect_glasspane(block: Block) -> bool {
-    match block {
-        Block::Glass { .. }
+    matches!(block, Block::Glass { .. }
         | Block::StainedGlass { .. }
         | Block::GlassPane { .. }
-        | Block::StainedGlassPane { .. } => true,
-        _ => false,
-    }
+        | Block::StainedGlassPane { .. })
 }
 
 fn can_connect_redstone<W: WorldAccess>(world: &W, pos: Position, dir: Direction) -> RedstoneSide {
@@ -5729,11 +5706,7 @@ fn can_connect_redstone<W: WorldAccess>(world: &W, pos: Position, dir: Direction
         let side_up = world.get_block(shift_pos.shift(Direction::Up));
         let up = world.get_block(pos.shift(Direction::Up));
 
-        if match side_up {
-            Block::RedstoneWire { .. } => true,
-            _ => false,
-        } && !up.get_material().should_cull_against
-        {
+        if matches!(side_up, Block::RedstoneWire { .. }) && !up.get_material().should_cull_against {
             return RedstoneSide::Up;
         }
 
@@ -5741,13 +5714,9 @@ fn can_connect_redstone<W: WorldAccess>(world: &W, pos: Position, dir: Direction
     }
 
     let side_down = world.get_block(shift_pos.shift(Direction::Down));
-    if match block {
-        Block::RedstoneWire { .. } => true,
-        _ => false,
-    } || match side_down {
-        Block::RedstoneWire { .. } => true,
-        _ => false,
-    } {
+    if matches!(block, Block::RedstoneWire { .. })
+        || matches!(side_down, Block::RedstoneWire { .. })
+    {
         return RedstoneSide::Side;
     }
     RedstoneSide::None
@@ -5961,10 +5930,7 @@ fn door_collision(facing: Direction, hinge: Side, open: bool) -> Vec<Aabb3<f64>>
 }
 
 fn update_repeater_state<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> bool {
-    let f = |dir| match world.get_block(pos.shift(dir)) {
-        Block::RepeaterPowered { .. } => true,
-        _ => false,
-    };
+    let f = |dir| matches!(world.get_block(pos.shift(dir)), Block::RepeaterPowered { .. });
 
     f(facing.clockwise()) || f(facing.counter_clockwise())
 }

@@ -76,7 +76,7 @@ protocol_packet_ids!(
             0x21 => Effect
             0x22 => Particle_VarIntArray
             0x23 => JoinGame_i32
-            0x24 => Maps
+            0x24 => Maps_NoLocked
             0x25 => EntityMove_i16
             0x26 => EntityLookAndMove_i16
             0x27 => EntityLook_VarInt

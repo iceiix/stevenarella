@@ -17,11 +17,15 @@ use std::collections::HashMap;
 #[derive(Default)]
 pub struct Registry {
     shaders: HashMap<String, String>,
+    shader_version: String,
 }
 
 impl Registry {
-    pub fn new() -> Registry {
-        Default::default()
+    pub fn new(shader_version: &str) -> Registry {
+        Registry {
+            shaders: Default::default(),
+            shader_version: shader_version.to_string(),
+        }
     }
 
     pub fn register(&mut self, name: &str, source: &str) {
@@ -32,19 +36,32 @@ impl Registry {
             .insert(name.to_owned(), source.trim().to_owned());
     }
 
+    fn add_version(&self, out: &mut String) {
+        out.push_str(&self.shader_version);
+        out.push('\n');
+        if self.shader_version.ends_with(" es") {
+            out.push_str(
+                r#"precision mediump float;
+precision mediump sampler2DArray;
+#define ES
+"#,
+            );
+        }
+    }
+
     pub fn get(&self, name: &str) -> String {
         let mut out = String::new();
-        out.push_str("#version 150\n");
+        self.add_version(&mut out);
         self.get_internal(&mut out, name);
         out
     }
 
     pub fn get_define(&self, name: &str, define: &str) -> String {
         let mut out = String::new();
-        out.push_str("#version 150\n");
+        self.add_version(&mut out);
         out.push_str("#define ");
         out.push_str(define);
-        out.push_str("\n");
+        out.push('\n');
         self.get_internal(&mut out, name);
         out
     }
@@ -52,13 +69,13 @@ impl Registry {
     fn get_internal(&self, out: &mut String, name: &str) {
         let src = self.shaders.get(name).unwrap();
         for line in src.lines() {
-            if line.starts_with("#include ") {
-                let inc = line["#include ".len()..].trim();
+            if let Some(stripped) = line.strip_prefix("#include ") {
+                let inc = stripped.trim();
                 self.get_internal(out, inc);
                 continue;
             }
             out.push_str(line);
-            out.push_str("\n");
+            out.push('\n');
         }
     }
 }

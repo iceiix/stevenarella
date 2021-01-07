@@ -17,7 +17,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.44.1
+          toolchain: 1.49.0
           components: clippy, rustfmt
           default: true
       - name: Install dependencies

@@ -1,10 +1,10 @@
 use crate::render;
 use crate::resources;
 use crate::ui;
+use instant::Instant;
 use rand::{self, seq::SliceRandom};
 use std::f64::consts;
 use std::sync::{Arc, RwLock};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Logo {
     _shadow: ui::BatchRef,
@@ -15,6 +15,7 @@ pub struct Logo {
     text_orig_x: f64,
     text_index: isize,
     text_strings: Vec<String>,
+    started: Instant,
 }
 
 impl Logo {
@@ -131,11 +132,12 @@ impl Logo {
             text_orig_x,
             text_index: -1,
             text_strings,
+            started: Instant::now(),
         }
     }
 
     pub fn tick(&mut self, renderer: &mut render::Renderer) {
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+        let now = Instant::now().duration_since(self.started);
 
         // Splash text
         let text_index = (now.as_secs() / 15) as isize % self.text_strings.len() as isize;

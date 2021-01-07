@@ -175,7 +175,7 @@ impl super::Screen for Login {
             let mut client_token = self.vars.get(auth::AUTH_CLIENT_TOKEN).clone();
             if client_token.is_empty() {
                 client_token = std::iter::repeat(())
-                    .map(|()| rand::thread_rng().sample(&rand::distributions::Alphanumeric))
+                    .map(|()| rand::thread_rng().sample(&rand::distributions::Alphanumeric) as char)
                     .take(20)
                     .collect();
                 self.vars.set(auth::AUTH_CLIENT_TOKEN, client_token);

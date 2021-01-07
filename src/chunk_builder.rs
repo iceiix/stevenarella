@@ -10,7 +10,12 @@ use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
 
+#[cfg(not(target_arch = "wasm32"))]
 const NUM_WORKERS: usize = 8;
+
+// TODO: threads or web workers on wasm
+#[cfg(target_arch = "wasm32")]
+const NUM_WORKERS: usize = 0;
 
 pub struct ChunkBuilder {
     threads: Vec<(mpsc::Sender<BuildReq>, thread::JoinHandle<()>)>,
@@ -302,7 +307,11 @@ fn flood_fill(snapshot: &world::Snapshot, visited: &mut Set, x: i32, y: i32, z: 
     let mut touched = 0;
     while let Some((x, y, z)) = next_position.pop_front() {
         let idx = (x | (z << 4) | (y << 8)) as usize;
-        if x < 0 || x > 15 || y < 0 || y > 15 || z < 0 || z > 15 || visited.get(idx) {
+        if !(0..=15).contains(&x)
+            || !(0..=15).contains(&y)
+            || !(0..=15).contains(&z)
+            || visited.get(idx)
+        {
             continue;
         }
         visited.set(idx, true);

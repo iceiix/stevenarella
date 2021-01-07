@@ -18,7 +18,6 @@
 use aes::Aes128;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use cfb8::Cfb8;
-#[cfg(not(target_arch = "wasm32"))]
 use std_or_web::fs;
 
 pub mod forge;
@@ -30,6 +29,7 @@ use crate::shared::Position;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
+use instant::{Duration, Instant};
 use log::debug;
 use std::convert;
 use std::default;
@@ -38,11 +38,10 @@ use std::io;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
-use std::time::{Duration, Instant};
 
-pub const SUPPORTED_PROTOCOLS: [i32; 21] = [
-    736, 735, 578, 575, 498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210, 109, 107, 74,
-    47, 5,
+pub const SUPPORTED_PROTOCOLS: [i32; 24] = [
+    754, 753, 751, 736, 735, 578, 575, 498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210,
+    109, 107, 74, 47, 5,
 ];
 
 static CURRENT_PROTOCOL_VERSION: AtomicI32 = AtomicI32::new(SUPPORTED_PROTOCOLS[0]);
@@ -119,7 +118,7 @@ macro_rules! state_packets {
                             packet::versions::translate_internal_packet_id_for_version(version, State::$stateName, Direction::$dirName, internal_ids::$name, false)
                         }
 
-                        fn write<W: io::Write>(self, buf: &mut W) -> Result<(), Error> {
+                        fn write<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
                             $(
                                 if true $(&& ($cond(&self)))* {
                                     self.$field.write_to(buf)?;
@@ -1156,6 +1155,8 @@ impl Conn {
                 let pos = buf.position() as usize;
                 let ibuf = buf.into_inner();
                 if ibuf.len() != pos {
+                    debug!("pos = {:?}", pos);
+                    debug!("ibuf = {:?}", ibuf);
                     return Result::Err(Error::Err(format!(
                         "Failed to read all of packet 0x{:X}, \
                                                            had {} bytes left",
@@ -1306,6 +1307,44 @@ impl Conn {
     }
 }
 
+/// Parse a clientbound packet, for debugging packet parsing issues (Conn::read_packet)
+pub fn try_parse_packet(ibuf: Vec<u8>, protocol_version: i32) {
+    println!("trying to parse packet data {:?}", ibuf);
+
+    let mut buf = io::Cursor::new(ibuf);
+
+    let id = VarInt::read_from(&mut buf).unwrap().0;
+    let dir = Direction::Clientbound;
+    let state = State::Play; // TODO: allow parsing other states
+
+    println!(
+        "about to parse id={:x}, dir={:?} state={:?}",
+        id, dir, state
+    );
+
+    let packet = packet::packet_by_id(protocol_version, state, dir, id, &mut buf).unwrap();
+
+    println!("packet = {:?}", packet);
+
+    match packet {
+        Some(_val) => {
+            let pos = buf.position() as usize;
+            let ibuf = buf.into_inner();
+            if ibuf.len() != pos {
+                println!("pos = {:?}", pos);
+                println!("ibuf = {:?}", ibuf);
+                println!(
+                    "Failed to read all of packet 0x{:X}, \
+                                                       had {} bytes left",
+                    id,
+                    ibuf.len() - pos
+                )
+            }
+        }
+        None => println!("missing packet"),
+    }
+}
+
 #[derive(Debug)]
 pub struct Status {
     pub version: StatusVersion,
@@ -1387,5 +1426,5 @@ impl Clone for Conn {
 pub trait PacketType {
     fn packet_id(&self, protocol_version: i32) -> i32;
 
-    fn write<W: io::Write>(self, buf: &mut W) -> Result<(), Error>;
+    fn write<W: io::Write>(&self, buf: &mut W) -> Result<(), Error>;
 }

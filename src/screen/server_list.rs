@@ -24,8 +24,8 @@ use crate::protocol;
 use crate::render;
 use crate::ui;
 
+use instant::Duration;
 use rand::Rng;
-use std::time::Duration;
 
 pub struct ServerList {
     elements: Option<UIElements>,
@@ -528,6 +528,7 @@ impl super::Screen for ServerList {
                             let name: String = std::iter::repeat(())
                                 .map(|()| {
                                     rand::thread_rng().sample(&rand::distributions::Alphanumeric)
+                                        as char
                                 })
                                 .take(30)
                                 .collect();

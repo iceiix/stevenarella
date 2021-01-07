@@ -206,7 +206,7 @@ impl World {
 
     #[allow(clippy::verbose_bit_mask)] // "llvm generates better code" for updates_performed & 0xFFF "on x86"
     pub fn tick(&mut self, m: &mut ecs::Manager) {
-        use std::time::Instant;
+        use instant::Instant;
         let start = Instant::now();
         let mut updates_performed = 0;
         while !self.light_updates.is_empty() {
@@ -430,7 +430,7 @@ impl World {
         y: i32,
         z: i32,
     ) -> Option<(Option<&mut Section>, &mut u32)> {
-        if y < 0 || y > 15 {
+        if !(0..=15).contains(&y) {
             return None;
         }
         if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
@@ -540,7 +540,7 @@ impl World {
                 let z2 = min(16, max(0, z + d - (cz << 4)));
 
                 for cy in cy1..cy2 {
-                    if cy < 0 || cy > 15 {
+                    if !(0..=15).contains(&cy) {
                         continue;
                     }
                     let section = &chunk.sections[cy as usize];
@@ -1066,7 +1066,8 @@ impl World {
                 }
 
                 let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-                let m = bit::Map::from_raw(bits, bit_size as usize);
+                let padded = self.protocol_version >= 736;
+                let m = bit::Map::from_raw(bits, bit_size as usize, padded);
 
                 for bi in 0..4096 {
                     let id = m.get(bi);
@@ -1123,7 +1124,7 @@ impl World {
     }
 
     fn flag_section_dirty(&mut self, x: i32, y: i32, z: i32) {
-        if y < 0 || y > 15 {
+        if !(0..=15).contains(&y) {
             return;
         }
         let cpos = CPos(x, z);
@@ -1254,7 +1255,7 @@ impl Chunk {
 
     fn set_block(&mut self, x: i32, y: i32, z: i32, b: block::Block) -> bool {
         let s_idx = y >> 4;
-        if s_idx < 0 || s_idx > 15 {
+        if !(0..=15).contains(&s_idx) {
             return false;
         }
         let s_idx = s_idx as usize;
@@ -1296,7 +1297,7 @@ impl Chunk {
 
     fn get_block(&self, x: i32, y: i32, z: i32) -> block::Block {
         let s_idx = y >> 4;
-        if s_idx < 0 || s_idx > 15 {
+        if !(0..=15).contains(&s_idx) {
             return block::Missing {};
         }
         match self.sections[s_idx as usize].as_ref() {
@@ -1307,7 +1308,7 @@ impl Chunk {
 
     fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {
         let s_idx = y >> 4;
-        if s_idx < 0 || s_idx > 15 {
+        if !(0..=15).contains(&s_idx) {
             return 0;
         }
         match self.sections[s_idx as usize].as_ref() {
@@ -1318,7 +1319,7 @@ impl Chunk {
 
     fn set_block_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
         let s_idx = y >> 4;
-        if s_idx < 0 || s_idx > 15 {
+        if !(0..=15).contains(&s_idx) {
             return;
         }
         let s_idx = s_idx as usize;
@@ -1336,7 +1337,7 @@ impl Chunk {
 
     fn get_sky_light(&self, x: i32, y: i32, z: i32) -> u8 {
         let s_idx = y >> 4;
-        if s_idx < 0 || s_idx > 15 {
+        if !(0..=15).contains(&s_idx) {
             return 15;
         }
         match self.sections[s_idx as usize].as_ref() {
@@ -1347,7 +1348,7 @@ impl Chunk {
 
     fn set_sky_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
         let s_idx = y >> 4;
-        if s_idx < 0 || s_idx > 15 {
+        if !(0..=15).contains(&s_idx) {
             return;
         }
         let s_idx = s_idx as usize;
