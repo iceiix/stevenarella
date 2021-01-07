@@ -27,7 +27,8 @@ use crate::types::hash::FNVHash;
 use crate::ui;
 
 const RESOURCES_VERSION: &str = "1.13.2";
-const VANILLA_CLIENT_URL: &str = "https://launcher.mojang.com/v1/objects/30bfe37a8db404db11c7edf02cb5165817afb4d9/client.jar";
+const VANILLA_CLIENT_URL: &str =
+    "https://launcher.mojang.com/v1/objects/30bfe37a8db404db11c7edf02cb5165817afb4d9/client.jar";
 const ASSET_VERSION: &str = "1.13.1";
 const ASSET_INDEX_URL: &str = "https://launchermeta.mojang.com/mc/assets/1.13.1/1e710e31f3ce2fe262373b8cf5e054ee5955d904/1.13.1.json";
 
