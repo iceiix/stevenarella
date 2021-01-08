@@ -10,12 +10,11 @@ use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
 
-/*
 #[cfg(not(target_arch = "wasm32"))]
 const NUM_WORKERS: usize = 8;
-*/
+
 // TODO: threads or web workers on wasm
-//#[cfg(target_arch = "wasm32")]
+#[cfg(target_arch = "wasm32")]
 const NUM_WORKERS: usize = 0;
 
 pub struct ChunkBuilder {
@@ -39,15 +38,13 @@ impl ChunkBuilder {
         let (built_send, built_recv) = mpsc::channel();
         for i in 0..NUM_WORKERS {
             let built_send = built_send.clone();
-            //let (work_send, work_recv) = mpsc::channel();
+            let (work_send, work_recv) = mpsc::channel();
             let models = models.clone();
             let id = i;
-            /*
             threads.push((
                 work_send,
-                thread::spawn(move || build_func(id, models, work_recv, built_send)),
+                thread::spawn(move || build_func_threaded(id, models, work_recv, built_send)),
             ));
-            */
             free.push((i, vec![], vec![]));
         }
         ChunkBuilder {
@@ -72,6 +69,36 @@ impl ChunkBuilder {
             }
         }
 
+        if NUM_WORKERS > 0 {
+            while let Ok((id, mut val)) = self.built_recv.try_recv() {
+                world.reset_building_flag(val.position);
+
+                if let Some(sec) =
+                    world.get_section_mut(val.position.0, val.position.1, val.position.2)
+                {
+                    sec.cull_info = val.cull_info;
+                    renderer.update_chunk_solid(
+                        &mut sec.render_buffer,
+                        &val.solid_buffer,
+                        val.solid_count,
+                    );
+                    renderer.update_chunk_trans(
+                        &mut sec.render_buffer,
+                        &val.trans_buffer,
+                        val.trans_count,
+                    );
+                }
+
+                val.solid_buffer.clear();
+                val.trans_buffer.clear();
+                self.free_builders
+                    .push((id, val.solid_buffer, val.trans_buffer));
+            }
+            if self.free_builders.is_empty() {
+                return;
+            }
+        }
+
         let dirty_sections = world
             .get_render_list()
             .iter()
@@ -79,43 +106,61 @@ impl ChunkBuilder {
             .filter(|v| world.is_section_dirty(*v))
             .collect::<Vec<_>>();
         for (x, y, z) in dirty_sections {
-            let t_id = 0; //self.free_builders.pop().unwrap();
+            let t_id = if NUM_WORKERS > 0 {
+                self.free_builders.pop().unwrap()
+            } else {
+                (0, vec![], vec![])
+            };
             world.set_building_flag((x, y, z));
             let (cx, cy, cz) = (x << 4, y << 4, z << 4);
             let mut snapshot = world.capture_snapshot(cx - 2, cy - 2, cz - 2, 20, 20, 20);
             snapshot.make_relative(-2, -2, -2);
 
-            let id = 0;
-            let mut val = build_func(
-                id,
-                self.models.clone(),
-                BuildReq {
-                    snapshot,
-                    position: (x, y, z),
-                    solid_buffer: vec![], //t_id.1,
-                    trans_buffer: vec![], //t_id.2,
-                },
-            );
-
-            world.reset_building_flag(val.position);
-
-            if let Some(sec) = world.get_section_mut(val.position.0, val.position.1, val.position.2)
-            {
-                sec.cull_info = val.cull_info;
-                renderer.update_chunk_solid(
-                    &mut sec.render_buffer,
-                    &val.solid_buffer,
-                    val.solid_count,
+            if NUM_WORKERS > 0 {
+                self.threads[t_id.0]
+                    .0
+                    .send(BuildReq {
+                        snapshot,
+                        position: (x, y, z),
+                        solid_buffer: t_id.1,
+                        trans_buffer: t_id.2,
+                    })
+                    .unwrap();
+                if self.free_builders.is_empty() {
+                    return;
+                }
+            } else {
+                let mut val = build_func_1(
+                    self.models.clone(),
+                    BuildReq {
+                        snapshot,
+                        position: (x, y, z),
+                        solid_buffer: t_id.1,
+                        trans_buffer: t_id.2,
+                    },
                 );
-                renderer.update_chunk_trans(
-                    &mut sec.render_buffer,
-                    &val.trans_buffer,
-                    val.trans_count,
-                );
+
+                world.reset_building_flag(val.position);
+
+                if let Some(sec) =
+                    world.get_section_mut(val.position.0, val.position.1, val.position.2)
+                {
+                    sec.cull_info = val.cull_info;
+                    renderer.update_chunk_solid(
+                        &mut sec.render_buffer,
+                        &val.solid_buffer,
+                        val.solid_count,
+                    );
+                    renderer.update_chunk_trans(
+                        &mut sec.render_buffer,
+                        &val.trans_buffer,
+                        val.trans_count,
+                    );
+                }
+
+                val.solid_buffer.clear();
+                val.trans_buffer.clear();
             }
-
-            val.solid_buffer.clear();
-            val.trans_buffer.clear();
         }
     }
 }
@@ -136,23 +181,31 @@ struct BuildReply {
     cull_info: CullInfo,
 }
 
-fn build_func(
+fn build_func_threaded(
     id: usize,
     models: Arc<RwLock<model::Factory>>,
-    work: BuildReq,
-    //work_recv: mpsc::Receiver<BuildReq>,
-    //built_send: mpsc::Sender<(usize, BuildReply)>,
-) -> BuildReply {
-    //loop {
+    work_recv: mpsc::Receiver<BuildReq>,
+    built_send: mpsc::Sender<(usize, BuildReply)>,
+) {
+    loop {
+        let work: BuildReq = match work_recv.recv() {
+            Ok(val) => val,
+            Err(_) => return,
+        };
+
+        let reply = build_func_1(models.clone(), work);
+
+        built_send.send((id, reply)).unwrap();
+    }
+}
+
+fn build_func_1(models: Arc<RwLock<model::Factory>>, work: BuildReq) -> BuildReply {
     let BuildReq {
         snapshot,
         position,
         mut solid_buffer,
         mut trans_buffer,
-    } = work; /*match work_recv.recv() {
-                  Ok(val) => val,
-                  Err(_) => return,
-              };*/
+    } = work;
 
     let mut rng = rand_pcg::Pcg32::from_seed([
         ((position.0 as u32) & 0xff) as u8,
@@ -248,22 +301,14 @@ fn build_func(
 
     let cull_info = build_cull_info(&snapshot);
 
-    /*
-    built_send
-        .send((
-            id,
-            */
-    return BuildReply {
+    BuildReply {
         position,
         solid_buffer,
         solid_count,
         trans_buffer,
         trans_count,
         cull_info,
-    }; /*,
-       ))
-       .unwrap();*/
-    //}
+    }
 }
 
 fn build_cull_info(snapshot: &world::Snapshot) -> CullInfo {
