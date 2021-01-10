@@ -964,6 +964,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
+        offset Some(variant.data()),
         material material::NON_SOLID,
         model { ("minecraft", variant.as_string() ) },
         tint TintType::Grass,
