@@ -3092,6 +3092,7 @@ pub enum CommandProperty {
     Entity {
         flags: u8,
     },
+    Angle,
     GameProfile,
     BlockPos,
     ColumnPos,
@@ -3220,6 +3221,7 @@ impl Serializable for CommandNode {
                 "minecraft:entity" => CommandProperty::Entity {
                     flags: Serializable::read_from(buf)?,
                 },
+                "minecraft:angle" => CommandProperty::Angle,
                 "minecraft:game_profile" => CommandProperty::GameProfile,
                 "minecraft:block_pos" => CommandProperty::BlockPos,
                 "minecraft:column_pos" => CommandProperty::ColumnPos,
