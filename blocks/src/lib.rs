@@ -964,7 +964,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        offset Some(variant.data()),
+        offset Some(variant.offset()),
         material material::NON_SOLID,
         model { ("minecraft", variant.as_string() ) },
         tint TintType::Grass,
@@ -7284,6 +7284,14 @@ impl TallGrassVariant {
             TallGrassVariant::DeadBush => 0,
             TallGrassVariant::TallGrass => 1,
             TallGrassVariant::Fern => 2,
+        }
+    }
+
+    fn offset(self) -> usize {
+        match self {
+            TallGrassVariant::TallGrass => 0,
+            TallGrassVariant::Fern => 1,
+            TallGrassVariant::DeadBush => 2,
         }
     }
 }
