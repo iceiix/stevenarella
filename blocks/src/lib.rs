@@ -419,9 +419,9 @@ macro_rules! define_blocks {
                             let id = *flat_id + offset;
                             /*
                             if let Some(vanilla_id) = vanilla_id {
-                                debug!("{} block state = {:?} hierarchical {}:{} offset={}", id, block, vanilla_id >> 4, vanilla_id & 0xF, offset);
+                                println!("{} block state = {:?} hierarchical {}:{} offset={}", id, block, vanilla_id >> 4, vanilla_id & 0xF, offset);
                             } else {
-                                debug!("{} block state = {:?} hierarchical none, offset={}", id, block, offset);
+                                println!("{} block state = {:?} hierarchical none, offset={}", id, block, offset);
                             }
                             */
                             if offset as isize > last_offset {
@@ -446,7 +446,7 @@ macro_rules! define_blocks {
                         if let Some(vanilla_id) = vanilla_id {
                             /*
                             if offset.is_none() {
-                                debug!("(no flat) block state = {:?} hierarchical {}:{}", block, vanilla_id >> 4, vanilla_id & 0xF);
+                                println!("(no flat) block state = {:?} hierarchical {}:{}", block, vanilla_id >> 4, vanilla_id & 0xF);
                             }
                             */
 
@@ -968,6 +968,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
+        offset Some(variant.offset()),
         material material::NON_SOLID,
         model { ("minecraft", variant.as_string() ) },
         tint TintType::Grass,
@@ -7287,6 +7288,14 @@ impl TallGrassVariant {
             TallGrassVariant::DeadBush => 0,
             TallGrassVariant::TallGrass => 1,
             TallGrassVariant::Fern => 2,
+        }
+    }
+
+    fn offset(self) -> usize {
+        match self {
+            TallGrassVariant::TallGrass => 0,
+            TallGrassVariant::Fern => 1,
+            TallGrassVariant::DeadBush => 2,
         }
     }
 }
