@@ -7,7 +7,6 @@ extern crate steven_shared as shared;
 use crate::shared::{Axis, Direction, Position};
 use cgmath::Point3;
 use collision::Aabb3;
-use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 pub mod material;
@@ -43,10 +42,49 @@ macro_rules! create_ids {
     );
 }
 
-struct VanillaIDMap {
+#[derive(Default)]
+pub struct VanillaIDMap {
     flat: Vec<Option<Block>>,
     hier: Vec<Option<Block>>,
     modded: HashMap<String, [Option<Block>; 16]>,
+}
+
+impl VanillaIDMap {
+    pub fn new(protocol_version: i32) -> VanillaIDMap {
+        gen_id_map(protocol_version)
+    }
+
+    pub fn by_vanilla_id(
+        &self,
+        id: usize,
+        protocol_version: i32,
+        modded_block_ids: &HashMap<usize, String>, // TODO: remove and add to constructor
+    ) -> Block {
+        if protocol_version >= 404 {
+            self.flat
+                .get(id)
+                .and_then(|v| *v)
+                .unwrap_or(Block::Missing {})
+        // TODO: support modded 1.13.2+ blocks after https://github.com/iceiix/stevenarella/pull/145
+        } else {
+            if let Some(block) = self.hier.get(id).and_then(|v| *v) {
+                block
+            } else {
+                let data = id & 0xf;
+
+                if let Some(name) = modded_block_ids.get(&(id >> 4)) {
+                    if let Some(blocks_by_data) = self.modded.get(name) {
+                        blocks_by_data[data].unwrap_or(Block::Missing {})
+                    } else {
+                        //info!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
+                        Block::Missing {}
+                    }
+                } else {
+                    Block::Missing {}
+                }
+            }
+        }
+    }
 }
 
 macro_rules! define_blocks {
@@ -150,30 +188,6 @@ macro_rules! define_blocks {
                             None
                         }
                     )+
-                }
-            }
-
-            pub fn by_vanilla_id(id: usize, protocol_version: i32, modded_block_ids: &HashMap<usize, String>) -> Block {
-                if protocol_version >= 404 {
-                    VANILLA_ID_MAP.flat.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
-                    // TODO: support modded 1.13.2+ blocks after https://github.com/iceiix/stevenarella/pull/145
-                } else {
-                    if let Some(block) = VANILLA_ID_MAP.hier.get(id).and_then(|v| *v) {
-                        block
-                    } else {
-                        let data = id & 0xf;
-
-                        if let Some(name) = modded_block_ids.get(&(id >> 4)) {
-                            if let Some(blocks_by_data) = VANILLA_ID_MAP.modded.get(name) {
-                                blocks_by_data[data].unwrap_or(Block::Missing{})
-                            } else {
-                                //info!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
-                                Block::Missing{}
-                            }
-                        } else {
-                            Block::Missing{}
-                        }
-                    }
                 }
             }
 
@@ -475,25 +489,24 @@ macro_rules! define_blocks {
             )+
         }
 
-        lazy_static! {
-            static ref VANILLA_ID_MAP: VanillaIDMap = {
-                let mut blocks_flat = vec![];
-                let mut blocks_hier = vec![];
-                let mut blocks_modded: HashMap<String, [Option<Block>; 16]> = HashMap::new();
-                let mut flat_id = 0;
-                let mut last_internal_id = 0;
-                let mut hier_block_id = 0;
-                $(
-                    block_registration_functions::$name(&mut blocks_flat,
-                                                        &mut blocks_hier,
-                                                        &mut blocks_modded,
-                                                        &mut flat_id,
-                                                        &mut last_internal_id,
-                                                        &mut hier_block_id);
-                )+
+        pub fn gen_id_map(protocol_version: i32) -> VanillaIDMap {
+            let mut blocks_flat = vec![];
+            let mut blocks_hier = vec![];
+            let mut blocks_modded: HashMap<String, [Option<Block>; 16]> = HashMap::new();
+            let mut flat_id = 0;
+            let mut last_internal_id = 0;
+            let mut hier_block_id = 0;
+            // TODO: pass and use protocol_version
+            $(
+                block_registration_functions::$name(&mut blocks_flat,
+                                                    &mut blocks_hier,
+                                                    &mut blocks_modded,
+                                                    &mut flat_id,
+                                                    &mut last_internal_id,
+                                                    &mut hier_block_id);
+            )+
 
-                VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded }
-            };
+            VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded }
         }
     );
 }
