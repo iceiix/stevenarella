@@ -156,7 +156,7 @@ macro_rules! define_blocks {
             }
 
             #[allow(unused_variables, unreachable_code)]
-            pub fn get_flat_offset(&self) -> Option<usize> {
+            pub fn get_flat_offset(&self, protocol_version: i32) -> Option<usize> {
                 match *self {
                     $(
                         Block::$name {
@@ -309,6 +309,7 @@ macro_rules! define_blocks {
             $(
                 #[allow(non_snake_case)]
                 pub fn $name(
+                    protocol_version: i32,
                     blocks_flat: &mut Vec<Option<Block>>,
                     blocks_hier: &mut Vec<Option<Block>>,
                     blocks_modded: &mut HashMap<String, [Option<Block>; 16]>,
@@ -430,7 +431,7 @@ macro_rules! define_blocks {
                                 None
                             };
 
-                        let offset = block.get_flat_offset();
+                        let offset = block.get_flat_offset(protocol_version);
                         if let Some(offset) = offset {
                             let id = *flat_id + offset;
                             if debug_blocks {
@@ -497,9 +498,9 @@ macro_rules! define_blocks {
             let mut flat_id = 0;
             let mut last_internal_id = 0;
             let mut hier_block_id = 0;
-            // TODO: pass and use protocol_version
             $(
-                block_registration_functions::$name(&mut blocks_flat,
+                block_registration_functions::$name(protocol_version,
+                                                    &mut blocks_flat,
                                                     &mut blocks_hier,
                                                     &mut blocks_modded,
                                                     &mut flat_id,
@@ -869,7 +870,7 @@ define_blocks! {
             powered: bool = [true, false],
         },
         data if instrument == NoteBlockInstrument::Harp && note == 0 && powered { Some(0) } else { None },
-        offset instrument.offset(404) // TODO: support passing protocol_version
+        offset instrument.offset(404) // TODO: why not in scope? protocol_version)
             .map(|offset| offset * (25 * 2) + ((note as usize) << 1) + if powered { 0 } else { 1 }),
         model { ("minecraft", "noteblock") },
     }
