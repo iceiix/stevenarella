@@ -483,7 +483,6 @@ macro_rules! define_blocks {
                 let mut flat_id = 0;
                 let mut last_internal_id = 0;
                 let mut hier_block_id = 0;
-
                 $(
                     block_registration_functions::$name(&mut blocks_flat,
                                                         &mut blocks_hier,
@@ -844,13 +843,20 @@ define_blocks! {
                 NoteBlockInstrument::Bell,
                 NoteBlockInstrument::Guitar,
                 NoteBlockInstrument::Chime,
-                NoteBlockInstrument::Xylophone
+                NoteBlockInstrument::Xylophone,
+                NoteBlockInstrument::IronXylophone,
+                NoteBlockInstrument::CowBell,
+                NoteBlockInstrument::Didgeridoo,
+                NoteBlockInstrument::Bit,
+                NoteBlockInstrument::Banjo,
+                NoteBlockInstrument::Pling
             ],
             note: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
             powered: bool = [true, false],
         },
         data if instrument == NoteBlockInstrument::Harp && note == 0 && powered { Some(0) } else { None },
-        offset Some(instrument.offset() * (25 * 2) + ((note as usize) << 1) + if powered { 0 } else { 1 }),
+        offset instrument.offset(404) // TODO: support passing protocol_version
+            .map(|offset| offset * (25 * 2) + ((note as usize) << 1) + if powered { 0 } else { 1 }),
         model { ("minecraft", "noteblock") },
     }
     Bed {
@@ -6343,6 +6349,12 @@ pub enum NoteBlockInstrument {
     Guitar,
     Chime,
     Xylophone,
+    IronXylophone,
+    CowBell,
+    Didgeridoo,
+    Bit,
+    Banjo,
+    Pling,
 }
 
 impl NoteBlockInstrument {
@@ -6358,21 +6370,43 @@ impl NoteBlockInstrument {
             NoteBlockInstrument::Guitar => "guitar",
             NoteBlockInstrument::Chime => "chime",
             NoteBlockInstrument::Xylophone => "xylophone",
+            NoteBlockInstrument::IronXylophone => "iron_xylophone",
+            NoteBlockInstrument::CowBell => "cow_bell",
+            NoteBlockInstrument::Didgeridoo => "didgeridoo",
+            NoteBlockInstrument::Bit => "bit",
+            NoteBlockInstrument::Banjo => "banjo",
+            NoteBlockInstrument::Pling => "pling",
         }
     }
 
-    fn offset(self) -> usize {
+    fn offset(self, protocol_version: i32) -> Option<usize> {
         match self {
-            NoteBlockInstrument::Harp => 0,
-            NoteBlockInstrument::BaseDrum => 1,
-            NoteBlockInstrument::Snare => 2,
-            NoteBlockInstrument::Hat => 3,
-            NoteBlockInstrument::Bass => 4,
-            NoteBlockInstrument::Flute => 5,
-            NoteBlockInstrument::Bell => 6,
-            NoteBlockInstrument::Guitar => 7,
-            NoteBlockInstrument::Chime => 8,
-            NoteBlockInstrument::Xylophone => 9,
+            NoteBlockInstrument::Harp => Some(0),
+            NoteBlockInstrument::BaseDrum => Some(1),
+            NoteBlockInstrument::Snare => Some(2),
+            NoteBlockInstrument::Hat => Some(3),
+            NoteBlockInstrument::Bass => Some(4),
+            NoteBlockInstrument::Flute => Some(5),
+            NoteBlockInstrument::Bell => Some(6),
+            NoteBlockInstrument::Guitar => Some(7),
+            NoteBlockInstrument::Chime => Some(8),
+            NoteBlockInstrument::Xylophone => Some(9),
+            _ => {
+                if protocol_version >= 477 {
+                    match self {
+                        NoteBlockInstrument::Xylophone => Some(10),
+                        NoteBlockInstrument::IronXylophone => Some(11),
+                        NoteBlockInstrument::CowBell => Some(12),
+                        NoteBlockInstrument::Didgeridoo => Some(13),
+                        NoteBlockInstrument::Bit => Some(14),
+                        NoteBlockInstrument::Banjo => Some(15),
+                        NoteBlockInstrument::Pling => Some(16),
+                        _ => unimplemented!(),
+                    }
+                } else {
+                    None
+                }
+            }
         }
     }
 }
