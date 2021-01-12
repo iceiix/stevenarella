@@ -47,6 +47,8 @@ pub struct VanillaIDMap {
     flat: Vec<Option<Block>>,
     hier: Vec<Option<Block>>,
     modded: HashMap<String, [Option<Block>; 16]>,
+
+    protocol_version: i32,
 }
 
 impl VanillaIDMap {
@@ -57,10 +59,9 @@ impl VanillaIDMap {
     pub fn by_vanilla_id(
         &self,
         id: usize,
-        protocol_version: i32,
-        modded_block_ids: &HashMap<usize, String>, // TODO: remove and add to constructor
+        modded_block_ids: &HashMap<usize, String>, // TODO: remove and add to constructor, but have to mutate in Server
     ) -> Block {
-        if protocol_version >= 404 {
+        if self.protocol_version >= 404 {
             self.flat
                 .get(id)
                 .and_then(|v| *v)
@@ -506,7 +507,7 @@ macro_rules! define_blocks {
                                                     &mut hier_block_id);
             )+
 
-            VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded }
+            VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded, protocol_version }
         }
     );
 }
