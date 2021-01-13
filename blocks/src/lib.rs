@@ -100,6 +100,7 @@ macro_rules! define_blocks {
                 },
                 $(data $datafunc:expr,)?
                 $(offset $offsetfunc:expr,)?
+                $(offsets $offsetsfunc:expr,)?
                 $(material $mat:expr,)?
                 model $model:expr,
                 $(variant $variant:expr,)?
@@ -162,6 +163,10 @@ macro_rules! define_blocks {
                         Block::$name {
                             $($fname,)?
                         } => {
+                            $(
+                                let offset: Option<usize> = ($offsetsfunc)(protocol_version).map(|v| v);
+                                return offset;
+                            )?
                             $(
                                 let offset: Option<usize> = ($offsetfunc).map(|v| v);
                                 return offset;
@@ -870,8 +875,8 @@ define_blocks! {
             powered: bool = [true, false],
         },
         data if instrument == NoteBlockInstrument::Harp && note == 0 && powered { Some(0) } else { None },
-        offset instrument.offset(404) // TODO: why not in scope? protocol_version)
-            .map(|offset| offset * (25 * 2) + ((note as usize) << 1) + if powered { 0 } else { 1 }),
+        offsets |protocol_version| (instrument.offset(protocol_version)
+            .map(|offset| offset * (25 * 2) + ((note as usize) << 1) + if powered { 0 } else { 1 })),
         model { ("minecraft", "noteblock") },
     }
     Bed {
