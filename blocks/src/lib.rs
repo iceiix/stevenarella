@@ -2074,6 +2074,39 @@ define_blocks! {
             }) } else { None } },
         model { ("minecraft", "basalt") },
     }
+    PolishedBasalt {
+        props {
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(
+            match axis {
+                Axis::X => 0,
+                Axis::Y => 1,
+                Axis::Z => 2,
+                _ => unreachable!()
+            }) } else { None } },
+        model { ("minecraft", "polished_basalt") },
+    }
+    SoulTorch {
+        props {},
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "soul_torch") },
+    }
+    SoulWallTorch {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(facing.offset()) } else { None } },
+        model { ("minecraft", "soul_wall_torch") },
+    }
     Glowstone {
         props {},
         material Material {
