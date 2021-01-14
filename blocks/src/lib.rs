@@ -876,7 +876,7 @@ define_blocks! {
             powered: bool = [true, false],
         },
         data if instrument == NoteBlockInstrument::Harp && note == 0 && powered { Some(0) } else { None },
-        offsets |protocol_version| (instrument.offset(protocol_version)
+        offsets |protocol_version| (instrument.offsets(protocol_version)
             .map(|offset| offset * (25 * 2) + ((note as usize) << 1) + if powered { 0 } else { 1 })),
         model { ("minecraft", "noteblock") },
     }
@@ -1204,7 +1204,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
-        offsets |protocol_version| (variant.offset(protocol_version)),
+        offsets |protocol_version| (variant.offsets(protocol_version)),
         material material::NON_SOLID,
         model { ("minecraft", variant.as_string()) },
         collision vec![],
@@ -3194,7 +3194,7 @@ define_blocks! {
         },
         data if contents == FlowerPotVariant::Empty { Some(legacy_data as usize) } else { None },
         offsets |protocol_version | {
-            if legacy_data != 0 { None } else { contents.offset(protocol_version) }
+            if legacy_data != 0 { None } else { contents.offsets(protocol_version) }
         },
         material material::NON_SOLID,
         model { ("minecraft", "flower_pot") },
@@ -6447,7 +6447,7 @@ impl NoteBlockInstrument {
         }
     }
 
-    fn offset(self, protocol_version: i32) -> Option<usize> {
+    fn offsets(self, protocol_version: i32) -> Option<usize> {
         match self {
             NoteBlockInstrument::Harp => Some(0),
             NoteBlockInstrument::BaseDrum => Some(1),
@@ -6785,7 +6785,7 @@ impl RedFlowerVariant {
         }
     }
 
-    fn offset(self, protocol_version: i32) -> Option<usize> {
+    fn offsets(self, protocol_version: i32) -> Option<usize> {
         match self {
             RedFlowerVariant::Poppy => Some(0),
             RedFlowerVariant::BlueOrchid => Some(1),
@@ -7565,7 +7565,7 @@ impl FlowerPotVariant {
         }
     }
 
-    pub fn offset(self, protocol_version: i32) -> Option<usize> {
+    pub fn offsets(self, protocol_version: i32) -> Option<usize> {
         match self {
             FlowerPotVariant::Empty => Some(0),
             FlowerPotVariant::OakSapling => Some(1),
