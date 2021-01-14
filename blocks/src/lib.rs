@@ -1572,9 +1572,28 @@ define_blocks! {
                 Rotation::SouthSouthEast
             ],
             waterlogged: bool = [true, false],
+            wood: TreeVariant = [
+                TreeVariant::Oak,
+                TreeVariant::Spruce,
+                TreeVariant::Birch,
+                TreeVariant::Jungle,
+                TreeVariant::Acacia,
+                TreeVariant::DarkOak
+            ],
         },
-        data if !waterlogged { Some(rotation.data()) } else { None },
-        offset Some(rotation.data() * 2 + if waterlogged { 0 } else { 1 }),
+        data if wood == TreeVariant::Oak && !waterlogged { Some(rotation.data()) } else { None },
+        offsets |protocol_version| {
+            let o = rotation.data() * 2 + if waterlogged { 0 } else { 1 };
+            if protocol_version >= 477 {
+                Some(wood.offset() * 2 * 16 + o)
+            } else {
+                if wood == TreeVariant::Oak {
+                    Some(o)
+                } else {
+                    None
+                }
+            }
+        },
         material material::INVISIBLE,
         model { ("minecraft", "standing_sign") },
         collision vec![],
@@ -6759,7 +6778,7 @@ impl RedFlowerVariant {
                         RedFlowerVariant::Cornflower => Some(9),
                         RedFlowerVariant::WitherRose => Some(10),
                         RedFlowerVariant::LilyOfTheValley => Some(11),
-                        _ => unreachable!()
+                        _ => unreachable!(),
                     }
                 } else {
                     None
