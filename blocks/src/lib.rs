@@ -6414,13 +6414,12 @@ impl NoteBlockInstrument {
             _ => {
                 if protocol_version >= 477 {
                     match self {
-                        NoteBlockInstrument::Xylophone => Some(10),
-                        NoteBlockInstrument::IronXylophone => Some(11),
-                        NoteBlockInstrument::CowBell => Some(12),
-                        NoteBlockInstrument::Didgeridoo => Some(13),
-                        NoteBlockInstrument::Bit => Some(14),
-                        NoteBlockInstrument::Banjo => Some(15),
-                        NoteBlockInstrument::Pling => Some(16),
+                        NoteBlockInstrument::IronXylophone => Some(10),
+                        NoteBlockInstrument::CowBell => Some(11),
+                        NoteBlockInstrument::Didgeridoo => Some(12),
+                        NoteBlockInstrument::Bit => Some(13),
+                        NoteBlockInstrument::Banjo => Some(14),
+                        NoteBlockInstrument::Pling => Some(15),
                         _ => unimplemented!(),
                     }
                 } else {
