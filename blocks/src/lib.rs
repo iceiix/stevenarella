@@ -3185,12 +3185,17 @@ define_blocks! {
                 FlowerPotVariant::OrangeTulip,
                 FlowerPotVariant::WhiteTulip,
                 FlowerPotVariant::PinkTulip,
-                FlowerPotVariant::Oxeye
+                FlowerPotVariant::Oxeye,
+                FlowerPotVariant::Cornflower,
+                FlowerPotVariant::LilyOfTheValley,
+                FlowerPotVariant::WitherRose
             ],
             legacy_data: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data if contents == FlowerPotVariant::Empty { Some(legacy_data as usize) } else { None },
-        offset if legacy_data != 0 { None } else { Some(contents.offset()) },
+        offsets |protocol_version | {
+            if legacy_data != 0 { None } else { contents.offset(protocol_version) }
+        },
         material material::NON_SOLID,
         model { ("minecraft", "flower_pot") },
     }
@@ -7524,6 +7529,9 @@ pub enum FlowerPotVariant {
     WhiteTulip,
     PinkTulip,
     Oxeye,
+    Cornflower,
+    LilyOfTheValley,
+    WitherRose,
 }
 
 impl FlowerPotVariant {
@@ -7551,33 +7559,59 @@ impl FlowerPotVariant {
             FlowerPotVariant::WhiteTulip => "white_tulip",
             FlowerPotVariant::PinkTulip => "pink_tulip",
             FlowerPotVariant::Oxeye => "oxeye_daisy",
+            FlowerPotVariant::Cornflower => "cornflower",
+            FlowerPotVariant::LilyOfTheValley => "lily_of_the_valley",
+            FlowerPotVariant::WitherRose => "wither_rose",
         }
     }
 
-    pub fn offset(self) -> usize {
+    pub fn offset(self, protocol_version: i32) -> Option<usize> {
         match self {
-            FlowerPotVariant::Empty => 0,
-            FlowerPotVariant::OakSapling => 1,
-            FlowerPotVariant::SpruceSapling => 2,
-            FlowerPotVariant::BirchSapling => 3,
-            FlowerPotVariant::JungleSapling => 4,
-            FlowerPotVariant::AcaciaSapling => 5,
-            FlowerPotVariant::DarkOakSapling => 6,
-            FlowerPotVariant::Fern => 7,
-            FlowerPotVariant::Dandelion => 8,
-            FlowerPotVariant::Poppy => 9,
-            FlowerPotVariant::BlueOrchid => 10,
-            FlowerPotVariant::Allium => 11,
-            FlowerPotVariant::AzureBluet => 12,
-            FlowerPotVariant::RedTulip => 13,
-            FlowerPotVariant::OrangeTulip => 14,
-            FlowerPotVariant::WhiteTulip => 15,
-            FlowerPotVariant::PinkTulip => 16,
-            FlowerPotVariant::Oxeye => 17,
-            FlowerPotVariant::RedMushroom => 18,
-            FlowerPotVariant::BrownMushroom => 19,
-            FlowerPotVariant::DeadBush => 20,
-            FlowerPotVariant::Cactus => 21,
+            FlowerPotVariant::Empty => Some(0),
+            FlowerPotVariant::OakSapling => Some(1),
+            FlowerPotVariant::SpruceSapling => Some(2),
+            FlowerPotVariant::BirchSapling => Some(3),
+            FlowerPotVariant::JungleSapling => Some(4),
+            FlowerPotVariant::AcaciaSapling => Some(5),
+            FlowerPotVariant::DarkOakSapling => Some(6),
+            FlowerPotVariant::Fern => Some(7),
+            FlowerPotVariant::Dandelion => Some(8),
+            FlowerPotVariant::Poppy => Some(9),
+            FlowerPotVariant::BlueOrchid => Some(10),
+            FlowerPotVariant::Allium => Some(11),
+            FlowerPotVariant::AzureBluet => Some(12),
+            FlowerPotVariant::RedTulip => Some(13),
+            FlowerPotVariant::OrangeTulip => Some(14),
+            FlowerPotVariant::WhiteTulip => Some(15),
+            FlowerPotVariant::PinkTulip => Some(16),
+            FlowerPotVariant::Oxeye => Some(17),
+
+            FlowerPotVariant::Cornflower => {
+                if protocol_version >= 477 {
+                    Some(18)
+                } else {
+                    None
+                }
+            }
+            FlowerPotVariant::LilyOfTheValley => {
+                if protocol_version >= 477 {
+                    Some(19)
+                } else {
+                    None
+                }
+            }
+            FlowerPotVariant::WitherRose => {
+                if protocol_version >= 477 {
+                    Some(20)
+                } else {
+                    None
+                }
+            }
+
+            FlowerPotVariant::RedMushroom => Some(if protocol_version >= 477 { 21 } else { 18 }),
+            FlowerPotVariant::BrownMushroom => Some(if protocol_version >= 477 { 22 } else { 19 }),
+            FlowerPotVariant::DeadBush => Some(if protocol_version >= 477 { 23 } else { 20 }),
+            FlowerPotVariant::Cactus => Some(if protocol_version >= 477 { 24 } else { 21 }),
         }
     }
 }
