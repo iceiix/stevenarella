@@ -714,6 +714,18 @@ define_blocks! {
         props {},
         model { ("minecraft", "coal_ore") },
     }
+    NetherGoldOre {
+        props {},
+        data None,
+        offsets |protocol_version| {
+            if protocol_version >= 735 {
+                Some(0)
+            } else {
+                None
+            }
+        },
+        model { ("minecraft", "nether_gold_ore") },
+    }
     Log {
         props {
             variant: TreeVariant = [
