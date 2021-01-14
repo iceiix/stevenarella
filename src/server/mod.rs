@@ -1950,11 +1950,9 @@ impl Server {
     fn on_block_change(&mut self, location: Position, id: i32) {
         self.world.set_block(
             location,
-            block::Block::by_vanilla_id(
-                id as usize,
-                self.protocol_version,
-                &self.world.modded_block_ids,
-            ),
+            self.world
+                .id_map
+                .by_vanilla_id(id as usize, &self.world.modded_block_ids),
         )
     }
 
@@ -1988,11 +1986,9 @@ impl Server {
 
             self.world.set_block(
                 Position::new(sx + lx as i32, sy + ly as i32, sz + lz as i32),
-                block::Block::by_vanilla_id(
-                    block_raw_id as usize,
-                    self.protocol_version,
-                    &self.world.modded_block_ids,
-                ),
+                self.world
+                    .id_map
+                    .by_vanilla_id(block_raw_id as usize, &self.world.modded_block_ids),
             );
         }
     }
@@ -2010,11 +2006,9 @@ impl Server {
                     record.y as i32,
                     oz + (record.xz & 0xF) as i32,
                 ),
-                block::Block::by_vanilla_id(
-                    record.block_id.0 as usize,
-                    self.protocol_version,
-                    &self.world.modded_block_ids,
-                ),
+                self.world
+                    .id_map
+                    .by_vanilla_id(record.block_id.0 as usize, &self.world.modded_block_ids),
             );
         }
     }
@@ -2040,11 +2034,9 @@ impl Server {
 
             self.world.set_block(
                 Position::new(x, y, z),
-                block::Block::by_vanilla_id(
-                    id as usize,
-                    self.protocol_version,
-                    &self.world.modded_block_ids,
-                ),
+                self.world
+                    .id_map
+                    .by_vanilla_id(id as usize, &self.world.modded_block_ids),
             );
         }
     }

@@ -46,6 +46,7 @@ pub struct World {
 
     protocol_version: i32,
     pub modded_block_ids: HashMap<usize, String>,
+    pub id_map: block::VanillaIDMap,
 }
 
 #[derive(Clone, Debug)]
@@ -91,8 +92,10 @@ struct LightUpdate {
 
 impl World {
     pub fn new(protocol_version: i32) -> World {
+        let id_map = block::VanillaIDMap::new(protocol_version);
         World {
             protocol_version,
+            id_map,
             ..Default::default()
         }
     }
@@ -686,11 +689,8 @@ impl World {
                     let id = data.read_u16::<byteorder::LittleEndian>()?;
                     section.blocks.set(
                         bi,
-                        block::Block::by_vanilla_id(
-                            id as usize,
-                            self.protocol_version,
-                            &self.modded_block_ids,
-                        ),
+                        self.id_map
+                            .by_vanilla_id(id as usize, &self.modded_block_ids),
                     );
 
                     // Spawn block entities
@@ -938,11 +938,8 @@ impl World {
                         | (block_meta[i].get(bi) as u16);
                     section.blocks.set(
                         bi,
-                        block::Block::by_vanilla_id(
-                            id as usize,
-                            self.protocol_version,
-                            &self.modded_block_ids,
-                        ),
+                        self.id_map
+                            .by_vanilla_id(id as usize, &self.modded_block_ids),
                     );
 
                     // Spawn block entities
@@ -1056,11 +1053,9 @@ impl World {
                     let count = VarInt::read_from(&mut data)?.0;
                     for i in 0..count {
                         let id = VarInt::read_from(&mut data)?.0;
-                        let bl = block::Block::by_vanilla_id(
-                            id as usize,
-                            self.protocol_version,
-                            &self.modded_block_ids,
-                        );
+                        let bl = self
+                            .id_map
+                            .by_vanilla_id(id as usize, &self.modded_block_ids);
                         mappings.insert(i as usize, bl);
                     }
                 }
@@ -1077,11 +1072,7 @@ impl World {
                             .get(&id)
                             .cloned()
                             // TODO: fix or_fun_call, but do not re-borrow self
-                            .unwrap_or(block::Block::by_vanilla_id(
-                                id,
-                                self.protocol_version,
-                                &self.modded_block_ids,
-                            )),
+                            .unwrap_or(self.id_map.by_vanilla_id(id, &self.modded_block_ids)),
                     );
                     // Spawn block entities
                     let b = section.blocks.get(bi);
