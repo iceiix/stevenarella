@@ -4191,7 +4191,9 @@ define_blocks! {
             type_: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom, BlockHalf::Double],
             variant: StoneSlabVariant = [
                 StoneSlabVariant::Stone,
+                StoneSlabVariant::SmoothStone,
                 StoneSlabVariant::Sandstone,
+                StoneSlabVariant::CutSandstone,
                 StoneSlabVariant::PetrifiedWood,
                 StoneSlabVariant::Cobblestone,
                 StoneSlabVariant::Brick,
@@ -4199,12 +4201,15 @@ define_blocks! {
                 StoneSlabVariant::NetherBrick,
                 StoneSlabVariant::Quartz,
                 StoneSlabVariant::RedSandstone,
+                StoneSlabVariant::CutRedSandstone,
                 StoneSlabVariant::Purpur
             ],
             waterlogged: bool = [true, false],
         },
         data None::<usize>,
-        offset Some(if waterlogged { 0 } else { 1 } + type_.offset() * 2 + variant.offset() * (2 * 3)),
+        offsets |protocol_version| {
+            variant.offsets(protocol_version).map(|o| if waterlogged { 0 } else { 1 } + type_.offset() * 2 + o * (2 * 3))
+        },
         material material::NON_SOLID,
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("type={}", type_.as_string()),
@@ -6978,7 +6983,9 @@ impl PistonType {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum StoneSlabVariant {
     Stone,
+    SmoothStone,
     Sandstone,
+    CutSandstone,
     PetrifiedWood,
     Cobblestone,
     Brick,
@@ -6986,6 +6993,7 @@ pub enum StoneSlabVariant {
     NetherBrick,
     Quartz,
     RedSandstone,
+    CutRedSandstone,
     Purpur,
 }
 
@@ -6993,7 +7001,9 @@ impl StoneSlabVariant {
     pub fn as_string(self) -> &'static str {
         match self {
             StoneSlabVariant::Stone => "stone",
+            StoneSlabVariant::SmoothStone => "smooth_stone",
             StoneSlabVariant::Sandstone => "sandstone",
+            StoneSlabVariant::CutSandstone => "cut_sandstone",
             StoneSlabVariant::PetrifiedWood => "wood_old",
             StoneSlabVariant::Cobblestone => "cobblestone",
             StoneSlabVariant::Brick => "brick",
@@ -7001,6 +7011,7 @@ impl StoneSlabVariant {
             StoneSlabVariant::NetherBrick => "nether_brick",
             StoneSlabVariant::Quartz => "quartz",
             StoneSlabVariant::RedSandstone => "red_sandstone",
+            StoneSlabVariant::CutRedSandstone => "cut_red_sandstone",
             StoneSlabVariant::Purpur => "purpur",
         }
     }
@@ -7017,21 +7028,43 @@ impl StoneSlabVariant {
             StoneSlabVariant::StoneBrick => 5,
             StoneSlabVariant::NetherBrick => 6,
             StoneSlabVariant::Quartz => 7,
+            _ => unimplemented!()
         }
     }
 
-    fn offset(self) -> usize {
-        match self {
-            StoneSlabVariant::Stone => 0,
-            StoneSlabVariant::Sandstone => 1,
-            StoneSlabVariant::PetrifiedWood => 2,
-            StoneSlabVariant::Cobblestone => 3,
-            StoneSlabVariant::Brick => 4,
-            StoneSlabVariant::StoneBrick => 5,
-            StoneSlabVariant::NetherBrick => 6,
-            StoneSlabVariant::Quartz => 7,
-            StoneSlabVariant::RedSandstone => 8,
-            StoneSlabVariant::Purpur => 9,
+    fn offsets(self, protocol_version: i32) -> Option<usize> {
+        if protocol_version >= 477 {
+            match self {
+                StoneSlabVariant::Stone => Some(0),
+                StoneSlabVariant::SmoothStone => Some(1),
+                StoneSlabVariant::Sandstone => Some(2),
+                StoneSlabVariant::CutSandstone => Some(3),
+                StoneSlabVariant::PetrifiedWood => Some(4),
+                StoneSlabVariant::Cobblestone => Some(5),
+                StoneSlabVariant::Brick => Some(6),
+                StoneSlabVariant::StoneBrick => Some(7),
+                StoneSlabVariant::NetherBrick => Some(8),
+                StoneSlabVariant::Quartz => Some(9),
+                StoneSlabVariant::RedSandstone => Some(10),
+                StoneSlabVariant::CutRedSandstone => Some(11),
+                StoneSlabVariant::Purpur => Some(12),
+            }
+        } else {
+            match self {
+                StoneSlabVariant::Stone => Some(0),
+                StoneSlabVariant::SmoothStone => None,
+                StoneSlabVariant::Sandstone => Some(1),
+                StoneSlabVariant::CutSandstone => None,
+                StoneSlabVariant::PetrifiedWood => Some(2),
+                StoneSlabVariant::Cobblestone => Some(3),
+                StoneSlabVariant::Brick => Some(4),
+                StoneSlabVariant::StoneBrick => Some(5),
+                StoneSlabVariant::NetherBrick => Some(6),
+                StoneSlabVariant::Quartz => Some(7),
+                StoneSlabVariant::RedSandstone => Some(8),
+                StoneSlabVariant::CutRedSandstone => None,
+                StoneSlabVariant::Purpur => Some(9),
+            }
         }
     }
 }
