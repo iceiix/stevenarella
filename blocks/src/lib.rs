@@ -7028,7 +7028,7 @@ impl StoneSlabVariant {
             StoneSlabVariant::StoneBrick => 5,
             StoneSlabVariant::NetherBrick => 6,
             StoneSlabVariant::Quartz => 7,
-            _ => unimplemented!()
+            _ => unimplemented!(),
         }
     }
 
