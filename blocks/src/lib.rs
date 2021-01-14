@@ -157,6 +157,7 @@ macro_rules! define_blocks {
             }
 
             #[allow(unused_variables, unreachable_code)]
+            #[allow(clippy::redundant_closure_call)] // TODO: fix 'try not to call a closure in the expression where it is declared'
             pub fn get_flat_offset(&self, protocol_version: i32) -> Option<usize> {
                 match *self {
                     $(
