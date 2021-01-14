@@ -1197,10 +1197,14 @@ define_blocks! {
                 RedFlowerVariant::OrangeTulip,
                 RedFlowerVariant::WhiteTulip,
                 RedFlowerVariant::PinkTulip,
-                RedFlowerVariant::OxeyeDaisy
+                RedFlowerVariant::OxeyeDaisy,
+                RedFlowerVariant::Cornflower,
+                RedFlowerVariant::WitherRose,
+                RedFlowerVariant::LilyOfTheValley
             ],
         },
         data Some(variant.data()),
+        offsets |protocol_version| (variant.offset(protocol_version)),
         material material::NON_SOLID,
         model { ("minecraft", variant.as_string()) },
         collision vec![],
@@ -6421,7 +6425,7 @@ impl NoteBlockInstrument {
                         NoteBlockInstrument::Bit => Some(13),
                         NoteBlockInstrument::Banjo => Some(14),
                         NoteBlockInstrument::Pling => Some(15),
-                        _ => unimplemented!(),
+                        _ => unreachable!(),
                     }
                 } else {
                     None
@@ -6697,6 +6701,9 @@ pub enum RedFlowerVariant {
     WhiteTulip,
     PinkTulip,
     OxeyeDaisy,
+    Cornflower,
+    WitherRose,
+    LilyOfTheValley,
 }
 
 impl RedFlowerVariant {
@@ -6711,6 +6718,9 @@ impl RedFlowerVariant {
             RedFlowerVariant::WhiteTulip => "white_tulip",
             RedFlowerVariant::PinkTulip => "pink_tulip",
             RedFlowerVariant::OxeyeDaisy => "oxeye_daisy",
+            RedFlowerVariant::Cornflower => "cornflower",
+            RedFlowerVariant::WitherRose => "wither_rose",
+            RedFlowerVariant::LilyOfTheValley => "lily_of_the_valley",
         }
     }
 
@@ -6725,6 +6735,36 @@ impl RedFlowerVariant {
             RedFlowerVariant::WhiteTulip => 6,
             RedFlowerVariant::PinkTulip => 7,
             RedFlowerVariant::OxeyeDaisy => 8,
+            // TODO: shouldn't be available protocol_version < 477
+            RedFlowerVariant::Cornflower => 9,
+            RedFlowerVariant::WitherRose => 10,
+            RedFlowerVariant::LilyOfTheValley => 11,
+        }
+    }
+
+    fn offset(self, protocol_version: i32) -> Option<usize> {
+        match self {
+            RedFlowerVariant::Poppy => Some(0),
+            RedFlowerVariant::BlueOrchid => Some(1),
+            RedFlowerVariant::Allium => Some(2),
+            RedFlowerVariant::AzureBluet => Some(3),
+            RedFlowerVariant::RedTulip => Some(4),
+            RedFlowerVariant::OrangeTulip => Some(5),
+            RedFlowerVariant::WhiteTulip => Some(6),
+            RedFlowerVariant::PinkTulip => Some(7),
+            RedFlowerVariant::OxeyeDaisy => Some(8),
+            _ => {
+                if protocol_version >= 477 {
+                    match self {
+                        RedFlowerVariant::Cornflower => Some(9),
+                        RedFlowerVariant::WitherRose => Some(10),
+                        RedFlowerVariant::LilyOfTheValley => Some(11),
+                        _ => unreachable!()
+                    }
+                } else {
+                    None
+                }
+            }
         }
     }
 }
