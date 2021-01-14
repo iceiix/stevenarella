@@ -2055,6 +2055,25 @@ define_blocks! {
             Point3::new(1.0, 7.0/8.0, 1.0)
         )],
     }
+    SoulSoil {
+        props {},
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "soul_soil") },
+    }
+    Basalt {
+        props {
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(
+            match axis {
+                Axis::X => 0,
+                Axis::Y => 1,
+                Axis::Z => 2,
+                _ => unreachable!()
+            }) } else { None } },
+        model { ("minecraft", "basalt") },
+    }
     Glowstone {
         props {},
         material Material {
