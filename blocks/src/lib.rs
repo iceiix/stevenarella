@@ -1694,9 +1694,28 @@ define_blocks! {
                 Direction::East
             ],
             waterlogged: bool = [true, false],
+            wood: TreeVariant = [
+                TreeVariant::Oak,
+                TreeVariant::Spruce,
+                TreeVariant::Birch,
+                TreeVariant::Jungle,
+                TreeVariant::Acacia,
+                TreeVariant::DarkOak
+            ],
         },
-        data if !waterlogged { Some(facing.index()) } else { None },
-        offset Some(if waterlogged { 0 } else { 1 } + facing.horizontal_offset() * 2),
+        data if wood == TreeVariant::Oak && !waterlogged { Some(facing.index()) } else { None },
+        offsets |protocol_version| {
+            let o = if waterlogged { 0 } else { 1 } + facing.horizontal_offset() * 2;
+            if protocol_version >= 477 {
+                Some(wood.offset() * 2 * 4 + o)
+            } else {
+                if wood == TreeVariant::Oak {
+                    Some(o)
+                } else {
+                    None
+                }
+            }
+        },
         material material::INVISIBLE,
         model { ("minecraft", "wall_sign") },
         variant format!("facing={}", facing.as_string()),
