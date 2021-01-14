@@ -717,13 +717,7 @@ define_blocks! {
     NetherGoldOre {
         props {},
         data None,
-        offsets |protocol_version| {
-            if protocol_version >= 735 {
-                Some(0)
-            } else {
-                None
-            }
-        },
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
         model { ("minecraft", "nether_gold_ore") },
     }
     Log {
@@ -1400,6 +1394,12 @@ define_blocks! {
             "east" => east == (val == "true"),
             _ => false,
         },
+    }
+    SoulFire {
+        props {},
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "soul_fire") },
+        collision vec![],
     }
     MobSpawner {
         props {},
