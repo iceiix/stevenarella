@@ -2392,6 +2392,14 @@ define_blocks! {
             _ => false,
         },
     }
+    Chain {
+        props {
+            waterlogged: bool = [true, false],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(if waterlogged { 1 } else { 0 }) } else { None } },
+        model { ("minecraft", "chain") },
+    }
     GlassPane {
         props {
             north: bool = [false, true],
