@@ -714,6 +714,12 @@ define_blocks! {
         props {},
         model { ("minecraft", "coal_ore") },
     }
+    NetherGoldOre {
+        props {},
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "nether_gold_ore") },
+    }
     Log {
         props {
             variant: TreeVariant = [
@@ -1389,6 +1395,12 @@ define_blocks! {
             _ => false,
         },
     }
+    SoulFire {
+        props {},
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "soul_fire") },
+        collision vec![],
+    }
     MobSpawner {
         props {},
         material material::NON_SOLID,
@@ -2043,6 +2055,58 @@ define_blocks! {
             Point3::new(1.0, 7.0/8.0, 1.0)
         )],
     }
+    SoulSoil {
+        props {},
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "soul_soil") },
+    }
+    Basalt {
+        props {
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(
+            match axis {
+                Axis::X => 0,
+                Axis::Y => 1,
+                Axis::Z => 2,
+                _ => unreachable!()
+            }) } else { None } },
+        model { ("minecraft", "basalt") },
+    }
+    PolishedBasalt {
+        props {
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(
+            match axis {
+                Axis::X => 0,
+                Axis::Y => 1,
+                Axis::Z => 2,
+                _ => unreachable!()
+            }) } else { None } },
+        model { ("minecraft", "polished_basalt") },
+    }
+    SoulTorch {
+        props {},
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "soul_torch") },
+    }
+    SoulWallTorch {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(facing.offset()) } else { None } },
+        model { ("minecraft", "soul_wall_torch") },
+    }
     Glowstone {
         props {},
         material Material {
@@ -2327,6 +2391,34 @@ define_blocks! {
             "east" => east == (val == "true"),
             _ => false,
         },
+    }
+    Chain {
+        props {
+            waterlogged: bool = [true, false],
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
+        },
+        data None,
+        offsets |protocol_version| {
+            if protocol_version >= 735 {
+                let o = if waterlogged { 1 } else { 0 };
+                if protocol_version >= 751 {
+                    Some(match axis {
+                        Axis::X => 0,
+                        Axis::Y => 1,
+                        Axis::Z => 2,
+                        _ => unreachable!()
+                        } * 2 + o)
+                } else {
+                    match axis {
+                        Axis::Y => Some(o),
+                        _ => None,
+                    }
+                }
+            } else {
+                None
+            }
+        },
+        model { ("minecraft", "chain") },
     }
     GlassPane {
         props {
