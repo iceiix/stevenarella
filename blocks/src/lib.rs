@@ -2395,9 +2395,29 @@ define_blocks! {
     Chain {
         props {
             waterlogged: bool = [true, false],
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
         },
         data None,
-        offsets |protocol_version| { if protocol_version >= 735 { Some(if waterlogged { 1 } else { 0 }) } else { None } },
+        offsets |protocol_version| {
+            if protocol_version >= 735 {
+                let o = if waterlogged { 1 } else { 0 };
+                if protocol_version >= 751 {
+                    Some(match axis {
+                        Axis::X => 0,
+                        Axis::Y => 1,
+                        Axis::Z => 2,
+                        _ => unreachable!()
+                        } * 2 + o)
+                } else {
+                    match axis {
+                        Axis::Y => Some(o),
+                        _ => None,
+                    }
+                }
+            } else {
+                None
+            }
+        },
         model { ("minecraft", "chain") },
     }
     GlassPane {
