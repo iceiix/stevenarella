@@ -389,12 +389,9 @@ impl Container {
         }
 
         if let Some(e) = clicked_element {
-            match e {
-                Element::TextBox(_) => {
-                    self.clear_focus();
-                    e.set_focused(true);
-                }
-                _ => (),
+            if let Element::TextBox(_) = e {
+                self.clear_focus();
+                e.set_focused(true);
             }
         }
     }
