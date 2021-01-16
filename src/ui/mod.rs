@@ -379,16 +379,31 @@ impl Container {
         let mx = (x / width) * SCALED_WIDTH;
         let my = (y / height) * SCALED_HEIGHT;
 
+        let mut clicked_element: Option<&Element> = None;
         for e in &self.elements {
             let r = Self::compute_draw_region(e, sw, sh, &SCREEN);
             if mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h {
                 e.click_at(&r, game, mx, my, sw, sh);
+                clicked_element = Some(e);
+            }
+        }
+
+        if let Some(e) = clicked_element {
+            if let Element::TextBox(_) = e {
+                self.clear_focus();
+                e.set_focused(true);
             }
         }
     }
 
     fn add_focusable(&mut self, el: WeakElement) {
         self.focusable_elements.push(el);
+    }
+
+    fn clear_focus(&self) {
+        for e in &self.elements {
+            e.set_focused(false);
+        }
     }
 
     pub fn cycle_focus(&mut self) {
