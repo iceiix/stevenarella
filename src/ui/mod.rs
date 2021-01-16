@@ -1537,9 +1537,6 @@ impl UIElement for TextBox {
         ctrl_pressed: bool,
     ) {
         match (key, down) {
-            (VirtualKeyCode::Back, _) => {
-                self.input.pop();
-            }
             (VirtualKeyCode::Return, false) => {
                 use std::mem;
                 let len = self.submit_funcs.len();
@@ -1564,6 +1561,12 @@ impl UIElement for TextBox {
     }
 
     fn key_type(&mut self, _game: &mut crate::Game, c: char) {
+        if c == '\x7f' || c == '\x08' {
+            // Backspace
+            self.input.pop();
+            return;
+        }
+
         self.input.push(c);
     }
 
