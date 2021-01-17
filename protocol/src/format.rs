@@ -48,9 +48,16 @@ impl Component {
         } else if v.get("translate").is_some() {
             let translate_key = v.get("translate").unwrap().as_str().unwrap();
             if let serde_json::Value::Array(args) = v.get("with").unwrap() {
-                println!("args = {:?}", args);
+                // TODO: recursively build components, avoid throwing away all but "text"
+                let text_args: Vec<&str> = args.iter().map(|v| v.get("text").unwrap().as_str().unwrap()).collect();
                 // TODO: translations, https://wiki.vg/Chat#Translation_component
-                Component::Text(TextComponent::new(translate_key))
+                Component::Text(TextComponent::new(
+                    match translate_key {
+                        "chat.type.text" => format!("<{}> {}", text_args[0], text_args[1]),
+                        "chat.type.announcement" => format!("[{}] {}", text_args[0], text_args[1]),
+                        _ => format!("unhandled: {}", translate_key),
+                    }.as_str()
+                ))
             } else {
                 panic!("format::Component from_value {:?}: translate {:?} with no 'with'", v, translate_key)
             }
