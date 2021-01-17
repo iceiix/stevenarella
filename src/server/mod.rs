@@ -550,6 +550,9 @@ impl Server {
                             UpdateSign_u16 => on_sign_update_u16,
                             PlayerInfo => on_player_info,
                             PlayerInfo_String => on_player_info_string,
+                            ServerMessage_NoPosition => on_servermessage_noposition,
+                            ServerMessage_Position => on_servermessage_position,
+                            ServerMessage_Sender => on_servermessage_sender,
                             Disconnect => on_disconnect,
                             // Entities
                             EntityDestroy => on_entity_destroy,
@@ -1767,6 +1770,18 @@ impl Server {
                 }
             }
         }
+    }
+
+    fn on_servermessage_noposition(&mut self, _m: packet::play::clientbound::ServerMessage_NoPosition) {
+        todo!()
+    }
+
+    fn on_servermessage_position(&mut self, _m: packet::play::clientbound::ServerMessage_Position) {
+        todo!()
+    }
+
+    fn on_servermessage_sender(&mut self, m: packet::play::clientbound::ServerMessage_Sender) {
+        println!("m = {:?}", m);
     }
 
     fn load_block_entities(&mut self, block_entities: Vec<Option<crate::nbt::NamedTag>>) {
