@@ -1772,7 +1772,10 @@ impl Server {
         }
     }
 
-    fn on_servermessage_noposition(&mut self, _m: packet::play::clientbound::ServerMessage_NoPosition) {
+    fn on_servermessage_noposition(
+        &mut self,
+        _m: packet::play::clientbound::ServerMessage_NoPosition,
+    ) {
         todo!()
     }
 
