@@ -46,10 +46,14 @@ impl Component {
         } else if v.get("text").is_some() {
             Component::Text(TextComponent::from_value(v, modifier))
         } else if v.get("translate").is_some() {
-            // TODO: translations
-            Component::Text(TextComponent::new(
-                v.get("translate").unwrap().as_str().unwrap(),
-            ))
+            let translate_key = v.get("translate").unwrap().as_str().unwrap();
+            if let serde_json::Value::Array(args) = v.get("with").unwrap() {
+                println!("args = {:?}", args);
+                // TODO: translations, https://wiki.vg/Chat#Translation_component
+                Component::Text(TextComponent::new(translate_key))
+            } else {
+                panic!("format::Component from_value {:?}: translate {:?} with no 'with'", v, translate_key)
+            }
         } else {
             modifier.color = Some(Color::RGB(255, 0, 0));
             Component::Text(TextComponent {
