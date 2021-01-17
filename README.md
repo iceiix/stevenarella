@@ -24,6 +24,7 @@ Discussion forum: [https://github.com/iceiix/stevenarella/discussions](https://g
 
 | Game version | Protocol version | Supported? |
 | ------ | --- | --- |
+| 1.16.5 | 754 | ✓ |
 | 1.16.4 | 754 | ✓ |
 | 1.16.3 | 753 | ✓ |
 | 1.16.2 | 751 | ✓ |

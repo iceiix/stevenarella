@@ -26,6 +26,7 @@ mod v1_9_2;
 pub fn protocol_name_to_protocol_version(s: String) -> i32 {
     match s.as_ref() {
         "" => SUPPORTED_PROTOCOLS[0],
+        "1.16.5" => 754,
         "1.16.4" => 754,
         "1.16.3" => 753,
         "1.16.2" => 751,
