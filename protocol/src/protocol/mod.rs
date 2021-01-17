@@ -30,7 +30,7 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
 use instant::{Duration, Instant};
-use log::debug;
+use log::{debug, warn};
 use std::convert;
 use std::default;
 use std::fmt;
@@ -1243,7 +1243,7 @@ impl Conn {
                         }
                     }
                 } else {
-                    panic!(
+                    warn!(
                         "Unrecognized modinfo type in server ping response: {} in {}",
                         modinfo_type, modinfo
                     );
