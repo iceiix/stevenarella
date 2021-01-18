@@ -1669,7 +1669,8 @@ impl Server {
         &mut self,
         player_info: packet::play::clientbound::PlayerInfo_String,
     ) {
-        let uuid = protocol::UUID::from_player_name(&player_info.name);
+        // TODO: we need to map the UUID
+        let uuid = protocol::UUID::default(); //from_player_name(&player_info.name);
 
         if player_info.online {
             self.players.entry(uuid.clone()).or_insert(PlayerInfo {

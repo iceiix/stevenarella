@@ -469,25 +469,6 @@ impl Serializable for UUID {
     }
 }
 
-impl UUID {
-    pub fn from_player_name(name: &str) -> Self {
-        use uuid::Uuid; // TODO: use this crate elsewhere? currently only used in from_player_name()
-
-        let mut s = String::from("OfflinePlayer:");
-        s.push_str(name);
-
-        // TODO: uuid namespace? Should match https://github.com/AdoptOpenJDK/openjdk-jdk8u/blob/9a91972c76ddda5c1ce28b50ca38cbd8a30b7a72/jdk/src/share/classes/java/util/UUID.java#L153-L175
-        let u = Uuid::new_v3(&Uuid::NAMESPACE_X500, s.as_bytes());
-        // TODO: verify uuid matches https://wiki.vg/Protocol#Spawn_Player
-
-        UUID(
-            (u.as_u128() >> 64) as u64,
-            (u.as_u128() & 0xffff_ffff_ffff_ffff) as u64,
-        )
-    }
-    // TODO: for NPCs, v2 UUIDs
-}
-
 pub struct Biomes3D {
     pub data: [i32; 1024],
 }
