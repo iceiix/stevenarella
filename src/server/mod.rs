@@ -1397,21 +1397,16 @@ impl Server {
         &mut self,
         spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_String,
     ) {
-        println!("on_player_spawn_i32_helditem_string spawn = {:?}", spawn);
-
-        // TODO: find existing PlayerInfo_String-added field, fill in fields
-
-        // We now know the UUIDs
-        let uuid = protocol::UUID::from_str(&spawn.uuid)
-            .expect("invalid UUID in SpawnPlayer_i32_HeldItem_String");
+        // 1.7.10: populate the player list since we only now know the UUID
+        let uuid = protocol::UUID::from_str(&spawn.uuid).unwrap();
         self.players.entry(uuid.clone()).or_insert(PlayerInfo {
             name: spawn.name.clone(),
             uuid: uuid.clone(),
             skin_url: None,
 
             display_name: None,
-            ping: 0,                         // TODO: don't overwrite
-            gamemode: Gamemode::from_int(0), // TODO: don't overwrite
+            ping: 0, // TODO: don't overwrite from PlayerInfo_String
+            gamemode: Gamemode::from_int(0),
         });
 
         self.on_player_spawn(
@@ -1685,11 +1680,13 @@ impl Server {
             ))));
     }
 
-    fn on_player_info_string(&mut self, player_info: packet::play::clientbound::PlayerInfo_String) {
-        // TODO: no UUID, change self.players to Vec, remove HashMap<UUID>; set Option<UUID> to None
+    fn on_player_info_string(
+        &mut self,
+        _player_info: packet::play::clientbound::PlayerInfo_String,
+    ) {
+        // TODO: track online players, for 1.7.10 - this is for the <tab> online player list
+        // self.players in 1.7.10 will be only spawned players (within client range)
         /*
-        let uuid = protocol::UUID::default(); //from_player_name(&player_info.name);
-
         if player_info.online {
             self.players.entry(uuid.clone()).or_insert(PlayerInfo {
                 name: player_info.name.clone(),
