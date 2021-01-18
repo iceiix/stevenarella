@@ -1,8 +1,6 @@
 name: Build
 on:
   push:
-env:
-  RUST_VERSION: 1.49.0
 
 jobs:
   linux:
@@ -13,7 +11,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           # TODO: refactor toolchain version
-          toolchain: $RUST_VERSION
+          toolchain: 1.49.0
           components: clippy, rustfmt
           default: true
       - name: Install dependencies
@@ -55,7 +53,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: $RUST_VERSION
+          toolchain: 1.49.0
           components: clippy, rustfmt
           default: true
       - name: Build binary
@@ -93,7 +91,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: $RUST_VERSION
+          toolchain: 1.49.0
           components: clippy, rustfmt
           default: true
       - name: Build binary
