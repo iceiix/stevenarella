@@ -7,6 +7,13 @@ description = "Multi-protocol multi-platform Minecraft-compatible client"
 repository = "https://github.com/iceiix/stevenarella"
 license = "MIT/Apache-2.0"
 
+[package.metadata.bundle]
+name = "Stevenarella"
+identifier = "com.github.iceiix.stevenarella"
+#icon = ["resources/steven.icns"]
+resources = []
+osx_minimum_system_version = "10.14"
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 path = "src/main.rs"
