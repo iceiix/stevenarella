@@ -114,7 +114,7 @@ impl Manager {
                 v.vertex_pointer(4, gl::UNSIGNED_BYTE, true, 36, 28)
             }
             if let Some(v) = collection.shader.id {
-                v.vertex_pointer_int(1, gl::UNSIGNED_BYTE, 36, 32)
+                v.vertex_pointer_int(1, gl::BYTE, 36, 32)
             }
 
             let mut model = Model {
@@ -249,19 +249,19 @@ impl Manager {
         gl::enable(gl::BLEND);
         for collection in &self.collections {
             collection.shader.program.use_program();
-            if let Some(v) = collection.shader.perspective_matrix {
+            if let Some(v) = &collection.shader.perspective_matrix {
                 v.set_matrix4(perspective_matrix)
             }
-            if let Some(v) = collection.shader.camera_matrix {
+            if let Some(v) = &collection.shader.camera_matrix {
                 v.set_matrix4(camera_matrix)
             }
-            if let Some(v) = collection.shader.texture {
+            if let Some(v) = &collection.shader.texture {
                 v.set_int(0)
             }
-            if let Some(v) = collection.shader.sky_offset {
+            if let Some(v) = &collection.shader.sky_offset {
                 v.set_float(sky_offset)
             }
-            if let Some(v) = collection.shader.light_level {
+            if let Some(v) = &collection.shader.light_level {
                 v.set_float(light_level)
             }
             gl::blend_func(collection.blend_s, collection.blend_d);
@@ -276,16 +276,14 @@ impl Manager {
                     continue;
                 }
                 model.array.bind();
-                if let Some(v) = collection.shader.lighting {
+                if let Some(v) = &collection.shader.lighting {
                     v.set_float2(model.block_light, model.sky_light)
                 }
-                if let Some(v) = collection.shader.model_matrix {
+                if let Some(v) = &collection.shader.model_matrix {
                     v.set_matrix4_multi(&model.matrix)
                 }
-                if let Some(v) = collection.shader.color_mul {
-                    unsafe {
-                        v.set_float_multi_raw(model.colors.as_ptr() as *const _, model.colors.len())
-                    }
+                if let Some(v) = &collection.shader.color_mul {
+                    v.set_float_multi(&model.colors)
                 }
                 gl::draw_elements(gl::TRIANGLES, model.count, self.index_type, 0);
             }

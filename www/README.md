@@ -2,12 +2,22 @@
 
 Web app for running Stevenarella as WebAssembly
 
-Status: very incomplete. It does not currently compile, due to required modifications to adapt to the web,
-for progress see: [https://github.com/iceiix/stevenarella/issues/171](https://github.com/iceiix/stevenarella/issues/171).
+Status: very incomplete. It currently compiles but does not run, due to required modifications to adapt to the web,
+for progress see: [🕸️ Web support](https://github.com/iceiix/stevenarella/issues/446)
 
 ## Building
 
-To build for wasm32-unknown-unknown, run:
+To build for wasm32-unknown-unknown, run in the top-level directory (not www):
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli
+cargo install wasm-pack
+cp -vr resources-*/assets/minecraft/* resources/assets/minecraft && git checkout resources
+wasm-pack build --dev
+```
+
+or:
 
 ```sh
 cargo web start --target wasm32-unknown-unknown
@@ -19,7 +29,7 @@ After building the Rust app, run the NodeJS web server as follows:
 
 ```sh
 cd pkg
-npm link
+sudo npm link
 cd ..
 cd www
 npm link stevenarella

@@ -14,7 +14,7 @@
 
 use glow as gl;
 use glow::{HasContext, PixelPackData, PixelUnpackData};
-use log::{error, info};
+use log::error;
 use std::mem;
 use std::ops::BitOr;
 use std::ops::{Deref, DerefMut};
@@ -22,12 +22,9 @@ use std::ops::{Deref, DerefMut};
 static mut CONTEXT: *mut glow::Context = 0 as *mut glow::Context;
 
 /// Inits the gl library. This should be called once a context is ready.
-pub fn init(vid: &glutin::WindowedContext<glutin::PossiblyCurrent>) {
+pub fn init(context: glow::Context) {
     unsafe {
-        let context = Box::new(gl::Context::from_loader_function(|s| {
-            vid.get_proc_address(s) as *const _
-        }));
-        CONTEXT = Box::into_raw(context);
+        CONTEXT = Box::into_raw(Box::new(context));
     }
 }
 
@@ -216,6 +213,7 @@ pub type Type = u32;
 pub const UNSIGNED_BYTE: Type = gl::UNSIGNED_BYTE;
 pub const UNSIGNED_SHORT: Type = gl::UNSIGNED_SHORT;
 pub const UNSIGNED_INT: Type = gl::UNSIGNED_INT;
+pub const BYTE: Type = gl::BYTE;
 pub const SHORT: Type = gl::SHORT;
 pub const FLOAT: Type = gl::FLOAT;
 
@@ -262,7 +260,7 @@ pub const CLAMP_TO_EDGE: TextureValue = gl::CLAMP_TO_EDGE as TextureValue;
 
 /// `Texture` is a buffer of data used by fragment shaders.
 #[derive(Default)]
-pub struct Texture(u32);
+pub struct Texture(glow::Texture);
 
 impl Texture {
     // Allocates a new texture.
@@ -372,38 +370,6 @@ impl Texture {
         }
     }
 
-    pub fn image_2d_sample(
-        &self,
-        target: TextureTarget,
-        samples: i32,
-        width: u32,
-        height: u32,
-        format: TextureFormat,
-        fixed: bool,
-    ) {
-        unsafe {
-            let result: i32 = glow_context().get_parameter_i32(gl::MAX_SAMPLES);
-            let use_samples = if samples > result {
-                info!(
-                    "glTexImage2DMultisample: requested {} samples but GL_MAX_SAMPLES is {}",
-                    samples, result
-                );
-                result
-            } else {
-                samples
-            };
-            // TODO: switch to glRenderbufferStorageMultisample https://github.com/iceiix/stevenarella/pull/442
-            glow_context().tex_image_2d_multisample(
-                target,
-                use_samples,
-                format,
-                width as i32,
-                height as i32,
-                fixed,
-            );
-        }
-    }
-
     pub fn image_3d(
         &self,
         target: TextureTarget,
@@ -494,7 +460,7 @@ pub const COMPILE_STATUS: ShaderParameter = gl::COMPILE_STATUS;
 pub const INFO_LOG_LENGTH: ShaderParameter = gl::INFO_LOG_LENGTH;
 
 #[derive(Default)]
-pub struct Program(u32);
+pub struct Program(glow::Program);
 
 impl Program {
     pub fn new() -> Program {
@@ -550,7 +516,7 @@ impl Drop for Program {
     }
 }
 
-pub struct Shader(u32);
+pub struct Shader(glow::Shader);
 
 impl Shader {
     pub fn new(ty: ShaderType) -> Shader {
@@ -582,8 +548,8 @@ impl Shader {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct Uniform(u32);
+#[derive(Clone)]
+pub struct Uniform(glow::UniformLocation);
 
 impl Uniform {
     pub fn set_int(&self, val: i32) {
@@ -622,9 +588,13 @@ impl Uniform {
         }
     }
 
-    #[allow(clippy::missing_safety_doc)]
-    pub unsafe fn set_float_multi_raw(&self, data: *const f32, len: usize) {
-        glow_context().uniform_4_f32_slice(Some(&self.0), std::slice::from_raw_parts(data, len * 4 * 4));
+    pub fn set_float_multi(&self, v: &Vec<[f32; 4]>) {
+        unsafe {
+            glow_context().uniform_4_f32_slice(
+                Some(&self.0),
+                std::slice::from_raw_parts(v.as_ptr() as *const _, v.len() * 4),
+            )
+        }
     }
 
     pub fn set_matrix4(&self, m: &::cgmath::Matrix4<f32>) {
@@ -688,7 +658,7 @@ impl Attribute {
 // This includes buffers, the format of the buffers and enabled
 // attributes.
 #[derive(Default)]
-pub struct VertexArray(u32);
+pub struct VertexArray(glow::VertexArray);
 
 impl VertexArray {
     /// Allocates a new `VertexArray`.
@@ -715,7 +685,7 @@ impl Drop for VertexArray {
         unsafe {
             glow_context().delete_vertex_array(self.0);
         }
-        self.0 = 0;
+        self.0 = glow::VertexArray::default();
     }
 }
 
@@ -749,7 +719,7 @@ pub const WRITE_ONLY: Access = gl::WRITE_ONLY;
 
 /// `Buffer` is a storage for vertex data.
 #[derive(Default)]
-pub struct Buffer(u32);
+pub struct Buffer(glow::Buffer);
 
 impl Buffer {
     /// Allocates a new Buffer.
@@ -848,7 +818,7 @@ pub const COLOR_ATTACHMENT_2: Attachment = gl::COLOR_ATTACHMENT2;
 pub const DEPTH_ATTACHMENT: Attachment = gl::DEPTH_ATTACHMENT;
 
 #[derive(Default)]
-pub struct Framebuffer(u32);
+pub struct Framebuffer(glow::Framebuffer);
 
 pub fn check_framebuffer_status() {
     unsafe {

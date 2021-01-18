@@ -323,8 +323,8 @@ pub fn convert_legacy(c: &mut Component) {
                             current.text = txt.text[last..i].to_owned();
                             last = next.0 + 1;
 
-                            let mut modifier = if (color_char >= 'a' && color_char <= 'f')
-                                || (color_char >= '0' && color_char <= '9')
+                            let mut modifier = if ('a'..='f').contains(&color_char)
+                                || ('0'..='9').contains(&color_char)
                             {
                                 Default::default()
                             } else {

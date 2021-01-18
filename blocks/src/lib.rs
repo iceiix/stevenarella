@@ -7,7 +7,6 @@ extern crate steven_shared as shared;
 use crate::shared::{Axis, Direction, Position};
 use cgmath::Point3;
 use collision::Aabb3;
-use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 pub mod material;
@@ -43,10 +42,50 @@ macro_rules! create_ids {
     );
 }
 
-struct VanillaIDMap {
+#[derive(Default)]
+pub struct VanillaIDMap {
     flat: Vec<Option<Block>>,
     hier: Vec<Option<Block>>,
     modded: HashMap<String, [Option<Block>; 16]>,
+
+    protocol_version: i32,
+}
+
+impl VanillaIDMap {
+    pub fn new(protocol_version: i32) -> VanillaIDMap {
+        gen_id_map(protocol_version)
+    }
+
+    pub fn by_vanilla_id(
+        &self,
+        id: usize,
+        modded_block_ids: &HashMap<usize, String>, // TODO: remove and add to constructor, but have to mutate in Server
+    ) -> Block {
+        if self.protocol_version >= 404 {
+            self.flat
+                .get(id)
+                .and_then(|v| *v)
+                .unwrap_or(Block::Missing {})
+        // TODO: support modded 1.13.2+ blocks after https://github.com/iceiix/stevenarella/pull/145
+        } else {
+            if let Some(block) = self.hier.get(id).and_then(|v| *v) {
+                block
+            } else {
+                let data = id & 0xf;
+
+                if let Some(name) = modded_block_ids.get(&(id >> 4)) {
+                    if let Some(blocks_by_data) = self.modded.get(name) {
+                        blocks_by_data[data].unwrap_or(Block::Missing {})
+                    } else {
+                        //info!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
+                        Block::Missing {}
+                    }
+                } else {
+                    Block::Missing {}
+                }
+            }
+        }
+    }
 }
 
 macro_rules! define_blocks {
@@ -61,6 +100,7 @@ macro_rules! define_blocks {
                 },
                 $(data $datafunc:expr,)?
                 $(offset $offsetfunc:expr,)?
+                $(offsets $offsetsfunc:expr,)?
                 $(material $mat:expr,)?
                 model $model:expr,
                 $(variant $variant:expr,)?
@@ -117,12 +157,17 @@ macro_rules! define_blocks {
             }
 
             #[allow(unused_variables, unreachable_code)]
-            pub fn get_flat_offset(&self) -> Option<usize> {
+            #[allow(clippy::redundant_closure_call)] // TODO: fix 'try not to call a closure in the expression where it is declared'
+            pub fn get_flat_offset(&self, protocol_version: i32) -> Option<usize> {
                 match *self {
                     $(
                         Block::$name {
                             $($fname,)?
                         } => {
+                            $(
+                                let offset: Option<usize> = ($offsetsfunc)(protocol_version).map(|v| v);
+                                return offset;
+                            )?
                             $(
                                 let offset: Option<usize> = ($offsetfunc).map(|v| v);
                                 return offset;
@@ -150,30 +195,6 @@ macro_rules! define_blocks {
                             None
                         }
                     )+
-                }
-            }
-
-            pub fn by_vanilla_id(id: usize, protocol_version: i32, modded_block_ids: &HashMap<usize, String>) -> Block {
-                if protocol_version >= 404 {
-                    VANILLA_ID_MAP.flat.get(id).and_then(|v| *v).unwrap_or(Block::Missing{})
-                    // TODO: support modded 1.13.2+ blocks after https://github.com/iceiix/stevenarella/pull/145
-                } else {
-                    if let Some(block) = VANILLA_ID_MAP.hier.get(id).and_then(|v| *v) {
-                        block
-                    } else {
-                        let data = id & 0xf;
-
-                        if let Some(name) = modded_block_ids.get(&(id >> 4)) {
-                            if let Some(blocks_by_data) = VANILLA_ID_MAP.modded.get(name) {
-                                blocks_by_data[data].unwrap_or(Block::Missing{})
-                            } else {
-                                //info!("Modded block not supported yet: {}:{} -> {}", id >> 4, data, name);
-                                Block::Missing{}
-                            }
-                        } else {
-                            Block::Missing{}
-                        }
-                    }
                 }
             }
 
@@ -294,6 +315,7 @@ macro_rules! define_blocks {
             $(
                 #[allow(non_snake_case)]
                 pub fn $name(
+                    protocol_version: i32,
                     blocks_flat: &mut Vec<Option<Block>>,
                     blocks_hier: &mut Vec<Option<Block>>,
                     blocks_modded: &mut HashMap<String, [Option<Block>; 16]>,
@@ -390,6 +412,7 @@ macro_rules! define_blocks {
                         }),*
                     );
                     let mut last_offset: isize = -1;
+                    let debug_blocks = std::env::var("DEBUG_BLOCKS").is_ok();
                     for block in iter {
                         let internal_id = block.get_internal_id();
                         let hier_data: Option<usize> = block.get_hierarchical_data();
@@ -414,16 +437,16 @@ macro_rules! define_blocks {
                                 None
                             };
 
-                        let offset = block.get_flat_offset();
+                        let offset = block.get_flat_offset(protocol_version);
                         if let Some(offset) = offset {
                             let id = *flat_id + offset;
-                            /*
-                            if let Some(vanilla_id) = vanilla_id {
-                                debug!("{} block state = {:?} hierarchical {}:{} offset={}", id, block, vanilla_id >> 4, vanilla_id & 0xF, offset);
-                            } else {
-                                debug!("{} block state = {:?} hierarchical none, offset={}", id, block, offset);
+                            if debug_blocks {
+                                if let Some(vanilla_id) = vanilla_id {
+                                    println!("{} block state = {:?} hierarchical {}:{} offset={}", id, block, vanilla_id >> 4, vanilla_id & 0xF, offset);
+                                } else {
+                                    println!("{} block state = {:?} hierarchical none, offset={}", id, block, offset);
+                                }
                             }
-                            */
                             if offset as isize > last_offset {
                                 last_offset = offset as isize;
                             }
@@ -444,11 +467,11 @@ macro_rules! define_blocks {
                         }
 
                         if let Some(vanilla_id) = vanilla_id {
-                            /*
-                            if offset.is_none() {
-                                debug!("(no flat) block state = {:?} hierarchical {}:{}", block, vanilla_id >> 4, vanilla_id & 0xF);
+                            if debug_blocks {
+                                if offset.is_none() {
+                                    println!("(no flat) block state = {:?} hierarchical {}:{}", block, vanilla_id >> 4, vanilla_id & 0xF);
+                                }
                             }
-                            */
 
                             if (*blocks_hier).len() <= vanilla_id {
                                 (*blocks_hier).resize(vanilla_id + 1, None);
@@ -474,26 +497,24 @@ macro_rules! define_blocks {
             )+
         }
 
-        lazy_static! {
-            static ref VANILLA_ID_MAP: VanillaIDMap = {
-                let mut blocks_flat = vec![];
-                let mut blocks_hier = vec![];
-                let mut blocks_modded: HashMap<String, [Option<Block>; 16]> = HashMap::new();
-                let mut flat_id = 0;
-                let mut last_internal_id = 0;
-                let mut hier_block_id = 0;
+        pub fn gen_id_map(protocol_version: i32) -> VanillaIDMap {
+            let mut blocks_flat = vec![];
+            let mut blocks_hier = vec![];
+            let mut blocks_modded: HashMap<String, [Option<Block>; 16]> = HashMap::new();
+            let mut flat_id = 0;
+            let mut last_internal_id = 0;
+            let mut hier_block_id = 0;
+            $(
+                block_registration_functions::$name(protocol_version,
+                                                    &mut blocks_flat,
+                                                    &mut blocks_hier,
+                                                    &mut blocks_modded,
+                                                    &mut flat_id,
+                                                    &mut last_internal_id,
+                                                    &mut hier_block_id);
+            )+
 
-                $(
-                    block_registration_functions::$name(&mut blocks_flat,
-                                                        &mut blocks_hier,
-                                                        &mut blocks_modded,
-                                                        &mut flat_id,
-                                                        &mut last_internal_id,
-                                                        &mut hier_block_id);
-                )+
-
-                VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded }
-            };
+            VanillaIDMap { flat: blocks_flat, hier: blocks_hier, modded: blocks_modded, protocol_version }
         }
     );
 }
@@ -693,6 +714,12 @@ define_blocks! {
         props {},
         model { ("minecraft", "coal_ore") },
     }
+    NetherGoldOre {
+        props {},
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "nether_gold_ore") },
+    }
     Log {
         props {
             variant: TreeVariant = [
@@ -843,13 +870,20 @@ define_blocks! {
                 NoteBlockInstrument::Bell,
                 NoteBlockInstrument::Guitar,
                 NoteBlockInstrument::Chime,
-                NoteBlockInstrument::Xylophone
+                NoteBlockInstrument::Xylophone,
+                NoteBlockInstrument::IronXylophone,
+                NoteBlockInstrument::CowBell,
+                NoteBlockInstrument::Didgeridoo,
+                NoteBlockInstrument::Bit,
+                NoteBlockInstrument::Banjo,
+                NoteBlockInstrument::Pling
             ],
             note: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
             powered: bool = [true, false],
         },
         data if instrument == NoteBlockInstrument::Harp && note == 0 && powered { Some(0) } else { None },
-        offset Some(instrument.offset() * (25 * 2) + ((note as usize) << 1) + if powered { 0 } else { 1 }),
+        offsets |protocol_version| (instrument.offsets(protocol_version)
+            .map(|offset| offset * (25 * 2) + ((note as usize) << 1) + if powered { 0 } else { 1 })),
         model { ("minecraft", "noteblock") },
     }
     Bed {
@@ -968,6 +1002,7 @@ define_blocks! {
             ],
         },
         data Some(variant.data()),
+        offset Some(variant.offset()),
         material material::NON_SOLID,
         model { ("minecraft", variant.as_string() ) },
         tint TintType::Grass,
@@ -1168,10 +1203,14 @@ define_blocks! {
                 RedFlowerVariant::OrangeTulip,
                 RedFlowerVariant::WhiteTulip,
                 RedFlowerVariant::PinkTulip,
-                RedFlowerVariant::OxeyeDaisy
+                RedFlowerVariant::OxeyeDaisy,
+                RedFlowerVariant::Cornflower,
+                RedFlowerVariant::WitherRose,
+                RedFlowerVariant::LilyOfTheValley
             ],
         },
         data Some(variant.data()),
+        offsets |protocol_version| (variant.offsets(protocol_version)),
         material material::NON_SOLID,
         model { ("minecraft", variant.as_string()) },
         collision vec![],
@@ -1356,6 +1395,12 @@ define_blocks! {
             _ => false,
         },
     }
+    SoulFire {
+        props {},
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "soul_fire") },
+        collision vec![],
+    }
     MobSpawner {
         props {},
         material material::NON_SOLID,
@@ -1539,9 +1584,28 @@ define_blocks! {
                 Rotation::SouthSouthEast
             ],
             waterlogged: bool = [true, false],
+            wood: TreeVariant = [
+                TreeVariant::Oak,
+                TreeVariant::Spruce,
+                TreeVariant::Birch,
+                TreeVariant::Jungle,
+                TreeVariant::Acacia,
+                TreeVariant::DarkOak
+            ],
         },
-        data if !waterlogged { Some(rotation.data()) } else { None },
-        offset Some(rotation.data() * 2 + if waterlogged { 0 } else { 1 }),
+        data if wood == TreeVariant::Oak && !waterlogged { Some(rotation.data()) } else { None },
+        offsets |protocol_version| {
+            let o = rotation.data() * 2 + if waterlogged { 0 } else { 1 };
+            if protocol_version >= 477 {
+                Some(wood.offset() * 2 * 16 + o)
+            } else {
+                if wood == TreeVariant::Oak {
+                    Some(o)
+                } else {
+                    None
+                }
+            }
+        },
         material material::INVISIBLE,
         model { ("minecraft", "standing_sign") },
         collision vec![],
@@ -1642,9 +1706,28 @@ define_blocks! {
                 Direction::East
             ],
             waterlogged: bool = [true, false],
+            wood: TreeVariant = [
+                TreeVariant::Oak,
+                TreeVariant::Spruce,
+                TreeVariant::Birch,
+                TreeVariant::Jungle,
+                TreeVariant::Acacia,
+                TreeVariant::DarkOak
+            ],
         },
-        data if !waterlogged { Some(facing.index()) } else { None },
-        offset Some(if waterlogged { 0 } else { 1 } + facing.horizontal_offset() * 2),
+        data if wood == TreeVariant::Oak && !waterlogged { Some(facing.index()) } else { None },
+        offsets |protocol_version| {
+            let o = if waterlogged { 0 } else { 1 } + facing.horizontal_offset() * 2;
+            if protocol_version >= 477 {
+                Some(wood.offset() * 2 * 4 + o)
+            } else {
+                if wood == TreeVariant::Oak {
+                    Some(o)
+                } else {
+                    None
+                }
+            }
+        },
         material material::INVISIBLE,
         model { ("minecraft", "wall_sign") },
         variant format!("facing={}", facing.as_string()),
@@ -1972,6 +2055,58 @@ define_blocks! {
             Point3::new(1.0, 7.0/8.0, 1.0)
         )],
     }
+    SoulSoil {
+        props {},
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "soul_soil") },
+    }
+    Basalt {
+        props {
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(
+            match axis {
+                Axis::X => 0,
+                Axis::Y => 1,
+                Axis::Z => 2,
+                _ => unreachable!()
+            }) } else { None } },
+        model { ("minecraft", "basalt") },
+    }
+    PolishedBasalt {
+        props {
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(
+            match axis {
+                Axis::X => 0,
+                Axis::Y => 1,
+                Axis::Z => 2,
+                _ => unreachable!()
+            }) } else { None } },
+        model { ("minecraft", "polished_basalt") },
+    }
+    SoulTorch {
+        props {},
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
+        model { ("minecraft", "soul_torch") },
+    }
+    SoulWallTorch {
+        props {
+            facing: Direction = [
+                Direction::North,
+                Direction::South,
+                Direction::West,
+                Direction::East
+            ],
+        },
+        data None,
+        offsets |protocol_version| { if protocol_version >= 735 { Some(facing.offset()) } else { None } },
+        model { ("minecraft", "soul_wall_torch") },
+    }
     Glowstone {
         props {},
         material Material {
@@ -2256,6 +2391,34 @@ define_blocks! {
             "east" => east == (val == "true"),
             _ => false,
         },
+    }
+    Chain {
+        props {
+            waterlogged: bool = [true, false],
+            axis: Axis = [Axis::X, Axis::Y, Axis::Z],
+        },
+        data None,
+        offsets |protocol_version| {
+            if protocol_version >= 735 {
+                let o = if waterlogged { 1 } else { 0 };
+                if protocol_version >= 751 {
+                    Some(match axis {
+                        Axis::X => 0,
+                        Axis::Y => 1,
+                        Axis::Z => 2,
+                        _ => unreachable!()
+                        } * 2 + o)
+                } else {
+                    match axis {
+                        Axis::Y => Some(o),
+                        _ => None,
+                    }
+                }
+            } else {
+                None
+            }
+        },
+        model { ("minecraft", "chain") },
     }
     GlassPane {
         props {
@@ -3114,12 +3277,17 @@ define_blocks! {
                 FlowerPotVariant::OrangeTulip,
                 FlowerPotVariant::WhiteTulip,
                 FlowerPotVariant::PinkTulip,
-                FlowerPotVariant::Oxeye
+                FlowerPotVariant::Oxeye,
+                FlowerPotVariant::Cornflower,
+                FlowerPotVariant::LilyOfTheValley,
+                FlowerPotVariant::WitherRose
             ],
             legacy_data: u8 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         },
         data if contents == FlowerPotVariant::Empty { Some(legacy_data as usize) } else { None },
-        offset if legacy_data != 0 { None } else { Some(contents.offset()) },
+        offsets |protocol_version | {
+            if legacy_data != 0 { None } else { contents.offsets(protocol_version) }
+        },
         material material::NON_SOLID,
         model { ("minecraft", "flower_pot") },
     }
@@ -4115,7 +4283,9 @@ define_blocks! {
             type_: BlockHalf = [BlockHalf::Top, BlockHalf::Bottom, BlockHalf::Double],
             variant: StoneSlabVariant = [
                 StoneSlabVariant::Stone,
+                StoneSlabVariant::SmoothStone,
                 StoneSlabVariant::Sandstone,
+                StoneSlabVariant::CutSandstone,
                 StoneSlabVariant::PetrifiedWood,
                 StoneSlabVariant::Cobblestone,
                 StoneSlabVariant::Brick,
@@ -4123,12 +4293,15 @@ define_blocks! {
                 StoneSlabVariant::NetherBrick,
                 StoneSlabVariant::Quartz,
                 StoneSlabVariant::RedSandstone,
+                StoneSlabVariant::CutRedSandstone,
                 StoneSlabVariant::Purpur
             ],
             waterlogged: bool = [true, false],
         },
         data None::<usize>,
-        offset Some(if waterlogged { 0 } else { 1 } + type_.offset() * 2 + variant.offset() * (2 * 3)),
+        offsets |protocol_version| {
+            variant.offsets(protocol_version).map(|o| if waterlogged { 0 } else { 1 } + type_.offset() * 2 + o * (2 * 3))
+        },
         material material::NON_SOLID,
         model { ("minecraft", format!("{}_slab", variant.as_string()) ) },
         variant format!("type={}", type_.as_string()),
@@ -6341,6 +6514,12 @@ pub enum NoteBlockInstrument {
     Guitar,
     Chime,
     Xylophone,
+    IronXylophone,
+    CowBell,
+    Didgeridoo,
+    Bit,
+    Banjo,
+    Pling,
 }
 
 impl NoteBlockInstrument {
@@ -6356,21 +6535,42 @@ impl NoteBlockInstrument {
             NoteBlockInstrument::Guitar => "guitar",
             NoteBlockInstrument::Chime => "chime",
             NoteBlockInstrument::Xylophone => "xylophone",
+            NoteBlockInstrument::IronXylophone => "iron_xylophone",
+            NoteBlockInstrument::CowBell => "cow_bell",
+            NoteBlockInstrument::Didgeridoo => "didgeridoo",
+            NoteBlockInstrument::Bit => "bit",
+            NoteBlockInstrument::Banjo => "banjo",
+            NoteBlockInstrument::Pling => "pling",
         }
     }
 
-    fn offset(self) -> usize {
+    fn offsets(self, protocol_version: i32) -> Option<usize> {
         match self {
-            NoteBlockInstrument::Harp => 0,
-            NoteBlockInstrument::BaseDrum => 1,
-            NoteBlockInstrument::Snare => 2,
-            NoteBlockInstrument::Hat => 3,
-            NoteBlockInstrument::Bass => 4,
-            NoteBlockInstrument::Flute => 5,
-            NoteBlockInstrument::Bell => 6,
-            NoteBlockInstrument::Guitar => 7,
-            NoteBlockInstrument::Chime => 8,
-            NoteBlockInstrument::Xylophone => 9,
+            NoteBlockInstrument::Harp => Some(0),
+            NoteBlockInstrument::BaseDrum => Some(1),
+            NoteBlockInstrument::Snare => Some(2),
+            NoteBlockInstrument::Hat => Some(3),
+            NoteBlockInstrument::Bass => Some(4),
+            NoteBlockInstrument::Flute => Some(5),
+            NoteBlockInstrument::Bell => Some(6),
+            NoteBlockInstrument::Guitar => Some(7),
+            NoteBlockInstrument::Chime => Some(8),
+            NoteBlockInstrument::Xylophone => Some(9),
+            _ => {
+                if protocol_version >= 477 {
+                    match self {
+                        NoteBlockInstrument::IronXylophone => Some(10),
+                        NoteBlockInstrument::CowBell => Some(11),
+                        NoteBlockInstrument::Didgeridoo => Some(12),
+                        NoteBlockInstrument::Bit => Some(13),
+                        NoteBlockInstrument::Banjo => Some(14),
+                        NoteBlockInstrument::Pling => Some(15),
+                        _ => unreachable!(),
+                    }
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -6641,6 +6841,9 @@ pub enum RedFlowerVariant {
     WhiteTulip,
     PinkTulip,
     OxeyeDaisy,
+    Cornflower,
+    WitherRose,
+    LilyOfTheValley,
 }
 
 impl RedFlowerVariant {
@@ -6655,6 +6858,9 @@ impl RedFlowerVariant {
             RedFlowerVariant::WhiteTulip => "white_tulip",
             RedFlowerVariant::PinkTulip => "pink_tulip",
             RedFlowerVariant::OxeyeDaisy => "oxeye_daisy",
+            RedFlowerVariant::Cornflower => "cornflower",
+            RedFlowerVariant::WitherRose => "wither_rose",
+            RedFlowerVariant::LilyOfTheValley => "lily_of_the_valley",
         }
     }
 
@@ -6669,6 +6875,36 @@ impl RedFlowerVariant {
             RedFlowerVariant::WhiteTulip => 6,
             RedFlowerVariant::PinkTulip => 7,
             RedFlowerVariant::OxeyeDaisy => 8,
+            // TODO: shouldn't be available protocol_version < 477
+            RedFlowerVariant::Cornflower => 9,
+            RedFlowerVariant::WitherRose => 10,
+            RedFlowerVariant::LilyOfTheValley => 11,
+        }
+    }
+
+    fn offsets(self, protocol_version: i32) -> Option<usize> {
+        match self {
+            RedFlowerVariant::Poppy => Some(0),
+            RedFlowerVariant::BlueOrchid => Some(1),
+            RedFlowerVariant::Allium => Some(2),
+            RedFlowerVariant::AzureBluet => Some(3),
+            RedFlowerVariant::RedTulip => Some(4),
+            RedFlowerVariant::OrangeTulip => Some(5),
+            RedFlowerVariant::WhiteTulip => Some(6),
+            RedFlowerVariant::PinkTulip => Some(7),
+            RedFlowerVariant::OxeyeDaisy => Some(8),
+            _ => {
+                if protocol_version >= 477 {
+                    match self {
+                        RedFlowerVariant::Cornflower => Some(9),
+                        RedFlowerVariant::WitherRose => Some(10),
+                        RedFlowerVariant::LilyOfTheValley => Some(11),
+                        _ => unreachable!(),
+                    }
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -6839,7 +7075,9 @@ impl PistonType {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum StoneSlabVariant {
     Stone,
+    SmoothStone,
     Sandstone,
+    CutSandstone,
     PetrifiedWood,
     Cobblestone,
     Brick,
@@ -6847,6 +7085,7 @@ pub enum StoneSlabVariant {
     NetherBrick,
     Quartz,
     RedSandstone,
+    CutRedSandstone,
     Purpur,
 }
 
@@ -6854,7 +7093,9 @@ impl StoneSlabVariant {
     pub fn as_string(self) -> &'static str {
         match self {
             StoneSlabVariant::Stone => "stone",
+            StoneSlabVariant::SmoothStone => "smooth_stone",
             StoneSlabVariant::Sandstone => "sandstone",
+            StoneSlabVariant::CutSandstone => "cut_sandstone",
             StoneSlabVariant::PetrifiedWood => "wood_old",
             StoneSlabVariant::Cobblestone => "cobblestone",
             StoneSlabVariant::Brick => "brick",
@@ -6862,6 +7103,7 @@ impl StoneSlabVariant {
             StoneSlabVariant::NetherBrick => "nether_brick",
             StoneSlabVariant::Quartz => "quartz",
             StoneSlabVariant::RedSandstone => "red_sandstone",
+            StoneSlabVariant::CutRedSandstone => "cut_red_sandstone",
             StoneSlabVariant::Purpur => "purpur",
         }
     }
@@ -6878,21 +7120,43 @@ impl StoneSlabVariant {
             StoneSlabVariant::StoneBrick => 5,
             StoneSlabVariant::NetherBrick => 6,
             StoneSlabVariant::Quartz => 7,
+            _ => unimplemented!(),
         }
     }
 
-    fn offset(self) -> usize {
-        match self {
-            StoneSlabVariant::Stone => 0,
-            StoneSlabVariant::Sandstone => 1,
-            StoneSlabVariant::PetrifiedWood => 2,
-            StoneSlabVariant::Cobblestone => 3,
-            StoneSlabVariant::Brick => 4,
-            StoneSlabVariant::StoneBrick => 5,
-            StoneSlabVariant::NetherBrick => 6,
-            StoneSlabVariant::Quartz => 7,
-            StoneSlabVariant::RedSandstone => 8,
-            StoneSlabVariant::Purpur => 9,
+    fn offsets(self, protocol_version: i32) -> Option<usize> {
+        if protocol_version >= 477 {
+            match self {
+                StoneSlabVariant::Stone => Some(0),
+                StoneSlabVariant::SmoothStone => Some(1),
+                StoneSlabVariant::Sandstone => Some(2),
+                StoneSlabVariant::CutSandstone => Some(3),
+                StoneSlabVariant::PetrifiedWood => Some(4),
+                StoneSlabVariant::Cobblestone => Some(5),
+                StoneSlabVariant::Brick => Some(6),
+                StoneSlabVariant::StoneBrick => Some(7),
+                StoneSlabVariant::NetherBrick => Some(8),
+                StoneSlabVariant::Quartz => Some(9),
+                StoneSlabVariant::RedSandstone => Some(10),
+                StoneSlabVariant::CutRedSandstone => Some(11),
+                StoneSlabVariant::Purpur => Some(12),
+            }
+        } else {
+            match self {
+                StoneSlabVariant::Stone => Some(0),
+                StoneSlabVariant::SmoothStone => None,
+                StoneSlabVariant::Sandstone => Some(1),
+                StoneSlabVariant::CutSandstone => None,
+                StoneSlabVariant::PetrifiedWood => Some(2),
+                StoneSlabVariant::Cobblestone => Some(3),
+                StoneSlabVariant::Brick => Some(4),
+                StoneSlabVariant::StoneBrick => Some(5),
+                StoneSlabVariant::NetherBrick => Some(6),
+                StoneSlabVariant::Quartz => Some(7),
+                StoneSlabVariant::RedSandstone => Some(8),
+                StoneSlabVariant::CutRedSandstone => None,
+                StoneSlabVariant::Purpur => Some(9),
+            }
         }
     }
 }
@@ -7289,6 +7553,14 @@ impl TallGrassVariant {
             TallGrassVariant::Fern => 2,
         }
     }
+
+    fn offset(self) -> usize {
+        match self {
+            TallGrassVariant::TallGrass => 0,
+            TallGrassVariant::Fern => 1,
+            TallGrassVariant::DeadBush => 2,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -7382,6 +7654,9 @@ pub enum FlowerPotVariant {
     WhiteTulip,
     PinkTulip,
     Oxeye,
+    Cornflower,
+    LilyOfTheValley,
+    WitherRose,
 }
 
 impl FlowerPotVariant {
@@ -7409,33 +7684,59 @@ impl FlowerPotVariant {
             FlowerPotVariant::WhiteTulip => "white_tulip",
             FlowerPotVariant::PinkTulip => "pink_tulip",
             FlowerPotVariant::Oxeye => "oxeye_daisy",
+            FlowerPotVariant::Cornflower => "cornflower",
+            FlowerPotVariant::LilyOfTheValley => "lily_of_the_valley",
+            FlowerPotVariant::WitherRose => "wither_rose",
         }
     }
 
-    pub fn offset(self) -> usize {
+    pub fn offsets(self, protocol_version: i32) -> Option<usize> {
         match self {
-            FlowerPotVariant::Empty => 0,
-            FlowerPotVariant::OakSapling => 1,
-            FlowerPotVariant::SpruceSapling => 2,
-            FlowerPotVariant::BirchSapling => 3,
-            FlowerPotVariant::JungleSapling => 4,
-            FlowerPotVariant::AcaciaSapling => 5,
-            FlowerPotVariant::DarkOakSapling => 6,
-            FlowerPotVariant::Fern => 7,
-            FlowerPotVariant::Dandelion => 8,
-            FlowerPotVariant::Poppy => 9,
-            FlowerPotVariant::BlueOrchid => 10,
-            FlowerPotVariant::Allium => 11,
-            FlowerPotVariant::AzureBluet => 12,
-            FlowerPotVariant::RedTulip => 13,
-            FlowerPotVariant::OrangeTulip => 14,
-            FlowerPotVariant::WhiteTulip => 15,
-            FlowerPotVariant::PinkTulip => 16,
-            FlowerPotVariant::Oxeye => 17,
-            FlowerPotVariant::RedMushroom => 18,
-            FlowerPotVariant::BrownMushroom => 19,
-            FlowerPotVariant::DeadBush => 20,
-            FlowerPotVariant::Cactus => 21,
+            FlowerPotVariant::Empty => Some(0),
+            FlowerPotVariant::OakSapling => Some(1),
+            FlowerPotVariant::SpruceSapling => Some(2),
+            FlowerPotVariant::BirchSapling => Some(3),
+            FlowerPotVariant::JungleSapling => Some(4),
+            FlowerPotVariant::AcaciaSapling => Some(5),
+            FlowerPotVariant::DarkOakSapling => Some(6),
+            FlowerPotVariant::Fern => Some(7),
+            FlowerPotVariant::Dandelion => Some(8),
+            FlowerPotVariant::Poppy => Some(9),
+            FlowerPotVariant::BlueOrchid => Some(10),
+            FlowerPotVariant::Allium => Some(11),
+            FlowerPotVariant::AzureBluet => Some(12),
+            FlowerPotVariant::RedTulip => Some(13),
+            FlowerPotVariant::OrangeTulip => Some(14),
+            FlowerPotVariant::WhiteTulip => Some(15),
+            FlowerPotVariant::PinkTulip => Some(16),
+            FlowerPotVariant::Oxeye => Some(17),
+
+            FlowerPotVariant::Cornflower => {
+                if protocol_version >= 477 {
+                    Some(18)
+                } else {
+                    None
+                }
+            }
+            FlowerPotVariant::LilyOfTheValley => {
+                if protocol_version >= 477 {
+                    Some(19)
+                } else {
+                    None
+                }
+            }
+            FlowerPotVariant::WitherRose => {
+                if protocol_version >= 477 {
+                    Some(20)
+                } else {
+                    None
+                }
+            }
+
+            FlowerPotVariant::RedMushroom => Some(if protocol_version >= 477 { 21 } else { 18 }),
+            FlowerPotVariant::BrownMushroom => Some(if protocol_version >= 477 { 22 } else { 19 }),
+            FlowerPotVariant::DeadBush => Some(if protocol_version >= 477 { 23 } else { 20 }),
+            FlowerPotVariant::Cactus => Some(if protocol_version >= 477 { 24 } else { 21 }),
         }
     }
 }

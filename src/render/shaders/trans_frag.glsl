@@ -1,8 +1,6 @@
 uniform sampler2D taccum;
 uniform sampler2D trevealage;
-uniform sampler2DMS tcolor;
-
-uniform int samples;
+uniform sampler2D tcolor;
 
 out vec4 fragColor;
 
@@ -11,11 +9,6 @@ void main() {
     vec4 accum = texelFetch(taccum, C, 0);
     float aa = texelFetch(trevealage, C, 0).r;
     vec4 col = texelFetch(tcolor, C, 0);
-
-    for (int i = 1; i < samples; i++) {
-        col += texelFetch(tcolor, C, i);
-    }
-    col /= float(samples);
 
     float r = accum.a;
     accum.a = aa;

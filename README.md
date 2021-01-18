@@ -24,6 +24,7 @@ Discussion forum: [https://github.com/iceiix/stevenarella/discussions](https://g
 
 | Game version | Protocol version | Supported? |
 | ------ | --- | --- |
+| 1.16.5 | 754 | ✓ |
 | 1.16.4 | 754 | ✓ |
 | 1.16.3 | 753 | ✓ |
 | 1.16.2 | 751 | ✓ |
@@ -66,7 +67,7 @@ from [GitHub Actions](https://actions-badge.atrox.dev/iceiix/stevenarella/goto?r
 
 ## Dependencies
 
-Requires Rust stable version 1.48.0 or newer.
+Requires Rust stable version 1.49.0 or newer.
 
 **Debian/Ubuntu**
 

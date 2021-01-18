@@ -20,32 +20,35 @@ opt-level = 1
 [dependencies]
 cfg-if = "1.0.0"
 wasm-bindgen = "0.2.69"
-glutin = "0.26.0"
-glow = { git = "https://github.com/iceiix/glow", rev = "45c808678735e03737d5e1b9d6ed0e21070edcd9" }
-byteorder = "1.3.4"
-serde = "1.0.118"
-serde_json = "1.0.60"
+winit = { version = "0.24.0", features = [ "web-sys" ]}
+glow = "0.7.1"
+byteorder = "1.4.2"
+serde = "1.0.119"
+serde_json = "1.0.61"
 flate2 = { version = "1.0.19", features = ["rust_backend"], default-features = false }
 zip = { version = "0.5.6", features = ["deflate"], default-features = false }
 image = "0.23.12"
-rand = "0.7.3"
-rand_pcg = "0.2.1"
+getrandom = { version = "0.2.1", features = ["js"] }
+rand = "0.8.2"
+rand_pcg = "0.3.0"
 base64 = "0.13.0"
-log = { version = "0.4.11", features = ["std"] }
+log = { version = "0.4.13", features = ["std"] }
 cgmath = "0.17.0"
 lazy_static = "1.4.0"
 collision = "0.20.1"
-rsa_public_encrypt_pkcs1 = "0.2.0"
+rsa_public_encrypt_pkcs1 = "0.3.0"
 structopt = "0.3.21"
 clipboard = "0.5.0"
+instant = "0.1.9"
 # clippy = "*"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-reqwest = { version = "0.10.10", features = [ "blocking" ]}
+reqwest = { version = "0.11.0", features = [ "blocking" ]}
+glutin = "0.26.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-stdweb = "0.4.20"
-winit = { version = "0.24.0", features = [ "stdweb" ]}
+console_error_panic_hook = "0.1.6"
+web-sys = "0.3.46"
 
 [dependencies.steven_resources]
 path = "./resources"

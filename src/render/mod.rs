@@ -37,12 +37,7 @@ use std::sync::atomic::{AtomicIsize, Ordering};
 use std::sync::mpsc;
 use std::thread;
 
-#[cfg(not(target_arch = "wasm32"))]
-
 const ATLAS_SIZE: usize = 1024;
-
-// TEMP
-const NUM_SAMPLES: i32 = 2;
 
 pub struct Camera {
     pub pos: cgmath::Point3<f64>,
@@ -56,7 +51,7 @@ pub struct Renderer {
     textures: Arc<RwLock<TextureManager>>,
     pub ui: ui::UIState,
     pub model: model::Manager,
-    pub clouds: clouds::Clouds,
+    pub clouds: Option<clouds::Clouds>,
 
     gl_texture: gl::Texture,
     texture_layers: usize,
@@ -153,7 +148,7 @@ init_shader! {
 }
 
 impl Renderer {
-    pub fn new(res: Arc<RwLock<resources::Manager>>) -> Renderer {
+    pub fn new(res: Arc<RwLock<resources::Manager>>, shader_version: &str) -> Renderer {
         let version = { res.read().unwrap().version() };
         let tex = gl::Texture::new();
         tex.bind(gl::TEXTURE_2D_ARRAY);
@@ -175,7 +170,7 @@ impl Renderer {
         let (textures, skin_req, skin_reply) = TextureManager::new(res.clone());
         let textures = Arc::new(RwLock::new(textures));
 
-        let mut greg = glsl::Registry::new();
+        let mut greg = glsl::Registry::new(shader_version);
         shaders::add_shaders(&mut greg);
         let ui = ui::UIState::new(&greg, textures.clone(), res.clone());
 
@@ -196,10 +191,18 @@ impl Renderer {
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         gl::depth_func(gl::LESS_OR_EQUAL);
 
+        #[cfg(not(target_arch = "wasm32"))]
+        let clouds = Some(clouds::Clouds::new(&greg, textures.clone()));
+
+        // No clouds on wasm since no geo shaders on WebGL
+        // TODO: setting to disable clouds on native, too, if desired
+        #[cfg(target_arch = "wasm32")]
+        let clouds = None;
+
         Renderer {
             resource_version: version,
             model: model::Manager::new(&greg),
-            clouds: clouds::Clouds::new(&greg, textures.clone()),
+            clouds,
             textures,
             ui,
             resources: res,
@@ -313,6 +316,7 @@ impl Renderer {
         gl::active_texture(0);
         self.gl_texture.bind(gl::TEXTURE_2D_ARRAY);
 
+        #[cfg(not(target_arch = "wasm32"))]
         gl::enable(gl::MULTISAMPLE);
 
         let time_offset = self.sky_offset * 0.9;
@@ -363,17 +367,19 @@ impl Renderer {
             self.light_level,
             self.sky_offset,
         );
-        if world.copy_cloud_heightmap(&mut self.clouds.heightmap_data) {
-            self.clouds.dirty = true;
+        if let Some(clouds) = &mut self.clouds {
+            if world.copy_cloud_heightmap(&mut clouds.heightmap_data) {
+                clouds.dirty = true;
+            }
+            clouds.draw(
+                &self.camera.pos,
+                &self.perspective_matrix,
+                &self.camera_matrix,
+                self.light_level,
+                self.sky_offset,
+                delta,
+            );
         }
-        self.clouds.draw(
-            &self.camera.pos,
-            &self.perspective_matrix,
-            &self.camera_matrix,
-            self.light_level,
-            self.sky_offset,
-            delta,
-        );
 
         // Trans chunk rendering
         self.chunk_shader_alpha.program.use_program();
@@ -448,6 +454,8 @@ impl Renderer {
         gl::enable(gl::DEPTH_TEST);
         gl::depth_mask(true);
         gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+
+        #[cfg(not(target_arch = "wasm32"))]
         gl::disable(gl::MULTISAMPLE);
 
         self.ui.tick(width, height);
@@ -777,7 +785,6 @@ init_shader! {
             required accum => "taccum",
             required revealage => "trevealage",
             required color => "tcolor",
-            required samples => "samples",
         },
     }
 }
@@ -805,7 +812,7 @@ impl TransInfo {
             None,
         );
         accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
-        accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
+        accum.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
         trans.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &accum, 0);
 
         let revealage = gl::Texture::new();
@@ -821,7 +828,7 @@ impl TransInfo {
             None,
         );
         revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
-        revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
+        revealage.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
         trans.texture_2d(gl::COLOR_ATTACHMENT_1, gl::TEXTURE_2D, &revealage, 0);
 
         let trans_depth = gl::Texture::new();
@@ -833,55 +840,58 @@ impl TransInfo {
             height,
             gl::DEPTH_COMPONENT24,
             gl::DEPTH_COMPONENT,
-            gl::UNSIGNED_BYTE,
+            gl::UNSIGNED_INT,
             None,
         );
         trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
-        trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, gl::LINEAR);
+        trans_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
         trans.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &trans_depth, 0);
 
         chunk_shader.program.use_program();
-        gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
-        gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
+        #[cfg(not(target_arch = "wasm32"))] // bound with layout(location=)
+        {
+            gl::bind_frag_data_location(&chunk_shader.program, 0, "accum");
+            gl::bind_frag_data_location(&chunk_shader.program, 1, "revealage");
+        }
         gl::check_framebuffer_status();
         gl::draw_buffers(&[gl::COLOR_ATTACHMENT_0, gl::COLOR_ATTACHMENT_1]);
 
         let main = gl::Framebuffer::new();
         main.bind();
 
+        // TODO: support rendering to a multisample renderbuffer for MSAA, using glRenderbufferStorageMultisample
+        // https://github.com/iceiix/stevenarella/pull/442
         let fb_color = gl::Texture::new();
-        fb_color.bind(gl::TEXTURE_2D_MULTISAMPLE);
-        fb_color.image_2d_sample(
-            gl::TEXTURE_2D_MULTISAMPLE,
-            NUM_SAMPLES,
+        fb_color.bind(gl::TEXTURE_2D);
+        fb_color.image_2d(
+            gl::TEXTURE_2D,
+            0,
             width,
             height,
-            gl::RGBA8,
-            false,
+            gl::RGBA,
+            gl::UNSIGNED_BYTE,
+            None,
         );
-        main.texture_2d(
-            gl::COLOR_ATTACHMENT_0,
-            gl::TEXTURE_2D_MULTISAMPLE,
-            &fb_color,
-            0,
-        );
+        fb_color.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+        fb_color.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
 
+        main.texture_2d(gl::COLOR_ATTACHMENT_0, gl::TEXTURE_2D, &fb_color, 0);
         let fb_depth = gl::Texture::new();
-        fb_depth.bind(gl::TEXTURE_2D_MULTISAMPLE);
-        fb_depth.image_2d_sample(
-            gl::TEXTURE_2D_MULTISAMPLE,
-            NUM_SAMPLES,
+        fb_depth.bind(gl::TEXTURE_2D);
+        fb_depth.image_2d_ex(
+            gl::TEXTURE_2D,
+            0,
             width,
             height,
             gl::DEPTH_COMPONENT24,
-            false,
+            gl::DEPTH_COMPONENT,
+            gl::UNSIGNED_INT,
+            None,
         );
-        main.texture_2d(
-            gl::DEPTH_ATTACHMENT,
-            gl::TEXTURE_2D_MULTISAMPLE,
-            &fb_depth,
-            0,
-        );
+        fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+        fb_depth.set_parameter(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
+
+        main.texture_2d(gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, &fb_depth, 0);
         gl::check_framebuffer_status();
 
         gl::unbind_framebuffer();
@@ -925,13 +935,12 @@ impl TransInfo {
         gl::active_texture(1);
         self.revealage.bind(gl::TEXTURE_2D);
         gl::active_texture(2);
-        self.fb_color.bind(gl::TEXTURE_2D_MULTISAMPLE);
+        self.fb_color.bind(gl::TEXTURE_2D);
 
         shader.program.use_program();
         shader.accum.set_int(0);
         shader.revealage.set_int(1);
         shader.color.set_int(2);
-        shader.samples.set_int(NUM_SAMPLES);
         self.array.bind();
         gl::draw_arrays(gl::TRIANGLES, 0, 6);
     }
@@ -951,7 +960,7 @@ pub struct TextureManager {
 
     skins: HashMap<String, AtomicIsize, BuildHasherDefault<FNVHash>>,
 
-    _skin_thread: thread::JoinHandle<()>,
+    _skin_thread: Option<thread::JoinHandle<()>>,
 }
 
 impl TextureManager {
@@ -966,7 +975,13 @@ impl TextureManager {
     ) {
         let (tx, rx) = mpsc::channel();
         let (stx, srx) = mpsc::channel();
-        let skin_thread = thread::spawn(|| Self::process_skins(srx, tx));
+
+        #[cfg(target_arch = "wasm32")]
+        let skin_thread = None;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let skin_thread = Some(thread::spawn(|| Self::process_skins(srx, tx)));
+
         let mut tm = TextureManager {
             textures: HashMap::with_hasher(BuildHasherDefault::default()),
             version: {

@@ -18,7 +18,6 @@
 use aes::Aes128;
 use cfb8::stream_cipher::{NewStreamCipher, StreamCipher};
 use cfb8::Cfb8;
-#[cfg(not(target_arch = "wasm32"))]
 use std_or_web::fs;
 
 pub mod forge;
@@ -30,7 +29,8 @@ use crate::shared::Position;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
-use log::debug;
+use instant::{Duration, Instant};
+use log::{debug, warn};
 use std::convert;
 use std::default;
 use std::fmt;
@@ -38,7 +38,6 @@ use std::io;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
-use std::time::{Duration, Instant};
 
 pub const SUPPORTED_PROTOCOLS: [i32; 24] = [
     754, 753, 751, 736, 735, 578, 575, 498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315, 210,
@@ -1244,7 +1243,7 @@ impl Conn {
                         }
                     }
                 } else {
-                    panic!(
+                    warn!(
                         "Unrecognized modinfo type in server ping response: {} in {}",
                         modinfo_type, modinfo
                     );

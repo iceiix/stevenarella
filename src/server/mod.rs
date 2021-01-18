@@ -519,6 +519,7 @@ impl Server {
                             Respawn_Gamemode => on_respawn_gamemode,
                             Respawn_HashedSeed => on_respawn_hashedseed,
                             Respawn_WorldName => on_respawn_worldname,
+                            Respawn_NBT => on_respawn_nbt,
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
@@ -1054,6 +1055,10 @@ impl Server {
     }
 
     fn on_respawn_worldname(&mut self, respawn: packet::play::clientbound::Respawn_WorldName) {
+        self.respawn(respawn.gamemode)
+    }
+
+    fn on_respawn_nbt(&mut self, respawn: packet::play::clientbound::Respawn_NBT) {
         self.respawn(respawn.gamemode)
     }
 
@@ -1770,19 +1775,26 @@ impl Server {
                 let x = block_entity.1.get("x").unwrap().as_int().unwrap();
                 let y = block_entity.1.get("y").unwrap().as_int().unwrap();
                 let z = block_entity.1.get("z").unwrap().as_int().unwrap();
-                let tile_id = block_entity.1.get("id").unwrap().as_str().unwrap();
-                let action;
-                match tile_id {
-                    // Fake a sign update
-                    "Sign" => action = 9,
-                    // Not something we care about, so break the loop
-                    _ => continue,
+                if let Some(tile_id) = block_entity.1.get("id") {
+                    let tile_id = tile_id.as_str().unwrap();
+                    let action;
+                    match tile_id {
+                        // Fake a sign update
+                        "Sign" => action = 9,
+                        // Not something we care about, so break the loop
+                        _ => continue,
+                    }
+                    self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
+                        location: Position::new(x, y, z),
+                        action,
+                        nbt: Some(block_entity.clone()),
+                    });
+                } else {
+                    warn!(
+                        "Block entity at ({},{},{}) missing id tag: {:?}",
+                        x, y, z, block_entity
+                    );
                 }
-                self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
-                    location: Position::new(x, y, z),
-                    action,
-                    nbt: Some(block_entity.clone()),
-                });
             }
         }
     }
@@ -1938,11 +1950,9 @@ impl Server {
     fn on_block_change(&mut self, location: Position, id: i32) {
         self.world.set_block(
             location,
-            block::Block::by_vanilla_id(
-                id as usize,
-                self.protocol_version,
-                &self.world.modded_block_ids,
-            ),
+            self.world
+                .id_map
+                .by_vanilla_id(id as usize, &self.world.modded_block_ids),
         )
     }
 
@@ -1976,11 +1986,9 @@ impl Server {
 
             self.world.set_block(
                 Position::new(sx + lx as i32, sy + ly as i32, sz + lz as i32),
-                block::Block::by_vanilla_id(
-                    block_raw_id as usize,
-                    self.protocol_version,
-                    &self.world.modded_block_ids,
-                ),
+                self.world
+                    .id_map
+                    .by_vanilla_id(block_raw_id as usize, &self.world.modded_block_ids),
             );
         }
     }
@@ -1998,11 +2006,9 @@ impl Server {
                     record.y as i32,
                     oz + (record.xz & 0xF) as i32,
                 ),
-                block::Block::by_vanilla_id(
-                    record.block_id.0 as usize,
-                    self.protocol_version,
-                    &self.world.modded_block_ids,
-                ),
+                self.world
+                    .id_map
+                    .by_vanilla_id(record.block_id.0 as usize, &self.world.modded_block_ids),
             );
         }
     }
@@ -2028,11 +2034,9 @@ impl Server {
 
             self.world.set_block(
                 Position::new(x, y, z),
-                block::Block::by_vanilla_id(
-                    id as usize,
-                    self.protocol_version,
-                    &self.world.modded_block_ids,
-                ),
+                self.world
+                    .id_map
+                    .by_vanilla_id(id as usize, &self.world.modded_block_ids),
             );
         }
     }

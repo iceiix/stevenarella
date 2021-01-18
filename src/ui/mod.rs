@@ -18,9 +18,9 @@ use crate::format;
 use crate::render;
 #[cfg(not(target_arch = "wasm32"))]
 use clipboard::{ClipboardContext, ClipboardProvider};
-use glutin::event::VirtualKeyCode;
 use std::cell::{RefCell, RefMut};
 use std::rc::{Rc, Weak};
+use winit::event::VirtualKeyCode;
 
 const SCALED_WIDTH: f64 = 854.0;
 const SCALED_HEIGHT: f64 = 480.0;
@@ -379,16 +379,31 @@ impl Container {
         let mx = (x / width) * SCALED_WIDTH;
         let my = (y / height) * SCALED_HEIGHT;
 
+        let mut clicked_element: Option<&Element> = None;
         for e in &self.elements {
             let r = Self::compute_draw_region(e, sw, sh, &SCREEN);
             if mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h {
                 e.click_at(&r, game, mx, my, sw, sh);
+                clicked_element = Some(e);
+            }
+        }
+
+        if let Some(e) = clicked_element {
+            if let Element::TextBox(_) = e {
+                self.clear_focus();
+                e.set_focused(true);
             }
         }
     }
 
     fn add_focusable(&mut self, el: WeakElement) {
         self.focusable_elements.push(el);
+    }
+
+    fn clear_focus(&self) {
+        for e in &self.elements {
+            e.set_focused(false);
+        }
     }
 
     pub fn cycle_focus(&mut self) {
@@ -434,7 +449,7 @@ impl Container {
     }
 
     pub fn key_type(&mut self, game: &mut crate::Game, c: char) {
-        if c < ' ' {
+        if c < ' ' && c != '\x08' {
             return;
         }
         for el in self.focusable_elements.iter().flat_map(|v| v.upgrade()) {
@@ -1522,9 +1537,6 @@ impl UIElement for TextBox {
         ctrl_pressed: bool,
     ) {
         match (key, down) {
-            (VirtualKeyCode::Back, _) => {
-                self.input.pop();
-            }
             (VirtualKeyCode::Return, false) => {
                 use std::mem;
                 let len = self.submit_funcs.len();
@@ -1549,6 +1561,12 @@ impl UIElement for TextBox {
     }
 
     fn key_type(&mut self, _game: &mut crate::Game, c: char) {
+        if c == '\x7f' || c == '\x08' {
+            // Backspace
+            self.input.pop();
+            return;
+        }
+
         self.input.push(c);
     }
 
