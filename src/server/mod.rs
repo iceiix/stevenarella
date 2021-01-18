@@ -70,7 +70,7 @@ pub struct Server {
     //
     pub player: Option<ecs::Entity>,
     entity_map: HashMap<i32, ecs::Entity, BuildHasherDefault<FNVHash>>,
-    players: HashMap<protocol::UUID, PlayerInfo, BuildHasherDefault<FNVHash>>,
+    players: Vec<PlayerInfo>,
 
     tick_timer: f64,
     entity_tick_timer: f64,
@@ -418,7 +418,7 @@ impl Server {
             entities,
             player: None,
             entity_map: HashMap::with_hasher(BuildHasherDefault::default()),
-            players: HashMap::with_hasher(BuildHasherDefault::default()),
+            players: vec![],
 
             tick_timer: 0.0,
             entity_tick_timer: 0.0,
@@ -1012,10 +1012,19 @@ impl Server {
         self.on_game_join(join.gamemode, join.entity_id)
     }
 
+    fn player_by_uuid(&self, uuid: &protocol::UUID) -> Option<PlayerInfo> {
+        for player_info in self.players {
+            if player_info.uuid == *uuid {
+                return Some(player_info);
+            }
+        }
+        None
+    }
+
     fn on_game_join(&mut self, gamemode: u8, entity_id: i32) {
         let gamemode = Gamemode::from_int((gamemode & 0x7) as i32);
         let player = entity::player::create_local(&mut self.entities);
-        if let Some(info) = self.players.get(&self.uuid) {
+        if let Some(info) = self.player_by_uuid(&self.uuid) {
             let model = self
                 .entities
                 .get_component_mut_direct::<entity::player::PlayerModel>(player)
