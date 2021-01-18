@@ -1397,7 +1397,7 @@ impl Server {
         &mut self,
         spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_String,
     ) {
-        // 1.7.10: populate the player list since we only now know the UUID
+        // 1.7.10: populate the player list here, since we only now know the UUID
         let uuid = protocol::UUID::from_str(&spawn.uuid).unwrap();
         self.players.entry(uuid.clone()).or_insert(PlayerInfo {
             name: spawn.name.clone(),
@@ -1434,8 +1434,6 @@ impl Server {
         if let Some(entity) = self.entity_map.remove(&entity_id) {
             self.entities.remove_entity(entity);
         }
-        println!("uuid = {:?}", uuid);
-        println!("players = {:?}", self.players);
         let entity = entity::player::create_remote(
             &mut self.entities,
             self.players.get(&uuid).map_or("MISSING", |v| &v.name),
