@@ -1401,7 +1401,7 @@ impl Server {
         let uuid = protocol::UUID::from_str(&spawn.uuid).unwrap();
         self.players.entry(uuid.clone()).or_insert(PlayerInfo {
             name: spawn.name.clone(),
-            uuid: uuid.clone(),
+            uuid,
             skin_url: None,
 
             display_name: None,
