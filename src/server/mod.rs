@@ -79,6 +79,7 @@ pub struct Server {
     target_info: target::Info,
 }
 
+#[derive(Debug)]
 pub struct PlayerInfo {
     name: String,
     uuid: protocol::UUID,
@@ -1396,6 +1397,22 @@ impl Server {
         &mut self,
         spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_String,
     ) {
+        println!("on_player_spawn_i32_helditem_string spawn = {:?}", spawn);
+
+        // TODO: find existing PlayerInfo_String-added field, fill in fields
+
+        // We now know the UUIDs
+        let uuid = protocol::UUID::from_str(&spawn.uuid).expect("invalid UUID in SpawnPlayer_i32_HeldItem_String");
+        self.players.entry(uuid.clone()).or_insert(PlayerInfo {
+            name: spawn.name.clone(),
+            uuid: uuid.clone(),
+            skin_url: None,
+
+            display_name: None,
+            ping: 0, // TODO: don't overwrite
+            gamemode: Gamemode::from_int(0), // TODO: don't overwrite
+        });
+
         self.on_player_spawn(
             spawn.entity_id.0,
             protocol::UUID::from_str(&spawn.uuid).unwrap(),
@@ -1421,6 +1438,8 @@ impl Server {
         if let Some(entity) = self.entity_map.remove(&entity_id) {
             self.entities.remove_entity(entity);
         }
+        println!("uuid = {:?}", uuid);
+        println!("players = {:?}", self.players);
         let entity = entity::player::create_remote(
             &mut self.entities,
             self.players.get(&uuid).map_or("MISSING", |v| &v.name),
@@ -1669,7 +1688,8 @@ impl Server {
         &mut self,
         player_info: packet::play::clientbound::PlayerInfo_String,
     ) {
-        // TODO: we need to map the UUID
+        // TODO: no UUID, change self.players to Vec, remove HashMap<UUID>; set Option<UUID> to None
+        /*
         let uuid = protocol::UUID::default(); //from_player_name(&player_info.name);
 
         if player_info.online {
@@ -1685,7 +1705,7 @@ impl Server {
         } else {
             self.players.remove(&uuid);
         }
-
+        */
     }
 
     fn on_player_info(&mut self, player_info: packet::play::clientbound::PlayerInfo) {
