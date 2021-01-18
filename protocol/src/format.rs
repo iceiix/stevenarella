@@ -49,23 +49,30 @@ impl Component {
             let translate_key = v.get("translate").unwrap().as_str().unwrap();
             if let serde_json::Value::Array(args) = v.get("with").unwrap() {
                 // TODO: recursively build components, avoid throwing away all but "text"
-                let text_args: Vec<&str> = args.iter().map(|v| {
-                    if let serde_json::Value::Object(obj) = v {
-                       obj.get("text").unwrap().as_str().unwrap()
-                    } else {
-                       v.as_str().unwrap()
-                    }
-                }).collect();
+                let text_args: Vec<&str> = args
+                    .iter()
+                    .map(|v| {
+                        if let serde_json::Value::Object(obj) = v {
+                            obj.get("text").unwrap().as_str().unwrap()
+                        } else {
+                            v.as_str().unwrap()
+                        }
+                    })
+                    .collect();
                 // TODO: translations, https://wiki.vg/Chat#Translation_component
                 Component::Text(TextComponent::new(
                     match translate_key {
                         "chat.type.text" => format!("<{}> {}", text_args[0], text_args[1]),
                         "chat.type.announcement" => format!("[{}] {}", text_args[0], text_args[1]),
                         _ => format!("unhandled: {}", translate_key),
-                    }.as_str()
+                    }
+                    .as_str(),
                 ))
             } else {
-                panic!("format::Component from_value {:?}: translate {:?} with no 'with'", v, translate_key)
+                panic!(
+                    "format::Component from_value {:?}: translate {:?} with no 'with'",
+                    v, translate_key
+                )
             }
         } else {
             modifier.color = Some(Color::RGB(255, 0, 0));
