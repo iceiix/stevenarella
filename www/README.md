@@ -13,6 +13,7 @@ To build for wasm32-unknown-unknown, run in the top-level directory (not www):
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli
 cargo install wasm-pack
+cp -vr resources-*/assets/minecraft/* resources/assets/minecraft && git checkout resources
 wasm-pack build --dev
 ```
 
