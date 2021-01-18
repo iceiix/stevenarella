@@ -8,10 +8,10 @@ repository = "https://github.com/iceiix/stevenarella"
 license = "MIT/Apache-2.0"
 
 [package.metadata.bundle]
-name = "Stevenarella"
-identifier = "com.github.iceiix.stevenarella"
-#icon = ["resources/steven.icns"]
-resources = []
+name = "stevenarella"
+identifier = "io.github.iceiix.stevenarella"
+icon = ["resources/icon*.png"]
+category = "Game"
 osx_minimum_system_version = "10.14"
 
 [lib]
