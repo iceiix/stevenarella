@@ -588,7 +588,7 @@ impl Uniform {
         }
     }
 
-    pub fn set_float_multi(&self, v: &Vec<[f32; 4]>) {
+    pub fn set_float_multi(&self, v: &[[f32; 4]]) {
         unsafe {
             glow_context().uniform_4_f32_slice(
                 Some(&self.0),
