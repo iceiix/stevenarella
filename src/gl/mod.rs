@@ -590,8 +590,10 @@ impl Uniform {
 
     pub fn set_float_multi(&self, v: &[[f32; 4]]) {
         unsafe {
-            glow_context()
-                .uniform_4_f32_slice(Some(&self.0), &*(v as *const [[f32; 4]] as *const [f32; 4]))
+            glow_context().uniform_4_f32_slice(
+                Some(&self.0),
+                std::slice::from_raw_parts(v.as_ptr() as *const _, v.len() * 4),
+            )
         }
     }
 
