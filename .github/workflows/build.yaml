@@ -1,4 +1,4 @@
-name: Build
+n }}ame: Build
 on:
   push:
 
@@ -30,12 +30,12 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Move binary
         run: |
-          mv target/release/stevenarella stevenarella-${{ matrix.os }}
+          mv target/release/stevenarella stevenarella-linux
         shell: bash
       - name: Upload binary
         uses: actions/upload-artifact@v2
         with:
-          name: stevenarella-${{ matrix.os }}
+          name: stevenarella-linux
           path: stevenarella*
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
@@ -68,12 +68,12 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Move binary
         run: |
-          mv target/release/stevenarella.exe stevenarella-${{ matrix.os }}.exe
+          mv target/release/stevenarella.exe stevenarella-windows.exe
         shell: bash
       - name: Upload binary
         uses: actions/upload-artifact@v2
         with:
-          name: stevenarella-${{ matrix.os }}
+          name: stevenarella-windows
           path: stevenarella*
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
@@ -109,12 +109,12 @@ jobs:
       - name: Move binary
         # TODO: .app bundling
         run: |
-          mv target/release/stevenarella stevenarella-${{ matrix.os }}
+          mv target/release/stevenarella stevenarella-macos
         shell: bash
       - name: Upload binary
         uses: actions/upload-artifact@v2
         with:
-          name: stevenarella-${{ matrix.os }}
+          name: stevenarella-macos
           path: stevenarella*
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
