@@ -13,7 +13,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           # TODO: refactor toolchain version
-          toolchain: $RUST_VERSION
+          toolchain: ${{ RUST_VERSION }}
           components: clippy, rustfmt
           default: true
       - name: Install dependencies
@@ -55,7 +55,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: $RUST_VERSION
+          toolchain: ${{ RUST_VERSION }}
           components: clippy, rustfmt
           default: true
       - name: Build binary
@@ -93,7 +93,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: $RUST_VERSION
+          toolchain: ${{ RUST_VERSION }}
           components: clippy, rustfmt
           default: true
       - name: Build binary
