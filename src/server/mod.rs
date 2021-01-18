@@ -1667,9 +1667,24 @@ impl Server {
 
     fn on_player_info_string(
         &mut self,
-        _player_info: packet::play::clientbound::PlayerInfo_String,
+        player_info: packet::play::clientbound::PlayerInfo_String,
     ) {
-        // TODO: support PlayerInfo_String for 1.7
+        let uuid = protocol::UUID::from_player_name(&player_info.name);
+
+        if player_info.online {
+            self.players.entry(uuid.clone()).or_insert(PlayerInfo {
+                name: player_info.name.clone(),
+                uuid,
+                skin_url: None,
+
+                display_name: None,
+                ping: player_info.ping as i32,
+                gamemode: Gamemode::from_int(0),
+            });
+        } else {
+            self.players.remove(&uuid);
+        }
+
     }
 
     fn on_player_info(&mut self, player_info: packet::play::clientbound::PlayerInfo) {
