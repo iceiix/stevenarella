@@ -228,6 +228,25 @@ cfg_if! {
 }
 
 fn main2() {
+    #[cfg(target_os = "macos")]
+    {
+        #![allow(deprecated)]
+        let mut path = std::env::home_dir().unwrap();
+        path.push("Library");
+        path.push("Application Support");
+        path.push("Stevenarella");
+        if !path.exists() {
+            std::fs::create_dir(path.clone()).unwrap();
+        }
+        if !std::fs::metadata(path.clone()).unwrap().is_dir() {
+            std::fs::DirBuilder::new()
+                .recursive(true)
+                .create(path.clone())
+                .unwrap();
+        }
+        std::env::set_current_dir(path.clone()).unwrap();
+    }
+
     let opt = Opt::from_args();
 
     set_panic_hook();
