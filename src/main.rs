@@ -221,6 +221,10 @@ cfg_if! {
 }
 
 fn init_config_dir() {
+    if std::path::Path::new("conf.cfg").exists() {
+        return;
+    }
+
     if let Some(mut path) = dirs::config_dir() {
         path.push("Stevenarella");
         if !path.exists() {
