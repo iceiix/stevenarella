@@ -65,7 +65,7 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v2
         with:
-          name: stevenarella-windows.exe
+          name: stevenarella.exe
           path: target/release/stevenarella
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
