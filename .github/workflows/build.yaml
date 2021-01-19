@@ -66,13 +66,13 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: stevenarella.exe
-          path: target/release/stevenarella
+          path: target/release/stevenarella.exe
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            stevenarella*
+            target/release/stevenarella.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -110,7 +110,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: Stevenarella.app.zip
-          path: target/release/bundle/osx
+          path: target/release/bundle/osx/Stevenarella.app.zip
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
