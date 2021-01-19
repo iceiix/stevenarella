@@ -246,7 +246,7 @@ fn main2() {
     {
         use simplelog::*;
         CombinedLogger::init(vec![
-            TermLogger::new(LevelFilter::Trace, Config::default(), TerminalMode::Mixed),
+            TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed),
             WriteLogger::new(
                 LevelFilter::Trace,
                 Config::default(),
