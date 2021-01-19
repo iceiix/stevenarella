@@ -128,7 +128,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  www:
+  web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -148,15 +148,6 @@ jobs:
           rustup target add wasm32-unknown-unknown
           cargo install wasm-bindgen-cli
           wasm-pack build --dev
-          cargo build --verbose --release
-      # TODO: run separately, or remove since have --all-targets --all? (redundant with linux)
-      #- name: Run clippy
-      #  uses: actions-rs/clippy-check@v1.0.7
-      #  with:
-      #    token: ${{ secrets.GITHUB_TOKEN }}
-      #    args: --all-targets -- -D warnings
-      #- name: Check formatting
-      #  run: cargo fmt --all -- --check
       - name: Move binary
         run: |
           mv target/wasm32-unknown-unknown/debug/stevenarella.wasm stevenarella.wasm
