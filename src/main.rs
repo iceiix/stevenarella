@@ -209,14 +209,7 @@ cfg_if! {
         use glow::HasRenderLoop;
         extern crate console_error_panic_hook;
         pub use console_error_panic_hook::set_once as set_panic_hook;
-    } else {
-        #[inline]
-        pub fn set_panic_hook() {}
-    }
-}
 
-cfg_if! {
-    if #[cfg(target_arch = "wasm32")] {
         use wasm_bindgen::prelude::*;
 
         #[wasm_bindgen]
@@ -227,7 +220,7 @@ cfg_if! {
     }
 }
 
-fn main2() {
+fn init_config_dir() {
     if let Some(mut path) = dirs::config_dir() {
         path.push("Stevenarella");
         if !path.exists() {
@@ -235,11 +228,14 @@ fn main2() {
         }
         std::env::set_current_dir(path.clone()).unwrap();
     }
+}
 
-    let opt = Opt::from_args();
-
+fn main2() {
+    #[cfg(target_arch = "wasm32")]
     set_panic_hook();
 
+    init_config_dir();
+    let opt = Opt::from_args();
     let con = Arc::new(Mutex::new(console::Console::new()));
     let proxy = console::ConsoleProxy::new(con.clone());
 
