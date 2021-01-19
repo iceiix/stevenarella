@@ -8,7 +8,7 @@ repository = "https://github.com/iceiix/stevenarella"
 license = "MIT/Apache-2.0"
 
 [package.metadata.bundle]
-name = "stevenarella"
+name = "Stevenarella"
 identifier = "io.github.iceiix.stevenarella"
 icon = ["resources/icon*.png"]
 category = "Game"
