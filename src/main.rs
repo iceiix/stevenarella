@@ -250,9 +250,10 @@ fn main2() {
             WriteLogger::new(
                 LevelFilter::Trace,
                 Config::default(),
-                fs::File::create("client.log").unwrap()
-            )
-        ]).unwrap();
+                fs::File::create("client.log").unwrap(),
+            ),
+        ])
+        .unwrap();
     }
 
     // TODO: combine with the in-game console logger
