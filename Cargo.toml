@@ -7,6 +7,13 @@ description = "Multi-protocol multi-platform Minecraft-compatible client"
 repository = "https://github.com/iceiix/stevenarella"
 license = "MIT/Apache-2.0"
 
+[package.metadata.bundle]
+name = "Stevenarella"
+identifier = "io.github.iceiix.stevenarella"
+icon = ["resources/icon*.png"]
+category = "Game"
+osx_minimum_system_version = "10.14"
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 path = "src/main.rs"
@@ -40,6 +47,7 @@ rsa_public_encrypt_pkcs1 = "0.3.0"
 structopt = "0.3.21"
 clipboard = "0.5.0"
 instant = "0.1.9"
+dirs = "3.0.1"
 # clippy = "*"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
