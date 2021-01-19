@@ -230,7 +230,7 @@ fn init_config_dir() {
         if !path.exists() {
             std::fs::create_dir_all(path.clone()).unwrap();
         }
-        std::env::set_current_dir(path.clone()).unwrap();
+        std::env::set_current_dir(path).unwrap();
     }
 }
 
