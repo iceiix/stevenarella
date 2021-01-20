@@ -80,6 +80,19 @@ pub fn register_vars(vars: &mut Vars) {
     vars.register(LOG_LEVEL_FILE);
 }
 
+fn log_level_from_str(s: &str, default: log::Level) -> log::Level {
+    // TODO: no opposite of FromStr in log crate?
+    use log::Level::*;
+    match s {
+        "trace" => Trace,
+        "debug" => Debug,
+        "info" => Info,
+        "warn" => Warn,
+        "error" => Error,
+        _ => default,
+    }
+}
+
 impl Var for CVar<i64> {
     fn serialize(&self, val: &Box<dyn Any>) -> String {
         val.downcast_ref::<i64>().unwrap().to_string()
@@ -230,6 +243,8 @@ pub struct Console {
     history: Vec<Component>,
     dirty: bool,
     logfile: fs::File,
+    log_level_term: log::Level,
+    log_level_file: log::Level,
 
     elements: Option<ConsoleElements>,
     active: bool,
@@ -253,11 +268,18 @@ impl Console {
             history: vec![Component::Text(TextComponent::new("")); 200],
             dirty: false,
             logfile: fs::File::create("client.log").expect("failed to open log file"),
+            log_level_term: log::Level::Info,
+            log_level_file: log::Level::Trace,
 
             elements: None,
             active: false,
             position: -220.0,
         }
+    }
+
+    pub fn configure(&mut self, vars: &Vars) {
+        self.log_level_term = log_level_from_str(&vars.get(LOG_LEVEL_TERM), log::Level::Info);
+        self.log_level_file = log_level_from_str(&vars.get(LOG_LEVEL_FILE), log::Level::Trace);
     }
 
     pub fn is_active(&self) -> bool {
@@ -357,10 +379,12 @@ impl Console {
             record.args()
         );
 
-        self.logfile.write_all(line.as_bytes()).unwrap();
-        self.logfile.write_all(b"\n").unwrap();
+        if record.level() <= self.log_level_file {
+            self.logfile.write_all(line.as_bytes()).unwrap();
+            self.logfile.write_all(b"\n").unwrap();
+        }
 
-        if record.level() <= log::Level::Info {
+        if record.level() <= self.log_level_term {
             println_level(record.level(), line);
         }
 

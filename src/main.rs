@@ -256,6 +256,7 @@ fn main2() {
         settings::register_vars(&mut vars);
         vars.load_config();
         vars.save_config();
+        con.lock().unwrap().configure(&vars);
         let vsync = *vars.get(settings::R_VSYNC);
         (Rc::new(vars), vsync)
     };
