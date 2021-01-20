@@ -57,6 +57,42 @@ pub struct CVar<T: Sized + Any + 'static> {
     pub default: &'static dyn Fn() -> T,
 }
 
+pub const LOG_LEVEL_TERM: CVar<String> = CVar {
+    ty: PhantomData,
+    name: "log_level_term",
+    description: "log level of messages to log to the terminal",
+    mutable: false,
+    serializable: true,
+    default: &|| "info".to_owned(),
+};
+
+pub const LOG_LEVEL_FILE: CVar<String> = CVar {
+    ty: PhantomData,
+    name: "log_level_file",
+    description: "log level of messages to log to the log file",
+    mutable: false,
+    serializable: true,
+    default: &|| "trace".to_owned(),
+};
+
+pub fn register_vars(vars: &mut Vars) {
+    vars.register(LOG_LEVEL_TERM);
+    vars.register(LOG_LEVEL_FILE);
+}
+
+fn log_level_from_str(s: &str, default: log::Level) -> log::Level {
+    // TODO: no opposite of FromStr in log crate?
+    use log::Level::*;
+    match s {
+        "trace" => Trace,
+        "debug" => Debug,
+        "info" => Info,
+        "warn" => Warn,
+        "error" => Error,
+        _ => default,
+    }
+}
+
 impl Var for CVar<i64> {
     fn serialize(&self, val: &Box<dyn Any>) -> String {
         val.downcast_ref::<i64>().unwrap().to_string()
@@ -203,10 +239,12 @@ impl Vars {
     }
 }
 
-#[derive(Default)]
 pub struct Console {
     history: Vec<Component>,
     dirty: bool,
+    logfile: fs::File,
+    log_level_term: log::Level,
+    log_level_file: log::Level,
 
     elements: Option<ConsoleElements>,
     active: bool,
@@ -218,16 +256,30 @@ struct ConsoleElements {
     lines: Vec<ui::FormattedRef>,
 }
 
+impl Default for Console {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Console {
     pub fn new() -> Console {
         Console {
             history: vec![Component::Text(TextComponent::new("")); 200],
             dirty: false,
+            logfile: fs::File::create("client.log").expect("failed to open log file"),
+            log_level_term: log::Level::Info,
+            log_level_file: log::Level::Trace,
 
             elements: None,
             active: false,
             position: -220.0,
         }
+    }
+
+    pub fn configure(&mut self, vars: &Vars) {
+        self.log_level_term = log_level_from_str(&vars.get(LOG_LEVEL_TERM), log::Level::Info);
+        self.log_level_file = log_level_from_str(&vars.get(LOG_LEVEL_FILE), log::Level::Trace);
     }
 
     pub fn is_active(&self) -> bool {
@@ -319,16 +371,23 @@ impl Console {
             file = &file[pos + 4..];
         }
 
-        println_level(
+        let line = format!(
+            "[{}:{}][{}] {}",
+            file,
+            record.line().unwrap_or(0),
             record.level(),
-            format!(
-                "[{}:{}][{}] {}",
-                file,
-                record.line().unwrap_or(0),
-                record.level(),
-                record.args()
-            ),
+            record.args()
         );
+
+        if record.level() <= self.log_level_file {
+            self.logfile.write_all(line.as_bytes()).unwrap();
+            self.logfile.write_all(b"\n").unwrap();
+        }
+
+        if record.level() <= self.log_level_term {
+            println_level(record.level(), line);
+        }
+
         self.history.remove(0);
         let mut msg = TextComponent::new("");
         msg.modifier.extra = Some(vec![
