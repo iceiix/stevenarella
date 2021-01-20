@@ -337,7 +337,9 @@ impl Console {
         self.logfile.write_all(line.as_bytes()).unwrap();
         self.logfile.write_all(b"\n").unwrap();
 
-        println_level(record.level(), line);
+        if record.level() <= log::Level::Info {
+            println_level(record.level(), line);
+        }
 
         self.history.remove(0);
         let mut msg = TextComponent::new("");
