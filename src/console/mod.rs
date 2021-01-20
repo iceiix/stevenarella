@@ -203,10 +203,10 @@ impl Vars {
     }
 }
 
-#[derive(Default)]
 pub struct Console {
     history: Vec<Component>,
     dirty: bool,
+    logfile: fs::File,
 
     elements: Option<ConsoleElements>,
     active: bool,
@@ -223,6 +223,7 @@ impl Console {
         Console {
             history: vec![Component::Text(TextComponent::new("")); 200],
             dirty: false,
+            logfile: fs::File::create("client.log").expect("failed to open log file"),
 
             elements: None,
             active: false,
@@ -319,16 +320,19 @@ impl Console {
             file = &file[pos + 4..];
         }
 
-        println_level(
+        let line = format!(
+            "[{}:{}][{}] {}",
+            file,
+            record.line().unwrap_or(0),
             record.level(),
-            format!(
-                "[{}:{}][{}] {}",
-                file,
-                record.line().unwrap_or(0),
-                record.level(),
-                record.args()
-            ),
+            record.args()
         );
+
+        self.logfile.write_all(line.as_bytes()).unwrap();
+        self.logfile.write_all(b"\n").unwrap();
+
+        println_level(record.level(), line);
+
         self.history.remove(0);
         let mut msg = TextComponent::new("");
         msg.modifier.extra = Some(vec![
