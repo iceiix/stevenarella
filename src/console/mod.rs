@@ -57,6 +57,24 @@ pub struct CVar<T: Sized + Any + 'static> {
     pub default: &'static dyn Fn() -> T,
 }
 
+pub const LOG_LEVEL_TERM: CVar<String> = CVar {
+    ty: PhantomData,
+    name: "log_level_term",
+    description: "log level of messages to log to the terminal",
+    mutable: false,
+    serializable: true,
+    default: &|| "info".to_owned(),
+};
+
+pub const LOG_LEVEL_FILE: CVar<String> = CVar {
+    ty: PhantomData,
+    name: "log_level_file",
+    description: "log level of messages to log to the log file",
+    mutable: false,
+    serializable: true,
+    default: &|| "trace".to_owned(),
+};
+
 impl Var for CVar<i64> {
     fn serialize(&self, val: &Box<dyn Any>) -> String {
         val.downcast_ref::<i64>().unwrap().to_string()
@@ -126,7 +144,12 @@ pub struct Vars {
 
 impl Vars {
     pub fn new() -> Vars {
-        Default::default()
+        let mut s: Self = Default::default();
+
+        s.register(LOG_LEVEL_TERM);
+        s.register(LOG_LEVEL_FILE);
+
+        s
     }
 
     pub fn register<T: Sized + Any>(&mut self, var: CVar<T>)
