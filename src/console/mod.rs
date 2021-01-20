@@ -218,6 +218,12 @@ struct ConsoleElements {
     lines: Vec<ui::FormattedRef>,
 }
 
+impl Default for Console {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Console {
     pub fn new() -> Console {
         Console {
