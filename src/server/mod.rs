@@ -79,6 +79,7 @@ pub struct Server {
     target_info: target::Info,
 }
 
+#[derive(Debug)]
 pub struct PlayerInfo {
     name: String,
     uuid: protocol::UUID,
@@ -1399,6 +1400,18 @@ impl Server {
         &mut self,
         spawn: packet::play::clientbound::SpawnPlayer_i32_HeldItem_String,
     ) {
+        // 1.7.10: populate the player list here, since we only now know the UUID
+        let uuid = protocol::UUID::from_str(&spawn.uuid).unwrap();
+        self.players.entry(uuid.clone()).or_insert(PlayerInfo {
+            name: spawn.name.clone(),
+            uuid,
+            skin_url: None,
+
+            display_name: None,
+            ping: 0, // TODO: don't overwrite from PlayerInfo_String
+            gamemode: Gamemode::from_int(0),
+        });
+
         self.on_player_spawn(
             spawn.entity_id.0,
             protocol::UUID::from_str(&spawn.uuid).unwrap(),
@@ -1672,7 +1685,23 @@ impl Server {
         &mut self,
         _player_info: packet::play::clientbound::PlayerInfo_String,
     ) {
-        // TODO: support PlayerInfo_String for 1.7
+        // TODO: track online players, for 1.7.10 - this is for the <tab> online player list
+        // self.players in 1.7.10 will be only spawned players (within client range)
+        /*
+        if player_info.online {
+            self.players.entry(uuid.clone()).or_insert(PlayerInfo {
+                name: player_info.name.clone(),
+                uuid,
+                skin_url: None,
+
+                display_name: None,
+                ping: player_info.ping as i32,
+                gamemode: Gamemode::from_int(0),
+            });
+        } else {
+            self.players.remove(&uuid);
+        }
+        */
     }
 
     fn on_player_info(&mut self, player_info: packet::play::clientbound::PlayerInfo) {

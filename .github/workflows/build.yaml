@@ -3,15 +3,47 @@ on:
   push:
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: 
-          - windows-latest
-          - ubuntu-latest
-          - macos-latest
-      fail-fast: true
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          # TODO: refactor toolchain version
+          toolchain: 1.49.0
+          components: clippy, rustfmt
+          default: true
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-composite0-dev
+      - name: Build binary
+        run: |
+          cargo build --verbose --release
+      - name: Run clippy
+        uses: actions-rs/clippy-check@v1.0.7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-targets -- -D warnings
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: stevenarella-linux
+          path: target/release/stevenarella
+      - name: Release binary
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            stevenarella*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust
@@ -20,14 +52,44 @@ jobs:
           toolchain: 1.49.0
           components: clippy, rustfmt
           default: true
-      - name: Install dependencies
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxcb-composite0-dev
       - name: Build binary
         run: |
           cargo build --verbose --release
+      - name: Run clippy
+        uses: actions-rs/clippy-check@v1.0.7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-targets -- -D warnings
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: stevenarella.exe
+          path: target/release/stevenarella.exe
+      - name: Release binary
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/release/stevenarella.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.49.0
+          components: clippy, rustfmt
+          default: true
+      - name: Build binary
+        run: |
+          cargo build --verbose --release
+          chmod a+x target/release/stevenarella
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.14
       - name: Run clippy
@@ -37,24 +99,59 @@ jobs:
           args: --all-targets -- -D warnings
       - name: Check formatting
         run: cargo fmt --all -- --check
-      - name: Move binary
+      - name: Package binary
         run: |
-          if [[ ${{ matrix.os }} == windows ]]; then
-            mv target/release/stevenarella.exe stevenarella-${{ matrix.os }}.exe
-          else
-            mv target/release/stevenarella stevenarella-${{ matrix.os }}
-          fi
-        shell: bash
+          cargo install cargo-bundle
+          cargo bundle --release
+          chmod a+x target/release/bundle/osx/Stevenarella.app/Contents/MacOS/stevenarella
+          cd target/release/bundle/osx
+          zip -r Stevenarella.app.zip Stevenarella.app
       - name: Upload binary
         uses: actions/upload-artifact@v2
         with:
-          name: stevenarella-${{ matrix.os }}
-          path: stevenarella*
+          name: Stevenarella.app.zip
+          path: target/release/bundle/osx/Stevenarella.app.zip
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            stevenarella*
+            target/release/bundle/osx/Stevenarella.app.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          # TODO: refactor toolchain version
+          toolchain: 1.49.0
+          components: clippy, rustfmt
+          default: true
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.3.0
+        with:
+          version: 'latest'
+      - name: Build binary
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo install wasm-bindgen-cli
+          wasm-pack build --dev
+      - name: Upload binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: stevenarella.wasm
+          path: target/wasm32-unknown-unknown/debug/stevenarella.wasm
+      # TODO: npm bundle? or only the .wasm
+      - name: Release binary
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/wasm32-unknown-unknown/debug/stevenarella.wasm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

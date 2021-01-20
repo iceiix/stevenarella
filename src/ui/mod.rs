@@ -449,7 +449,7 @@ impl Container {
     }
 
     pub fn key_type(&mut self, game: &mut crate::Game, c: char) {
-        if c < ' ' {
+        if c < ' ' && c != '\x08' {
             return;
         }
         for el in self.focusable_elements.iter().flat_map(|v| v.upgrade()) {

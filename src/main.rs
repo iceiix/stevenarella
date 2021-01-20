@@ -209,14 +209,7 @@ cfg_if! {
         use glow::HasRenderLoop;
         extern crate console_error_panic_hook;
         pub use console_error_panic_hook::set_once as set_panic_hook;
-    } else {
-        #[inline]
-        pub fn set_panic_hook() {}
-    }
-}
 
-cfg_if! {
-    if #[cfg(target_arch = "wasm32")] {
         use wasm_bindgen::prelude::*;
 
         #[wasm_bindgen]
@@ -227,11 +220,26 @@ cfg_if! {
     }
 }
 
-fn main2() {
-    let opt = Opt::from_args();
+fn init_config_dir() {
+    if std::path::Path::new("conf.cfg").exists() {
+        return;
+    }
 
+    if let Some(mut path) = dirs::config_dir() {
+        path.push("Stevenarella");
+        if !path.exists() {
+            std::fs::create_dir_all(path.clone()).unwrap();
+        }
+        std::env::set_current_dir(path).unwrap();
+    }
+}
+
+fn main2() {
+    #[cfg(target_arch = "wasm32")]
     set_panic_hook();
 
+    init_config_dir();
+    let opt = Opt::from_args();
     let con = Arc::new(Mutex::new(console::Console::new()));
     let proxy = console::ConsoleProxy::new(con.clone());
 
@@ -243,10 +251,12 @@ fn main2() {
     let (vars, mut vsync) = {
         let mut vars = console::Vars::new();
         vars.register(CL_BRAND);
+        console::register_vars(&mut vars);
         auth::register_vars(&mut vars);
         settings::register_vars(&mut vars);
         vars.load_config();
         vars.save_config();
+        con.lock().unwrap().configure(&vars);
         let vsync = *vars.get(settings::R_VSYNC);
         (Rc::new(vars), vsync)
     };
@@ -640,6 +650,11 @@ fn handle_window_event<T>(
                 WindowEvent::ReceivedCharacter(codepoint) => {
                     if !game.focused && !game.is_ctrl_pressed && !game.is_logo_pressed {
                         ui_container.key_type(game, codepoint);
+                    }
+
+                    #[cfg(target_os = "macos")]
+                    if game.is_logo_pressed && codepoint == 'q' {
+                        game.should_close = true;
                     }
                 }
 

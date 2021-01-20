@@ -7,6 +7,13 @@ description = "Multi-protocol multi-platform Minecraft-compatible client"
 repository = "https://github.com/iceiix/stevenarella"
 license = "MIT/Apache-2.0"
 
+[package.metadata.bundle]
+name = "Stevenarella"
+identifier = "io.github.iceiix.stevenarella"
+icon = ["resources/icon*.png"]
+category = "Game"
+osx_minimum_system_version = "10.14"
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 path = "src/main.rs"
@@ -23,12 +30,12 @@ wasm-bindgen = "0.2.69"
 winit = { version = "0.24.0", features = [ "web-sys" ]}
 glow = "0.7.1"
 byteorder = "1.4.2"
-serde = "1.0.119"
+serde = "1.0.120"
 serde_json = "1.0.61"
 flate2 = { version = "1.0.19", features = ["rust_backend"], default-features = false }
 zip = { version = "0.5.6", features = ["deflate"], default-features = false }
 image = "0.23.12"
-getrandom = { version = "0.2.1", features = ["js"] }
+getrandom = { version = "0.2.2", features = ["js"] }
 rand = "0.8.2"
 rand_pcg = "0.3.0"
 base64 = "0.13.0"
@@ -40,6 +47,7 @@ rsa_public_encrypt_pkcs1 = "0.3.0"
 structopt = "0.3.21"
 clipboard = "0.5.0"
 instant = "0.1.9"
+dirs = "3.0.1"
 # clippy = "*"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
