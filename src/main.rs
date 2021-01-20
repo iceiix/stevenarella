@@ -241,24 +241,10 @@ fn main2() {
     init_config_dir();
     let opt = Opt::from_args();
     let con = Arc::new(Mutex::new(console::Console::new()));
-    //let proxy = console::ConsoleProxy::new(con.clone());
+    let proxy = console::ConsoleProxy::new(con.clone());
 
-    {
-        use simplelog::*;
-        CombinedLogger::init(vec![
-            TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed),
-            WriteLogger::new(
-                LevelFilter::Trace,
-                Config::default(),
-                fs::File::create("client.log").unwrap(),
-            ),
-        ])
-        .unwrap();
-    }
-
-    // TODO: combine with the in-game console logger
-    //log::set_boxed_logger(Box::new(proxy)).unwrap();
-    //log::set_max_level(log::LevelFilter::Trace);
+    log::set_boxed_logger(Box::new(proxy)).unwrap();
+    log::set_max_level(log::LevelFilter::Trace);
 
     info!("Starting steven");
 
