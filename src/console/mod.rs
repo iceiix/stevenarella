@@ -75,6 +75,11 @@ pub const LOG_LEVEL_FILE: CVar<String> = CVar {
     default: &|| "trace".to_owned(),
 };
 
+pub fn register_vars(vars: &mut Vars) {
+    vars.register(LOG_LEVEL_TERM);
+    vars.register(LOG_LEVEL_FILE);
+}
+
 impl Var for CVar<i64> {
     fn serialize(&self, val: &Box<dyn Any>) -> String {
         val.downcast_ref::<i64>().unwrap().to_string()
@@ -144,12 +149,7 @@ pub struct Vars {
 
 impl Vars {
     pub fn new() -> Vars {
-        let mut s: Self = Default::default();
-
-        s.register(LOG_LEVEL_TERM);
-        s.register(LOG_LEVEL_FILE);
-
-        s
+        Default::default()
     }
 
     pub fn register<T: Sized + Any>(&mut self, var: CVar<T>)

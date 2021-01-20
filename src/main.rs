@@ -251,6 +251,7 @@ fn main2() {
     let (vars, mut vsync) = {
         let mut vars = console::Vars::new();
         vars.register(CL_BRAND);
+        console::register_vars(&mut vars);
         auth::register_vars(&mut vars);
         settings::register_vars(&mut vars);
         vars.load_config();
