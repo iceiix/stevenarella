@@ -1397,6 +1397,7 @@ define_blocks! {
     }
     SoulFire {
         props {},
+        data None,
         offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
         model { ("minecraft", "soul_fire") },
         collision vec![],
@@ -2057,6 +2058,7 @@ define_blocks! {
     }
     SoulSoil {
         props {},
+        data None,
         offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
         model { ("minecraft", "soul_soil") },
     }
@@ -5783,6 +5785,100 @@ define_blocks! {
         props {},
         data None::<usize>,
         model { ("steven", "missing_block") },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Spot check a few blocks across different versions, including the correctly recognized last supported block
+    // TODO: comprehensive testing against https://github.com/PrismarineJS/minecraft-data/tree/master/data/pc
+
+    #[test]
+    fn hier_1_12_2() {
+        let id_map = VanillaIDMap::new(340);
+        assert_eq!(
+            id_map.by_vanilla_id(255 << 4, &HashMap::new()),
+            StructureBlock {
+                mode: StructureBlockMode::Save
+            }
+        );
+        assert_eq!(
+            id_map.by_vanilla_id((255 << 4) | 3, &HashMap::new()),
+            StructureBlock {
+                mode: StructureBlockMode::Data
+            }
+        );
+    }
+
+    #[test]
+    fn flat_1_13_2() {
+        let id_map = VanillaIDMap::new(404);
+        assert_eq!(
+            id_map.by_vanilla_id(8595, &HashMap::new()),
+            StructureBlock {
+                mode: StructureBlockMode::Save
+            }
+        );
+        assert_eq!(
+            id_map.by_vanilla_id(8598, &HashMap::new()),
+            StructureBlock {
+                mode: StructureBlockMode::Data
+            }
+        );
+    }
+
+    #[test]
+    fn flat_1_14_4() {
+        let id_map = VanillaIDMap::new(477);
+        assert_eq!(
+            id_map.by_vanilla_id(9113, &HashMap::new()),
+            Conduit { waterlogged: true }
+        );
+        assert_eq!(
+            id_map.by_vanilla_id(9114, &HashMap::new()),
+            Conduit { waterlogged: false }
+        );
+    }
+
+    #[test]
+    fn flat_1_15_1() {
+        let id_map = VanillaIDMap::new(575);
+        assert_eq!(
+            id_map.by_vanilla_id(9113, &HashMap::new()),
+            Conduit { waterlogged: true }
+        );
+        assert_eq!(
+            id_map.by_vanilla_id(9114, &HashMap::new()),
+            Conduit { waterlogged: false }
+        );
+    }
+
+    #[test]
+    fn flat_1_16() {
+        let id_map = VanillaIDMap::new(735);
+        assert_eq!(
+            id_map.by_vanilla_id(1048, &HashMap::new()),
+            NoteBlock {
+                instrument: NoteBlockInstrument::Pling,
+                note: 24,
+                powered: false
+            }
+        );
+    }
+
+    #[test]
+    fn flat_1_16_2() {
+        let id_map = VanillaIDMap::new(751);
+        assert_eq!(
+            id_map.by_vanilla_id(1048, &HashMap::new()),
+            NoteBlock {
+                instrument: NoteBlockInstrument::Pling,
+                note: 24,
+                powered: false
+            }
+        );
     }
 }
 
