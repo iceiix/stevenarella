@@ -47,7 +47,7 @@ impl Component {
             Component::Text(TextComponent::from_value(v, modifier))
         } else if v.get("translate").is_some() {
             let translate_key = v.get("translate").unwrap().as_str().unwrap();
-            if let serde_json::Value::Array(args) = v.get("with").unwrap() {
+            if let Some(serde_json::Value::Array(args)) = v.get("with") {
                 // TODO: recursively build components, avoid throwing away all but "text"
                 let text_args: Vec<&str> = args
                     .iter()
@@ -69,10 +69,8 @@ impl Component {
                     .as_str(),
                 ))
             } else {
-                panic!(
-                    "format::Component from_value {:?}: translate {:?} with no 'with'",
-                    v, translate_key
-                )
+                // TODO
+                Component::Text(TextComponent::new(translate_key))
             }
         } else {
             modifier.color = Some(Color::RGB(255, 0, 0));

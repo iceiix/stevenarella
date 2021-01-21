@@ -1803,17 +1803,17 @@ impl Server {
 
     fn on_servermessage_noposition(
         &mut self,
-        _m: packet::play::clientbound::ServerMessage_NoPosition,
+        m: packet::play::clientbound::ServerMessage_NoPosition,
     ) {
-        todo!()
+        println!("chat: {:?}", m);
     }
 
-    fn on_servermessage_position(&mut self, _m: packet::play::clientbound::ServerMessage_Position) {
-        todo!()
+    fn on_servermessage_position(&mut self, m: packet::play::clientbound::ServerMessage_Position) {
+        println!("chat: {:?}", m);
     }
 
     fn on_servermessage_sender(&mut self, m: packet::play::clientbound::ServerMessage_Sender) {
-        println!("m = {:?}", m);
+        println!("chat: {:?}", m);
     }
 
     fn load_block_entities(&mut self, block_entities: Vec<Option<crate::nbt::NamedTag>>) {
