@@ -1397,6 +1397,7 @@ define_blocks! {
     }
     SoulFire {
         props {},
+        data None,
         offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
         model { ("minecraft", "soul_fire") },
         collision vec![],
@@ -2057,6 +2058,7 @@ define_blocks! {
     }
     SoulSoil {
         props {},
+        data None,
         offsets |protocol_version| { if protocol_version >= 735 { Some(0) } else { None } },
         model { ("minecraft", "soul_soil") },
     }
