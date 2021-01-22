@@ -91,7 +91,7 @@ pub struct Game {
 
 impl Game {
     pub fn connect_to(&mut self, address: &str) {
-        let (protocol_version, forge_mods) =
+        let (protocol_version, forge_mods, fml_network_version) =
             match protocol::Conn::new(&address, self.default_protocol_version)
                 .and_then(|conn| conn.do_status())
             {
@@ -100,14 +100,14 @@ impl Game {
                         "Detected server protocol version {}",
                         res.0.version.protocol
                     );
-                    (res.0.version.protocol, res.0.forge_mods)
+                    (res.0.version.protocol, res.0.forge_mods, res.0.fml_network_version)
                 }
                 Err(err) => {
                     warn!(
                         "Error pinging server {} to get protocol version: {:?}, defaulting to {}",
                         address, err, self.default_protocol_version
                     );
-                    (self.default_protocol_version, vec![])
+                    (self.default_protocol_version, vec![], None)
                 }
             };
 
@@ -127,6 +127,7 @@ impl Game {
                 &address,
                 protocol_version,
                 forge_mods,
+                fml_network_version,
             ))
             .unwrap();
         });

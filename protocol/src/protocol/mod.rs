@@ -1224,6 +1224,7 @@ impl Conn {
 
         // For modded servers, get the list of Forge mods installed
         let mut forge_mods: std::vec::Vec<crate::protocol::forge::ForgeMod> = vec![];
+        let mut fml_network_version: Option<i64> = None;
         if let Some(modinfo) = val.get("modinfo") {
             if let Some(modinfo_type) = modinfo.get("type") {
                 if modinfo_type == "FML" {
@@ -1240,6 +1241,7 @@ impl Conn {
                                         .push(crate::protocol::forge::ForgeMod { modid, version });
                                 }
                             }
+                            fml_network_version = Some(1);
                         }
                     }
                 } else {
@@ -1267,6 +1269,7 @@ impl Conn {
                     }
                 }
             }
+            fml_network_version = Some(forge_data.get("fmlNetworkVersion").unwrap().as_i64().unwrap());
         }
 
         Ok((
@@ -1301,6 +1304,7 @@ impl Conn {
                     .and_then(Value::as_str)
                     .map(|v| v.to_owned()),
                 forge_mods,
+                fml_network_version,
             },
             ping,
         ))
@@ -1352,6 +1356,7 @@ pub struct Status {
     pub description: format::Component,
     pub favicon: Option<String>,
     pub forge_mods: Vec<crate::protocol::forge::ForgeMod>,
+    pub fml_network_version: Option<i64>,
 }
 
 #[derive(Debug)]

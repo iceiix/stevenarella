@@ -110,14 +110,17 @@ impl Server {
         address: &str,
         protocol_version: i32,
         forge_mods: Vec<forge::ForgeMod>,
+        fml_network_version: Option<i64>,
     ) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
-        let tag = if !forge_mods.is_empty() {
-            "\0FML\0"
-        } else {
-            ""
+        let tag = match fml_network_version {
+            Some(1) => "\0FML\0",
+            Some(2) => "\0FML2\0",
+            None => "",
+            _ => panic!("unsupported FML network version: {:?}", fml_network_version),
         };
+
         let host = conn.host.clone() + tag;
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
