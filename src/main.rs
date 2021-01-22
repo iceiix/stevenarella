@@ -100,7 +100,11 @@ impl Game {
                         "Detected server protocol version {}",
                         res.0.version.protocol
                     );
-                    (res.0.version.protocol, res.0.forge_mods, res.0.fml_network_version)
+                    (
+                        res.0.version.protocol,
+                        res.0.forge_mods,
+                        res.0.fml_network_version,
+                    )
                 }
                 Err(err) => {
                     warn!(

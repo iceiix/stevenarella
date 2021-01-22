@@ -1269,7 +1269,13 @@ impl Conn {
                     }
                 }
             }
-            fml_network_version = Some(forge_data.get("fmlNetworkVersion").unwrap().as_i64().unwrap());
+            fml_network_version = Some(
+                forge_data
+                    .get("fmlNetworkVersion")
+                    .unwrap()
+                    .as_i64()
+                    .unwrap(),
+            );
         }
 
         Ok((
