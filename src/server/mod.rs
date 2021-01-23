@@ -25,7 +25,7 @@ use crate::types::Gamemode;
 use crate::world;
 use crate::world::block;
 use cgmath::prelude::*;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use rand::{self, Rng};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
@@ -110,14 +110,17 @@ impl Server {
         address: &str,
         protocol_version: i32,
         forge_mods: Vec<forge::ForgeMod>,
+        fml_network_version: Option<i64>,
     ) -> Result<Server, protocol::Error> {
         let mut conn = protocol::Conn::new(address, protocol_version)?;
 
-        let tag = if !forge_mods.is_empty() {
-            "\0FML\0"
-        } else {
-            ""
+        let tag = match fml_network_version {
+            Some(1) => "\0FML\0",
+            Some(2) => "\0FML2\0",
+            None => "",
+            _ => panic!("unsupported FML network version: {:?}", fml_network_version),
         };
+
         let host = conn.host.clone() + tag;
         let port = conn.port;
         conn.write_packet(protocol::packet::handshake::serverbound::Handshake {
@@ -167,7 +170,6 @@ impl Server {
                         Some(rx),
                     ));
                 }
-                // TODO: avoid duplication
                 protocol::packet::Packet::LoginSuccess_UUID(val) => {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {:?}", val.username, val.uuid);
@@ -188,7 +190,7 @@ impl Server {
                 protocol::packet::Packet::LoginDisconnect(val) => {
                     return Err(protocol::Error::Disconnect(val.reason))
                 }
-                val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
+                val => return Err(protocol::Error::Err(format!("Wrong packet 1: {:?}", val))),
             };
         }
 
@@ -225,6 +227,7 @@ impl Server {
         write.enable_encyption(&shared, false);
 
         let uuid;
+        let compression_threshold = read.compression_threshold;
         loop {
             match read.read_packet()? {
                 protocol::packet::Packet::SetInitialCompression(val) => {
@@ -248,7 +251,73 @@ impl Server {
                 protocol::packet::Packet::LoginDisconnect(val) => {
                     return Err(protocol::Error::Disconnect(val.reason))
                 }
-                val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
+                protocol::packet::Packet::LoginPluginRequest(req) => {
+                    match req.channel.as_ref() {
+                        "fml:loginwrapper" => {
+                            let mut cursor = std::io::Cursor::new(req.data);
+                            let channel: String = protocol::Serializable::read_from(&mut cursor)?;
+
+                            let (id, mut data) = protocol::Conn::read_raw_packet_from(
+                                &mut cursor,
+                                compression_threshold,
+                            )?;
+
+                            match channel.as_ref() {
+                                "fml:handshake" => {
+                                    let packet =
+                                        forge::fml2::FmlHandshake::packet_by_id(id, &mut data)?;
+                                    use forge::fml2::FmlHandshake::*;
+                                    match packet {
+                                        ModList {
+                                            mod_names,
+                                            channels,
+                                            registries,
+                                        } => {
+                                            info!("ModList mod_names={:?} channels={:?} registries={:?}", mod_names, channels, registries);
+                                            write.write_fml2_handshake_plugin_message(
+                                                req.message_id,
+                                                Some(&ModListReply {
+                                                    mod_names,
+                                                    channels,
+                                                    registries,
+                                                }),
+                                            )?;
+                                        }
+                                        ServerRegistry {
+                                            name,
+                                            snapshot_present: _,
+                                            snapshot: _,
+                                        } => {
+                                            info!("ServerRegistry {:?}", name);
+                                            write.write_fml2_handshake_plugin_message(
+                                                req.message_id,
+                                                Some(&Acknowledgement),
+                                            )?;
+                                        }
+                                        ConfigurationData { filename, contents } => {
+                                            info!(
+                                                "ConfigurationData filename={:?} contents={}",
+                                                filename,
+                                                String::from_utf8_lossy(&contents)
+                                            );
+                                            write.write_fml2_handshake_plugin_message(
+                                                req.message_id,
+                                                Some(&Acknowledgement),
+                                            )?;
+                                        }
+                                        _ => unimplemented!(),
+                                    }
+                                }
+                                _ => panic!(
+                                    "unknown LoginPluginRequest fml:loginwrapper channel: {:?}",
+                                    channel
+                                ),
+                            }
+                        }
+                        _ => panic!("unsupported LoginPluginRequest channel: {:?}", req.channel),
+                    }
+                }
+                val => return Err(protocol::Error::Err(format!("Wrong packet 2: {:?}", val))),
             }
         }
 
@@ -946,33 +1015,17 @@ impl Server {
         }
     }
 
+    // TODO: remove wrappers and directly call on Conn
     fn write_fmlhs_plugin_message(&mut self, msg: &forge::FmlHs) {
-        use crate::protocol::Serializable;
-
-        let mut buf: Vec<u8> = vec![];
-        msg.write_to(&mut buf).unwrap();
-
-        self.write_plugin_message("FML|HS", &buf);
+        let _ = self.conn.as_mut().unwrap().write_fmlhs_plugin_message(msg); // TODO handle errors
     }
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
-        if protocol::is_network_debug() {
-            debug!(
-                "Sending plugin message: channel={}, data={:?}",
-                channel, data
-            );
-        }
-        if self.protocol_version >= 47 {
-            self.write_packet(packet::play::serverbound::PluginMessageServerbound {
-                channel: channel.to_string(),
-                data: data.to_vec(),
-            });
-        } else {
-            self.write_packet(packet::play::serverbound::PluginMessageServerbound_i16 {
-                channel: channel.to_string(),
-                data: crate::protocol::LenPrefixedBytes::<protocol::VarShort>::new(data.to_vec()),
-            });
-        }
+        let _ = self
+            .conn
+            .as_mut()
+            .unwrap()
+            .write_plugin_message(channel, data); // TODO handle errors
     }
 
     fn on_game_join_worldnames_ishard(

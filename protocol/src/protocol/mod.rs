@@ -971,7 +971,7 @@ pub enum Direction {
 
 /// The protocol has multiple 'sub-protocols' or states which control which
 /// packet an id points to.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum State {
     Handshaking,
     Play,
@@ -1036,7 +1036,7 @@ pub struct Conn {
 
     cipher: Option<Aes128Cfb>,
 
-    compression_threshold: i32,
+    pub compression_threshold: i32,
 }
 
 impl Conn {
@@ -1099,17 +1099,91 @@ impl Conn {
         }
         self.write_all(&buf)?;
 
-        Result::Ok(())
+        Ok(())
     }
 
-    pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
-        let len = VarInt::read_from(self)?.0 as usize;
+    pub fn write_plugin_message(&mut self, channel: &str, data: &[u8]) -> Result<(), Error> {
+        if is_network_debug() {
+            debug!(
+                "Sending plugin message: channel={}, data={:?}",
+                channel, data
+            );
+        }
+        debug_assert!(self.state == State::Play);
+        if self.protocol_version >= 47 {
+            self.write_packet(packet::play::serverbound::PluginMessageServerbound {
+                channel: channel.to_string(),
+                data: data.to_vec(),
+            })?;
+        } else {
+            self.write_packet(packet::play::serverbound::PluginMessageServerbound_i16 {
+                channel: channel.to_string(),
+                data: LenPrefixedBytes::<VarShort>::new(data.to_vec()),
+            })?;
+        }
+
+        Ok(())
+    }
+
+    pub fn write_fmlhs_plugin_message(&mut self, msg: &forge::FmlHs) -> Result<(), Error> {
+        let mut buf: Vec<u8> = vec![];
+        msg.write_to(&mut buf)?;
+
+        self.write_plugin_message("FML|HS", &buf)
+    }
+
+    pub fn write_login_plugin_response(
+        &mut self,
+        message_id: VarInt,
+        successful: bool,
+        data: &[u8],
+    ) -> Result<(), Error> {
+        if is_network_debug() {
+            debug!(
+                "Sending login plugin message: message_id={:?}, successful={:?}, data={:?}",
+                message_id, successful, data,
+            );
+        }
+        debug_assert!(self.state == State::Login);
+        self.write_packet(packet::login::serverbound::LoginPluginResponse {
+            message_id,
+            successful,
+            data: data.to_vec(),
+        })
+    }
+
+    pub fn write_fml2_handshake_plugin_message(
+        &mut self,
+        message_id: VarInt,
+        msg: Option<&forge::fml2::FmlHandshake>,
+    ) -> Result<(), Error> {
+        if let Some(msg) = msg {
+            let mut inner_buf: Vec<u8> = vec![];
+            msg.write_to(&mut inner_buf)?;
+
+            let mut outer_buf: Vec<u8> = vec![];
+            "fml:handshake".to_string().write_to(&mut outer_buf)?;
+            VarInt(inner_buf.len() as i32).write_to(&mut outer_buf)?;
+            inner_buf.write_to(&mut outer_buf)?;
+
+            self.write_login_plugin_response(message_id, true, &outer_buf)
+        } else {
+            unimplemented!() // successful: false, no payload
+        }
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub fn read_raw_packet_from<R: io::Read>(
+        buf: &mut R,
+        compression_threshold: i32,
+    ) -> Result<(i32, Box<io::Cursor<Vec<u8>>>), Error> {
+        let len = VarInt::read_from(buf)?.0 as usize;
         let mut ibuf = vec![0; len];
-        self.read_exact(&mut ibuf)?;
+        buf.read_exact(&mut ibuf)?;
 
         let mut buf = io::Cursor::new(ibuf);
 
-        if self.compression_threshold >= 0 {
+        if compression_threshold >= 0 {
             let uncompressed_size = VarInt::read_from(&mut buf)?.0;
             if uncompressed_size != 0 {
                 let mut new = Vec::with_capacity(uncompressed_size as usize);
@@ -1120,7 +1194,7 @@ impl Conn {
                 if is_network_debug() {
                     debug!(
                         "Decompressed threshold={} len={} uncompressed_size={} to {} bytes",
-                        self.compression_threshold,
+                        compression_threshold,
                         len,
                         uncompressed_size,
                         new.len()
@@ -1130,6 +1204,13 @@ impl Conn {
             }
         }
         let id = VarInt::read_from(&mut buf)?.0;
+
+        Ok((id, Box::new(buf)))
+    }
+
+    pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
+        let compression_threshold = self.compression_threshold;
+        let (id, mut buf) = Conn::read_raw_packet_from(self, compression_threshold)?;
 
         let dir = match self.direction {
             Direction::Clientbound => Direction::Serverbound,
@@ -1224,6 +1305,7 @@ impl Conn {
 
         // For modded servers, get the list of Forge mods installed
         let mut forge_mods: std::vec::Vec<crate::protocol::forge::ForgeMod> = vec![];
+        let mut fml_network_version: Option<i64> = None;
         if let Some(modinfo) = val.get("modinfo") {
             if let Some(modinfo_type) = modinfo.get("type") {
                 if modinfo_type == "FML" {
@@ -1240,6 +1322,7 @@ impl Conn {
                                         .push(crate::protocol::forge::ForgeMod { modid, version });
                                 }
                             }
+                            fml_network_version = Some(1);
                         }
                     }
                 } else {
@@ -1267,6 +1350,13 @@ impl Conn {
                     }
                 }
             }
+            fml_network_version = Some(
+                forge_data
+                    .get("fmlNetworkVersion")
+                    .unwrap()
+                    .as_i64()
+                    .unwrap(),
+            );
         }
 
         Ok((
@@ -1301,6 +1391,7 @@ impl Conn {
                     .and_then(Value::as_str)
                     .map(|v| v.to_owned()),
                 forge_mods,
+                fml_network_version,
             },
             ping,
         ))
@@ -1352,6 +1443,7 @@ pub struct Status {
     pub description: format::Component,
     pub favicon: Option<String>,
     pub forge_mods: Vec<crate::protocol::forge::ForgeMod>,
+    pub fml_network_version: Option<i64>,
 }
 
 #[derive(Debug)]

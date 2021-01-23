@@ -191,3 +191,121 @@ impl Serializable for FmlHs {
         }
     }
 }
+
+pub mod fml2 {
+    // https://wiki.vg/Minecraft_Forge_Handshake#FML2_protocol_.281.13_-_Current.29
+    use super::*;
+
+    #[derive(Clone, Default, Debug)]
+    pub struct Channel {
+        pub name: String,
+        pub version: String,
+    }
+
+    impl Serializable for Channel {
+        fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+            Ok(Channel {
+                name: Serializable::read_from(buf)?,
+                version: Serializable::read_from(buf)?,
+            })
+        }
+
+        fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+            self.name.write_to(buf)?;
+            self.version.write_to(buf)
+        }
+    }
+
+    #[derive(Clone, Default, Debug)]
+    pub struct Registry {
+        pub name: String,
+        pub marker: String,
+    }
+
+    impl Serializable for Registry {
+        fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+            Ok(Registry {
+                name: Serializable::read_from(buf)?,
+                marker: "".to_string(), // not in ModList
+            })
+        }
+
+        fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+            self.name.write_to(buf)?;
+            self.marker.write_to(buf)
+        }
+    }
+
+    #[derive(Debug)]
+    pub enum FmlHandshake {
+        ModList {
+            mod_names: LenPrefixed<VarInt, String>,
+            channels: LenPrefixed<VarInt, Channel>,
+            registries: LenPrefixed<VarInt, Registry>,
+        },
+
+        ModListReply {
+            mod_names: LenPrefixed<VarInt, String>,
+            channels: LenPrefixed<VarInt, Channel>,
+            registries: LenPrefixed<VarInt, Registry>,
+        },
+
+        ServerRegistry {
+            name: String,
+            snapshot_present: bool,
+            snapshot: Vec<u8>,
+        },
+
+        ConfigurationData {
+            filename: String,
+            contents: Vec<u8>,
+        },
+
+        Acknowledgement,
+    }
+
+    impl FmlHandshake {
+        pub fn packet_by_id<R: io::Read>(id: i32, buf: &mut R) -> Result<Self, Error> {
+            Ok(match id {
+                1 => FmlHandshake::ModList {
+                    mod_names: Serializable::read_from(buf)?,
+                    channels: Serializable::read_from(buf)?,
+                    registries: Serializable::read_from(buf)?,
+                },
+                3 => FmlHandshake::ServerRegistry {
+                    name: Serializable::read_from(buf)?,
+                    snapshot_present: Serializable::read_from(buf)?,
+                    snapshot: Serializable::read_from(buf)?,
+                },
+                4 => FmlHandshake::ConfigurationData {
+                    filename: Serializable::read_from(buf)?,
+                    contents: Serializable::read_from(buf)?,
+                },
+                _ => unimplemented!(),
+            })
+        }
+    }
+
+    impl Serializable for FmlHandshake {
+        fn read_from<R: io::Read>(_buf: &mut R) -> Result<Self, Error> {
+            unimplemented!()
+        }
+
+        fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+            match self {
+                FmlHandshake::ModListReply {
+                    mod_names,
+                    channels,
+                    registries,
+                } => {
+                    VarInt(2).write_to(buf)?;
+                    mod_names.write_to(buf)?;
+                    channels.write_to(buf)?;
+                    registries.write_to(buf)
+                }
+                FmlHandshake::Acknowledgement => VarInt(99).write_to(buf),
+                _ => unimplemented!(),
+            }
+        }
+    }
+}
