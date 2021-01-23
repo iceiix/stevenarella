@@ -223,8 +223,11 @@ pub mod fml2 {
     }
 
     impl Serializable for Registry {
-        fn read_from<R: io::Read>(_buf: &mut R) -> Result<Self, Error> {
-            unimplemented!()
+        fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+            Ok(Registry {
+                name: Serializable::read_from(buf)?,
+                marker: "".to_string() // not in ModList
+            })
         }
 
         fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
@@ -238,7 +241,7 @@ pub mod fml2 {
         ModList {
             mod_names: LenPrefixed<VarInt, String>,
             channels: LenPrefixed<VarInt, Channel>,
-            registries: LenPrefixed<VarInt, String>,
+            registries: LenPrefixed<VarInt, Registry>,
         },
 
         ModListReply {

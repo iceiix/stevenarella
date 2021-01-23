@@ -25,7 +25,7 @@ use crate::types::Gamemode;
 use crate::world;
 use crate::world::block;
 use cgmath::prelude::*;
-use log::{debug, error, warn};
+use log::{debug, error, warn, info};
 use rand::{self, Rng};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
@@ -267,33 +267,35 @@ impl Server {
                                     let packet =
                                         forge::fml2::FmlHandshake::packet_by_id(id, &mut data)?;
                                     use forge::fml2::FmlHandshake::*;
+                                    use protocol::Serializable;
                                     match packet {
                                         ModList {
                                             mod_names,
                                             channels,
                                             registries,
                                         } => {
-                                            println!("ModList mod_names={:?} channels={:?} registries={:?}", mod_names, channels, registries);
-                                            // TODO: send ModListReply
+                                            info!("ModList mod_names={:?} channels={:?} registries={:?}", mod_names, channels, registries);
+                                            ModListReply {
+                                                mod_names,
+                                                channels,
+                                                registries,
+                                            }.write_to(&mut write)?
                                         }
                                         ServerRegistry {
                                             name,
-                                            snapshot_present,
-                                            snapshot: _snapshot,
+                                            snapshot_present: _,
+                                            snapshot: _,
                                         } => {
-                                            println!(
-                                                "ServerRegistry {:?} snapshot_present {:?}",
-                                                name, snapshot_present
-                                            );
-                                            // TODO: send Acknowledgement
+                                            info!("ServerRegistry {:?}", name);
+                                            Acknowledgement.write_to(&mut write)?
                                         }
                                         ConfigurationData { filename, contents } => {
-                                            println!(
+                                            info!(
                                                 "ConfigurationData filename={:?} contents={}",
                                                 filename,
                                                 String::from_utf8_lossy(&contents)
                                             );
-                                            // TODO: send Acknowledgement
+                                            Acknowledgement.write_to(&mut write)?
                                         }
                                         _ => unimplemented!(),
                                     }
