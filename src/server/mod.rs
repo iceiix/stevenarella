@@ -170,7 +170,6 @@ impl Server {
                         Some(rx),
                     ));
                 }
-                // TODO: avoid duplication
                 protocol::packet::Packet::LoginSuccess_UUID(val) => {
                     warn!("Server is running in offline mode");
                     debug!("Login: {} {:?}", val.username, val.uuid);
@@ -191,7 +190,7 @@ impl Server {
                 protocol::packet::Packet::LoginDisconnect(val) => {
                     return Err(protocol::Error::Disconnect(val.reason))
                 }
-                val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
+                val => return Err(protocol::Error::Err(format!("Wrong packet 1: {:?}", val))),
             };
         }
 
@@ -228,6 +227,7 @@ impl Server {
         write.enable_encyption(&shared, false);
 
         let uuid;
+        let compression_threshold = read.compression_threshold;
         loop {
             match read.read_packet()? {
                 protocol::packet::Packet::SetInitialCompression(val) => {
@@ -251,7 +251,19 @@ impl Server {
                 protocol::packet::Packet::LoginDisconnect(val) => {
                     return Err(protocol::Error::Disconnect(val.reason))
                 }
-                val => return Err(protocol::Error::Err(format!("Wrong packet: {:?}", val))),
+                protocol::packet::Packet::LoginPluginRequest(val) => match val.channel.as_ref() {
+                    "fml:loginwrapper" => {
+                        println!("fml:loginwrapper packet: message_id={:?}, channel={:?}, data={:?} bytes", val.message_id, val.channel, val.data.len());
+                        let (id, data) = protocol::Conn::read_raw_packet_from(
+                            &mut std::io::Cursor::new(val.data),
+                            compression_threshold,
+                        )?;
+                        println!("inner packet id = {:?}, data = {:?} bytes", id, data);
+                        // TODO: handle inner packets
+                    }
+                    _ => panic!("unsupported LoginPluginRequest channel: {:?}", val.channel),
+                },
+                val => return Err(protocol::Error::Err(format!("Wrong packet 2: {:?}", val))),
             }
         }
 

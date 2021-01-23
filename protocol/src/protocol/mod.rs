@@ -1036,7 +1036,7 @@ pub struct Conn {
 
     cipher: Option<Aes128Cfb>,
 
-    compression_threshold: i32,
+    pub compression_threshold: i32,
 }
 
 impl Conn {
@@ -1106,7 +1106,6 @@ impl Conn {
     pub fn read_raw_packet_from<R: io::Read>(
         buf: &mut R,
         compression_threshold: i32,
-        network_debug: bool,
     ) -> Result<(i32, Box<io::Cursor<Vec<u8>>>), Error> {
         let len = VarInt::read_from(buf)?.0 as usize;
         let mut ibuf = vec![0; len];
@@ -1122,7 +1121,7 @@ impl Conn {
                     let mut reader = ZlibDecoder::new(buf);
                     reader.read_to_end(&mut new)?;
                 }
-                if network_debug {
+                if is_network_debug() {
                     debug!(
                         "Decompressed threshold={} len={} uncompressed_size={} to {} bytes",
                         compression_threshold,
@@ -1141,8 +1140,7 @@ impl Conn {
 
     pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
         let compression_threshold = self.compression_threshold;
-        let (id, mut buf) =
-            Conn::read_raw_packet_from(self, compression_threshold, is_network_debug())?;
+        let (id, mut buf) = Conn::read_raw_packet_from(self, compression_threshold)?;
 
         let dir = match self.direction {
             Direction::Clientbound => Direction::Serverbound,
