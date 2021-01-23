@@ -3138,7 +3138,7 @@ pub enum CommandProperty {
     ForgeModId,
     ForgeEnum {
         cls: String,
-    }
+    },
 }
 
 impl Serializable for CommandNode {

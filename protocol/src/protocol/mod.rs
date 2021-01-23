@@ -1132,20 +1132,23 @@ impl Conn {
         self.write_plugin_message("FML|HS", &buf)
     }
 
-    pub fn write_login_plugin_response(&mut self, message_id: VarInt, successful: bool, data: &[u8]) -> Result<(), Error> {
+    pub fn write_login_plugin_response(
+        &mut self,
+        message_id: VarInt,
+        successful: bool,
+        data: &[u8],
+    ) -> Result<(), Error> {
         if is_network_debug() {
             debug!(
                 "Sending login plugin message: message_id={:?}, successful={:?}, data={:?}",
-                message_id,
-                successful,
-                data,
+                message_id, successful, data,
             );
         }
         debug_assert!(self.state == State::Login);
         self.write_packet(packet::login::serverbound::LoginPluginResponse {
             message_id,
             successful,
-            data: data.to_vec()
+            data: data.to_vec(),
         })
     }
 
@@ -1254,7 +1257,6 @@ impl Conn {
     }
 
     pub fn set_compresssion(&mut self, threshold: i32) {
-        println!("set_compression {:?}", threshold);
         self.compression_threshold = threshold;
     }
 
