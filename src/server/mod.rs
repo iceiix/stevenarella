@@ -251,30 +251,62 @@ impl Server {
                 protocol::packet::Packet::LoginDisconnect(val) => {
                     return Err(protocol::Error::Disconnect(val.reason))
                 }
-                protocol::packet::Packet::LoginPluginRequest(val) => match val.channel.as_ref() {
-                    "fml:loginwrapper" => {
-                        let mut cursor = std::io::Cursor::new(val.data);
-                        let channel: String = protocol::Serializable::read_from(&mut cursor)?;
+                protocol::packet::Packet::LoginPluginRequest(val) => {
+                    match val.channel.as_ref() {
+                        "fml:loginwrapper" => {
+                            let mut cursor = std::io::Cursor::new(val.data);
+                            let channel: String = protocol::Serializable::read_from(&mut cursor)?;
 
-                        let (id, mut data) = protocol::Conn::read_raw_packet_from(
-                            &mut cursor,
-                            compression_threshold,
-                        )?;
+                            let (id, mut data) = protocol::Conn::read_raw_packet_from(
+                                &mut cursor,
+                                compression_threshold,
+                            )?;
 
-                        match channel.as_ref() {
-                            "fml:handshake" => {
-                                let packet =
-                                    forge::fml2::FmlHandshake::packet_by_id(id, &mut data)?;
-                                println!("packet = {:?}", packet);
+                            match channel.as_ref() {
+                                "fml:handshake" => {
+                                    let packet =
+                                        forge::fml2::FmlHandshake::packet_by_id(id, &mut data)?;
+                                    use forge::fml2::FmlHandshake::*;
+                                    match packet {
+                                        ModList {
+                                            mod_names,
+                                            channels,
+                                            registries,
+                                        } => {
+                                            println!("ModList mod_names={:?} channels={:?} registries={:?}", mod_names, channels, registries);
+                                            // TODO: send ModListReply
+                                        }
+                                        ServerRegistry {
+                                            name,
+                                            snapshot_present,
+                                            snapshot: _snapshot,
+                                        } => {
+                                            println!(
+                                                "ServerRegistry {:?} snapshot_present {:?}",
+                                                name, snapshot_present
+                                            );
+                                            // TODO: send Acknowledgement
+                                        }
+                                        ConfigurationData { filename, contents } => {
+                                            println!(
+                                                "ConfigurationData filename={:?} contents={}",
+                                                filename,
+                                                String::from_utf8_lossy(&contents)
+                                            );
+                                            // TODO: send Acknowledgement
+                                        }
+                                        _ => unimplemented!(),
+                                    }
+                                }
+                                _ => panic!(
+                                    "unknown LoginPluginRequest fml:loginwrapper channel: {:?}",
+                                    channel
+                                ),
                             }
-                            _ => panic!(
-                                "unknown LoginPluginRequest fml:loginwrapper channel: {:?}",
-                                channel
-                            ),
                         }
+                        _ => panic!("unsupported LoginPluginRequest channel: {:?}", val.channel),
                     }
-                    _ => panic!("unsupported LoginPluginRequest channel: {:?}", val.channel),
-                },
+                }
                 val => return Err(protocol::Error::Err(format!("Wrong packet 2: {:?}", val))),
             }
         }
