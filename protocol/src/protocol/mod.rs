@@ -1099,7 +1099,47 @@ impl Conn {
         }
         self.write_all(&buf)?;
 
-        Result::Ok(())
+        Ok(())
+    }
+
+    pub fn write_plugin_message(&mut self, channel: &str, data: &[u8]) -> Result<(), Error> {
+        if is_network_debug() {
+            debug!(
+                "Sending plugin message: channel={}, data={:?}",
+                channel, data
+            );
+        }
+        if self.protocol_version >= 47 {
+            self.write_packet(packet::play::serverbound::PluginMessageServerbound {
+                channel: channel.to_string(),
+                data: data.to_vec(),
+            })?;
+        } else {
+            self.write_packet(packet::play::serverbound::PluginMessageServerbound_i16 {
+                channel: channel.to_string(),
+                data: LenPrefixedBytes::<VarShort>::new(data.to_vec()),
+            })?;
+        }
+
+        Ok(())
+    }
+
+    pub fn write_fmlhs_plugin_message(&mut self, msg: &forge::FmlHs) -> Result<(), Error> {
+        let mut buf: Vec<u8> = vec![];
+        msg.write_to(&mut buf).unwrap();
+
+        self.write_plugin_message("FML|HS", &buf)
+    }
+
+    pub fn write_fml2_handshake_plugin_message(
+        &mut self,
+        msg: &forge::fml2::FmlHandshake,
+    ) -> Result<(), Error> {
+        let mut buf: Vec<u8> = vec![];
+        msg.write_to(&mut buf).unwrap();
+        // TODO: double-wrap
+
+        self.write_plugin_message("fml:loginwrapper", &buf)
     }
 
     #[allow(clippy::type_complexity)]

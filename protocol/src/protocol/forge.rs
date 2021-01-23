@@ -226,7 +226,7 @@ pub mod fml2 {
         fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
             Ok(Registry {
                 name: Serializable::read_from(buf)?,
-                marker: "".to_string() // not in ModList
+                marker: "".to_string(), // not in ModList
             })
         }
 

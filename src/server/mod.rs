@@ -267,7 +267,6 @@ impl Server {
                                     let packet =
                                         forge::fml2::FmlHandshake::packet_by_id(id, &mut data)?;
                                     use forge::fml2::FmlHandshake::*;
-                                    use protocol::Serializable;
                                     match packet {
                                         ModList {
                                             mod_names,
@@ -275,12 +274,13 @@ impl Server {
                                             registries,
                                         } => {
                                             info!("ModList mod_names={:?} channels={:?} registries={:?}", mod_names, channels, registries);
-                                            ModListReply {
-                                                mod_names,
-                                                channels,
-                                                registries,
-                                            }
-                                            .write_to(&mut write)?
+                                            write.write_fml2_handshake_plugin_message(
+                                                &ModListReply {
+                                                    mod_names,
+                                                    channels,
+                                                    registries,
+                                                },
+                                            )?;
                                         }
                                         ServerRegistry {
                                             name,
@@ -288,7 +288,9 @@ impl Server {
                                             snapshot: _,
                                         } => {
                                             info!("ServerRegistry {:?}", name);
-                                            Acknowledgement.write_to(&mut write)?
+                                            write.write_fml2_handshake_plugin_message(
+                                                &Acknowledgement,
+                                            )?;
                                         }
                                         ConfigurationData { filename, contents } => {
                                             info!(
@@ -296,7 +298,9 @@ impl Server {
                                                 filename,
                                                 String::from_utf8_lossy(&contents)
                                             );
-                                            Acknowledgement.write_to(&mut write)?
+                                            write.write_fml2_handshake_plugin_message(
+                                                &Acknowledgement,
+                                            )?;
                                         }
                                         _ => unimplemented!(),
                                     }
@@ -1008,33 +1012,17 @@ impl Server {
         }
     }
 
+    // TODO: remove wrappers and directly call on Conn
     fn write_fmlhs_plugin_message(&mut self, msg: &forge::FmlHs) {
-        use crate::protocol::Serializable;
-
-        let mut buf: Vec<u8> = vec![];
-        msg.write_to(&mut buf).unwrap();
-
-        self.write_plugin_message("FML|HS", &buf);
+        let _ = self.conn.as_mut().unwrap().write_fmlhs_plugin_message(msg); // TODO handle errors
     }
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
-        if protocol::is_network_debug() {
-            debug!(
-                "Sending plugin message: channel={}, data={:?}",
-                channel, data
-            );
-        }
-        if self.protocol_version >= 47 {
-            self.write_packet(packet::play::serverbound::PluginMessageServerbound {
-                channel: channel.to_string(),
-                data: data.to_vec(),
-            });
-        } else {
-            self.write_packet(packet::play::serverbound::PluginMessageServerbound_i16 {
-                channel: channel.to_string(),
-                data: crate::protocol::LenPrefixedBytes::<protocol::VarShort>::new(data.to_vec()),
-            });
-        }
+        let _ = self
+            .conn
+            .as_mut()
+            .unwrap()
+            .write_plugin_message(channel, data); // TODO handle errors
     }
 
     fn on_game_join_worldnames_ishard(
