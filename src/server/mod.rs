@@ -251,10 +251,10 @@ impl Server {
                 protocol::packet::Packet::LoginDisconnect(val) => {
                     return Err(protocol::Error::Disconnect(val.reason))
                 }
-                protocol::packet::Packet::LoginPluginRequest(val) => {
-                    match val.channel.as_ref() {
+                protocol::packet::Packet::LoginPluginRequest(req) => {
+                    match req.channel.as_ref() {
                         "fml:loginwrapper" => {
-                            let mut cursor = std::io::Cursor::new(val.data);
+                            let mut cursor = std::io::Cursor::new(req.data);
                             let channel: String = protocol::Serializable::read_from(&mut cursor)?;
 
                             let (id, mut data) = protocol::Conn::read_raw_packet_from(
@@ -275,11 +275,12 @@ impl Server {
                                         } => {
                                             info!("ModList mod_names={:?} channels={:?} registries={:?}", mod_names, channels, registries);
                                             write.write_fml2_handshake_plugin_message(
-                                                &ModListReply {
+                                                req.message_id,
+                                                Some(&ModListReply {
                                                     mod_names,
                                                     channels,
                                                     registries,
-                                                },
+                                                }),
                                             )?;
                                         }
                                         ServerRegistry {
@@ -289,7 +290,8 @@ impl Server {
                                         } => {
                                             info!("ServerRegistry {:?}", name);
                                             write.write_fml2_handshake_plugin_message(
-                                                &Acknowledgement,
+                                                req.message_id,
+                                                Some(&Acknowledgement),
                                             )?;
                                         }
                                         ConfigurationData { filename, contents } => {
@@ -299,7 +301,8 @@ impl Server {
                                                 String::from_utf8_lossy(&contents)
                                             );
                                             write.write_fml2_handshake_plugin_message(
-                                                &Acknowledgement,
+                                                req.message_id,
+                                                Some(&Acknowledgement),
                                             )?;
                                         }
                                         _ => unimplemented!(),
@@ -311,7 +314,7 @@ impl Server {
                                 ),
                             }
                         }
-                        _ => panic!("unsupported LoginPluginRequest channel: {:?}", val.channel),
+                        _ => panic!("unsupported LoginPluginRequest channel: {:?}", req.channel),
                     }
                 }
                 val => return Err(protocol::Error::Err(format!("Wrong packet 2: {:?}", val))),

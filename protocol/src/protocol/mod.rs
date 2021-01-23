@@ -971,7 +971,7 @@ pub enum Direction {
 
 /// The protocol has multiple 'sub-protocols' or states which control which
 /// packet an id points to.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum State {
     Handshaking,
     Play,
@@ -1109,6 +1109,7 @@ impl Conn {
                 channel, data
             );
         }
+        debug_assert!(self.state == State::Play);
         if self.protocol_version >= 47 {
             self.write_packet(packet::play::serverbound::PluginMessageServerbound {
                 channel: channel.to_string(),
@@ -1131,20 +1132,33 @@ impl Conn {
         self.write_plugin_message("FML|HS", &buf)
     }
 
+    pub fn write_login_plugin_response(&mut self, message_id: VarInt, successful: bool, data: &[u8]) -> Result<(), Error> {
+        debug_assert!(self.state == State::Login);
+        self.write_packet(packet::login::serverbound::LoginPluginResponse {
+            message_id,
+            successful,
+            data: data.to_vec()
+        })
+    }
+
     pub fn write_fml2_handshake_plugin_message(
         &mut self,
-        msg: &forge::fml2::FmlHandshake,
+        message_id: VarInt,
+        msg: Option<&forge::fml2::FmlHandshake>,
     ) -> Result<(), Error> {
-        let mut inner_buf: Vec<u8> = vec![];
-        msg.write_to(&mut inner_buf)?;
+        if let Some(msg) = msg {
+            let mut inner_buf: Vec<u8> = vec![];
+            msg.write_to(&mut inner_buf)?;
 
-        let mut outer_buf: Vec<u8> = vec![];
-        "fml:handshake".to_string().write_to(&mut outer_buf)?;
-        // TODO: write_packet, compression?
-        VarInt(inner_buf.len() as i32).write_to(&mut outer_buf)?;
-        inner_buf.write_to(&mut outer_buf)?;
+            let mut outer_buf: Vec<u8> = vec![];
+            "fml:handshake".to_string().write_to(&mut outer_buf)?;
+            VarInt(inner_buf.len() as i32).write_to(&mut outer_buf)?;
+            inner_buf.write_to(&mut outer_buf)?;
 
-        self.write_plugin_message("fml:loginwrapper", &outer_buf)
+            self.write_login_plugin_response(message_id, true, &inner_buf)
+        } else {
+            unimplemented!() // successful: false, no payload
+        }
     }
 
     #[allow(clippy::type_complexity)]
@@ -1232,6 +1246,7 @@ impl Conn {
     }
 
     pub fn set_compresssion(&mut self, threshold: i32) {
+        println!("set_compression {:?}", threshold);
         self.compression_threshold = threshold;
     }
 
