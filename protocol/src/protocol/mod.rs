@@ -1126,7 +1126,7 @@ impl Conn {
 
     pub fn write_fmlhs_plugin_message(&mut self, msg: &forge::FmlHs) -> Result<(), Error> {
         let mut buf: Vec<u8> = vec![];
-        msg.write_to(&mut buf).unwrap();
+        msg.write_to(&mut buf)?;
 
         self.write_plugin_message("FML|HS", &buf)
     }
@@ -1135,11 +1135,16 @@ impl Conn {
         &mut self,
         msg: &forge::fml2::FmlHandshake,
     ) -> Result<(), Error> {
-        let mut buf: Vec<u8> = vec![];
-        msg.write_to(&mut buf).unwrap();
-        // TODO: double-wrap
+        let mut inner_buf: Vec<u8> = vec![];
+        msg.write_to(&mut inner_buf)?;
 
-        self.write_plugin_message("fml:loginwrapper", &buf)
+        let mut outer_buf: Vec<u8> = vec![];
+        "fml:handshake".to_string().write_to(&mut outer_buf)?;
+        // TODO: write_packet, compression?
+        VarInt(inner_buf.len() as i32).write_to(&mut outer_buf)?;
+        inner_buf.write_to(&mut outer_buf)?;
+
+        self.write_plugin_message("fml:loginwrapper", &outer_buf)
     }
 
     #[allow(clippy::type_complexity)]
