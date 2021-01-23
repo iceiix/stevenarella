@@ -1133,6 +1133,14 @@ impl Conn {
     }
 
     pub fn write_login_plugin_response(&mut self, message_id: VarInt, successful: bool, data: &[u8]) -> Result<(), Error> {
+        if is_network_debug() {
+            debug!(
+                "Sending login plugin message: message_id={:?}, successful={:?}, data={:?}",
+                message_id,
+                successful,
+                data,
+            );
+        }
         debug_assert!(self.state == State::Login);
         self.write_packet(packet::login::serverbound::LoginPluginResponse {
             message_id,
