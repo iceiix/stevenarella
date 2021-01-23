@@ -253,9 +253,13 @@ impl Server {
                 }
                 protocol::packet::Packet::LoginPluginRequest(val) => match val.channel.as_ref() {
                     "fml:loginwrapper" => {
-                        println!("fml:loginwrapper packet: message_id={:?}, channel={:?}, data={:?} bytes", val.message_id, val.channel, val.data.len());
+                        debug!("fml:loginwrapper packet: message_id={:?}, channel={:?}, data={:?} bytes", val.message_id, val.channel, val.data);
+                        let mut cursor = std::io::Cursor::new(val.data);
+                        let channel: String = protocol::Serializable::read_from(&mut cursor)?;
+                        debug!("fml:loginwrapper inner channel = {:?}", channel); // fml:handshake
+
                         let (id, data) = protocol::Conn::read_raw_packet_from(
-                            &mut std::io::Cursor::new(val.data),
+                            &mut cursor,
                             compression_threshold,
                         )?;
                         println!("inner packet id = {:?}, data = {:?} bytes", id, data);
