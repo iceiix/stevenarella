@@ -25,7 +25,7 @@ use crate::types::Gamemode;
 use crate::world;
 use crate::world::block;
 use cgmath::prelude::*;
-use log::{debug, error, warn, info};
+use log::{debug, error, info, warn};
 use rand::{self, Rng};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
@@ -279,7 +279,8 @@ impl Server {
                                                 mod_names,
                                                 channels,
                                                 registries,
-                                            }.write_to(&mut write)?
+                                            }
+                                            .write_to(&mut write)?
                                         }
                                         ServerRegistry {
                                             name,
