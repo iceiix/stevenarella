@@ -1102,14 +1102,19 @@ impl Conn {
         Result::Ok(())
     }
 
-    pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
-        let len = VarInt::read_from(self)?.0 as usize;
+    #[allow(clippy::type_complexity)]
+    pub fn read_raw_packet_from<R: io::Read>(
+        buf: &mut R,
+        compression_threshold: i32,
+        network_debug: bool,
+    ) -> Result<(i32, Box<io::Cursor<Vec<u8>>>), Error> {
+        let len = VarInt::read_from(buf)?.0 as usize;
         let mut ibuf = vec![0; len];
-        self.read_exact(&mut ibuf)?;
+        buf.read_exact(&mut ibuf)?;
 
         let mut buf = io::Cursor::new(ibuf);
 
-        if self.compression_threshold >= 0 {
+        if compression_threshold >= 0 {
             let uncompressed_size = VarInt::read_from(&mut buf)?.0;
             if uncompressed_size != 0 {
                 let mut new = Vec::with_capacity(uncompressed_size as usize);
@@ -1117,10 +1122,10 @@ impl Conn {
                     let mut reader = ZlibDecoder::new(buf);
                     reader.read_to_end(&mut new)?;
                 }
-                if is_network_debug() {
+                if network_debug {
                     debug!(
                         "Decompressed threshold={} len={} uncompressed_size={} to {} bytes",
-                        self.compression_threshold,
+                        compression_threshold,
                         len,
                         uncompressed_size,
                         new.len()
@@ -1130,6 +1135,14 @@ impl Conn {
             }
         }
         let id = VarInt::read_from(&mut buf)?.0;
+
+        Ok((id, Box::new(buf)))
+    }
+
+    pub fn read_packet(&mut self) -> Result<packet::Packet, Error> {
+        let compression_threshold = self.compression_threshold;
+        let (id, mut buf) =
+            Conn::read_raw_packet_from(self, compression_threshold, is_network_debug())?;
 
         let dir = match self.direction {
             Direction::Clientbound => Direction::Serverbound,
