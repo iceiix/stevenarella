@@ -1163,7 +1163,7 @@ impl Conn {
             VarInt(inner_buf.len() as i32).write_to(&mut outer_buf)?;
             inner_buf.write_to(&mut outer_buf)?;
 
-            self.write_login_plugin_response(message_id, true, &inner_buf)
+            self.write_login_plugin_response(message_id, true, &outer_buf)
         } else {
             unimplemented!() // successful: false, no payload
         }
