@@ -1858,15 +1858,24 @@ impl Server {
         &mut self,
         m: packet::play::clientbound::ServerMessage_NoPosition,
     ) {
-        println!("chat: {:?}", m);
+        self.on_servermessage(&m.message, None, None);
     }
 
     fn on_servermessage_position(&mut self, m: packet::play::clientbound::ServerMessage_Position) {
-        println!("chat: {:?}", m);
+        self.on_servermessage(&m.message, Some(m.position), None);
     }
 
     fn on_servermessage_sender(&mut self, m: packet::play::clientbound::ServerMessage_Sender) {
-        println!("chat: {:?}", m);
+        self.on_servermessage(&m.message, Some(m.position), Some(m.sender));
+    }
+
+    fn on_servermessage(
+        &mut self,
+        message: &format::Component,
+        _position: Option<u8>,
+        _sender: Option<protocol::UUID>,
+    ) {
+        info!("Received chat message: {:?}", message);
     }
 
     fn load_block_entities(&mut self, block_entities: Vec<Option<crate::nbt::NamedTag>>) {
