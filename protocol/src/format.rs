@@ -44,10 +44,42 @@ impl Component {
         } else if v.get("text").is_some() {
             Component::Text(TextComponent::from_value(v, modifier))
         } else if v.get("translate").is_some() {
-            // TODO: translations
-            Component::Text(TextComponent::new(
-                v.get("translate").unwrap().as_str().unwrap(),
-            ))
+            let translate_key = v.get("translate").unwrap().as_str().unwrap();
+            if let Some(serde_json::Value::Array(args)) = v.get("with") {
+                // TODO: recursively build components, avoid throwing away all but "text"
+                let text_args: Vec<&str> = args
+                    .iter()
+                    .map(|v| {
+                        if let serde_json::Value::Object(obj) = v {
+                            // Usernames might be in "extra":["text":"foo"] and "text":"" empty for
+                            // some reason; use extra instead if present TODO: use both
+                            if let Some(serde_json::Value::Array(extra)) = obj.get("extra") {
+                                if let Some(item) = extra.get(0) {
+                                    if let Some(text) = item.get("text") {
+                                        return text.as_str().unwrap();
+                                    }
+                                }
+                            }
+
+                            obj.get("text").unwrap().as_str().unwrap()
+                        } else {
+                            v.as_str().unwrap()
+                        }
+                    })
+                    .collect();
+                // TODO: translations, https://wiki.vg/Chat#Translation_component
+                Component::Text(TextComponent::new(
+                    match translate_key {
+                        "chat.type.text" => format!("<{}> {}", text_args[0], text_args[1]),
+                        "chat.type.announcement" => format!("[{}] {}", text_args[0], text_args[1]),
+                        _ => format!("unhandled: {}", translate_key),
+                    }
+                    .as_str(),
+                ))
+            } else {
+                // TODO
+                Component::Text(TextComponent::new(translate_key))
+            }
         } else {
             modifier.color = Some(Color::RGB(255, 0, 0));
             Component::Text(TextComponent {
