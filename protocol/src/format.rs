@@ -53,6 +53,16 @@ impl Component {
                     .iter()
                     .map(|v| {
                         if let serde_json::Value::Object(obj) = v {
+                            // Usernames might be in "extra":["text":"foo"] and "text":"" empty for
+                            // some reason; use extra instead if present TODO: use both
+                            if let Some(serde_json::Value::Array(extra)) = obj.get("extra") {
+                                if let Some(item) = extra.get(0) {
+                                    if let Some(text) = item.get("text") {
+                                        return text.as_str().unwrap();
+                                    }
+                                }
+                            }
+
                             obj.get("text").unwrap().as_str().unwrap()
                         } else {
                             v.as_str().unwrap()
