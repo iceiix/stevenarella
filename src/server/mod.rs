@@ -25,6 +25,7 @@ use crate::types::Gamemode;
 use crate::world;
 use crate::world::block;
 use cgmath::prelude::*;
+use instant::Instant;
 use log::{debug, error, info, warn};
 use rand::{self, Rng};
 use std::collections::HashMap;
@@ -74,6 +75,7 @@ pub struct Server {
 
     tick_timer: f64,
     entity_tick_timer: f64,
+    pub received_chat_at: Option<Instant>,
 
     sun_model: Option<sun::SunModel>,
     target_info: target::Info,
@@ -491,6 +493,7 @@ impl Server {
 
             tick_timer: 0.0,
             entity_tick_timer: 0.0,
+            received_chat_at: None,
             sun_model: None,
 
             target_info: target::Info::new(),
@@ -1876,6 +1879,7 @@ impl Server {
         _sender: Option<protocol::UUID>,
     ) {
         info!("Received chat message: {}", message);
+        self.received_chat_at = Some(Instant::now());
     }
 
     fn load_block_entities(&mut self, block_entities: Vec<Option<crate::nbt::NamedTag>>) {

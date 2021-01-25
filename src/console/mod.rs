@@ -290,6 +290,10 @@ impl Console {
         self.active = !self.active;
     }
 
+    pub fn activate(&mut self) {
+        self.active = true;
+    }
+
     pub fn tick(
         &mut self,
         ui_container: &mut ui::Container,
