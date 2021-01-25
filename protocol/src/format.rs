@@ -22,7 +22,6 @@ pub enum Component {
 
 impl Component {
     pub fn from_string(str: &str) -> Self {
-        println!("Component from_string {:?}", str);
         let mut component;
         match serde_json::from_str::<serde_json::Value>(str) {
             Ok(value) => component = Component::from_value(&value),
@@ -36,7 +35,6 @@ impl Component {
     }
 
     pub fn from_value(v: &serde_json::Value) -> Self {
-        println!("Component from_value {:?}", v);
         let mut modifier = Modifier::from_value(v);
         if let Some(val) = v.as_str() {
             Component::Text(TextComponent {

@@ -1875,7 +1875,7 @@ impl Server {
         _position: Option<u8>,
         _sender: Option<protocol::UUID>,
     ) {
-        info!("Received chat message: {:?}", message);
+        info!("Received chat message: {}", message);
     }
 
     fn load_block_entities(&mut self, block_entities: Vec<Option<crate::nbt::NamedTag>>) {
