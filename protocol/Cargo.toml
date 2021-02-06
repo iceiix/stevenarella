@@ -12,7 +12,7 @@ sha-1 = "0.9.1"
 aes = "0.4.0"
 cfb8 = "0.4.0"
 byteorder = "1.4.2"
-log = { version = "0.4.13", features = ["std"] }
+log = { version = "0.4.14", features = ["std"] }
 flate2 = { version = "1.0.19", features = ["rust_backend"], default-features = false }
 num-traits = "0.2.12"
 instant = "0.1.9"
