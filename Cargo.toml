@@ -40,7 +40,7 @@ rand = "0.8.3"
 rand_pcg = "0.3.0"
 base64 = "0.13.0"
 log = { version = "0.4.14", features = ["std"] }
-cgmath = "0.17.0"
+cgmath = "0.18.0"
 lazy_static = "1.4.0"
 collision = "0.20.1"
 rsa_public_encrypt_pkcs1 = "0.3.0"
