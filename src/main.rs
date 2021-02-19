@@ -559,12 +559,14 @@ fn tick_all(
 
     game.screen_sys
         .tick(delta, &mut game.renderer, &mut ui_container);
+    /* TODO: open console for chat messages
     if let Some(received_chat_at) = game.server.received_chat_at {
         if Instant::now().duration_since(received_chat_at).as_secs() < 5 {
             game.console.lock().unwrap().activate()
             // TODO: automatically deactivate the console after inactivity
         }
     }
+    */
     game.console
         .lock()
         .unwrap()
