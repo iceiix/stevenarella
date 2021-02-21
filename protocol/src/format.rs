@@ -43,8 +43,8 @@ impl Component {
             })
         } else if v.get("text").is_some() {
             Component::Text(TextComponent::from_value(v, modifier))
-        } else if v.get("translate").is_some() {
-            let translate_key = v.get("translate").unwrap().as_str().unwrap();
+        } else if let Some(translate)=v.get("translate") {
+            let translate_key = translate.as_str().unwrap_or_default();
             if let Some(serde_json::Value::Array(args)) = v.get("with") {
                 // TODO: recursively build components, avoid throwing away all but "text"
                 let text_args: Vec<&str> = args
@@ -56,14 +56,18 @@ impl Component {
                             if let Some(serde_json::Value::Array(extra)) = obj.get("extra") {
                                 if let Some(item) = extra.get(0) {
                                     if let Some(text) = item.get("text") {
-                                        return text.as_str().unwrap();
+                                        return text.as_str().unwrap_or_default();
                                     }
                                 }
                             }
 
-                            obj.get("text").unwrap().as_str().unwrap()
+                            if let Some(text) = obj.get("text") {
+                                text.as_str().unwrap_or_default()
+                            } else {
+                                Default::default()
+                            }
                         } else {
-                            v.as_str().unwrap()
+                            v.as_str().unwrap_or_default()
                         }
                     })
                     .collect();
