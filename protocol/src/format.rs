@@ -43,7 +43,7 @@ impl Component {
             })
         } else if v.get("text").is_some() {
             Component::Text(TextComponent::from_value(v, modifier))
-        } else if let Some(translate)=v.get("translate") {
+        } else if let Some(translate) = v.get("translate") {
             let translate_key = translate.as_str().unwrap_or_default();
             if let Some(serde_json::Value::Array(args)) = v.get("with") {
                 // TODO: recursively build components, avoid throwing away all but "text"
