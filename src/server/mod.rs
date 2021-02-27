@@ -799,23 +799,25 @@ impl Server {
                 target::test_block,
             ) {
                 if self.protocol_version >= 477 {
-                    self.write_packet(packet::play::serverbound::PlayerBlockPlacement_insideblock {
-                        location: pos,
-                        face: protocol::VarInt(match face {
-                            Direction::Down => 0,
-                            Direction::Up => 1,
-                            Direction::North => 2,
-                            Direction::South => 3,
-                            Direction::West => 4,
-                            Direction::East => 5,
-                            _ => unreachable!(),
-                        }),
-                        hand: protocol::VarInt(0),
-                        cursor_x: at.x as f32,
-                        cursor_y: at.y as f32,
-                        cursor_z: at.z as f32,
-                        inside_block: false,
-                    });
+                    self.write_packet(
+                        packet::play::serverbound::PlayerBlockPlacement_insideblock {
+                            location: pos,
+                            face: protocol::VarInt(match face {
+                                Direction::Down => 0,
+                                Direction::Up => 1,
+                                Direction::North => 2,
+                                Direction::South => 3,
+                                Direction::West => 4,
+                                Direction::East => 5,
+                                _ => unreachable!(),
+                            }),
+                            hand: protocol::VarInt(0),
+                            cursor_x: at.x as f32,
+                            cursor_y: at.y as f32,
+                            cursor_z: at.z as f32,
+                            inside_block: false,
+                        },
+                    );
                 } else if self.protocol_version >= 315 {
                     self.write_packet(packet::play::serverbound::PlayerBlockPlacement_f32 {
                         location: pos,
