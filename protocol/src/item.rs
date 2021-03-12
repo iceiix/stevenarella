@@ -17,7 +17,7 @@ use crate::protocol::{self, Serializable};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Stack {
     pub id: isize,
     pub count: isize,
@@ -88,16 +88,30 @@ impl Serializable for Option<Stack> {
         }))
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), protocol::Error> {
-        match *self {
-            Some(ref val) => {
-                // TODO: if protocol_version >= 404, send present and id varint, no damage, for 1.13.2
-                buf.write_i16::<BigEndian>(val.id as i16)?;
-                buf.write_u8(val.count as u8)?;
-                buf.write_i16::<BigEndian>(val.damage.unwrap_or(0) as i16)?;
-                // TODO: compress zlib NBT if 1.7
-                val.tag.write_to(buf)?;
+        let protocol_version = protocol::current_protocol_version();
+        if protocol_version >= 404 {
+            match *self {
+                Some(ref val) => {
+                    buf.write_u8(1)?; //present
+                    crate::protocol::VarInt(val.id as i32).write_to(buf)?;
+                    buf.write_u8(val.count as u8)?;
+                    val.tag.write_to(buf)?;
+                }
+                None => {
+                    buf.write_u8(0)?; // not present
+                }
             }
-            None => buf.write_i16::<BigEndian>(-1)?,
+        } else {
+            match *self {
+                Some(ref val) => {
+                    buf.write_i16::<BigEndian>(val.id as i16)?;
+                    buf.write_u8(val.count as u8)?;
+                    buf.write_i16::<BigEndian>(val.damage.unwrap_or(0) as i16)?;
+                    // TODO: compress zlib NBT if 1.7
+                    val.tag.write_to(buf)?;
+                }
+                None => buf.write_i16::<BigEndian>(-1)?,
+            }
         }
         Result::Ok(())
     }
