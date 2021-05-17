@@ -11,7 +11,7 @@ hex = "0.4.2"
 sha-1 = "0.9.1"
 aes = "0.4.0"
 cfb8 = "0.4.0"
-byteorder = "1.4.2"
+byteorder = "1.4.3"
 log = { version = "0.4.14", features = ["std"] }
 flate2 = { version = "1.0.20", features = ["rust_backend"], default-features = false }
 num-traits = "0.2.12"
