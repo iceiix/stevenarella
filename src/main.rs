@@ -211,11 +211,11 @@ struct Opt {
 
 cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
-        use glow::HasRenderLoop;
         extern crate console_error_panic_hook;
         pub use console_error_panic_hook::set_once as set_panic_hook;
 
         use wasm_bindgen::prelude::*;
+        use wasm_bindgen::JsCast;
 
         #[wasm_bindgen]
         pub fn main() { main2(); }
@@ -276,11 +276,10 @@ fn main2() {
         .with_inner_size(winit::dpi::LogicalSize::new(854.0, 480.0));
 
     #[cfg(target_arch = "wasm32")]
-    let (context, shader_version, dpi_factor, winit_window, render_loop) = {
+    let (context, shader_version, dpi_factor, winit_window) = {
         let winit_window = window_builder.build(&events_loop).unwrap();
         let dpi_factor = winit_window.scale_factor();
 
-        use wasm_bindgen::JsCast;
         use winit::platform::web::WindowExtWebSys;
 
         let canvas = winit_window.canvas();
@@ -304,7 +303,6 @@ fn main2() {
             "#version 300 es", // WebGL 2
             dpi_factor,
             winit_window,
-            glow::RenderLoop::from_request_animation_frame(),
         )
     };
 
@@ -425,22 +423,56 @@ fn main2() {
         let game = Rc::clone(&game);
         let ui_container = Rc::clone(&ui_container);
 
-        render_loop.run(move |running: &mut bool| {
-            let winit_window = winit_window.borrow_mut();
-            let mut game = game.borrow_mut();
-            let mut ui_container = ui_container.borrow_mut();
+        // Based on https://github.com/grovesNL/glow/blob/2d42c5b105d979efe764191b5b1ce78fab99ffcf/src/web_sys.rs#L3258
+        fn request_animation_frame(f: &Closure<dyn FnMut(f64)>) {
+            web_sys::window()
+                .unwrap()
+                .request_animation_frame(f.as_ref().unchecked_ref())
+                .unwrap();
+        }
 
-            tick_all(
-                &winit_window,
-                &mut game,
-                &mut ui_container,
-                &mut last_frame,
-                &mut resui,
-                &mut last_resource_version,
-                &mut vsync,
-            );
-            println!("render_loop");
-        });
+        let f = Rc::new(RefCell::new(None));
+
+        let mut last_timestamp = None;
+        let mut running = true;
+
+        *f.borrow_mut() = Some(Closure::wrap(Box::new({
+            let f = f.clone();
+
+            move |timestamp: f64| {
+                let dt = last_timestamp.map_or(Duration::from_secs(0), |last_timestamp: f64| {
+                    let dt_ms = (timestamp - last_timestamp).max(0.0);
+                    let dt_secs = dt_ms / 1000.0;
+
+                    Duration::from_secs_f64(dt_secs)
+                });
+                last_timestamp = Some(timestamp);
+
+                let winit_window = winit_window.borrow_mut();
+                let mut game = game.borrow_mut();
+                let mut ui_container = ui_container.borrow_mut();
+
+                tick_all(
+                    &winit_window,
+                    &mut game,
+                    &mut ui_container,
+                    &mut last_frame,
+                    &mut resui,
+                    &mut last_resource_version,
+                    &mut vsync,
+                );
+                println!("render_loop");
+
+                if !running {
+                    let _ = f.borrow_mut().take();
+                    return;
+                }
+
+                request_animation_frame(f.borrow().as_ref().unwrap());
+            }
+        }) as Box<dyn FnMut(f64)>));
+
+        request_animation_frame(f.borrow().as_ref().unwrap());
     }
 
     #[cfg(target_arch = "wasm32")]
