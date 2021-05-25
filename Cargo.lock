@@ -88,6 +88,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "approx"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f2a05fd1bd10b2527e20a2cd32d8873d115b8b39fe219ee25f42a8aca6ba278"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -238,10 +247,20 @@ version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "283944cdecc44bf0b8dd010ec9af888d3b4f142844fdbe026c20ef68148d6fe7"
 dependencies = [
- "approx",
+ "approx 0.3.2",
  "num-traits",
  "rand 0.6.5",
  "serde",
+]
+
+[[package]]
+name = "cgmath"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a98d30140e3296250832bbaaff83b27dcd6fa3cc70fb6f1f3e5c9c0023b5317"
+dependencies = [
+ "approx 0.4.0",
+ "num-traits",
 ]
 
 [[package]]
@@ -353,9 +372,9 @@ version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6107f6be76c2269a9c8d89e707a66122bd3086f987fa508133a5f774e8ac4ced"
 dependencies = [
- "approx",
+ "approx 0.3.2",
  "bit-set",
- "cgmath",
+ "cgmath 0.17.0",
  "num 0.2.1",
  "rand 0.6.5",
  "smallvec 0.6.14",
@@ -2324,7 +2343,7 @@ dependencies = [
 name = "steven_blocks"
 version = "0.0.1"
 dependencies = [
- "cgmath",
+ "cgmath 0.17.0",
  "collision",
  "lazy_static",
  "steven_shared",
@@ -2365,7 +2384,7 @@ dependencies = [
  "base64",
  "byteorder",
  "cfg-if 1.0.0",
- "cgmath",
+ "cgmath 0.18.0",
  "clipboard",
  "collision",
  "console_error_panic_hook",
