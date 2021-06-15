@@ -15,7 +15,7 @@ In action: http://gfycat.com/NeedyElaborateGypsymoth
 
 ## Community
 
-IRC channels: `#stevenarella` on [irc.freenode.net](https://freenode.net), or `#stevenarella` on [irc.esper.net](https://esper.net).
+IRC channel: `#stevenarella` on [irc.esper.net](https://esper.net).
 
 Discussion forum: [https://github.com/iceiix/stevenarella/discussions](https://github.com/iceiix/stevenarella/discussions).
 
