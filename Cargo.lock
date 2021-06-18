@@ -808,9 +808,9 @@ dependencies = [
 
 [[package]]
 name = "glow"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b80b98efaa8a34fce11d60dd2ce2760d5d83c373cbcc73bb87c2a3a84a54108"
+checksum = "945be163fdb893227410c8b44c2412dade922585b262d1daa6a7e96135217d4c"
 dependencies = [
  "js-sys",
  "slotmap",
@@ -1852,9 +1852,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.8.3"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ef9e7e66b4468674bfcb0c81af8b7fa0bb154fa9f28eb840da5c447baeb8d7e"
+checksum = "2e7573632e6454cf6b99d7aac4ccca54be06da05aca2ef7423d22d27d4d4bcd8"
 dependencies = [
  "libc",
  "rand_chacha 0.3.0",
@@ -1970,9 +1970,9 @@ dependencies = [
 
 [[package]]
 name = "rand_pcg"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7de198537002b913568a3847e53535ace266f93526caf5c360ec41d72c5787f0"
+checksum = "59cad018caf63deb318e5a4586d99a24424a364f40f1e5778c29aca23f4fc73e"
 dependencies = [
  "rand_core 0.6.2",
 ]
@@ -2098,7 +2098,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67c5f557ca03d0c2dc8207adb765f6fd18ad535a7031208dd0e9208b8e91caef"
 dependencies = [
  "num 0.3.1",
- "rand 0.8.3",
+ "rand 0.8.4",
  "simple_asn1",
 ]
 
@@ -2264,9 +2264,12 @@ checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
 name = "slotmap"
-version = "0.4.0"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c46a3482db8f247956e464d783693ece164ca056e6e67563ee5505bdb86452cd"
+checksum = "585cd5dffe4e9e06f6dfdf66708b70aca3f781bed561f4f667b2d9c0d4559e36"
+dependencies = [
+ "version_check",
+]
 
 [[package]]
 name = "smallvec"
@@ -2378,8 +2381,8 @@ dependencies = [
  "instant",
  "lazy_static",
  "log",
- "rand 0.8.3",
- "rand_pcg 0.3.0",
+ "rand 0.8.4",
+ "rand_pcg 0.3.1",
  "reqwest",
  "rsa_public_encrypt_pkcs1",
  "serde",
@@ -2460,7 +2463,7 @@ checksum = "dac1c663cfc93810f88aed9b8941d48cabf856a1b111c29a40439018d870eb22"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
- "rand 0.8.3",
+ "rand 0.8.4",
  "redox_syscall",
  "remove_dir_all",
  "winapi 0.3.9",
@@ -3022,9 +3025,9 @@ checksum = "b07db065a5cf61a7e4ba64f29e67db906fb1787316516c4e6e5ff0fea1efcd8a"
 
 [[package]]
 name = "zip"
-version = "0.5.12"
+version = "0.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c83dc9b784d252127720168abd71ea82bf8c3d96b17dc565b5e2a02854f2b27"
+checksum = "93ab48844d61251bb3835145c521d88aa4031d7139e8485990f60ca911fa0815"
 dependencies = [
  "byteorder",
  "crc32fast",
