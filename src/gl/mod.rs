@@ -797,7 +797,7 @@ impl Drop for MappedBuffer {
         unsafe {
             glow_context().unmap_buffer(self.target);
         }
-        mem::forget(mem::replace(&mut self.inner, Vec::new()));
+        mem::forget(std::mem::take(&mut self.inner))
     }
 }
 
