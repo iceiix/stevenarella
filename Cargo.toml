@@ -20,6 +20,7 @@ crate-type = ["cdylib", "rlib"]
 path = "src/main.rs"
 
 [profile.dev]
+split-debuginfo = "unpacked"
 # Steven runs horrendously slow with no optimizations, and often freezes.
 # However, building with full -O3 optimizations takes too long for a debug build.
 # Use an -O1 optimization level strikes a good compromise between build and program performance.
