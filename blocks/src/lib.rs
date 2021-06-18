@@ -5883,47 +5883,53 @@ mod tests {
 }
 
 fn can_burn<W: WorldAccess>(world: &W, pos: Position) -> bool {
-    matches!(world.get_block(pos), Block::Planks { .. }
-        | Block::DoubleWoodenSlab { .. }
-        | Block::WoodenSlab { .. }
-        | Block::FenceGate { .. }
-        | Block::SpruceFenceGate { .. }
-        | Block::BirchFenceGate { .. }
-        | Block::JungleFenceGate { .. }
-        | Block::DarkOakFenceGate { .. }
-        | Block::AcaciaFenceGate { .. }
-        | Block::Fence { .. }
-        | Block::SpruceFence { .. }
-        | Block::BirchFence { .. }
-        | Block::JungleFence { .. }
-        | Block::DarkOakFence { .. }
-        | Block::AcaciaFence { .. }
-        | Block::OakStairs { .. }
-        | Block::BirchStairs { .. }
-        | Block::SpruceStairs { .. }
-        | Block::JungleStairs { .. }
-        | Block::AcaciaStairs { .. }
-        | Block::DarkOakStairs { .. }
-        | Block::Log { .. }
-        | Block::Log2 { .. }
-        | Block::Leaves { .. }
-        | Block::Leaves2 { .. }
-        | Block::BookShelf { .. }
-        | Block::TNT { .. }
-        | Block::TallGrass { .. }
-        | Block::DoublePlant { .. }
-        | Block::YellowFlower { .. }
-        | Block::RedFlower { .. }
-        | Block::DeadBush { .. }
-        | Block::Wool { .. }
-        | Block::Vine { .. }
-        | Block::CoalBlock { .. }
-        | Block::HayBlock { .. }
-        | Block::Carpet { .. })
+    matches!(
+        world.get_block(pos),
+        Block::Planks { .. }
+            | Block::DoubleWoodenSlab { .. }
+            | Block::WoodenSlab { .. }
+            | Block::FenceGate { .. }
+            | Block::SpruceFenceGate { .. }
+            | Block::BirchFenceGate { .. }
+            | Block::JungleFenceGate { .. }
+            | Block::DarkOakFenceGate { .. }
+            | Block::AcaciaFenceGate { .. }
+            | Block::Fence { .. }
+            | Block::SpruceFence { .. }
+            | Block::BirchFence { .. }
+            | Block::JungleFence { .. }
+            | Block::DarkOakFence { .. }
+            | Block::AcaciaFence { .. }
+            | Block::OakStairs { .. }
+            | Block::BirchStairs { .. }
+            | Block::SpruceStairs { .. }
+            | Block::JungleStairs { .. }
+            | Block::AcaciaStairs { .. }
+            | Block::DarkOakStairs { .. }
+            | Block::Log { .. }
+            | Block::Log2 { .. }
+            | Block::Leaves { .. }
+            | Block::Leaves2 { .. }
+            | Block::BookShelf { .. }
+            | Block::TNT { .. }
+            | Block::TallGrass { .. }
+            | Block::DoublePlant { .. }
+            | Block::YellowFlower { .. }
+            | Block::RedFlower { .. }
+            | Block::DeadBush { .. }
+            | Block::Wool { .. }
+            | Block::Vine { .. }
+            | Block::CoalBlock { .. }
+            | Block::HayBlock { .. }
+            | Block::Carpet { .. }
+    )
 }
 
 fn is_snowy<W: WorldAccess>(world: &W, pos: Position) -> bool {
-    matches!(world.get_block(pos.shift(Direction::Up)), Block::Snow { .. } | Block::SnowLayer { .. })
+    matches!(
+        world.get_block(pos.shift(Direction::Up)),
+        Block::Snow { .. } | Block::SnowLayer { .. }
+    )
 }
 
 fn can_connect_sides<F: Fn(Block) -> bool, W: WorldAccess>(
@@ -5945,25 +5951,31 @@ fn can_connect<F: Fn(Block) -> bool, W: WorldAccess>(world: &W, pos: Position, f
 }
 
 fn can_connect_fence(block: Block) -> bool {
-    matches!(block, Block::Fence { .. }
-        | Block::SpruceFence { .. }
-        | Block::BirchFence { .. }
-        | Block::JungleFence { .. }
-        | Block::DarkOakFence { .. }
-        | Block::AcaciaFence { .. }
-        | Block::FenceGate { .. }
-        | Block::SpruceFenceGate { .. }
-        | Block::BirchFenceGate { .. }
-        | Block::JungleFenceGate { .. }
-        | Block::DarkOakFenceGate { .. }
-        | Block::AcaciaFenceGate { .. })
+    matches!(
+        block,
+        Block::Fence { .. }
+            | Block::SpruceFence { .. }
+            | Block::BirchFence { .. }
+            | Block::JungleFence { .. }
+            | Block::DarkOakFence { .. }
+            | Block::AcaciaFence { .. }
+            | Block::FenceGate { .. }
+            | Block::SpruceFenceGate { .. }
+            | Block::BirchFenceGate { .. }
+            | Block::JungleFenceGate { .. }
+            | Block::DarkOakFenceGate { .. }
+            | Block::AcaciaFenceGate { .. }
+    )
 }
 
 fn can_connect_glasspane(block: Block) -> bool {
-    matches!(block, Block::Glass { .. }
-        | Block::StainedGlass { .. }
-        | Block::GlassPane { .. }
-        | Block::StainedGlassPane { .. })
+    matches!(
+        block,
+        Block::Glass { .. }
+            | Block::StainedGlass { .. }
+            | Block::GlassPane { .. }
+            | Block::StainedGlassPane { .. }
+    )
 }
 
 fn can_connect_redstone<W: WorldAccess>(world: &W, pos: Position, dir: Direction) -> RedstoneSide {
@@ -6198,7 +6210,12 @@ fn door_collision(facing: Direction, hinge: Side, open: bool) -> Vec<Aabb3<f64>>
 }
 
 fn update_repeater_state<W: WorldAccess>(world: &W, pos: Position, facing: Direction) -> bool {
-    let f = |dir| matches!(world.get_block(pos.shift(dir)), Block::RepeaterPowered { .. });
+    let f = |dir| {
+        matches!(
+            world.get_block(pos.shift(dir)),
+            Block::RepeaterPowered { .. }
+        )
+    };
 
     f(facing.clockwise()) || f(facing.counter_clockwise())
 }
