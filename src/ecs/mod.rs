@@ -601,8 +601,8 @@ impl ComponentMem {
             data: vec![],
             component_size: mem::size_of::<T>(),
             drop_func: Box::new(|data| unsafe {
-                let mut val: T = mem::MaybeUninit::uninit().assume_init();
-                ptr::copy(data as *mut T, &mut val, 1);
+                let mut val = mem::MaybeUninit::<T>::uninit();
+                ptr::copy(data as *mut T, val.as_mut_ptr(), 1);
                 mem::drop(val);
             }),
         }

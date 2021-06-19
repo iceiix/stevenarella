@@ -547,7 +547,7 @@ impl Factory {
             ambient_occlusion: raw.ambient_occlusion,
             weight: raw.weight,
         };
-        let elements = ::std::mem::replace(&mut raw.elements, vec![]);
+        let elements = std::mem::take(&mut raw.elements);
         for el in elements {
             let all_dirs = Direction::all();
             for (i, face) in el.faces.iter().enumerate() {

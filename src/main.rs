@@ -631,53 +631,53 @@ fn handle_window_event<T>(
     use winit::event::*;
     match event {
         Event::MainEventsCleared => return true,
-        Event::DeviceEvent { event, .. } => {
-            if let DeviceEvent::MouseMotion {
+        Event::DeviceEvent {
+            event: DeviceEvent::MouseMotion {
                 delta: (xrel, yrel),
-            } = event
-            {
-                let (rx, ry) = if xrel > 1000.0 || yrel > 1000.0 {
-                    // Heuristic for if we were passed an absolute value instead of relative
-                    // Workaround https://github.com/tomaka/glutin/issues/1084 MouseMotion event returns absolute instead of relative values, when running Linux in a VM
-                    // Note SDL2 had a hint to handle this scenario:
-                    // sdl2::hint::set_with_priority("SDL_MOUSE_RELATIVE_MODE_WARP", "1", &sdl2::hint::Hint::Override);
-                    let s = 8000.0 + 0.01;
-                    (
-                        (xrel - game.last_mouse_xrel) / s,
-                        (yrel - game.last_mouse_yrel) / s,
-                    )
-                } else {
-                    let s = 2000.0 + 0.01;
-                    (xrel / s, yrel / s)
-                };
+            },
+            ..
+        } => {
+            let (rx, ry) = if xrel > 1000.0 || yrel > 1000.0 {
+                // Heuristic for if we were passed an absolute value instead of relative
+                // Workaround https://github.com/tomaka/glutin/issues/1084 MouseMotion event returns absolute instead of relative values, when running Linux in a VM
+                // Note SDL2 had a hint to handle this scenario:
+                // sdl2::hint::set_with_priority("SDL_MOUSE_RELATIVE_MODE_WARP", "1", &sdl2::hint::Hint::Override);
+                let s = 8000.0 + 0.01;
+                (
+                    (xrel - game.last_mouse_xrel) / s,
+                    (yrel - game.last_mouse_yrel) / s,
+                )
+            } else {
+                let s = 2000.0 + 0.01;
+                (xrel / s, yrel / s)
+            };
 
-                game.last_mouse_xrel = xrel;
-                game.last_mouse_yrel = yrel;
+            game.last_mouse_xrel = xrel;
+            game.last_mouse_yrel = yrel;
 
-                use std::f64::consts::PI;
+            use std::f64::consts::PI;
 
-                if game.focused {
-                    window.set_cursor_grab(true).unwrap();
-                    window.set_cursor_visible(false);
-                    if let Some(player) = game.server.player {
-                        let rotation = game
-                            .server
-                            .entities
-                            .get_component_mut(player, game.server.rotation)
-                            .unwrap();
-                        rotation.yaw -= rx;
-                        rotation.pitch -= ry;
-                        if rotation.pitch < (PI / 2.0) + 0.01 {
-                            rotation.pitch = (PI / 2.0) + 0.01;
-                        }
-                        if rotation.pitch > (PI / 2.0) * 3.0 - 0.01 {
-                            rotation.pitch = (PI / 2.0) * 3.0 - 0.01;
-                        }
+            if game.focused {
+                window.set_cursor_grab(true).unwrap();
+                window.set_cursor_visible(false);
+                if let Some(player) = game.server.player {
+                    let rotation = game
+                        .server
+                        .entities
+                        .get_component_mut(player, game.server.rotation)
+                        .unwrap();
+                    rotation.yaw -= rx;
+                    rotation.pitch -= ry;
+                    if rotation.pitch < (PI / 2.0) + 0.01 {
+                        rotation.pitch = (PI / 2.0) + 0.01;
                     }
-                } else {
-                    window.set_cursor_grab(false).unwrap();
-                    window.set_cursor_visible(true);
+                    if rotation.pitch > (PI / 2.0) * 3.0 - 0.01 {
+                        rotation.pitch = (PI / 2.0) * 3.0 - 0.01;
+                    }
                 }
+            } else {
+                window.set_cursor_grab(false).unwrap();
+                window.set_cursor_visible(true);
             }
         }
 

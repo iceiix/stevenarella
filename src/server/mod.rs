@@ -1902,31 +1902,29 @@ impl Server {
     }
 
     fn load_block_entities(&mut self, block_entities: Vec<Option<crate::nbt::NamedTag>>) {
-        for optional_block_entity in block_entities {
-            if let Some(block_entity) = optional_block_entity {
-                let x = block_entity.1.get("x").unwrap().as_int().unwrap();
-                let y = block_entity.1.get("y").unwrap().as_int().unwrap();
-                let z = block_entity.1.get("z").unwrap().as_int().unwrap();
-                if let Some(tile_id) = block_entity.1.get("id") {
-                    let tile_id = tile_id.as_str().unwrap();
-                    let action;
-                    match tile_id {
-                        // Fake a sign update
-                        "Sign" => action = 9,
-                        // Not something we care about, so break the loop
-                        _ => continue,
-                    }
-                    self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
-                        location: Position::new(x, y, z),
-                        action,
-                        nbt: Some(block_entity.clone()),
-                    });
-                } else {
-                    warn!(
-                        "Block entity at ({},{},{}) missing id tag: {:?}",
-                        x, y, z, block_entity
-                    );
+        for block_entity in block_entities.into_iter().flatten() {
+            let x = block_entity.1.get("x").unwrap().as_int().unwrap();
+            let y = block_entity.1.get("y").unwrap().as_int().unwrap();
+            let z = block_entity.1.get("z").unwrap().as_int().unwrap();
+            if let Some(tile_id) = block_entity.1.get("id") {
+                let tile_id = tile_id.as_str().unwrap();
+                let action;
+                match tile_id {
+                    // Fake a sign update
+                    "Sign" => action = 9,
+                    // Not something we care about, so break the loop
+                    _ => continue,
                 }
+                self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
+                    location: Position::new(x, y, z),
+                    action,
+                    nbt: Some(block_entity.clone()),
+                });
+            } else {
+                warn!(
+                    "Block entity at ({},{},{}) missing id tag: {:?}",
+                    x, y, z, block_entity
+                );
             }
         }
     }

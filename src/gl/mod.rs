@@ -491,20 +491,12 @@ impl Program {
 
     pub fn uniform_location(&self, name: &str) -> Option<Uniform> {
         let u = unsafe { glow_context().get_uniform_location(self.0, name) };
-        if let Some(u) = u {
-            Some(Uniform(u))
-        } else {
-            None
-        }
+        u.map(Uniform)
     }
 
     pub fn attribute_location(&self, name: &str) -> Option<Attribute> {
         let a = unsafe { glow_context().get_attrib_location(self.0, name) };
-        if let Some(a) = a {
-            Some(Attribute(a as i32))
-        } else {
-            None
-        }
+        a.map(|a| Attribute(a as i32))
     }
 }
 
@@ -805,7 +797,7 @@ impl Drop for MappedBuffer {
         unsafe {
             glow_context().unmap_buffer(self.target);
         }
-        mem::forget(mem::replace(&mut self.inner, Vec::new()));
+        mem::forget(std::mem::take(&mut self.inner))
     }
 }
 
