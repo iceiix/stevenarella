@@ -661,15 +661,12 @@ impl World {
 
         let cpos = CPos(x, z);
         {
-            let chunk = if new {
+            if new {
                 self.chunks.insert(cpos, Chunk::new(cpos));
-                self.chunks.get_mut(&cpos).unwrap()
-            } else {
-                if !self.chunks.contains_key(&cpos) {
-                    return Ok(());
-                }
-                self.chunks.get_mut(&cpos).unwrap()
-            };
+            } else if !self.chunks.contains_key(&cpos) {
+                return Ok(());
+            }
+            let chunk = self.chunks.get_mut(&cpos).unwrap();
 
             for i in 0..16 {
                 if chunk.sections[i].is_none() {
@@ -816,15 +813,12 @@ impl World {
     ) -> Result<(), protocol::Error> {
         let cpos = CPos(x, z);
         {
-            let chunk = if new {
+            if new {
                 self.chunks.insert(cpos, Chunk::new(cpos));
-                self.chunks.get_mut(&cpos).unwrap()
-            } else {
-                if !self.chunks.contains_key(&cpos) {
-                    return Ok(());
-                }
-                self.chunks.get_mut(&cpos).unwrap()
-            };
+            } else if !self.chunks.contains_key(&cpos) {
+                return Ok(());
+            }
+            let chunk = self.chunks.get_mut(&cpos).unwrap();
 
             // Block type array - whole byte per block
             let mut block_types = [[0u8; 4096]; 16];
@@ -1015,15 +1009,12 @@ impl World {
 
         let cpos = CPos(x, z);
         {
-            let chunk = if new {
+            if new {
                 self.chunks.insert(cpos, Chunk::new(cpos));
-                self.chunks.get_mut(&cpos).unwrap()
-            } else {
-                if !self.chunks.contains_key(&cpos) {
-                    return Ok(());
-                }
-                self.chunks.get_mut(&cpos).unwrap()
-            };
+            } else if !self.chunks.contains_key(&cpos) {
+                return Ok(());
+            }
+            let chunk = self.chunks.get_mut(&cpos).unwrap();
 
             for i in 0..16 {
                 if chunk.sections[i].is_none() {
