@@ -33,7 +33,7 @@ impl ecs::System for ApplyVelocity {
     fn update(&mut self, m: &mut ecs::Manager, _: &mut world::World, _: &mut render::Renderer) {
         for e in m.find(&self.filter) {
             if m.get_component(e, self.movement).is_some() {
-                // Player's handle their own phyiscs
+                // Player's handle their own physics
                 continue;
             }
             let pos = m.get_component_mut(e, self.position).unwrap();
@@ -69,7 +69,7 @@ impl ecs::System for ApplyGravity {
     fn update(&mut self, m: &mut ecs::Manager, _: &mut world::World, _: &mut render::Renderer) {
         for e in m.find(&self.filter) {
             if m.get_component(e, self.movement).is_some() {
-                // Player's handle their own phyiscs
+                // Player's handle their own physics
                 continue;
             }
             let vel = m.get_component_mut(e, self.velocity).unwrap();
