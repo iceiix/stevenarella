@@ -15,7 +15,7 @@ byteorder = "1.4.3"
 log = { version = "0.4.14", features = ["std"] }
 flate2 = { version = "1.0.20", features = ["rust_backend"], default-features = false }
 num-traits = "0.2.12"
-instant = "0.1.9"
+instant = "0.1.10"
 
 [dependencies.steven_shared]
 path = "../shared"
@@ -26,4 +26,4 @@ path = "../std_or_web"
 version = "0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-reqwest = { version = "0.11.3", features = [ "blocking" ]}
+reqwest = { version = "0.11.4", features = [ "blocking" ]}
