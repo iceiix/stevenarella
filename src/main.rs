@@ -509,7 +509,8 @@ fn main2() {
             glutin_window.resize(physical_size);
         }
 
-        if !handle_window_event(winit_window, &mut game, &mut ui_container, event) {
+        #[allow(clippy::needless_borrow)] // needless for native, not for web
+        if !handle_window_event(&winit_window, &mut game, &mut ui_container, event) {
             return;
         }
 
