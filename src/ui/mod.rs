@@ -1643,7 +1643,7 @@ impl TextBox {
 
     fn transform_input(&self) -> String {
         if self.password {
-            ::std::iter::repeat('*').take(self.input.len()).collect()
+            "*".repeat(self.input.len())
         } else {
             self.input.clone()
         }
