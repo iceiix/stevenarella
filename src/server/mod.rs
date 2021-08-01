@@ -1823,8 +1823,7 @@ impl Server {
                                 continue;
                             }
                         };
-                        let skin_blob: serde_json::Value = match serde_json::from_slice(&skin_blob)
-                        {
+                        let skin_blob: serde_json::Value = match serde_json::from_slice(skin_blob) {
                             Ok(val) => val,
                             Err(err) => {
                                 error!("Failed to parse skin blob, {:?}", err);
