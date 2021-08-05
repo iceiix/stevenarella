@@ -92,7 +92,7 @@ pub struct Game {
 impl Game {
     pub fn connect_to(&mut self, address: &str) {
         let (protocol_version, forge_mods, fml_network_version) =
-            match protocol::Conn::new(&address, self.default_protocol_version)
+            match protocol::Conn::new(address, self.default_protocol_version)
                 .and_then(|conn| conn.do_status())
             {
                 Ok(res) => {
@@ -509,6 +509,7 @@ fn main2() {
             glutin_window.resize(physical_size);
         }
 
+        #[allow(clippy::needless_borrow)] // needless for native, not for web
         if !handle_window_event(&winit_window, &mut game, &mut ui_container, event) {
             return;
         }
@@ -516,7 +517,7 @@ fn main2() {
         #[cfg(not(target_arch = "wasm32"))]
         {
             tick_all(
-                &winit_window,
+                winit_window,
                 &mut game,
                 &mut ui_container,
                 &mut last_frame,

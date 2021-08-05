@@ -518,7 +518,7 @@ impl super::Screen for ServerList {
                             } else {
                                 &res.protocol_name
                             };
-                            let mut txt = TextComponent::new(&st);
+                            let mut txt = TextComponent::new(st);
                             txt.modifier.color = Some(format::Color::Yellow);
                             let mut msg = Component::Text(txt);
                             format::convert_legacy(&mut msg);
