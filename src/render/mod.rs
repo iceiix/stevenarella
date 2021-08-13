@@ -448,7 +448,6 @@ impl Renderer {
         gl::unbind_framebuffer();
         gl::disable(gl::DEPTH_TEST);
         gl::clear(gl::ClearFlags::Color);
-        gl::disable(gl::BLEND);
         trans.draw(&self.trans_shader);
 
         gl::enable(gl::DEPTH_TEST);
