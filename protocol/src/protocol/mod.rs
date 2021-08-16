@@ -16,7 +16,7 @@
 #![allow(non_camel_case_types)]
 
 use aes::Aes128;
-use cfb8::cipher::{NewCipher, AsyncStreamCipher};
+use cfb8::cipher::{AsyncStreamCipher, NewCipher};
 use cfb8::Cfb8;
 use std_or_web::fs;
 
