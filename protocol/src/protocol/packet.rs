@@ -2130,7 +2130,7 @@ state_packets!(
                 field entity_tags: LenPrefixed<VarInt, packet::Tags> =,
             }
             packet TagsNested {
-                field tags: LenPrefixed<VarInt, LenPrefixed<VarInt, packet::Tags>> =,
+                field tags: LenPrefixed<VarInt, packet::TagsGroup> =,
             }
             packet AcknowledgePlayerDigging {
                 field location: Position =,
@@ -3058,6 +3058,25 @@ impl Serializable for Tags {
         Ok(Tags {
             tag_name: Serializable::read_from(buf)?,
             entries: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct TagsGroup {
+    pub tag_type: String,
+    pub tags: LenPrefixed<VarInt, Tags>,
+}
+
+impl Serializable for TagsGroup {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(TagsGroup {
+            tag_type: Serializable::read_from(buf)?,
+            tags: Serializable::read_from(buf)?,
         })
     }
 
