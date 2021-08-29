@@ -2129,6 +2129,9 @@ state_packets!(
                 field fluid_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field entity_tags: LenPrefixed<VarInt, packet::Tags> =,
             }
+            packet TagsNested {
+                field tags: LenPrefixed<VarInt, LenPrefixed<VarInt, packet::Tags>> =,
+            }
             packet AcknowledgePlayerDigging {
                 field location: Position =,
                 field block: VarInt =,
