@@ -777,6 +777,13 @@ state_packets!(
                 field metadata: types::Metadata =,
             }
 
+            packet SculkVibrationSignal {
+                field source_position: Position =,
+                field dest_id: String =,
+                field dest_position: Position = when(|p: &SculkVibrationSignal| p.dest_id == "block"),
+                field entity_id: VarInt = when(|p: &SculkVibrationSignal| p.dest_id == "entity"),
+            }
+
             /// Animation is sent by the server to play an animation on a specific entity.
             packet Animation {
                 field entity_id: VarInt =,
@@ -889,6 +896,11 @@ state_packets!(
             }
             packet ServerMessage_NoPosition {
                 field message: format::Component =,
+            }
+            packet ClearTitles {
+                field json_data: String =,
+                field position: u8 =,
+                field sender: UUID =,
             }
             /// MultiBlockChange is used to update a batch of blocks in a single packet.
             packet MultiBlockChange_Packed {
@@ -1519,6 +1531,9 @@ state_packets!(
                 field y: i32 =,
                 field z: i32 =,
             }
+            packet WindowPing {
+                field id: i32 =,
+            }
             /// CraftRecipeResponse is a response to CraftRecipeRequest, notifies the UI.
             packet CraftRecipeResponse {
                 field window_id: u8 =,
@@ -1539,6 +1554,18 @@ state_packets!(
                 field player_id: Option<VarInt> = when(|p: &CombatEvent| p.event.0 == 2),
                 field entity_id: Option<i32> = when(|p: &CombatEvent| p.event.0 == 1 || p.event.0 == 2),
                 field message: Option<format::Component> = when(|p: &CombatEvent| p.event.0 == 2),
+            }
+            packet CombatEventEnd {
+                field duration: VarInt =,
+                field entity_id: i32 =,
+            }
+            packet CombatEventEnter {
+                field empty: Vec<u8> =, // syntactically required
+            }
+            packet CombatEventDeath {
+                field player_id: VarInt =,
+                field entity_id: i32 =,
+                field message: String =,
             }
             /// PlayerInfo is sent by the server for every player connected to the server
             /// to provide skin and username information as well as ping and gamemode info.
@@ -1706,6 +1733,9 @@ state_packets!(
                 field has_id: bool =,
                 field tab_id: String = when(|p: &SelectAdvancementTab| p.has_id),
             }
+            packet ActionBar {
+                field text: String =,
+            }
             /// WorldBorder configures the world's border.
             packet WorldBorder {
                 field action: VarInt =,
@@ -1717,6 +1747,24 @@ state_packets!(
                 field portal_boundary: Option<VarInt> = when(|p: &WorldBorder| p.action.0 == 3),
                 field warning_time: Option<VarInt> = when(|p: &WorldBorder| p.action.0 == 3 || p.action.0 == 4),
                 field warning_blocks: Option<VarInt> = when(|p: &WorldBorder| p.action.0 == 3 || p.action.0 == 5),
+            }
+            packet WorldBorderCenter {
+                field x: f64 =,
+                field z: f64 =,
+            }
+            packet WorldBorderLerpSize {
+                field old_diameter: f64 =,
+                field new_diameter: f64 =,
+                field speed: VarLong =,
+            }
+            packet WorldBorderSize {
+                field diameter: f64 =,
+            }
+            packet WorldBorderWarningDelay {
+                field warning_time: VarInt =,
+            }
+            packet WorldBorderWarningReach {
+                field warning_blocks: VarInt =,
             }
             /// Camera causes the client to spectate the entity with the passed id.
             /// Use the player's id to de-spectate.
@@ -1933,6 +1981,14 @@ state_packets!(
                 field fade_in: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 2),
                 field fade_stay: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 2),
                 field fade_out: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 2),
+            }
+            packet TitleSubtitle {
+                field subtitle_text: String =,
+            }
+            packet TitleTimes {
+                field fade_in: i32 =,
+                field stay: i32 =,
+                field fade_out: i32 =,
             }
             /// UpdateSign sets or changes the text on a sign.
             packet UpdateSign {
