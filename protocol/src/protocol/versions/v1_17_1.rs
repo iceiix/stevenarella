@@ -113,7 +113,7 @@ protocol_packet_ids!(
             0x35 => CombatEventDeath
             0x36 => PlayerInfo
             0x37 => FacePlayer
-            0x38 => TeleportPlayer_WithConfirm
+            0x38 => TeleportPlayer_WithDismount
             0x39 => UnlockRecipes_WithBlastSmoker
             0x3a => EntityDestroy
             0x3b => EntityRemoveEffect

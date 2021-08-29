@@ -1589,6 +1589,16 @@ state_packets!(
             /// TeleportPlayer is sent to change the player's position. The client is expected
             /// to reply to the server with the same positions as contained in this packet
             /// otherwise will reject future packets.
+            packet TeleportPlayer_WithDismount {
+                field x: f64 =,
+                field y: f64 =,
+                field z: f64 =,
+                field yaw: f32 =,
+                field pitch: f32 =,
+                field flags: u8 =,
+                field teleport_id: VarInt =,
+                field dismount: bool =,
+            }
             packet TeleportPlayer_WithConfirm {
                 field x: f64 =,
                 field y: f64 =,
