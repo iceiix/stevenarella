@@ -595,6 +595,7 @@ impl Server {
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
+                            ChunkData_Biomes3D_Bitmasks => on_chunk_data_biomes3d_bitmasks,
                             ChunkData_Biomes3D_VarInt => on_chunk_data_biomes3d_varint,
                             ChunkData_Biomes3D_bool => on_chunk_data_biomes3d_bool,
                             ChunkData => on_chunk_data,
@@ -1926,6 +1927,23 @@ impl Server {
                 );
             }
         }
+    }
+
+    fn on_chunk_data_biomes3d_bitmasks(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_Biomes3D_Bitmasks,
+    ) {
+        let new = true;
+        self.world
+            .load_chunk115(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                new, // TODO: what should this be?
+                chunk_data.bitmasks.data[0] as u16, // TODO: get all bitmasks
+                chunk_data.data.data,
+            )
+            .unwrap();
+        self.load_block_entities(chunk_data.block_entities.data);
     }
 
     fn on_chunk_data_biomes3d_varint(
