@@ -259,7 +259,6 @@ pub const NEAREST_MIPMAP_LINEAR: TextureValue = gl::NEAREST_MIPMAP_LINEAR as Tex
 pub const CLAMP_TO_EDGE: TextureValue = gl::CLAMP_TO_EDGE as TextureValue;
 
 /// `Texture` is a buffer of data used by fragment shaders.
-#[derive(Default)]
 pub struct Texture(glow::Texture);
 
 impl Texture {
@@ -440,6 +439,12 @@ impl Texture {
     }
 }
 
+impl Default for Texture {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
@@ -459,7 +464,6 @@ pub type ShaderParameter = u32;
 pub const COMPILE_STATUS: ShaderParameter = gl::COMPILE_STATUS;
 pub const INFO_LOG_LENGTH: ShaderParameter = gl::INFO_LOG_LENGTH;
 
-#[derive(Default)]
 pub struct Program(glow::Program);
 
 impl Program {
@@ -497,6 +501,12 @@ impl Program {
     pub fn attribute_location(&self, name: &str) -> Option<Attribute> {
         let a = unsafe { glow_context().get_attrib_location(self.0, name) };
         a.map(|a| Attribute(a as i32))
+    }
+}
+
+impl Default for Program {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -649,7 +659,6 @@ impl Attribute {
 // VertexArray is used to store state needed to render vertices.
 // This includes buffers, the format of the buffers and enabled
 // attributes.
-#[derive(Default)]
 pub struct VertexArray(glow::VertexArray);
 
 impl VertexArray {
@@ -672,12 +681,17 @@ impl VertexArray {
     }
 }
 
+impl Default for VertexArray {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for VertexArray {
     fn drop(&mut self) {
         unsafe {
             glow_context().delete_vertex_array(self.0);
         }
-        self.0 = glow::VertexArray::default();
     }
 }
 
@@ -710,7 +724,6 @@ pub const READ_ONLY: Access = gl::READ_ONLY;
 pub const WRITE_ONLY: Access = gl::WRITE_ONLY;
 
 /// `Buffer` is a storage for vertex data.
-#[derive(Default)]
 pub struct Buffer(glow::Buffer);
 
 impl Buffer {
@@ -765,6 +778,12 @@ impl Buffer {
     }
 }
 
+impl Default for Buffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
@@ -809,8 +828,13 @@ pub const COLOR_ATTACHMENT_1: Attachment = gl::COLOR_ATTACHMENT1;
 pub const COLOR_ATTACHMENT_2: Attachment = gl::COLOR_ATTACHMENT2;
 pub const DEPTH_ATTACHMENT: Attachment = gl::DEPTH_ATTACHMENT;
 
-#[derive(Default)]
 pub struct Framebuffer(glow::Framebuffer);
+
+impl Default for Framebuffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 pub fn check_framebuffer_status() {
     unsafe {
