@@ -80,7 +80,7 @@ protocol_packet_ids!(
             0x13 => WindowClose
             0x14 => WindowItems_StateCarry
             0x15 => WindowProperty
-            0x16 => WindowSetSlot
+            0x16 => WindowSetSlot_State
             0x17 => SetCooldown
             0x18 => PluginMessageClientbound
             0x19 => NamedSoundEffect

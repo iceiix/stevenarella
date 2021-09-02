@@ -979,6 +979,12 @@ state_packets!(
                 field value: i16 =,
             }
             /// WindowSetSlot changes an itemstack in one of the slots in a window.
+            packet WindowSetSlot_State {
+                field id: u8 =,
+                field state_id: VarInt =,
+                field property: i16 =,
+                field item: Option<item::Stack> =,
+            }
             packet WindowSetSlot {
                 field id: u8 =,
                 field property: i16 =,
