@@ -259,7 +259,6 @@ pub const NEAREST_MIPMAP_LINEAR: TextureValue = gl::NEAREST_MIPMAP_LINEAR as Tex
 pub const CLAMP_TO_EDGE: TextureValue = gl::CLAMP_TO_EDGE as TextureValue;
 
 /// `Texture` is a buffer of data used by fragment shaders.
-#[derive(Default)]
 pub struct Texture(glow::Texture);
 
 impl Texture {
@@ -459,7 +458,6 @@ pub type ShaderParameter = u32;
 pub const COMPILE_STATUS: ShaderParameter = gl::COMPILE_STATUS;
 pub const INFO_LOG_LENGTH: ShaderParameter = gl::INFO_LOG_LENGTH;
 
-#[derive(Default)]
 pub struct Program(glow::Program);
 
 impl Program {
@@ -649,7 +647,6 @@ impl Attribute {
 // VertexArray is used to store state needed to render vertices.
 // This includes buffers, the format of the buffers and enabled
 // attributes.
-#[derive(Default)]
 pub struct VertexArray(glow::VertexArray);
 
 impl VertexArray {
@@ -677,7 +674,6 @@ impl Drop for VertexArray {
         unsafe {
             glow_context().delete_vertex_array(self.0);
         }
-        self.0 = glow::VertexArray::default();
     }
 }
 
@@ -710,7 +706,6 @@ pub const READ_ONLY: Access = gl::READ_ONLY;
 pub const WRITE_ONLY: Access = gl::WRITE_ONLY;
 
 /// `Buffer` is a storage for vertex data.
-#[derive(Default)]
 pub struct Buffer(glow::Buffer);
 
 impl Buffer {
@@ -809,7 +804,6 @@ pub const COLOR_ATTACHMENT_1: Attachment = gl::COLOR_ATTACHMENT1;
 pub const COLOR_ATTACHMENT_2: Attachment = gl::COLOR_ATTACHMENT2;
 pub const DEPTH_ATTACHMENT: Attachment = gl::DEPTH_ATTACHMENT;
 
-#[derive(Default)]
 pub struct Framebuffer(glow::Framebuffer);
 
 pub fn check_framebuffer_status() {
