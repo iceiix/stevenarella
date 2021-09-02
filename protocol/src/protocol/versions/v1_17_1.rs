@@ -78,7 +78,7 @@ protocol_packet_ids!(
             0x11 => TabCompleteReply
             0x12 => DeclareCommands
             0x13 => WindowClose
-            0x14 => WindowItems
+            0x14 => WindowItems_StateCarry
             0x15 => WindowProperty
             0x16 => WindowSetSlot
             0x17 => SetCooldown

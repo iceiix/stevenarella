@@ -77,7 +77,7 @@ protocol_packet_ids!(
             0x10 => DeclareCommands
             0x11 => ConfirmTransaction
             0x12 => WindowClose
-            0x13 => WindowItems
+            0x13 => WindowItems_i16
             0x14 => WindowProperty
             0x15 => WindowSetSlot
             0x16 => SetCooldown

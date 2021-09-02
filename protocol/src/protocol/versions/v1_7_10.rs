@@ -82,7 +82,7 @@ protocol_packet_ids!(
             0x2d => WindowOpen_u8
             0x2e => WindowClose
             0x2f => WindowSetSlot
-            0x30 => WindowItems
+            0x30 => WindowItems_i16
             0x31 => WindowProperty
             0x32 => ConfirmTransaction
             0x33 => UpdateSign_u16

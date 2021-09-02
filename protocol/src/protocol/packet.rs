@@ -961,7 +961,13 @@ state_packets!(
                 field title: format::Component =,
             }
             /// WindowItems sets every item in a window.
-            packet WindowItems {
+            packet WindowItems_StateCarry {
+                field id: u8 =,
+                field state_id: VarInt =,
+                field items: LenPrefixed<VarInt, Option<item::Stack>> =,
+                field carried_item: Option<item::Stack> =,
+            }
+            packet WindowItems_i16 {
                 field id: u8 =,
                 field items: LenPrefixed<i16, Option<item::Stack>> =,
             }
