@@ -28,11 +28,11 @@ opt-level = 1
 
 [dependencies]
 cfg-if = "1.0.0"
-wasm-bindgen = "0.2.75"
+wasm-bindgen = "0.2.76"
 winit = { version = "0.25.0", features = [ "web-sys" ]}
 glow = "0.10.0"
 byteorder = "1.4.3"
-serde = "1.0.127"
+serde = "1.0.129"
 serde_json = "1.0.66"
 flate2 = { version = "1.0.20", features = ["rust_backend"], default-features = false }
 zip = { version = "0.5.13", features = ["deflate"], default-features = false }
@@ -58,7 +58,7 @@ glutin = "0.27.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
-web-sys = "0.3.51"
+web-sys = "0.3.52"
 
 [dependencies.steven_resources]
 path = "./resources"
