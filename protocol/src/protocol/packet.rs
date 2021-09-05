@@ -89,6 +89,15 @@ state_packets!(
                 field action_id: u8=,
             }
             /// ClientSettings is sent by the client to update its current settings.
+            packet ClientSettings_Filtering {
+                field locale: String =,
+                field view_distance: u8 =,
+                field chat_mode: VarInt =,
+                field chat_colors: bool =,
+                field displayed_skin_parts: u8 =,
+                field main_hand: VarInt =,
+                field disable_text_filtering: bool =,
+            }
             packet ClientSettings {
                 field locale: String =,
                 field view_distance: u8 =,

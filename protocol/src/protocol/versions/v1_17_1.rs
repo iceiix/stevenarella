@@ -13,7 +13,7 @@ protocol_packet_ids!(
             0x02 => SetDifficulty
             0x03 => ChatMessage
             0x04 => ClientStatus
-            0x05 => ClientSettings
+            0x05 => ClientSettings_Filtering
             0x06 => TabComplete
             0x07 => ConfirmTransactionServerbound
             0x08 => ClickWindowButton
