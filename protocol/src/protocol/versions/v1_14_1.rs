@@ -91,7 +91,7 @@ protocol_packet_ids!(
             0x20 => KeepAliveClientbound_i64
             0x21 => ChunkData_HeightMap
             0x22 => Effect
-            0x23 => Particle_Data
+            0x23 => Particle_f32
             0x24 => UpdateLight_NoTrust
             0x25 => JoinGame_i32_ViewDistance
             0x26 => Maps
