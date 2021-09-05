@@ -116,4 +116,3 @@ impl Serializable for Option<Stack> {
         Result::Ok(())
     }
 }
-

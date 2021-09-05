@@ -3496,4 +3496,3 @@ impl Serializable for NumberedSlot {
         self.slot_data.write_to(buf)
     }
 }
-
