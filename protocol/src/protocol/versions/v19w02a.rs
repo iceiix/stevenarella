@@ -83,7 +83,7 @@ protocol_packet_ids!(
             0x1b => Disconnect
             0x1c => EntityAction
             0x1d => NBTQueryResponse
-            0x1e => Explosion
+            0x1e => Explosion_i32
             0x1f => ChunkUnload
             0x20 => ChangeGameState
             0x21 => KeepAliveClientbound_i64

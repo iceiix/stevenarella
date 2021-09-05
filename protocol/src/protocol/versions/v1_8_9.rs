@@ -75,7 +75,7 @@ protocol_packet_ids!(
             0x24 => BlockAction
             0x25 => BlockBreakAnimation
             0x26 => ChunkDataBulk
-            0x27 => Explosion
+            0x27 => Explosion_i32
             0x28 => Effect
             0x29 => NamedSoundEffect_u8_NoCategory
             0x2a => Particle_VarIntArray

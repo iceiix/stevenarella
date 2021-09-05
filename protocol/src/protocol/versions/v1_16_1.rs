@@ -85,7 +85,7 @@ protocol_packet_ids!(
             0x19 => NamedSoundEffect
             0x1a => Disconnect
             0x1b => EntityAction
-            0x1c => Explosion
+            0x1c => Explosion_i32
             0x1d => ChunkUnload
             0x1e => ChangeGameState
             0x1f => WindowOpenHorse

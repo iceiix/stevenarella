@@ -1045,7 +1045,17 @@ state_packets!(
             }
             /// Explosion is sent when an explosion is triggered (tnt, creeper etc).
             /// This plays the effect and removes the effected blocks.
-            packet Explosion {
+            packet Explosion_VarInt {
+                field x: f32 =,
+                field y: f32 =,
+                field z: f32 =,
+                field radius: f32 =,
+                field records: LenPrefixed<VarInt, packet::ExplosionRecord> =,
+                field velocity_x: f32 =,
+                field velocity_y: f32 =,
+                field velocity_z: f32 =,
+            }
+            packet Explosion_i32 {
                 field x: f32 =,
                 field y: f32 =,
                 field z: f32 =,

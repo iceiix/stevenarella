@@ -64,7 +64,7 @@ protocol_packet_ids!(
             0x18 => PluginMessageClientbound
             0x19 => Disconnect
             0x1a => EntityAction
-            0x1b => Explosion
+            0x1b => Explosion_i32
             0x1c => ChunkUnload
             0x1d => SetCompression
             0x1e => ChangeGameState
