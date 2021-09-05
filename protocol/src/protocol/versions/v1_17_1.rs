@@ -19,7 +19,7 @@ protocol_packet_ids!(
             0x08 => ClickWindow_State
             0x09 => CloseWindow
             0x0a => PluginMessageServerbound
-            0x0b => EditBook
+            0x0b => EditBook_Pages
             0x0c => QueryEntityNBT
             0x0d => UseEntity_Sneakflag
             0x0e => GenerateStructure

@@ -19,7 +19,7 @@ protocol_packet_ids!(
             0x08 => ClickWindow
             0x09 => CloseWindow
             0x0a => PluginMessageServerbound
-            0x0b => EditBook
+            0x0b => EditBook_Item
             0x0c => QueryEntityNBT
             0x0d => UseEntity_Hand
             0x0e => KeepAliveServerbound_i64

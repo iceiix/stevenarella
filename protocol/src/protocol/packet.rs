@@ -186,7 +186,12 @@ state_packets!(
                 field channel: String =,
                 field data: LenPrefixedBytes<VarShort> =,
             }
-            packet EditBook {
+            packet EditBook_Pages {
+                field hand: VarInt =,
+                field pages: LenPrefixed<VarInt, String> =,
+                field title: Option<String> =,
+            }
+            packet EditBook_Item {
                 field new_book: Option<item::Stack> =,
                 field is_signing: bool =,
                 field hand: VarInt =,
