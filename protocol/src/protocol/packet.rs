@@ -364,7 +364,7 @@ state_packets!(
                 field jump: bool =,
                 field unmount: bool =,
             }
-            packet Pong {
+            packet WindowPong {
                 field id: i32 =,
             }
             /// CraftingBookData is sent when the player interacts with the crafting book.
@@ -1624,7 +1624,7 @@ state_packets!(
                 field entity_id: i32 =,
             }
             packet CombatEventEnter {
-                field empty: Vec<u8> =, // syntactically required
+                field empty: Vec<u8> =, // empty packet, but a field is syntactically required here
             }
             packet CombatEventDeath {
                 field player_id: VarInt =,

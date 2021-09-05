@@ -37,7 +37,7 @@ protocol_packet_ids!(
             0x1a => PlayerDigging
             0x1b => PlayerAction
             0x1c => SteerVehicle
-            0x1d => Pong
+            0x1d => WindowPong
             0x1e => SetDisplayedRecipe
             0x1f => SetRecipeBookState
             0x20 => NameItem
