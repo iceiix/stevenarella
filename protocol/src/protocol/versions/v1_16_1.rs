@@ -145,7 +145,7 @@ protocol_packet_ids!(
             0x55 => CollectItem
             0x56 => EntityTeleport_f64
             0x57 => Advancements
-            0x58 => EntityProperties
+            0x58 => EntityProperties_VarInt
             0x59 => EntityEffect
             0x5a => DeclareRecipes
             0x5b => TagsWithEntities

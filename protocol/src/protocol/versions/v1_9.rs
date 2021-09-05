@@ -115,7 +115,7 @@ protocol_packet_ids!(
             0x48 => PlayerListHeaderFooter
             0x49 => CollectItem_nocount
             0x4a => EntityTeleport_f64
-            0x4b => EntityProperties
+            0x4b => EntityProperties_VarInt
             0x4c => EntityEffect
         }
     }

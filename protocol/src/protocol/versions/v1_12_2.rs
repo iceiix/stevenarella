@@ -121,7 +121,7 @@ protocol_packet_ids!(
             0x4b => CollectItem
             0x4c => EntityTeleport_f64
             0x4d => Advancements
-            0x4e => EntityProperties
+            0x4e => EntityProperties_VarInt
             0x4f => EntityEffect
         }
     }

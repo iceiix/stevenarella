@@ -2155,7 +2155,11 @@ state_packets!(
                 */
             }
             /// EntityProperties updates the properties for an entity.
-            packet EntityProperties {
+            packet EntityProperties_VarIntVarInt {
+                field entity_id: VarInt =,
+                field properties: LenPrefixed<VarInt, packet::EntityProperty> =,
+            }
+            packet EntityProperties_VarInt {
                 field entity_id: VarInt =,
                 field properties: LenPrefixed<i32, packet::EntityProperty> =,
             }
