@@ -146,6 +146,15 @@ state_packets!(
                 field button: u8 =,
             }
             /// ClickWindow is sent when the client clicks in a window.
+            packet ClickWindow_State {
+                field id: u8 =,
+                field slot: i16 =,
+                field state: VarInt =,
+                field button: u8 =,
+                field mode: VarInt =,
+                field slots: LenPrefixed<VarInt, packet::NumberedSlot> =,
+                field clicked_item: Option<item::Stack> =,
+            }
             packet ClickWindow {
                 field id: u8 =,
                 field slot: i16 =,
@@ -3467,3 +3476,24 @@ impl Serializable for CommandNode {
         unimplemented!()
     }
 }
+
+#[derive(Debug, Clone, Default)]
+pub struct NumberedSlot {
+    pub slot_number: i16,
+    pub slot_data: Option<item::Stack>,
+}
+
+impl Serializable for NumberedSlot {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(NumberedSlot {
+            slot_number: Serializable::read_from(buf)?,
+            slot_data: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.slot_number.write_to(buf)?;
+        self.slot_data.write_to(buf)
+    }
+}
+

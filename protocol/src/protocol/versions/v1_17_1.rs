@@ -16,7 +16,7 @@ protocol_packet_ids!(
             0x05 => ClientSettings_Filtering
             0x06 => TabComplete
             0x07 => ClickWindowButton
-            0x08 => ClickWindow
+            0x08 => ClickWindow_State
             0x09 => CloseWindow
             0x0a => PluginMessageServerbound
             0x0b => EditBook
