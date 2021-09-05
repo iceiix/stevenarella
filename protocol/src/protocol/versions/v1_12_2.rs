@@ -113,7 +113,7 @@ protocol_packet_ids!(
             0x43 => SetPassengers
             0x44 => Teams_u8
             0x45 => UpdateScore
-            0x46 => SpawnPosition
+            0x46 => SpawnPosition_NoAngle
             0x47 => TimeUpdate
             0x48 => Title
             0x49 => SoundEffect

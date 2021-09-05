@@ -133,7 +133,7 @@ protocol_packet_ids!(
             0x48 => SetCurrentHotbarSlot
             0x49 => UpdateViewPosition
             0x4a => UpdateViewDistance
-            0x4b => SpawnPosition
+            0x4b => SpawnPosition_Angle
             0x4c => ScoreboardDisplay
             0x4d => EntityMetadata
             0x4e => EntityAttach

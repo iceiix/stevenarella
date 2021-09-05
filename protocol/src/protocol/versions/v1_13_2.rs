@@ -126,7 +126,7 @@ protocol_packet_ids!(
             0x46 => SetPassengers
             0x47 => Teams_VarInt
             0x48 => UpdateScore
-            0x49 => SpawnPosition
+            0x49 => SpawnPosition_NoAngle
             0x4a => TimeUpdate
             0x4c => StopSound
             0x4d => SoundEffect

@@ -107,7 +107,7 @@ protocol_packet_ids!(
             0x40 => SetPassengers
             0x41 => Teams_u8
             0x42 => UpdateScore
-            0x43 => SpawnPosition
+            0x43 => SpawnPosition_NoAngle
             0x44 => TimeUpdate
             0x45 => Title_notext
             0x46 => SoundEffect

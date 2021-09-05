@@ -41,7 +41,7 @@ protocol_packet_ids!(
             0x02 => ServerMessage_Position
             0x03 => TimeUpdate
             0x04 => EntityEquipment_u16
-            0x05 => SpawnPosition
+            0x05 => SpawnPosition_NoAngle
             0x06 => UpdateHealth
             0x07 => Respawn_Gamemode
             0x08 => TeleportPlayer_NoConfirm

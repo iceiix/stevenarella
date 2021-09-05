@@ -1993,7 +1993,11 @@ state_packets!(
             }
             /// SpawnPosition is sent to change the player's current spawn point. Currently
             /// only used by the client for the compass.
-            packet SpawnPosition {
+            packet SpawnPosition_Angle {
+                field location: Position =,
+                field angle: f32 =,
+            }
+            packet SpawnPosition_NoAngle {
                 field location: Position =,
             }
             packet SpawnPosition_i32 {

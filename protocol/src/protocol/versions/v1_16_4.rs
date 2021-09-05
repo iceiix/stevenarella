@@ -124,7 +124,7 @@ protocol_packet_ids!(
             0x3f => SetCurrentHotbarSlot
             0x40 => UpdateViewPosition
             0x41 => UpdateViewDistance
-            0x42 => SpawnPosition
+            0x42 => SpawnPosition_NoAngle
             0x43 => ScoreboardDisplay
             0x44 => EntityMetadata
             0x45 => EntityAttach
