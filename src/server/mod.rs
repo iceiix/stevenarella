@@ -612,6 +612,7 @@ impl Server {
                             MultiBlockChange_Packed => on_multi_block_change_packed,
                             MultiBlockChange_VarInt => on_multi_block_change_varint,
                             MultiBlockChange_u16 => on_multi_block_change_u16,
+                            TeleportPlayer_WithDismount => on_teleport_player_withdismount,
                             TeleportPlayer_WithConfirm => on_teleport_player_withconfirm,
                             TeleportPlayer_NoConfirm => on_teleport_player_noconfirm,
                             TeleportPlayer_OnGround => on_teleport_player_onground,
@@ -1551,6 +1552,21 @@ impl Server {
             model.set_skin(info.skin_url.clone());
         }
         self.entity_map.insert(entity_id, entity);
+    }
+
+    fn on_teleport_player_withdismount(
+        &mut self,
+        teleport: packet::play::clientbound::TeleportPlayer_WithDismount,
+    ) {
+        self.on_teleport_player(
+            teleport.x,
+            teleport.y,
+            teleport.z,
+            teleport.yaw as f64,
+            teleport.pitch as f64,
+            teleport.flags,
+            Some(teleport.teleport_id),
+        )
     }
 
     fn on_teleport_player_withconfirm(
