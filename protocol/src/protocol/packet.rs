@@ -1724,6 +1724,13 @@ state_packets!(
             /// ResourcePackSend causes the client to check its cache for the requested
             /// resource packet and download it if its missing. Once the resource pack
             /// is obtained the client will use it.
+            packet ResourcePackSend_Prompt {
+                field url: String =,
+                field hash: String =,
+                field forced: bool =,
+                field has_prompt_message: bool =,
+                field prompt_message: String = when(|p: &ResourcePackSend_Prompt| p.has_prompt_message),
+            }
             packet ResourcePackSend {
                 field url: String =,
                 field hash: String =,
