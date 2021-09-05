@@ -139,7 +139,7 @@ protocol_packet_ids!(
             0x54 => EntityProperties_VarInt
             0x55 => EntityEffect
             0x56 => DeclareRecipes
-            0x57 => TagsWithEntities
+            0x57 => Tags_WithEntities
             0x58 => UpdateLight_NoTrust
             0x59 => WindowOpen_VarInt
             0x5a => TradeList_WithoutRestock // TODO: without 1.14 added fields

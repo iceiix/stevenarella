@@ -148,7 +148,7 @@ protocol_packet_ids!(
             0x59 => EntityProperties_VarInt
             0x5a => EntityEffect
             0x5b => DeclareRecipes
-            0x5c => TagsWithEntities
+            0x5c => Tags_WithEntities
         }
     }
     login Login {

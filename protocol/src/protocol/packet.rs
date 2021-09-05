@@ -2189,13 +2189,13 @@ state_packets!(
                 field item_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field fluid_tags: LenPrefixed<VarInt, packet::Tags> =,
             }
-            packet TagsWithEntities {
+            packet Tags_WithEntities {
                 field block_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field item_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field fluid_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field entity_tags: LenPrefixed<VarInt, packet::Tags> =,
             }
-            packet TagsNested {
+            packet Tags_Nested {
                 field tags: LenPrefixed<VarInt, packet::TagsGroup> =,
             }
             packet AcknowledgePlayerDigging {

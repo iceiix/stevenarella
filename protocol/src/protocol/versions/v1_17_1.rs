@@ -160,7 +160,7 @@ protocol_packet_ids!(
             0x63 => EntityProperties_VarIntVarInt
             0x64 => EntityEffect
             0x65 => DeclareRecipes
-            0x66 => TagsNested
+            0x66 => Tags_Nested
         }
     }
     login Login {

@@ -147,7 +147,7 @@ protocol_packet_ids!(
             0x58 => EntityProperties_VarInt
             0x59 => EntityEffect
             0x5a => DeclareRecipes
-            0x5b => TagsWithEntities
+            0x5b => Tags_WithEntities
             0x5c => AcknowledgePlayerDigging
         }
     }
