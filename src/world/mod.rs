@@ -977,7 +977,7 @@ impl World {
         mask: u16,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
-        self.load_chunk19_or_115(true, x, z, new, mask, data)
+        self.load_chunk19_or_115(true, x, z, new, mask, 16, data)
     }
 
     pub fn load_chunk115(
@@ -988,7 +988,7 @@ impl World {
         mask: u16,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
-        self.load_chunk19_or_115(false, x, z, new, mask, data)
+        self.load_chunk19_or_115(false, x, z, new, mask, 16, data)
     }
 
     #[allow(clippy::or_fun_call)]
@@ -999,6 +999,7 @@ impl World {
         z: i32,
         new: bool,
         mask: u16,
+        num_sections: usize,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
         use crate::protocol::{LenPrefixed, Serializable, VarInt};
@@ -1016,7 +1017,7 @@ impl World {
             }
             let chunk = self.chunks.get_mut(&cpos).unwrap();
 
-            for i in 0..16 {
+            for i in 0..num_sections {
                 if chunk.sections[i].is_none() {
                     let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
