@@ -90,6 +90,7 @@ protocol_packet_ids!(
             0x1d => ChunkUnload
             0x1e => ChangeGameState
             0x1f => WindowOpenHorse
+            0x20 => WorldBorderInit
             0x21 => KeepAliveClientbound_i64
             0x22 => ChunkData_Biomes3D_Bitmasks
             0x23 => Effect

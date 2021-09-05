@@ -947,6 +947,16 @@ state_packets!(
                 field number_of_slots: VarInt =,
                 field entity_id: i32 =,
             }
+            packet WorldBorderInit {
+                field x: f64 =,
+                field z: f64 =,
+                field old_diameter: f64 =,
+                field new_diameter: f64 =,
+                field speed: VarLong =,
+                field portal_teleport_boundary: VarInt =,
+                field warning_blocks: VarInt =,
+                field warning_time: VarInt =,
+            }
             packet WindowOpen_u8 {
                 field id: u8 =,
                 field ty: u8 =,
