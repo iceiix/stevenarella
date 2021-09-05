@@ -63,7 +63,7 @@ protocol_packet_ids!(
             0x11 => ConfirmTransaction
             0x12 => WindowClose
             0x13 => WindowOpen
-            0x14 => WindowItems
+            0x14 => WindowItems_i16
             0x15 => WindowProperty
             0x16 => WindowSetSlot
             0x17 => SetCooldown
@@ -71,7 +71,7 @@ protocol_packet_ids!(
             0x19 => NamedSoundEffect
             0x1a => Disconnect
             0x1b => EntityAction
-            0x1c => Explosion
+            0x1c => Explosion_i32
             0x1d => ChunkUnload
             0x1e => ChangeGameState
             0x1f => KeepAliveClientbound_i64
@@ -113,7 +113,7 @@ protocol_packet_ids!(
             0x43 => SetPassengers
             0x44 => Teams_u8
             0x45 => UpdateScore
-            0x46 => SpawnPosition
+            0x46 => SpawnPosition_NoAngle
             0x47 => TimeUpdate
             0x48 => Title
             0x49 => SoundEffect
@@ -121,7 +121,7 @@ protocol_packet_ids!(
             0x4b => CollectItem
             0x4c => EntityTeleport_f64
             0x4d => Advancements
-            0x4e => EntityProperties
+            0x4e => EntityProperties_VarInt
             0x4f => EntityEffect
         }
     }

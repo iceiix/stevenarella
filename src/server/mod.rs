@@ -595,6 +595,7 @@ impl Server {
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
+                            ChunkData_Biomes3D_Bitmasks => on_chunk_data_biomes3d_bitmasks,
                             ChunkData_Biomes3D_VarInt => on_chunk_data_biomes3d_varint,
                             ChunkData_Biomes3D_bool => on_chunk_data_biomes3d_bool,
                             ChunkData => on_chunk_data,
@@ -611,6 +612,7 @@ impl Server {
                             MultiBlockChange_Packed => on_multi_block_change_packed,
                             MultiBlockChange_VarInt => on_multi_block_change_varint,
                             MultiBlockChange_u16 => on_multi_block_change_u16,
+                            TeleportPlayer_WithDismount => on_teleport_player_withdismount,
                             TeleportPlayer_WithConfirm => on_teleport_player_withconfirm,
                             TeleportPlayer_NoConfirm => on_teleport_player_noconfirm,
                             TeleportPlayer_OnGround => on_teleport_player_onground,
@@ -1552,6 +1554,21 @@ impl Server {
         self.entity_map.insert(entity_id, entity);
     }
 
+    fn on_teleport_player_withdismount(
+        &mut self,
+        teleport: packet::play::clientbound::TeleportPlayer_WithDismount,
+    ) {
+        self.on_teleport_player(
+            teleport.x,
+            teleport.y,
+            teleport.z,
+            teleport.yaw as f64,
+            teleport.pitch as f64,
+            teleport.flags,
+            Some(teleport.teleport_id),
+        )
+    }
+
     fn on_teleport_player_withconfirm(
         &mut self,
         teleport: packet::play::clientbound::TeleportPlayer_WithConfirm,
@@ -1926,6 +1943,23 @@ impl Server {
                 );
             }
         }
+    }
+
+    fn on_chunk_data_biomes3d_bitmasks(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_Biomes3D_Bitmasks,
+    ) {
+        self.world
+            .load_chunk117(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                true,
+                chunk_data.bitmasks.data[0] as u64, // TODO: get all bitmasks
+                16,                                 // TODO: get all bitmasks
+                chunk_data.data.data,
+            )
+            .unwrap();
+        self.load_block_entities(chunk_data.block_entities.data);
     }
 
     fn on_chunk_data_biomes3d_varint(

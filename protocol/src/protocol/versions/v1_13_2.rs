@@ -19,7 +19,7 @@ protocol_packet_ids!(
             0x08 => ClickWindow
             0x09 => CloseWindow
             0x0a => PluginMessageServerbound
-            0x0b => EditBook
+            0x0b => EditBook_Item
             0x0c => QueryEntityNBT
             0x0d => UseEntity_Hand
             0x0e => KeepAliveServerbound_i64
@@ -74,7 +74,7 @@ protocol_packet_ids!(
             0x12 => ConfirmTransaction
             0x13 => WindowClose
             0x14 => WindowOpen
-            0x15 => WindowItems
+            0x15 => WindowItems_i16
             0x16 => WindowProperty
             0x17 => WindowSetSlot
             0x18 => SetCooldown
@@ -83,13 +83,13 @@ protocol_packet_ids!(
             0x1b => Disconnect
             0x1c => EntityAction
             0x1d => NBTQueryResponse
-            0x1e => Explosion
+            0x1e => Explosion_i32
             0x1f => ChunkUnload
             0x20 => ChangeGameState
             0x21 => KeepAliveClientbound_i64
             0x22 => ChunkData
             0x23 => Effect
-            0x24 => Particle_Data13
+            0x24 => Particle_f32
             0x25 => JoinGame_i32
             0x26 => Maps_NoLocked
             0x27 => Entity
@@ -126,7 +126,7 @@ protocol_packet_ids!(
             0x46 => SetPassengers
             0x47 => Teams_VarInt
             0x48 => UpdateScore
-            0x49 => SpawnPosition
+            0x49 => SpawnPosition_NoAngle
             0x4a => TimeUpdate
             0x4c => StopSound
             0x4d => SoundEffect
@@ -134,7 +134,7 @@ protocol_packet_ids!(
             0x4f => CollectItem
             0x50 => EntityTeleport_f64
             0x51 => Advancements
-            0x52 => EntityProperties
+            0x52 => EntityProperties_VarInt
             0x53 => EntityEffect
             0x54 => DeclareRecipes
             0x55 => Tags

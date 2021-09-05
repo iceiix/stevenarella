@@ -89,6 +89,15 @@ state_packets!(
                 field action_id: u8=,
             }
             /// ClientSettings is sent by the client to update its current settings.
+            packet ClientSettings_Filtering {
+                field locale: String =,
+                field view_distance: u8 =,
+                field chat_mode: VarInt =,
+                field chat_colors: bool =,
+                field displayed_skin_parts: u8 =,
+                field main_hand: VarInt =,
+                field disable_text_filtering: bool =,
+            }
             packet ClientSettings {
                 field locale: String =,
                 field view_distance: u8 =,
@@ -137,6 +146,15 @@ state_packets!(
                 field button: u8 =,
             }
             /// ClickWindow is sent when the client clicks in a window.
+            packet ClickWindow_State {
+                field id: u8 =,
+                field slot: i16 =,
+                field state: VarInt =,
+                field button: u8 =,
+                field mode: VarInt =,
+                field slots: LenPrefixed<VarInt, packet::NumberedSlot> =,
+                field clicked_item: Option<item::Stack> =,
+            }
             packet ClickWindow {
                 field id: u8 =,
                 field slot: i16 =,
@@ -168,7 +186,12 @@ state_packets!(
                 field channel: String =,
                 field data: LenPrefixedBytes<VarShort> =,
             }
-            packet EditBook {
+            packet EditBook_Pages {
+                field hand: VarInt =,
+                field pages: LenPrefixed<VarInt, String> =,
+                field title: Option<String> =,
+            }
+            packet EditBook_Item {
                 field new_book: Option<item::Stack> =,
                 field is_signing: bool =,
                 field hand: VarInt =,
@@ -345,6 +368,9 @@ state_packets!(
                 field forward: f32 =,
                 field jump: bool =,
                 field unmount: bool =,
+            }
+            packet WindowPong {
+                field id: i32 =,
             }
             /// CraftingBookData is sent when the player interacts with the crafting book.
             packet CraftingBookData {
@@ -777,6 +803,13 @@ state_packets!(
                 field metadata: types::Metadata =,
             }
 
+            packet SculkVibrationSignal {
+                field source_position: Position =,
+                field dest_id: String =,
+                field dest_position: Position = when(|p: &SculkVibrationSignal| p.dest_id == "block"),
+                field entity_id: VarInt = when(|p: &SculkVibrationSignal| p.dest_id == "entity"),
+            }
+
             /// Animation is sent by the server to play an animation on a specific entity.
             packet Animation {
                 field entity_id: VarInt =,
@@ -890,6 +923,11 @@ state_packets!(
             packet ServerMessage_NoPosition {
                 field message: format::Component =,
             }
+            packet ClearTitles {
+                field json_data: String =,
+                field position: u8 =,
+                field sender: UUID =,
+            }
             /// MultiBlockChange is used to update a batch of blocks in a single packet.
             packet MultiBlockChange_Packed {
                 field chunk_section_pos: u64 =,
@@ -935,6 +973,16 @@ state_packets!(
                 field number_of_slots: VarInt =,
                 field entity_id: i32 =,
             }
+            packet WorldBorderInit {
+                field x: f64 =,
+                field z: f64 =,
+                field old_diameter: f64 =,
+                field new_diameter: f64 =,
+                field speed: VarLong =,
+                field portal_teleport_boundary: VarInt =,
+                field warning_blocks: VarInt =,
+                field warning_time: VarInt =,
+            }
             packet WindowOpen_u8 {
                 field id: u8 =,
                 field ty: u8 =,
@@ -949,7 +997,13 @@ state_packets!(
                 field title: format::Component =,
             }
             /// WindowItems sets every item in a window.
-            packet WindowItems {
+            packet WindowItems_StateCarry {
+                field id: u8 =,
+                field state_id: VarInt =,
+                field items: LenPrefixed<VarInt, Option<item::Stack>> =,
+                field carried_item: Option<item::Stack> =,
+            }
+            packet WindowItems_i16 {
                 field id: u8 =,
                 field items: LenPrefixed<i16, Option<item::Stack>> =,
             }
@@ -961,6 +1015,12 @@ state_packets!(
                 field value: i16 =,
             }
             /// WindowSetSlot changes an itemstack in one of the slots in a window.
+            packet WindowSetSlot_State {
+                field id: u8 =,
+                field state_id: VarInt =,
+                field property: i16 =,
+                field item: Option<item::Stack> =,
+            }
             packet WindowSetSlot {
                 field id: u8 =,
                 field property: i16 =,
@@ -1021,7 +1081,17 @@ state_packets!(
             }
             /// Explosion is sent when an explosion is triggered (tnt, creeper etc).
             /// This plays the effect and removes the effected blocks.
-            packet Explosion {
+            packet Explosion_VarInt {
+                field x: f32 =,
+                field y: f32 =,
+                field z: f32 =,
+                field radius: f32 =,
+                field records: LenPrefixed<VarInt, packet::ExplosionRecord> =,
+                field velocity_x: f32 =,
+                field velocity_y: f32 =,
+                field velocity_z: f32 =,
+            }
+            packet Explosion_i32 {
                 field x: f32 =,
                 field y: f32 =,
                 field z: f32 =,
@@ -1062,6 +1132,15 @@ state_packets!(
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
+            packet ChunkData_Biomes3D_Bitmasks {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field bitmasks: LenPrefixed<VarInt, i64> =,
+                field heightmaps: Option<nbt::NamedTag> =,
+                field biomes: LenPrefixed<VarInt, VarInt> =,
+                field data: LenPrefixedBytes<VarInt> =,
+                field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =,
+            }
             packet ChunkData_Biomes3D_VarInt {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,
@@ -1166,21 +1245,31 @@ state_packets!(
                 field particle_id: i32 =,
                 field long_distance: bool =,
                 field x: f64 =,
-                field y: f64=,
+                field y: f64 =,
                 field z: f64 =,
                 field offset_x: f32 =,
                 field offset_y: f32 =,
                 field offset_z: f32 =,
                 field speed: f32 =,
                 field count: i32 =,
-                field block_state: VarInt = when(|p: &Particle_f64| p.particle_id == 3 || p.particle_id == 23),
-                field red: f32 = when(|p: &Particle_f64| p.particle_id == 14),
-                field green: f32 = when(|p: &Particle_f64| p.particle_id == 14),
-                field blue: f32 = when(|p: &Particle_f64| p.particle_id == 14),
-                field scale: f32 = when(|p: &Particle_f64| p.particle_id == 14),
-                field item: Option<nbt::NamedTag> = when(|p: &Particle_f64| p.particle_id == 32),
+                field block_state: VarInt = when(|p: &Particle_f64| p.particle_id == 4 || p.particle_id == 25),
+                field red: f32 = when(|p: &Particle_f64| p.particle_id == 15 || p.particle_id == 16),
+                field green: f32 = when(|p: &Particle_f64| p.particle_id == 15 || p.particle_id == 16),
+                field blue: f32 = when(|p: &Particle_f64| p.particle_id == 15 || p.particle_id == 16),
+                field scale: f32 = when(|p: &Particle_f64| p.particle_id == 15 || p.particle_id == 16),
+                field to_red: f32 = when(|p: &Particle_f64| p.particle_id == 16),
+                field to_green: f32 = when(|p: &Particle_f64| p.particle_id == 16),
+                field to_blue: f32 = when(|p: &Particle_f64| p.particle_id == 16),
+                field item: Option<nbt::NamedTag> = when(|p: &Particle_f64| p.particle_id == 36),
+                field origin_x: f64 = when(|p: &Particle_f64| p.particle_id == 37),
+                field origin_y: f64 = when(|p: &Particle_f64| p.particle_id == 37),
+                field origin_z: f64 = when(|p: &Particle_f64| p.particle_id == 37),
+                field dest_x: f64 = when(|p: &Particle_f64| p.particle_id == 37),
+                field dest_y: f64 = when(|p: &Particle_f64| p.particle_id == 37),
+                field dest_z: f64 = when(|p: &Particle_f64| p.particle_id == 37),
+                field ticks: f64 = when(|p: &Particle_f64| p.particle_id == 37),
             }
-            packet Particle_Data {
+            packet Particle_f32 {
                 field particle_id: i32 =,
                 field long_distance: bool =,
                 field x: f32 =,
@@ -1191,30 +1280,22 @@ state_packets!(
                 field offset_z: f32 =,
                 field speed: f32 =,
                 field count: i32 =,
-                field block_state: VarInt = when(|p: &Particle_Data| p.particle_id == 3 || p.particle_id == 23),
-                field red: f32 = when(|p: &Particle_Data| p.particle_id == 14),
-                field green: f32 = when(|p: &Particle_Data| p.particle_id == 14),
-                field blue: f32 = when(|p: &Particle_Data| p.particle_id == 14),
-                field scale: f32 = when(|p: &Particle_Data| p.particle_id == 14),
-                field item: Option<nbt::NamedTag> = when(|p: &Particle_Data| p.particle_id == 32),
-            }
-            packet Particle_Data13 {
-                field particle_id: i32 =,
-                field long_distance: bool =,
-                field x: f32 =,
-                field y: f32 =,
-                field z: f32 =,
-                field offset_x: f32 =,
-                field offset_y: f32 =,
-                field offset_z: f32 =,
-                field speed: f32 =,
-                field count: i32 =,
-                field block_state: VarInt = when(|p: &Particle_Data13| p.particle_id == 3 || p.particle_id == 20),
-                field red: f32 = when(|p: &Particle_Data13| p.particle_id == 11),
-                field green: f32 = when(|p: &Particle_Data13| p.particle_id == 11),
-                field blue: f32 = when(|p: &Particle_Data13| p.particle_id == 11),
-                field scale: f32 = when(|p: &Particle_Data13| p.particle_id == 11),
-                field item: Option<nbt::NamedTag> = when(|p: &Particle_Data13| p.particle_id == 27),
+                field block_state: VarInt = when(|p: &Particle_f32| p.particle_id == 4 || p.particle_id == 25),
+                field red: f32 = when(|p: &Particle_f32| p.particle_id == 15 || p.particle_id == 16),
+                field green: f32 = when(|p: &Particle_f32| p.particle_id == 15 || p.particle_id == 16),
+                field blue: f32 = when(|p: &Particle_f32| p.particle_id == 15 || p.particle_id == 16),
+                field scale: f32 = when(|p: &Particle_f32| p.particle_id == 15 || p.particle_id == 16),
+                field to_red: f32 = when(|p: &Particle_f32| p.particle_id == 16),
+                field to_green: f32 = when(|p: &Particle_f32| p.particle_id == 16),
+                field to_blue: f32 = when(|p: &Particle_f32| p.particle_id == 16),
+                field item: Option<nbt::NamedTag> = when(|p: &Particle_f32| p.particle_id == 36),
+                field origin_x: f64 = when(|p: &Particle_f32| p.particle_id == 37),
+                field origin_y: f64 = when(|p: &Particle_f32| p.particle_id == 37),
+                field origin_z: f64 = when(|p: &Particle_f32| p.particle_id == 37),
+                field dest_x: f64 = when(|p: &Particle_f32| p.particle_id == 37),
+                field dest_y: f64 = when(|p: &Particle_f32| p.particle_id == 37),
+                field dest_z: f64 = when(|p: &Particle_f32| p.particle_id == 37),
+                field ticks: f64 = when(|p: &Particle_f32| p.particle_id == 37),
             }
             packet Particle_VarIntArray {
                 field particle_id: i32 =,
@@ -1519,6 +1600,9 @@ state_packets!(
                 field y: i32 =,
                 field z: i32 =,
             }
+            packet WindowPing {
+                field id: i32 =,
+            }
             /// CraftRecipeResponse is a response to CraftRecipeRequest, notifies the UI.
             packet CraftRecipeResponse {
                 field window_id: u8 =,
@@ -1539,6 +1623,18 @@ state_packets!(
                 field player_id: Option<VarInt> = when(|p: &CombatEvent| p.event.0 == 2),
                 field entity_id: Option<i32> = when(|p: &CombatEvent| p.event.0 == 1 || p.event.0 == 2),
                 field message: Option<format::Component> = when(|p: &CombatEvent| p.event.0 == 2),
+            }
+            packet CombatEventEnd {
+                field duration: VarInt =,
+                field entity_id: i32 =,
+            }
+            packet CombatEventEnter {
+                field empty: Vec<u8> =, // empty packet, but a field is syntactically required here
+            }
+            packet CombatEventDeath {
+                field player_id: VarInt =,
+                field entity_id: i32 =,
+                field message: String =,
             }
             /// PlayerInfo is sent by the server for every player connected to the server
             /// to provide skin and username information as well as ping and gamemode info.
@@ -1562,6 +1658,16 @@ state_packets!(
             /// TeleportPlayer is sent to change the player's position. The client is expected
             /// to reply to the server with the same positions as contained in this packet
             /// otherwise will reject future packets.
+            packet TeleportPlayer_WithDismount {
+                field x: f64 =,
+                field y: f64 =,
+                field z: f64 =,
+                field yaw: f32 =,
+                field pitch: f32 =,
+                field flags: u8 =,
+                field teleport_id: VarInt =,
+                field dismount: bool =,
+            }
             packet TeleportPlayer_WithConfirm {
                 field x: f64 =,
                 field y: f64 =,
@@ -1646,6 +1752,13 @@ state_packets!(
             /// ResourcePackSend causes the client to check its cache for the requested
             /// resource packet and download it if its missing. Once the resource pack
             /// is obtained the client will use it.
+            packet ResourcePackSend_Prompt {
+                field url: String =,
+                field hash: String =,
+                field forced: bool =,
+                field has_prompt_message: bool =,
+                field prompt_message: String = when(|p: &ResourcePackSend_Prompt| p.has_prompt_message),
+            }
             packet ResourcePackSend {
                 field url: String =,
                 field hash: String =,
@@ -1706,6 +1819,9 @@ state_packets!(
                 field has_id: bool =,
                 field tab_id: String = when(|p: &SelectAdvancementTab| p.has_id),
             }
+            packet ActionBar {
+                field text: String =,
+            }
             /// WorldBorder configures the world's border.
             packet WorldBorder {
                 field action: VarInt =,
@@ -1717,6 +1833,24 @@ state_packets!(
                 field portal_boundary: Option<VarInt> = when(|p: &WorldBorder| p.action.0 == 3),
                 field warning_time: Option<VarInt> = when(|p: &WorldBorder| p.action.0 == 3 || p.action.0 == 4),
                 field warning_blocks: Option<VarInt> = when(|p: &WorldBorder| p.action.0 == 3 || p.action.0 == 5),
+            }
+            packet WorldBorderCenter {
+                field x: f64 =,
+                field z: f64 =,
+            }
+            packet WorldBorderLerpSize {
+                field old_diameter: f64 =,
+                field new_diameter: f64 =,
+                field speed: VarLong =,
+            }
+            packet WorldBorderSize {
+                field diameter: f64 =,
+            }
+            packet WorldBorderWarningDelay {
+                field warning_time: VarInt =,
+            }
+            packet WorldBorderWarningReach {
+                field warning_blocks: VarInt =,
             }
             /// Camera causes the client to spectate the entity with the passed id.
             /// Use the player's id to de-spectate.
@@ -1887,7 +2021,11 @@ state_packets!(
             }
             /// SpawnPosition is sent to change the player's current spawn point. Currently
             /// only used by the client for the compass.
-            packet SpawnPosition {
+            packet SpawnPosition_Angle {
+                field location: Position =,
+                field angle: f32 =,
+            }
+            packet SpawnPosition_NoAngle {
                 field location: Position =,
             }
             packet SpawnPosition_i32 {
@@ -1933,6 +2071,14 @@ state_packets!(
                 field fade_in: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 2),
                 field fade_stay: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 2),
                 field fade_out: Option<format::Component> = when(|p: &Title_notext_component| p.action.0 == 2),
+            }
+            packet TitleSubtitle {
+                field subtitle_text: String =,
+            }
+            packet TitleTimes {
+                field fade_in: i32 =,
+                field stay: i32 =,
+                field fade_out: i32 =,
             }
             /// UpdateSign sets or changes the text on a sign.
             packet UpdateSign {
@@ -2037,7 +2183,11 @@ state_packets!(
                 */
             }
             /// EntityProperties updates the properties for an entity.
-            packet EntityProperties {
+            packet EntityProperties_VarIntVarInt {
+                field entity_id: VarInt =,
+                field properties: LenPrefixed<VarInt, packet::EntityProperty> =,
+            }
+            packet EntityProperties_VarInt {
                 field entity_id: VarInt =,
                 field properties: LenPrefixed<i32, packet::EntityProperty> =,
             }
@@ -2067,17 +2217,31 @@ state_packets!(
                 field item_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field fluid_tags: LenPrefixed<VarInt, packet::Tags> =,
             }
-            packet TagsWithEntities {
+            packet Tags_WithEntities {
                 field block_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field item_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field fluid_tags: LenPrefixed<VarInt, packet::Tags> =,
                 field entity_tags: LenPrefixed<VarInt, packet::Tags> =,
+            }
+            packet Tags_Nested {
+                field tags: LenPrefixed<VarInt, packet::TagsGroup> =,
             }
             packet AcknowledgePlayerDigging {
                 field location: Position =,
                 field block: VarInt =,
                 field status: VarInt =,
                 field successful: bool =,
+            }
+            packet UpdateLight_Arrays {
+                field chunk_x: VarInt =,
+                field chunk_z: VarInt =,
+                field trust_edges: bool =,
+                field sky_light_mask: LenPrefixed<VarInt, i64> =,
+                field block_light_mask: LenPrefixed<VarInt, i64> =,
+                field empty_sky_light_mask: LenPrefixed<VarInt, i64> =,
+                field empty_block_light_mask: LenPrefixed<VarInt, i64> =,
+                field sky_light_arrays: LenPrefixed<VarInt, LenPrefixed<VarInt, u8>> =,
+                field block_light_arrays: LenPrefixed<VarInt, LenPrefixed<VarInt, u8>> =,
             }
             packet UpdateLight_WithTrust {
                 field chunk_x: VarInt =,
@@ -2086,6 +2250,7 @@ state_packets!(
                 field sky_light_mask: VarInt =,
                 field block_light_mask: VarInt =,
                 field empty_sky_light_mask: VarInt =,
+                // TODO: this packet changed <=1.16.4, see https://wiki.vg/index.php?title=Protocol&oldid=16681#Update_Light
                 field light_arrays: Vec<u8> =,
             }
             packet UpdateLight_NoTrust {
@@ -3008,6 +3173,25 @@ impl Serializable for Tags {
 }
 
 #[derive(Debug, Default)]
+pub struct TagsGroup {
+    pub tag_type: String,
+    pub tags: LenPrefixed<VarInt, Tags>,
+}
+
+impl Serializable for TagsGroup {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(TagsGroup {
+            tag_type: Serializable::read_from(buf)?,
+            tags: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct Trade {
     pub input_item_1: Option<nbt::NamedTag>,
     pub output_item: Option<nbt::NamedTag>,
@@ -3297,5 +3481,25 @@ impl Serializable for CommandNode {
 
     fn write_to<W: io::Write>(&self, _: &mut W) -> Result<(), Error> {
         unimplemented!()
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct NumberedSlot {
+    pub slot_number: i16,
+    pub slot_data: Option<item::Stack>,
+}
+
+impl Serializable for NumberedSlot {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(NumberedSlot {
+            slot_number: Serializable::read_from(buf)?,
+            slot_data: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.slot_number.write_to(buf)?;
+        self.slot_data.write_to(buf)
     }
 }

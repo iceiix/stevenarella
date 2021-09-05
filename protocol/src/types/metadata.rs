@@ -688,6 +688,7 @@ pub enum PoseData {
     SpinAttack,
     Sneaking,
     Dying,
+    LongJumping,
 }
 
 impl Serializable for PoseData {
@@ -701,6 +702,7 @@ impl Serializable for PoseData {
             4 => PoseData::SpinAttack,
             5 => PoseData::Sneaking,
             6 => PoseData::Dying,
+            7 => PoseData::LongJumping,
             _ => panic!("unknown pose data: {}", n.0),
         })
     }

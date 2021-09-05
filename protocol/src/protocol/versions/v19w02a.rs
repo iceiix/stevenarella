@@ -19,7 +19,7 @@ protocol_packet_ids!(
             0x08 => ClickWindow
             0x09 => CloseWindow
             0x0a => PluginMessageServerbound
-            0x0b => EditBook
+            0x0b => EditBook_Item
             0x0c => QueryEntityNBT
             0x0d => UseEntity_Hand
             0x0e => KeepAliveServerbound_i64
@@ -74,7 +74,7 @@ protocol_packet_ids!(
             0x12 => ConfirmTransaction
             0x13 => WindowClose
             0x14 => WindowOpenHorse
-            0x15 => WindowItems
+            0x15 => WindowItems_i16
             0x16 => WindowProperty
             0x17 => WindowSetSlot
             0x18 => SetCooldown
@@ -83,13 +83,13 @@ protocol_packet_ids!(
             0x1b => Disconnect
             0x1c => EntityAction
             0x1d => NBTQueryResponse
-            0x1e => Explosion
+            0x1e => Explosion_i32
             0x1f => ChunkUnload
             0x20 => ChangeGameState
             0x21 => KeepAliveClientbound_i64
             0x22 => ChunkData_HeightMap
             0x23 => Effect
-            0x24 => Particle_Data13
+            0x24 => Particle_f32
             0x25 => JoinGame_i32
             0x26 => Maps
             0x27 => Entity
@@ -127,7 +127,7 @@ protocol_packet_ids!(
             0x47 => SetPassengers
             0x48 => Teams_u8
             0x49 => UpdateScore
-            0x4a => SpawnPosition
+            0x4a => SpawnPosition_NoAngle
             0x4b => TimeUpdate
             0x4d => StopSound
             0x4e => SoundEffect
@@ -136,10 +136,10 @@ protocol_packet_ids!(
             0x51 => CollectItem
             0x52 => EntityTeleport_f64
             0x53 => Advancements
-            0x54 => EntityProperties
+            0x54 => EntityProperties_VarInt
             0x55 => EntityEffect
             0x56 => DeclareRecipes
-            0x57 => TagsWithEntities
+            0x57 => Tags_WithEntities
             0x58 => UpdateLight_NoTrust
             0x59 => WindowOpen_VarInt
             0x5a => TradeList_WithoutRestock // TODO: without 1.14 added fields

@@ -73,7 +73,7 @@ protocol_packet_ids!(
             0x24 => BlockAction_u16
             0x25 => BlockBreakAnimation_i32
             0x26 => ChunkDataBulk_17
-            0x27 => Explosion
+            0x27 => Explosion_i32
             0x28 => Effect_u8y
             0x29 => NamedSoundEffect_u8_NoCategory
             0x2a => Particle_Named
@@ -82,7 +82,7 @@ protocol_packet_ids!(
             0x2d => WindowOpen_u8
             0x2e => WindowClose
             0x2f => WindowSetSlot
-            0x30 => WindowItems
+            0x30 => WindowItems_i16
             0x31 => WindowProperty
             0x32 => ConfirmTransaction
             0x33 => UpdateSign_u16

@@ -41,7 +41,7 @@ protocol_packet_ids!(
             0x02 => ServerMessage_Position
             0x03 => TimeUpdate
             0x04 => EntityEquipment_u16
-            0x05 => SpawnPosition
+            0x05 => SpawnPosition_NoAngle
             0x06 => UpdateHealth
             0x07 => Respawn_Gamemode
             0x08 => TeleportPlayer_NoConfirm
@@ -68,14 +68,14 @@ protocol_packet_ids!(
             0x1d => EntityEffect
             0x1e => EntityRemoveEffect
             0x1f => SetExperience
-            0x20 => EntityProperties
+            0x20 => EntityProperties_VarInt
             0x21 => ChunkData_NoEntities_u16
             0x22 => MultiBlockChange_VarInt
             0x23 => BlockChange_VarInt
             0x24 => BlockAction
             0x25 => BlockBreakAnimation
             0x26 => ChunkDataBulk
-            0x27 => Explosion
+            0x27 => Explosion_i32
             0x28 => Effect
             0x29 => NamedSoundEffect_u8_NoCategory
             0x2a => Particle_VarIntArray
@@ -84,7 +84,7 @@ protocol_packet_ids!(
             0x2d => WindowOpen
             0x2e => WindowClose
             0x2f => WindowSetSlot
-            0x30 => WindowItems
+            0x30 => WindowItems_i16
             0x31 => WindowProperty
             0x32 => ConfirmTransaction
             0x33 => UpdateSign

@@ -20,7 +20,7 @@ protocol_packet_ids!(
             0x09 => ClickWindow
             0x0a => CloseWindow
             0x0b => PluginMessageServerbound
-            0x0c => EditBook
+            0x0c => EditBook_Item
             0x0d => QueryEntityNBT
             0x0e => UseEntity_Sneakflag
             0x0f => GenerateStructure
@@ -77,7 +77,7 @@ protocol_packet_ids!(
             0x10 => DeclareCommands
             0x11 => ConfirmTransaction
             0x12 => WindowClose
-            0x13 => WindowItems
+            0x13 => WindowItems_i16
             0x14 => WindowProperty
             0x15 => WindowSetSlot
             0x16 => SetCooldown
@@ -85,7 +85,7 @@ protocol_packet_ids!(
             0x18 => NamedSoundEffect
             0x19 => Disconnect
             0x1a => EntityAction
-            0x1b => Explosion
+            0x1b => Explosion_i32
             0x1c => ChunkUnload
             0x1d => ChangeGameState
             0x1e => WindowOpenHorse
@@ -124,7 +124,7 @@ protocol_packet_ids!(
             0x3f => SetCurrentHotbarSlot
             0x40 => UpdateViewPosition
             0x41 => UpdateViewDistance
-            0x42 => SpawnPosition
+            0x42 => SpawnPosition_NoAngle
             0x43 => ScoreboardDisplay
             0x44 => EntityMetadata
             0x45 => EntityAttach
@@ -146,10 +146,10 @@ protocol_packet_ids!(
             0x55 => CollectItem
             0x56 => EntityTeleport_f64
             0x57 => Advancements
-            0x58 => EntityProperties
+            0x58 => EntityProperties_VarInt
             0x59 => EntityEffect
             0x5a => DeclareRecipes
-            0x5b => TagsWithEntities
+            0x5b => Tags_WithEntities
         }
     }
     login Login {

@@ -57,14 +57,14 @@ protocol_packet_ids!(
             0x11 => ConfirmTransaction
             0x12 => WindowClose
             0x13 => WindowOpen
-            0x14 => WindowItems
+            0x14 => WindowItems_i16
             0x15 => WindowProperty
             0x16 => WindowSetSlot
             0x17 => SetCooldown
             0x18 => PluginMessageClientbound
             0x19 => Disconnect
             0x1a => EntityAction
-            0x1b => Explosion
+            0x1b => Explosion_i32
             0x1c => ChunkUnload
             0x1d => SetCompression
             0x1e => ChangeGameState
@@ -103,14 +103,14 @@ protocol_packet_ids!(
             0x3f => ScoreboardObjective
             0x40 => Teams_u8
             0x41 => UpdateScore
-            0x42 => SpawnPosition
+            0x42 => SpawnPosition_NoAngle
             0x43 => TimeUpdate
             0x44 => Title_notext_component
             0x45 => UpdateSign
             0x46 => PlayerListHeaderFooter
             0x47 => CollectItem_nocount
             0x48 => EntityTeleport_i32
-            0x49 => EntityProperties
+            0x49 => EntityProperties_VarInt
             0x4a => EntityEffect
         }
     }
