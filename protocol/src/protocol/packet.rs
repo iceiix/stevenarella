@@ -2189,6 +2189,17 @@ state_packets!(
                 field status: VarInt =,
                 field successful: bool =,
             }
+            packet UpdateLight_Arrays {
+                field chunk_x: VarInt =,
+                field chunk_z: VarInt =,
+                field trust_edges: bool =,
+                field sky_light_mask: LenPrefixed<VarInt, i64> =,
+                field block_light_mask: LenPrefixed<VarInt, i64> =,
+                field empty_sky_light_mask: LenPrefixed<VarInt, i64> =,
+                field empty_block_light_mask: LenPrefixed<VarInt, i64> =,
+                field sky_light_arrays: LenPrefixed<VarInt, LenPrefixed<VarInt, u8>> =,
+                field block_light_arrays: LenPrefixed<VarInt, LenPrefixed<VarInt, u8>> =,
+            }
             packet UpdateLight_WithTrust {
                 field chunk_x: VarInt =,
                 field chunk_z: VarInt =,
@@ -2196,6 +2207,7 @@ state_packets!(
                 field sky_light_mask: VarInt =,
                 field block_light_mask: VarInt =,
                 field empty_sky_light_mask: VarInt =,
+                // TODO: this packet changed <=1.16.4, see https://wiki.vg/index.php?title=Protocol&oldid=16681#Update_Light
                 field light_arrays: Vec<u8> =,
             }
             packet UpdateLight_NoTrust {
