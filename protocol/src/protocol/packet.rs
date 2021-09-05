@@ -355,6 +355,9 @@ state_packets!(
                 field jump: bool =,
                 field unmount: bool =,
             }
+            packet Pong {
+                field id: i32 =,
+            }
             /// CraftingBookData is sent when the player interacts with the crafting book.
             packet CraftingBookData {
                 field action: VarInt =,
