@@ -28,6 +28,7 @@ use flate2::read::ZlibDecoder;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::VecDeque;
+use std::convert::TryInto;
 use std::hash::BuildHasherDefault;
 use std::io::Read;
 
@@ -620,8 +621,8 @@ impl World {
         Ok(())
     }
 
-    fn dirty_chunks_by_bitmask(&mut self, x: i32, z: i32, mask: u16) {
-        for i in 0..16 {
+    fn dirty_chunks_by_bitmask(&mut self, x: i32, z: i32, mask: u64, num_sections: usize) {
+        for i in 0..num_sections {
             if mask & (1 << i) == 0 {
                 continue;
             }
@@ -637,6 +638,7 @@ impl World {
             {
                 self.flag_section_dirty(x + pos.0, i as i32 + pos.1, z + pos.2);
             }
+            let i: i32 = i.try_into().unwrap();
             self.update_range(
                 (x << 4) - 1,
                 (i << 4) - 1,
@@ -737,7 +739,7 @@ impl World {
             chunk.calculate_heightmap();
         }
 
-        self.dirty_chunks_by_bitmask(x, z, mask);
+        self.dirty_chunks_by_bitmask(x, z, mask.into(), 16);
         Ok(())
     }
 
@@ -965,7 +967,7 @@ impl World {
             chunk.calculate_heightmap();
         }
 
-        self.dirty_chunks_by_bitmask(x, z, mask);
+        self.dirty_chunks_by_bitmask(x, z, mask.into(), 16);
         Ok(())
     }
 
@@ -977,7 +979,7 @@ impl World {
         mask: u16,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
-        self.load_chunk19_or_115(true, x, z, new, mask, 16, data)
+        self.load_chunk19_to_117(true, x, z, new, mask.into(), 16, data)
     }
 
     pub fn load_chunk115(
@@ -988,17 +990,29 @@ impl World {
         mask: u16,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
-        self.load_chunk19_or_115(false, x, z, new, mask, 16, data)
+        self.load_chunk19_to_117(false, x, z, new, mask.into(), 16, data)
+    }
+
+    pub fn load_chunk117(
+        &mut self,
+        x: i32,
+        z: i32,
+        new: bool,
+        mask: u64,
+        num_sections: usize,
+        data: Vec<u8>,
+    ) -> Result<(), protocol::Error> {
+        self.load_chunk19_to_117(false, x, z, new, mask, num_sections, data)
     }
 
     #[allow(clippy::or_fun_call)]
-    fn load_chunk19_or_115(
+    fn load_chunk19_to_117(
         &mut self,
         read_biomes: bool,
         x: i32,
         z: i32,
         new: bool,
-        mask: u16,
+        mask: u64,
         num_sections: usize,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
@@ -1102,7 +1116,7 @@ impl World {
             chunk.calculate_heightmap();
         }
 
-        self.dirty_chunks_by_bitmask(x, z, mask);
+        self.dirty_chunks_by_bitmask(x, z, mask, num_sections);
         Ok(())
     }
 

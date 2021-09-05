@@ -1933,13 +1933,13 @@ impl Server {
         &mut self,
         chunk_data: packet::play::clientbound::ChunkData_Biomes3D_Bitmasks,
     ) {
-        let new = true;
         self.world
-            .load_chunk115(
+            .load_chunk117(
                 chunk_data.chunk_x,
                 chunk_data.chunk_z,
-                new,                                // TODO: what should this be?
-                chunk_data.bitmasks.data[0] as u16, // TODO: get all bitmasks
+                true,
+                chunk_data.bitmasks.data[0] as u64, // TODO: get all bitmasks
+                16,                                 // TODO: get all bitmasks
                 chunk_data.data.data,
             )
             .unwrap();
