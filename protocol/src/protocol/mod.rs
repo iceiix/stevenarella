@@ -37,7 +37,7 @@ use std::fmt;
 use std::io;
 use std::io::{Read, Write};
 use tokio::net::TcpStream;
-use tokio::io::{AsyncWriteExt, AsyncReadExt};
+use tokio::io::{AsyncWriteExt, AsyncReadExt, AsyncWrite, AsyncRead};
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
 pub const SUPPORTED_PROTOCOLS: [i32; 25] = [
@@ -1466,8 +1466,8 @@ pub struct StatusPlayer {
     id: String,
 }
 
-impl Read for Conn {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+impl AsyncRead for Conn {
+    fn poll_read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match self.cipher.as_mut() {
             Option::None => self.stream.read(buf).await,
             Option::Some(cipher) => {
@@ -1480,8 +1480,8 @@ impl Read for Conn {
     }
 }
 
-impl Write for Conn {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+impl AsyncWrite for Conn {
+    fn poll_write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match self.cipher.as_mut() {
             Option::None => self.stream.write(buf).await,
             Option::Some(cipher) => {
