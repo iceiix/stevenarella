@@ -36,11 +36,11 @@ use std::default;
 use std::fmt;
 use std::io;
 use std::io::{Read, Write};
-use tokio::net::TcpStream;
-use tokio::io::{AsyncWriteExt, AsyncReadExt, AsyncWrite, AsyncRead, ReadBuf};
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::task::{Context, Poll};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf};
+use tokio::net::TcpStream;
 
 pub const SUPPORTED_PROTOCOLS: [i32; 25] = [
     756, 754, 753, 751, 736, 735, 578, 575, 498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315,
@@ -1044,7 +1044,7 @@ pub struct Conn {
 }
 
 impl Conn {
-    pub /*TODO async*/ fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
+    pub fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
         CURRENT_PROTOCOL_VERSION.store(protocol_version, Ordering::Relaxed);
 
         // TODO SRV record support
@@ -1476,7 +1476,11 @@ pub struct StatusPlayer {
 // I'm using tokio's Async{Read,Write}, maybe instead for runtime agnostic use https://crates.io/crates/futures?
 // Or are these the right traits? Ext? Something else? Just need to wrap enough to let use as async, encryption pipeline
 impl AsyncRead for Conn {
-    fn poll_read(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         unimplemented!()
         /* TODO
         match self.cipher.as_mut() {
@@ -1493,7 +1497,11 @@ impl AsyncRead for Conn {
 }
 
 impl AsyncWrite for Conn {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
         unimplemented!()
         /* TODO
         match self.cipher.as_mut() {
@@ -1520,7 +1528,11 @@ impl AsyncWrite for Conn {
         unimplemented!()
     }
 
-    fn poll_write_vectored(self: Pin<&mut Self>, cx: &mut Context<'_>, bufs: &[io::IoSlice<'_>]) -> Poll<Result<usize, io::Error>> {
+    fn poll_write_vectored(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        bufs: &[io::IoSlice<'_>],
+    ) -> Poll<Result<usize, io::Error>> {
         unimplemented!()
     }
 
@@ -1564,7 +1576,6 @@ impl Write for Conn {
         self.stream.flush()
     }
 }
-
 
 impl Clone for Conn {
     fn clone(&self) -> Self {
