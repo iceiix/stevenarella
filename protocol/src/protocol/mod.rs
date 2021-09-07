@@ -36,7 +36,8 @@ use std::default;
 use std::fmt;
 use std::io;
 use std::io::{Read, Write};
-use std::net::TcpStream;
+use tokio::net::TcpStream;
+use tokio::io::{AsyncWriteExt, AsyncReadExt};
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
 pub const SUPPORTED_PROTOCOLS: [i32; 25] = [
@@ -1040,7 +1041,7 @@ pub struct Conn {
 }
 
 impl Conn {
-    pub fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
+    pub async fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
         CURRENT_PROTOCOL_VERSION.store(protocol_version, Ordering::Relaxed);
 
         // TODO SRV record support
@@ -1051,7 +1052,7 @@ impl Conn {
         } else {
             format!("{}:{}", parts[0], parts[1])
         };
-        let stream = TcpStream::connect(&*address)?;
+        let mut stream = TcpStream::connect(&*address).await?;
         Result::Ok(Conn {
             stream,
             host: parts[0].to_owned(),
@@ -1468,9 +1469,9 @@ pub struct StatusPlayer {
 impl Read for Conn {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match self.cipher.as_mut() {
-            Option::None => self.stream.read(buf),
+            Option::None => self.stream.read(buf).await,
             Option::Some(cipher) => {
-                let ret = self.stream.read(buf)?;
+                let ret = self.stream.read(buf).await?;
                 cipher.decrypt(&mut buf[..ret]);
 
                 Ok(ret)
@@ -1482,28 +1483,28 @@ impl Read for Conn {
 impl Write for Conn {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match self.cipher.as_mut() {
-            Option::None => self.stream.write(buf),
+            Option::None => self.stream.write(buf).await,
             Option::Some(cipher) => {
                 let mut data = vec![0; buf.len()];
                 data[..buf.len()].clone_from_slice(&buf[..]);
 
                 cipher.encrypt(&mut data);
 
-                self.stream.write_all(&data)?;
+                self.stream.write_all(&data).await?;
                 Ok(buf.len())
             }
         }
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.stream.flush()
+        Ok(())//TODO self.stream.poll_flush().await?
     }
 }
 
 impl Clone for Conn {
     fn clone(&self) -> Self {
         Conn {
-            stream: self.stream.try_clone().unwrap(),
+            stream: self.stream, //.try_clone().unwrap(),
             host: self.host.clone(),
             port: self.port,
             direction: self.direction,
