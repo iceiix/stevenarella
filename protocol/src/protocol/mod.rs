@@ -1042,7 +1042,7 @@ pub struct Conn {
 }
 
 impl Conn {
-    pub async fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
+    pub /*TODO async*/ fn new(target: &str, protocol_version: i32) -> Result<Conn, Error> {
         CURRENT_PROTOCOL_VERSION.store(protocol_version, Ordering::Relaxed);
 
         // TODO SRV record support
