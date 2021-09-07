@@ -1028,7 +1028,8 @@ impl ::std::fmt::Display for Error {
 type Aes128Cfb = Cfb8<Aes128>;
 
 pub struct Conn {
-    stream: TcpStream,
+    //stream: TcpStream,
+    stream: std::net::TcpStream,
     pub host: String,
     pub port: u16,
     direction: Direction,
@@ -1052,7 +1053,8 @@ impl Conn {
         } else {
             format!("{}:{}", parts[0], parts[1])
         };
-        let mut stream = TcpStream::connect(&*address).await?;
+        //let mut stream = TcpStream::connect(&*address).await?;
+        let mut stream = std::net::TcpStream::connect(&*address)?;
         Result::Ok(Conn {
             stream,
             host: parts[0].to_owned(),
@@ -1466,6 +1468,7 @@ pub struct StatusPlayer {
     id: String,
 }
 
+/* TODO
 impl AsyncRead for Conn {
     fn poll_read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match self.cipher.as_mut() {
@@ -1496,15 +1499,56 @@ impl AsyncWrite for Conn {
         }
     }
 
+    // TODO: how to flush an AsyncWrite?
+    /*
     fn flush(&mut self) -> io::Result<()> {
         Ok(())//TODO self.stream.poll_flush().await?
     }
+    */
 }
+*/
+
+// TODO: remove sync
+impl Read for Conn {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        match self.cipher.as_mut() {
+            Option::None => self.stream.read(buf),
+            Option::Some(cipher) => {
+                let ret = self.stream.read(buf)?;
+                cipher.decrypt(&mut buf[..ret]);
+
+                Ok(ret)
+            }
+        }
+    }
+}
+
+impl Write for Conn {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match self.cipher.as_mut() {
+            Option::None => self.stream.write(buf),
+            Option::Some(cipher) => {
+                let mut data = vec![0; buf.len()];
+                data[..buf.len()].clone_from_slice(&buf[..]);
+
+                cipher.encrypt(&mut data);
+
+                self.stream.write_all(&data)?;
+                Ok(buf.len())
+            }
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.stream.flush()
+    }
+}
+
 
 impl Clone for Conn {
     fn clone(&self) -> Self {
         Conn {
-            stream: self.stream, //.try_clone().unwrap(),
+            stream: self.stream.try_clone().unwrap(),
             host: self.host.clone(),
             port: self.port,
             direction: self.direction,
