@@ -37,8 +37,10 @@ use std::fmt;
 use std::io;
 use std::io::{Read, Write};
 use tokio::net::TcpStream;
-use tokio::io::{AsyncWriteExt, AsyncReadExt, AsyncWrite, AsyncRead};
+use tokio::io::{AsyncWriteExt, AsyncReadExt, AsyncWrite, AsyncRead, ReadBuf};
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 pub const SUPPORTED_PROTOCOLS: [i32; 25] = [
     756, 754, 753, 751, 736, 735, 578, 575, 498, 490, 485, 480, 477, 452, 451, 404, 340, 316, 315,
@@ -1100,7 +1102,9 @@ impl Conn {
         if self.compression_threshold >= 0 && extra == 1 {
             VarInt(0).write_to(self)?;
         }
-        self.write_all(&buf)?;
+        //self.write_all(&buf)?;
+        std::io::Write::write_all(self, &buf)?;
+        //AsyncWriteExt::write_all(&mut self, &buf)?; // TODO
 
         Ok(())
     }
@@ -1468,9 +1472,13 @@ pub struct StatusPlayer {
     id: String,
 }
 
-/* TODO
+// TODO: is this the way to implement async r/w traits? See discussion https://users.rust-lang.org/t/what-to-pin-when-implementing-asyncread/63019/6
+// I'm using tokio's Async{Read,Write}, maybe instead for runtime agnostic use https://crates.io/crates/futures?
+// Or are these the right traits? Ext? Something else? Just need to wrap enough to let use as async, encryption pipeline
 impl AsyncRead for Conn {
-    fn poll_read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+    fn poll_read(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
+        unimplemented!()
+        /* TODO
         match self.cipher.as_mut() {
             Option::None => self.stream.read(buf).await,
             Option::Some(cipher) => {
@@ -1480,11 +1488,14 @@ impl AsyncRead for Conn {
                 Ok(ret)
             }
         }
+        */
     }
 }
 
 impl AsyncWrite for Conn {
-    fn poll_write(&mut self, buf: &[u8]) -> io::Result<usize> {
+    fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
+        unimplemented!()
+        /* TODO
         match self.cipher.as_mut() {
             Option::None => self.stream.write(buf).await,
             Option::Some(cipher) => {
@@ -1497,16 +1508,26 @@ impl AsyncWrite for Conn {
                 Ok(buf.len())
             }
         }
+        */
     }
 
-    // TODO: how to flush an AsyncWrite?
-    /*
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())//TODO self.stream.poll_flush().await?
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        unimplemented!()
+        // TODO self.stream.poll_flush().await?
     }
-    */
+
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        unimplemented!()
+    }
+
+    fn poll_write_vectored(self: Pin<&mut Self>, cx: &mut Context<'_>, bufs: &[io::IoSlice<'_>]) -> Poll<Result<usize, io::Error>> {
+        unimplemented!()
+    }
+
+    fn is_write_vectored(&self) -> bool {
+        false
+    }
 }
-*/
 
 // TODO: remove sync
 impl Read for Conn {
