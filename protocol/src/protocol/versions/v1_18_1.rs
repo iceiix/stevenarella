@@ -96,7 +96,7 @@ protocol_packet_ids!(
             0x23 => Effect
             0x24 => Particle_f64
             0x25 => UpdateLight_Arrays
-            0x26 => JoinGame_WorldNames_IsHard
+            0x26 => JoinGame_WorldNames_IsHard_SimDist
             0x27 => Maps
             0x28 => TradeList_WithRestock
             0x29 => EntityMove_i16
