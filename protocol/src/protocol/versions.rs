@@ -16,6 +16,7 @@ mod v1_15;
 mod v1_16_1;
 mod v1_16_4;
 mod v1_17_1;
+mod v1_18_1;
 mod v1_7_10;
 mod v1_8_9;
 mod v1_9;
@@ -27,6 +28,7 @@ mod v1_9_2;
 pub fn protocol_name_to_protocol_version(s: String) -> i32 {
     match s.as_ref() {
         "" => SUPPORTED_PROTOCOLS[0],
+        "1.18.1" => 757,
         "1.17.1" => 756,
         "1.16.5" => 754,
         "1.16.4" => 754,
@@ -71,6 +73,7 @@ pub fn translate_internal_packet_id_for_version(
     to_internal: bool,
 ) -> i32 {
     match version {
+        757 => v1_18_1::translate_internal_packet_id(state, dir, id, to_internal),
         756 => v1_17_1::translate_internal_packet_id(state, dir, id, to_internal),
         754 | 753 | 751 => v1_16_4::translate_internal_packet_id(state, dir, id, to_internal),
         736 => v1_16_1::translate_internal_packet_id(state, dir, id, to_internal),
