@@ -2,6 +2,6 @@
 name = "steven_shared"
 version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
-edition = "2018"
+edition = "2021"
 
 [dependencies]

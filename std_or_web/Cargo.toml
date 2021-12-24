@@ -2,7 +2,7 @@
 name = "std_or_web"
 version = "0.0.1"
 authors = [ "iceiix <ice_ix@protonmail.ch>" ]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 cfg-if = "1.0.0"
