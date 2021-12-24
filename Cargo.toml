@@ -48,7 +48,7 @@ collision = "0.20.1"
 rsa_public_encrypt_pkcs1 = "0.4.0"
 structopt = "0.3.25"
 clipboard = "0.5.0"
-instant = "0.1.10"
+instant = "0.1.12"
 dirs = "4.0.0"
 # clippy = "*"
 
