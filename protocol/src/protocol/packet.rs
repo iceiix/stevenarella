@@ -2019,6 +2019,10 @@ state_packets!(
                 field object_name: String =,
                 field value: Option<i32 > = when(|p: &UpdateScore_i32| p.action != 1),
             }
+            /// UpdateSimulationDistance is used to set how far the client will process entities.
+            packet UpdateSimulationDistance {
+                field simulationDistance: VarInt =,
+            }
             /// SpawnPosition is sent to change the player's current spawn point. Currently
             /// only used by the client for the compass.
             packet SpawnPosition_Angle {
