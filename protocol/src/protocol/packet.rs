@@ -835,7 +835,12 @@ state_packets!(
             }
             /// UpdateBlockEntity updates the nbt tag of a block entity in the
             /// world.
-            packet UpdateBlockEntity {
+            packet UpdateBlockEntity_VarInt {
+                field location: Position =,
+                field action: VarInt =,
+                field nbt: Option<nbt::NamedTag> =,
+            }
+            packet UpdateBlockEntity_u8 {
                 field location: Position =,
                 field action: u8 =,
                 field nbt: Option<nbt::NamedTag> =,

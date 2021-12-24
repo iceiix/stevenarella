@@ -68,7 +68,7 @@ protocol_packet_ids!(
             0x07 => Statistics
             0x08 => AcknowledgePlayerDigging
             0x09 => BlockBreakAnimation
-            0x0a => UpdateBlockEntity
+            0x0a => UpdateBlockEntity_u8
             0x0b => BlockAction
             0x0c => BlockChange_VarInt
             0x0d => BossBar

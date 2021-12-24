@@ -618,7 +618,8 @@ impl Server {
                             TeleportPlayer_OnGround => on_teleport_player_onground,
                             TimeUpdate => on_time_update,
                             ChangeGameState => on_game_state_change,
-                            UpdateBlockEntity => on_block_entity_update,
+                            UpdateBlockEntity_VarInt => on_block_entity_update_varint,
+                            UpdateBlockEntity_u8 => on_block_entity_update_u8,
                             UpdateBlockEntity_Data => on_block_entity_update_data,
                             UpdateSign => on_sign_update,
                             UpdateSign_u16 => on_sign_update_u16,
@@ -1677,9 +1678,27 @@ impl Server {
         }
     }
 
-    fn on_block_entity_update(
+    fn on_block_entity_update_varint(
         &mut self,
-        block_update: packet::play::clientbound::UpdateBlockEntity,
+        block_update: packet::play::clientbound::UpdateBlockEntity_VarInt,
+    ) {
+        self.on_block_entity_update_u8(packet::play::clientbound::UpdateBlockEntity_u8 {
+            location: block_update.location,
+            action: block_update.action.0 as u8,
+            nbt: block_update.nbt,
+        });
+    }
+
+    fn on_block_entity_update_data(
+        &mut self,
+        _block_update: packet::play::clientbound::UpdateBlockEntity_Data,
+    ) {
+        // TODO: handle UpdateBlockEntity_Data for 1.7, decompress gzipped_nbt
+    }
+
+    fn on_block_entity_update_u8(
+        &mut self,
+        block_update: packet::play::clientbound::UpdateBlockEntity_u8,
     ) {
         match block_update.nbt {
             None => {
@@ -1734,13 +1753,6 @@ impl Server {
                 }
             }
         }
-    }
-
-    fn on_block_entity_update_data(
-        &mut self,
-        _block_update: packet::play::clientbound::UpdateBlockEntity_Data,
-    ) {
-        // TODO: handle UpdateBlockEntity_Data for 1.7, decompress gzipped_nbt
     }
 
     fn on_sign_update(&mut self, mut update_sign: packet::play::clientbound::UpdateSign) {
@@ -1931,7 +1943,7 @@ impl Server {
                     // Not something we care about, so break the loop
                     _ => continue,
                 }
-                self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
+                self.on_block_entity_update_u8(packet::play::clientbound::UpdateBlockEntity_u8 {
                     location: Position::new(x, y, z),
                     action,
                     nbt: Some(block_entity.clone()),

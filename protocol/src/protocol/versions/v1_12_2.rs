@@ -52,7 +52,7 @@ protocol_packet_ids!(
             0x06 => Animation
             0x07 => Statistics
             0x08 => BlockBreakAnimation
-            0x09 => UpdateBlockEntity
+            0x09 => UpdateBlockEntity_u8
             0x0a => BlockAction
             0x0b => BlockChange_VarInt
             0x0c => BossBar

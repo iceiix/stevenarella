@@ -89,7 +89,7 @@ protocol_packet_ids!(
             0x32 => ConfirmTransaction
             0x33 => UpdateSign
             0x34 => Maps_NoTracking
-            0x35 => UpdateBlockEntity
+            0x35 => UpdateBlockEntity_u8
             0x36 => SignEditorOpen
             0x37 => Statistics
             0x38 => PlayerInfo
