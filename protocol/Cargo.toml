@@ -2,7 +2,7 @@
 name = "steven_protocol"
 version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>", "iceiix <ice_ix@protonmail.ch>" ]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 serde = "1.0.132"

@@ -540,9 +540,9 @@ fn main2() {
 fn tick_all(
     window: &winit::window::Window,
     game: &mut Game,
-    mut ui_container: &mut ui::Container,
+    ui_container: &mut ui::Container,
     last_frame: &mut Instant,
-    mut resui: &mut resources::ManagerUI,
+    resui: &mut resources::ManagerUI,
     last_resource_version: &mut usize,
     vsync: &mut bool,
 ) {
@@ -558,7 +558,7 @@ fn tick_all(
     let version = {
         let try_res = game.resource_manager.try_write();
         if let Ok(mut res) = try_res {
-            res.tick(&mut resui, &mut ui_container, delta);
+            res.tick(resui, ui_container, delta);
             res.version()
         } else {
             // TODO: why does game.resource_manager.write() sometimes deadlock?
@@ -591,7 +591,7 @@ fn tick_all(
         .tick(&mut game.server.world, &mut game.renderer, version);
 
     game.screen_sys
-        .tick(delta, &mut game.renderer, &mut ui_container);
+        .tick(delta, &mut game.renderer, ui_container);
     /* TODO: open console for chat messages
     if let Some(received_chat_at) = game.server.received_chat_at {
         if Instant::now().duration_since(received_chat_at).as_secs() < 5 {
@@ -603,7 +603,7 @@ fn tick_all(
     game.console
         .lock()
         .unwrap()
-        .tick(&mut ui_container, &game.renderer, delta, width);
+        .tick(ui_container, &game.renderer, delta, width);
     ui_container.tick(&mut game.renderer, delta, width, height);
     game.renderer.tick(
         &mut game.server.world,

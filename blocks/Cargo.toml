@@ -2,7 +2,7 @@
 name = "steven_blocks"
 version = "0.0.1"
 authors = [ "Thinkofdeath <thinkofdeath@spigotmc.org>" ]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 lazy_static = "1.4.0"
