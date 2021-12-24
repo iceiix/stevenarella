@@ -656,6 +656,7 @@ impl Serializable for ParticleData {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct VillagerData {
     villager_type: protocol::VarInt,
     profession: protocol::VarInt,
