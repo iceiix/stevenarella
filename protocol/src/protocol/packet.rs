@@ -1142,7 +1142,7 @@ state_packets!(
                 field chunk_z: i32 =,
                 field heightmaps: Option<nbt::NamedTag> =,
                 field data: LenPrefixedBytes<VarInt> =,
-                field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =, // TODO: packed xz,y,type
+                field block_entities: LenPrefixed<VarInt, packet::BlockEntityAtPackedLocation> =,
 
                 field trust_edges: bool =,
                 // TODO: BitSets instead of long arrays
@@ -2771,6 +2771,34 @@ impl Serializable for CriterionProgress {
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         self.id.write_to(buf)?;
         self.date_of_achieving.write_to(buf)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct BlockEntityAtPackedLocation {
+    /// The packed section coordinates, calculated from ((blockX & 15) << 4) | (blockZ & 15)
+    pub packed_xz: u8,
+    /// The height relative to the world
+    pub y: i16,
+    pub ty: VarInt,
+    pub data: Option<nbt::NamedTag>,
+}
+
+impl Serializable for BlockEntityAtPackedLocation {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(BlockEntityAtPackedLocation {
+            packed_xz: Serializable::read_from(buf)?,
+            y: Serializable::read_from(buf)?,
+            ty: Serializable::read_from(buf)?,
+            data: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.packed_xz.write_to(buf)?;
+        self.y.write_to(buf)?;
+        self.ty.write_to(buf)?;
+        self.data.write_to(buf)
     }
 }
 
