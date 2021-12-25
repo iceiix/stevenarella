@@ -92,7 +92,7 @@ protocol_packet_ids!(
             0x1f => WindowOpenHorse
             0x20 => WorldBorderInit
             0x21 => KeepAliveClientbound_i64
-            0x22 => ChunkData_Biomes3D_Bitmasks
+            0x22 => ChunkData_AndLight
             0x23 => Effect
             0x24 => Particle_f64
             0x25 => UpdateLight_Arrays

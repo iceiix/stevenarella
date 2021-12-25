@@ -1137,6 +1137,22 @@ state_packets!(
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
+            packet ChunkData_AndLight {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field heightmaps: Option<nbt::NamedTag> =,
+                field data: LenPrefixedBytes<VarInt> =,
+                field block_entities: LenPrefixed<VarInt, Option<nbt::NamedTag>> =, // TODO: packed xz,y,type
+
+                field trust_edges: bool =,
+                // TODO: BitSets instead of long arrays
+                field sky_light_mask: LenPrefixed<VarInt, i64> =,
+                field block_light_mask: LenPrefixed<VarInt, i64> =,
+                field empty_sky_light_mask: LenPrefixed<VarInt, i64> =,
+                field empty_block_light_mask: LenPrefixed<VarInt, i64> =,
+                field sky_light_arrays: LenPrefixed<VarInt, LenPrefixed<VarInt, u8>> =,
+                field block_light_arrays: LenPrefixed<VarInt, LenPrefixed<VarInt, u8>> =,
+            }
             packet ChunkData_Biomes3D_Bitmasks {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,
