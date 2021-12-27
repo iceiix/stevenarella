@@ -581,6 +581,7 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_WorldNames_IsHard_SimDist => on_game_join_worldnames_ishard_simdist,
                             JoinGame_WorldNames_IsHard => on_game_join_worldnames_ishard,
                             JoinGame_WorldNames => on_game_join_worldnames,
                             JoinGame_HashedSeed_Respawn => on_game_join_hashedseed_respawn,
@@ -1054,6 +1055,13 @@ impl Server {
             .as_mut()
             .unwrap()
             .write_plugin_message(channel, data); // TODO handle errors
+    }
+
+    fn on_game_join_worldnames_ishard_simdist(
+        &mut self,
+        join: packet::play::clientbound::JoinGame_WorldNames_IsHard_SimDist,
+    ) {
+        self.on_game_join(join.gamemode, join.entity_id)
     }
 
     fn on_game_join_worldnames_ishard(

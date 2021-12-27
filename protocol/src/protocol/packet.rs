@@ -1145,7 +1145,6 @@ state_packets!(
                 field block_entities: LenPrefixed<VarInt, packet::BlockEntityAtPackedLocation> =,
 
                 field trust_edges: bool =,
-                // TODO: BitSets instead of long arrays
                 field sky_light_mask: LenPrefixed<VarInt, i64> =,
                 field block_light_mask: LenPrefixed<VarInt, i64> =,
                 field empty_sky_light_mask: LenPrefixed<VarInt, i64> =,
