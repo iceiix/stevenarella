@@ -1975,14 +1975,13 @@ impl Server {
                 chunk_data.chunk_x,
                 chunk_data.chunk_z,
                 true,
-                0, // TODO: chunk_data.bitmasks.data[0] as u64, // TODO: get all bitmasks
-                16,                                 // TODO: get all bitmasks
+                0,  // TODO: chunk_data.bitmasks.data[0] as u64, // TODO: get all bitmasks
+                16, // TODO: get all bitmasks
                 chunk_data.data.data,
             )
             .unwrap();
         //self.load_block_entities(chunk_data.block_entities.data); // TODO: load entities
     }
-
 
     fn on_chunk_data_biomes3d_bitmasks(
         &mut self,
