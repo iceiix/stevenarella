@@ -116,3 +116,15 @@ impl Map {
         }
     }
 }
+
+use std::fmt;
+
+impl fmt::Debug for Map {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "BitMap({})=<", self.bit_size)?;
+        for i in 0..self.bit_size {
+            write!(f, "{}", self.get(i))?;
+        }
+        write!(f, ">")
+    }
+}
