@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[derive(Debug)]
 pub struct Map {
     bits: Vec<u64>,
     pub bit_size: usize,
@@ -114,17 +115,5 @@ impl Map {
             let used = 64 - ii;
             (((self.bits[pos] >> ii) | (self.bits[pos2] << used)) & mask) as usize
         }
-    }
-}
-
-use std::fmt;
-
-impl fmt::Debug for Map {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "BitMap({})=<", self.bit_size)?;
-        for i in 0..self.bit_size {
-            write!(f, "{}", self.get(i))?;
-        }
-        write!(f, ">")
     }
 }
