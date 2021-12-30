@@ -1062,8 +1062,10 @@ impl World {
                     HashMap::with_hasher(BuildHasherDefault::default());
                 if bit_size == 0 {
                     bit_size = 13;
+                    // TODO: handle single-valued palette (bits per entry is equal to 0) for protocol_version >= 757
                 } else {
                     let count = VarInt::read_from(&mut data)?.0;
+                    // TODO: handle direct palettes, bit_size >= 9 for block states
                     for i in 0..count {
                         let id = VarInt::read_from(&mut data)?.0;
                         let bl = self
@@ -1085,6 +1087,7 @@ impl World {
 
                 for bi in 0..4096 {
                     let id = m.get(bi);
+                    println!("bi={:?} id={:?}", bi, id);
                     section.blocks.set(
                         bi,
                         mappings
@@ -1114,7 +1117,25 @@ impl World {
                     }
                 }
 
-                if self.protocol_version >= 451 {
+                if self.protocol_version >= 757 {
+                    // Biomes palette TODO: refactor with block states, "palette container"
+                    let _bit_size = data.read_u8()?;
+                    println!("biome bit_size={:?}", _bit_size);
+                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
+                    // TODO: handle single-valued palette (bits per entry is equal to 0)
+                    // TODO: handle direct palettes, bit_size >= 4 for biomes
+
+                    let count = VarInt::read_from(&mut data)?.0;
+                    println!("biome palette length={:?}", count);
+                    for _i in 0..count {
+                        let _id = VarInt::read_from(&mut data)?.0;
+                        println!("biome palette array {:?} = {:?}", i, _id);
+                        //let bl = self
+                        //    .id_map
+                        //    .by_vanilla_id(id as usize, &self.modded_block_ids);
+                        //mappings.insert(i as usize, bl);
+                    }
+                } else if self.protocol_version >= 451 {
                     // Skylight in update skylight packet for 1.14+
                 } else {
                     data.read_exact(&mut section.block_light.data)?;
