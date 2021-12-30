@@ -1121,7 +1121,6 @@ impl World {
                     // Biomes palette TODO: refactor with block states, "palette container"
                     let _bit_size = data.read_u8()?;
                     println!("biome bit_size={:?}", _bit_size);
-                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
                     // TODO: handle single-valued palette (bits per entry is equal to 0)
                     // TODO: handle direct palettes, bit_size >= 4 for biomes
 
@@ -1135,6 +1134,10 @@ impl World {
                         //    .by_vanilla_id(id as usize, &self.modded_block_ids);
                         //mappings.insert(i as usize, bl);
                     }
+
+                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
+                    println!("biome bits len={:?}", _bits.len());
+                    println!("biome bits={:?}", _bits);
                 } else if self.protocol_version >= 451 {
                     // Skylight in update skylight packet for 1.14+
                 } else {
