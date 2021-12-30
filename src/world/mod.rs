@@ -1060,9 +1060,15 @@ impl World {
                 println!("bit_size = {:?}", bit_size);
                 let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> =
                     HashMap::with_hasher(BuildHasherDefault::default());
+                let mut single_value: Option<usize> = None;
                 if bit_size == 0 {
-                    bit_size = 13;
-                    // TODO: handle single-valued palette (bits per entry is equal to 0) for protocol_version >= 757
+                    if self.protocol_version >= 757 {
+                        // Single-valued palette
+                        single_value = Some(VarInt::read_from(&mut data)?.0.try_into().unwrap());
+                        println!("single_value = {:?}", single_value);
+                    } else {
+                        bit_size = 13;
+                    }
                 } else {
                     let count = VarInt::read_from(&mut data)?.0;
                     // TODO: handle direct palettes, bit_size >= 9 for block states
@@ -1086,7 +1092,7 @@ impl World {
                 println!("m = {:?}", m);
 
                 for bi in 0..4096 {
-                    let id = m.get(bi);
+                    let id = single_value.unwrap_or_else(|| m.get(bi));
                     println!("bi={:?} id={:?}", bi, id);
                     section.blocks.set(
                         bi,
