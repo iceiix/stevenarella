@@ -1020,11 +1020,6 @@ impl World {
         use byteorder::ReadBytesExt;
         use std::io::Cursor;
 
-        println!(
-            "load_chunk19_to_117 x={:?} z={:?}, new={:?} mask={:?} num_sections={:?} data={:?}",
-            x, z, new, mask, num_sections, data
-        );
-
         let mut data = Cursor::new(data);
 
         let cpos = CPos(x, z);
@@ -1052,12 +1047,10 @@ impl World {
 
                 if self.protocol_version >= 451 {
                     let _block_count = data.read_u16::<byteorder::LittleEndian>()?;
-                    println!("_block_count = {:?}", _block_count);
                     // TODO: use block_count
                 }
 
                 let mut bit_size = data.read_u8()?;
-                println!("bit_size = {:?}", bit_size);
                 let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> =
                     HashMap::with_hasher(BuildHasherDefault::default());
                 let mut single_value: Option<usize> = None;
@@ -1065,7 +1058,6 @@ impl World {
                     if self.protocol_version >= 757 {
                         // Single-valued palette
                         single_value = Some(VarInt::read_from(&mut data)?.0.try_into().unwrap());
-                        println!("single_value = {:?}", single_value);
                     } else {
                         bit_size = 13;
                     }
@@ -1086,14 +1078,11 @@ impl World {
                 }
 
                 let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-                println!("bits = {:?}", bits);
                 let padded = self.protocol_version >= 736;
                 let m = bit::Map::from_raw(bits, bit_size as usize, padded);
-                println!("m = {:?}", m);
 
                 for bi in 0..4096 {
                     let id = single_value.unwrap_or_else(|| m.get(bi));
-                    println!("bi={:?} id={:?}", bi, id);
                     section.blocks.set(
                         bi,
                         mappings
@@ -1126,15 +1115,12 @@ impl World {
                 if self.protocol_version >= 757 {
                     // Biomes palette TODO: refactor with block states, "palette container"
                     let _bit_size = data.read_u8()?;
-                    println!("biome bit_size={:?}", _bit_size);
                     // TODO: handle single-valued palette (bits per entry is equal to 0)
                     // TODO: handle direct palettes, bit_size >= 4 for biomes
 
                     let count = VarInt::read_from(&mut data)?.0;
-                    println!("biome palette length={:?}", count);
                     for _i in 0..count {
                         let _id = VarInt::read_from(&mut data)?.0;
-                        println!("biome palette array {:?} = {:?}", i, _id);
                         //let bl = self
                         //    .id_map
                         //    .by_vanilla_id(id as usize, &self.modded_block_ids);
@@ -1142,8 +1128,6 @@ impl World {
                     }
 
                     let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-                    println!("biome bits len={:?}", _bits.len());
-                    println!("biome bits={:?}", _bits);
                 } else if self.protocol_version >= 451 {
                     // Skylight in update skylight packet for 1.14+
                 } else {

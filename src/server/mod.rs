@@ -1970,7 +1970,6 @@ impl Server {
         &mut self,
         chunk_data: packet::play::clientbound::ChunkData_AndLight,
     ) {
-        println!("on_chunk_data_and_light chunk_data = {:?}", chunk_data);
         self.world
             .load_chunk117(
                 chunk_data.chunk_x,
