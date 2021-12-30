@@ -1072,6 +1072,10 @@ impl World {
                         mappings.insert(i as usize, bl);
                     }
                 }
+                if bit_size > 16 {
+                    // https://wiki.vg/Chunk_Format#Data_structure "This increase can go up to 16 bits per block"...
+                    panic!("load_chunk19_to_117: bit_size={:?} > 16", bit_size);
+                }
 
                 let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
                 let padded = self.protocol_version >= 736;
