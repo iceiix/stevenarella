@@ -1975,8 +1975,8 @@ impl Server {
                 chunk_data.chunk_x,
                 chunk_data.chunk_z,
                 true,
-                0,  // TODO: chunk_data.bitmasks.data[0] as u64, // TODO: get all bitmasks
-                16, // TODO: get all bitmasks
+                0xffff,                             // world height/16 (256/16 = 16) bits
+                16,                                 // TODO: get all bitmasks
                 chunk_data.data.data,
             )
             .unwrap();
