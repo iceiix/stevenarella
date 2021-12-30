@@ -1970,14 +1970,14 @@ impl Server {
         &mut self,
         chunk_data: packet::play::clientbound::ChunkData_AndLight,
     ) {
-println!("on_chunk_data_and_light chunk_data = {:?}", chunk_data);
+        println!("on_chunk_data_and_light chunk_data = {:?}", chunk_data);
         self.world
             .load_chunk117(
                 chunk_data.chunk_x,
                 chunk_data.chunk_z,
                 true,
-                0xffff,                             // world height/16 (256/16 = 16) bits
-                16,                                 // TODO: get all bitmasks
+                0xffff, // world height/16 (256/16 = 16) bits
+                16,     // TODO: get all bitmasks
                 chunk_data.data.data,
             )
             .unwrap();

@@ -1020,7 +1020,10 @@ impl World {
         use byteorder::ReadBytesExt;
         use std::io::Cursor;
 
-println!("load_chunk19_to_117 x={:?} z={:?}, new={:?} mask={:?} num_sections={:?} data={:?}", x,z,new,mask,num_sections,data);
+        println!(
+            "load_chunk19_to_117 x={:?} z={:?}, new={:?} mask={:?} num_sections={:?} data={:?}",
+            x, z, new, mask, num_sections, data
+        );
 
         let mut data = Cursor::new(data);
 
@@ -1049,12 +1052,12 @@ println!("load_chunk19_to_117 x={:?} z={:?}, new={:?} mask={:?} num_sections={:?
 
                 if self.protocol_version >= 451 {
                     let _block_count = data.read_u16::<byteorder::LittleEndian>()?;
-println!("_block_count = {:?}", _block_count);
+                    println!("_block_count = {:?}", _block_count);
                     // TODO: use block_count
                 }
 
                 let mut bit_size = data.read_u8()?;
-println!("bit_size = {:?}", bit_size);
+                println!("bit_size = {:?}", bit_size);
                 let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> =
                     HashMap::with_hasher(BuildHasherDefault::default());
                 if bit_size == 0 {
