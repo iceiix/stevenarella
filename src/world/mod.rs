@@ -1127,20 +1127,24 @@ impl World {
                     // Biomes palette TODO: refactor with block states, "palette container"
                     let _bit_size = data.read_u8()?;
                     println!("biome bit_size={:?}", _bit_size);
-                    // TODO: handle single-valued palette (bits per entry is equal to 0)
-                    // TODO: handle direct palettes, bit_size >= 4 for biomes
+                    if _bit_size == 0 {
+                         // Single-valued palette
+                        let _single_value = VarInt::read_from(&mut data)?.0;
+                        println!("biome single_value = {:?}", _single_value);
+                    } else {
+                        // TODO: handle direct palettes, bit_size >= 4 for biomes
 
-                    let count = VarInt::read_from(&mut data)?.0;
-                    println!("biome palette length={:?}", count);
-                    for _i in 0..count {
-                        let _id = VarInt::read_from(&mut data)?.0;
-                        println!("biome palette array {:?} = {:?}", i, _id);
-                        //let bl = self
-                        //    .id_map
-                        //    .by_vanilla_id(id as usize, &self.modded_block_ids);
-                        //mappings.insert(i as usize, bl);
+                        let count = VarInt::read_from(&mut data)?.0;
+                        println!("biome palette length={:?}", count);
+                        for _i in 0..count {
+                            let _id = VarInt::read_from(&mut data)?.0;
+                            println!("biome palette array {:?} = {:?}", i, _id);
+                            //let bl = self
+                            //    .id_map
+                            //    .by_vanilla_id(id as usize, &self.modded_block_ids);
+                            //mappings.insert(i as usize, bl);
+                        }
                     }
-
                     let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
                     println!("biome bits len={:?}", _bits.len());
                     println!("biome bits={:?}", _bits);
