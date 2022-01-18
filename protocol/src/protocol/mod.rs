@@ -84,7 +84,7 @@ macro_rules! state_packets {
         $(
             $(
                 $(
-        $name($state::$dir::$name),
+        $name(Box<$state::$dir::$name>),
                 )*
             )+
         )+
@@ -184,7 +184,7 @@ macro_rules! state_packets {
                                                     packet.$field = Serializable::read_from(&mut buf)?;
                                                 }
                                             )+
-                                            Result::Ok(Option::Some(Packet::$name(packet)))
+                                            Result::Ok(Option::Some(Packet::$name(Box::new(packet))))
                                         },
                                     )*
                                         _ => Result::Ok(Option::None)
