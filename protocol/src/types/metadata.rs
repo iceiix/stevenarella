@@ -24,6 +24,7 @@ use std::fmt;
 use std::io;
 use std::marker::PhantomData;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct MetadataKey<T: MetaValue> {
     index: i32,
     ty: PhantomData<T>,
@@ -39,6 +40,7 @@ impl<T: MetaValue> MetadataKey<T> {
     }
 }
 
+#[derive(Clone, PartialEq)]
 pub struct Metadata {
     map: HashMap<i32, Value>,
 }
@@ -491,7 +493,7 @@ impl Default for Metadata {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Byte(i8),
     Short(i16),
@@ -516,7 +518,7 @@ pub enum Value {
     Pose(PoseData),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ParticleData {
     AmbientEntityEffect,
     AngryVillager,
@@ -655,7 +657,7 @@ impl Serializable for ParticleData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(dead_code)]
 pub struct VillagerData {
     villager_type: protocol::VarInt,
@@ -680,7 +682,7 @@ impl Serializable for VillagerData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PoseData {
     Standing,
     FallFlying,
