@@ -17,7 +17,7 @@ use crate::protocol::{self, Serializable};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Stack {
     pub id: isize,
     pub count: isize,

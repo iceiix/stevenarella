@@ -20,7 +20,7 @@ use super::protocol;
 use super::protocol::Serializable;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Tag {
     End,
     Byte(i8),
@@ -37,7 +37,7 @@ pub enum Tag {
     LongArray(Vec<i64>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NamedTag(pub String, pub Tag);
 
 impl Tag {
