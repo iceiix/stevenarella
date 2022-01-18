@@ -393,7 +393,7 @@ fn flood_fill(snapshot: &world::Snapshot, visited: &mut Set, x: i32, y: i32, z: 
     touched
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct CullInfo(u64);
 
 impl CullInfo {

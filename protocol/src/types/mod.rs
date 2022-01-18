@@ -19,7 +19,7 @@ pub mod bit;
 pub mod hash;
 pub mod nibble;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Gamemode {
     Survival = 0,
     Creative = 1,

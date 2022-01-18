@@ -2415,7 +2415,7 @@ state_packets!(
     }
 );
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct SpawnProperty {
     pub name: String,
     pub value: String,
@@ -2438,7 +2438,7 @@ impl Serializable for SpawnProperty {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Statistic {
     pub name: String,
     pub value: VarInt,
@@ -2458,7 +2458,7 @@ impl Serializable for Statistic {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct BlockChangeRecord {
     pub xz: u8,
     pub y: u8,
@@ -2481,7 +2481,7 @@ impl Serializable for BlockChangeRecord {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ChunkMeta {
     pub x: i32,
     pub z: i32,
@@ -2504,7 +2504,7 @@ impl Serializable for ChunkMeta {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ExplosionRecord {
     pub x: i8,
     pub y: i8,
@@ -2527,7 +2527,7 @@ impl Serializable for ExplosionRecord {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MapIcon {
     pub direction_type: i8,
     pub x: i8,
@@ -2560,7 +2560,7 @@ impl Default for MapIcon {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Advancement {
     pub id: String,
     pub parent_id: Option<String>,
@@ -2613,7 +2613,7 @@ impl Serializable for Advancement {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct AdvancementDisplay {
     pub title: String,
     pub description: String,
@@ -2666,7 +2666,7 @@ impl Serializable for AdvancementDisplay {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct AdvancementProgress {
     pub id: String,
     pub criteria: LenPrefixed<VarInt, CriterionProgress>,
@@ -2686,7 +2686,7 @@ impl Serializable for AdvancementProgress {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct CriterionProgress {
     pub id: String,
     pub date_of_achieving: Option<i64>,
@@ -2714,7 +2714,7 @@ impl Serializable for CriterionProgress {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct EntityEquipment {
     pub slot: u8,
     pub item: Option<item::Stack>,
@@ -2735,7 +2735,7 @@ impl Serializable for EntityEquipment {
 }
 
 // Top-bit terminated array of EntityEquipment
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct EntityEquipments {
     pub equipments: Vec<EntityEquipment>,
 }
@@ -2765,7 +2765,7 @@ impl Serializable for EntityEquipments {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct EntityProperty {
     pub key: String,
     pub value: f64,
@@ -2788,7 +2788,7 @@ impl Serializable for EntityProperty {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct EntityProperty_i16 {
     pub key: String,
     pub value: f64,
@@ -2811,7 +2811,7 @@ impl Serializable for EntityProperty_i16 {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct PropertyModifier {
     pub uuid: UUID,
     pub amount: f64,
@@ -2834,7 +2834,7 @@ impl Serializable for PropertyModifier {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PlayerInfoData {
     pub action: VarInt,
     pub players: Vec<PlayerDetail>,
@@ -2920,7 +2920,7 @@ impl Default for PlayerInfoData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayerDetail {
     Add {
         uuid: UUID,
@@ -2947,7 +2947,7 @@ pub enum PlayerDetail {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayerProperty {
     pub name: String,
     pub value: String,
@@ -2957,7 +2957,7 @@ pub struct PlayerProperty {
 use crate::item;
 type RecipeIngredient = LenPrefixed<VarInt, Option<item::Stack>>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum RecipeData {
     Shapeless {
         group: String,
@@ -3031,7 +3031,7 @@ impl Default for RecipeData {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Recipe {
     pub id: String,
     pub ty: String,
@@ -3153,7 +3153,7 @@ impl Serializable for Recipe {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Tags {
     pub tag_name: String,
     pub entries: LenPrefixed<VarInt, VarInt>,
@@ -3172,7 +3172,7 @@ impl Serializable for Tags {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct TagsGroup {
     pub tag_type: String,
     pub tags: LenPrefixed<VarInt, Tags>,
@@ -3191,7 +3191,7 @@ impl Serializable for TagsGroup {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Trade {
     pub input_item_1: Option<nbt::NamedTag>,
     pub output_item: Option<nbt::NamedTag>,
@@ -3234,7 +3234,7 @@ impl Serializable for Trade {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct CommandNode {
     pub flags: u8,
     pub children: LenPrefixed<VarInt, VarInt>,
@@ -3245,14 +3245,14 @@ pub struct CommandNode {
     pub suggestions_type: Option<String>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum CommandNodeType {
     Root,
     Literal,
     Argument,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CommandProperty {
     Bool,
     Double {
@@ -3484,7 +3484,7 @@ impl Serializable for CommandNode {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct NumberedSlot {
     pub slot_number: i16,
     pub slot_data: Option<item::Stack>,

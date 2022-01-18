@@ -5,7 +5,7 @@ use std::io;
 
 use super::{Error, LenPrefixed, Serializable, VarInt};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Phase {
     // Client handshake states (written)
     Start,
@@ -44,7 +44,7 @@ impl Serializable for Phase {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ForgeMod {
     pub modid: String,
     pub version: String,
@@ -64,7 +64,7 @@ impl Serializable for ForgeMod {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModIdMapping {
     pub name: String,
     pub id: VarInt,
@@ -87,7 +87,7 @@ impl Serializable for ModIdMapping {
 pub static BLOCK_NAMESPACE: &str = "\u{1}";
 pub static ITEM_NAMESPACE: &str = "\u{2}";
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FmlHs {
     ServerHello {
         fml_protocol_version: i8,
@@ -196,7 +196,7 @@ pub mod fml2 {
     // https://wiki.vg/Minecraft_Forge_Handshake#FML2_protocol_.281.13_-_Current.29
     use super::*;
 
-    #[derive(Clone, Default, Debug)]
+    #[derive(Clone, Default, Debug, PartialEq, Eq)]
     pub struct Channel {
         pub name: String,
         pub version: String,
@@ -216,7 +216,7 @@ pub mod fml2 {
         }
     }
 
-    #[derive(Clone, Default, Debug)]
+    #[derive(Clone, Default, Debug, PartialEq, Eq)]
     pub struct Registry {
         pub name: String,
         pub marker: String,
@@ -236,7 +236,7 @@ pub mod fml2 {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum FmlHandshake {
         ModList {
             mod_names: LenPrefixed<VarInt, String>,
