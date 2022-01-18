@@ -51,6 +51,10 @@ pub fn current_protocol_version() -> i32 {
     CURRENT_PROTOCOL_VERSION.load(Ordering::Relaxed)
 }
 
+pub fn set_current_protocol_version(version: i32) {
+    CURRENT_PROTOCOL_VERSION.store(version, Ordering::Relaxed);
+}
+
 pub fn enable_network_debug() {
     NETWORK_DEBUG.store(true, Ordering::Relaxed);
 }
