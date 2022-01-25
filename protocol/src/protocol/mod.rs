@@ -1019,6 +1019,7 @@ pub enum Error {
     Disconnect(format::Component),
     IOError(io::Error),
     Json(serde_json::Error),
+    #[cfg(feature = "auth")]
     #[cfg(not(target_arch = "wasm32"))]
     Reqwest(reqwest::Error),
 }
@@ -1035,6 +1036,7 @@ impl convert::From<serde_json::Error> for Error {
     }
 }
 
+#[cfg(feature = "auth")]
 #[cfg(not(target_arch = "wasm32"))]
 impl convert::From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Error {
@@ -1051,6 +1053,7 @@ impl ::std::fmt::Display for Error {
             Error::Disconnect(ref val) => write!(f, "{}", val),
             Error::IOError(ref e) => e.fmt(f),
             Error::Json(ref e) => e.fmt(f),
+            #[cfg(feature = "auth")]
             #[cfg(not(target_arch = "wasm32"))]
             Error::Reqwest(ref e) => e.fmt(f),
         }

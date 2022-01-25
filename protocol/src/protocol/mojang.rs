@@ -28,6 +28,7 @@ const LOGIN_URL: &str = "https://authserver.mojang.com/authenticate";
 const REFRESH_URL: &str = "https://authserver.mojang.com/refresh";
 const VALIDATE_URL: &str = "https://authserver.mojang.com/validate";
 
+#[cfg(feature = "auth")]
 #[cfg(not(target_arch = "wasm32"))]
 impl Profile {
     pub fn login(username: &str, password: &str, token: &str) -> Result<Profile, super::Error> {
