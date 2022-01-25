@@ -98,7 +98,7 @@ macro_rules! handle_packet {
     }) => (
         match $pck {
         $(
-            protocol::packet::Packet::$packet(val) => $s.$func(val),
+            protocol::packet::Packet::$packet(val) => $s.$func(*val),
         )*
             _ => {},
         }
