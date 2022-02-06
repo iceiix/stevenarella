@@ -1,5 +1,5 @@
 # Stevenarella
-[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Ficeiix%2Fstevenarella%2Fbadge%3Fref%3Dmaster&style=plastic)](https://actions-badge.atrox.dev/iceiix/stevenarella/goto?ref=master)
+[![Build](https://github.com/iceiix/stevenarella/actions/workflows/build.yaml/badge.svg)](https://github.com/iceiix/stevenarella/actions/workflows/build.yaml)
 
 Multi-protocol Minecraft-compatible client written in Rust.
 
