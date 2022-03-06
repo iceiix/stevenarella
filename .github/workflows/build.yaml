@@ -11,7 +11,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           # TODO: refactor toolchain version
-          toolchain: 1.58.0
+          toolchain: 1.58.1
           components: clippy, rustfmt
           default: true
       - name: Install dependencies
@@ -60,7 +60,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.58.0
+          toolchain: 1.58.1
           components: clippy, rustfmt
           default: true
       - name: Build binary
@@ -94,7 +94,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.58.0
+          toolchain: 1.58.1
           components: clippy, rustfmt
           default: true
       - name: Build binary
@@ -139,7 +139,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           # TODO: refactor toolchain version
-          toolchain: 1.58.0
+          toolchain: 1.58.1
           components: clippy, rustfmt
           default: true
       - name: Install wasm-pack
