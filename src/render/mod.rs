@@ -588,6 +588,7 @@ impl Renderer {
         info.count = count;
     }
 
+    #[allow(clippy::uninit_vec)] // TODO: fix uninitialized memory, use MaybeUninit on Vec below
     fn do_pending_textures(&mut self) {
         let len = {
             let tex = self.textures.read().unwrap();
