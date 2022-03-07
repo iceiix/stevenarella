@@ -59,7 +59,7 @@ glutin = "0.27.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.7"
-web-sys = "0.3.52"
+web-sys = "0.3.55"
 
 [dependencies.steven_resources]
 path = "./resources"
