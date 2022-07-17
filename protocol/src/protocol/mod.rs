@@ -93,6 +93,7 @@ macro_rules! state_packets {
             pub mod $dir {
                 #![allow(unused_imports)]
                 use crate::protocol::*;
+                use crate::protocol::packet::Packet;
                 use std::io;
                 use crate::format;
                 use crate::nbt;
@@ -126,6 +127,11 @@ macro_rules! state_packets {
                             )+
 
                             Result::Ok(())
+                        }
+                    }
+                    impl Into<Packet> for $name {
+                        fn into(self) -> Packet {
+                            Packet::$name(self)
                         }
                     }
                 )*
