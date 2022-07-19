@@ -129,9 +129,9 @@ macro_rules! state_packets {
                             Result::Ok(())
                         }
                     }
-                    impl Into<Packet> for $name {
-                        fn into(self) -> Packet {
-                            Packet::$name(self)
+                    impl From<$name> for Packet {
+                        fn from(v: $name) -> Packet {
+                            Packet::$name(v)
                         }
                     }
                 )*
