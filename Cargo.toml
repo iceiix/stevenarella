@@ -30,19 +30,19 @@ opt-level = 1
 [dependencies]
 cfg-if = "1.0.0"
 wasm-bindgen = "0.2.81"
-winit = { version = "0.25.0", features = [ "web-sys" ]}
+winit = "0.27.0"
 glow = "0.11.2"
 byteorder = "1.4.3"
 serde = "1.0.140"
 serde_json = "1.0.82"
-flate2 = { version = "1.0.22", features = ["rust_backend"], default-features = false }
-zip = { version = "0.5.13", features = ["deflate"], default-features = false }
+flate2 = { version = "1.0.24", features = ["rust_backend"], default-features = false }
+zip = { version = "0.6.2", features = ["deflate"], default-features = false }
 image = "0.23.14"
 getrandom = { version = "0.2.7", features = ["js"] }
 rand = "0.8.5"
 rand_pcg = "0.3.1"
 base64 = "0.13.0"
-log = { version = "0.4.14", features = ["std"] }
+log = { version = "0.4.17", features = ["std"] }
 cgmath = "0.17.0"
 lazy_static = "1.4.0"
 collision = "0.20.1"
@@ -55,11 +55,11 @@ dirs = "4.0.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = { version = "0.11.11", features = [ "blocking" ]}
-glutin = "0.27.0"
+glutin = "0.29.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.7"
-web-sys = "0.3.55"
+web-sys = "0.3.59"
 
 [dependencies.steven_resources]
 path = "./resources"
