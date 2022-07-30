@@ -659,7 +659,9 @@ fn handle_window_event<T>(
             use std::f64::consts::PI;
 
             if game.focused {
-                window.set_cursor_grab(winit::window::CursorGrabMode::Locked).unwrap();
+                window
+                    .set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                    .unwrap();
                 window.set_cursor_visible(false);
                 if let Some(player) = game.server.player {
                     let rotation = game
@@ -677,7 +679,9 @@ fn handle_window_event<T>(
                     }
                 }
             } else {
-                window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
+                window
+                    .set_cursor_grab(winit::window::CursorGrabMode::None)
+                    .unwrap();
                 window.set_cursor_visible(true);
             }
         }
@@ -715,12 +719,16 @@ fn handle_window_event<T>(
                             && !game.screen_sys.is_current_closable()
                         {
                             game.focused = true;
-                            window.set_cursor_grab(winit::window::CursorGrabMode::Locked).unwrap();
+                            window
+                                .set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                                .unwrap();
                             window.set_cursor_visible(false);
                         } else if !game.focused {
                             #[cfg(not(target_arch = "wasm32"))]
                             // TODO: after Pointer Lock https://github.com/rust-windowing/winit/issues/1674
-                            window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
+                            window
+                                .set_cursor_grab(winit::window::CursorGrabMode::None)
+                                .unwrap();
                             window.set_cursor_visible(true);
                             ui_container.click_at(
                                 game,
@@ -766,14 +774,18 @@ fn handle_window_event<T>(
                     match (input.state, input.virtual_keycode) {
                         (ElementState::Released, Some(VirtualKeyCode::Escape)) => {
                             if game.focused {
-                                window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
+                                window
+                                    .set_cursor_grab(winit::window::CursorGrabMode::None)
+                                    .unwrap();
                                 window.set_cursor_visible(true);
                                 game.focused = false;
                                 game.screen_sys.replace_screen(Box::new(
                                     screen::SettingsMenu::new(game.vars.clone(), true),
                                 ));
                             } else if game.screen_sys.is_current_closable() {
-                                window.set_cursor_grab(winit::window::CursorGrabMode::Locked).unwrap();
+                                window
+                                    .set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                                    .unwrap();
                                 window.set_cursor_visible(false);
                                 game.focused = true;
                                 game.screen_sys.pop_screen();
