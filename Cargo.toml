@@ -31,7 +31,7 @@ opt-level = 1
 cfg-if = "1.0.0"
 wasm-bindgen = "0.2.78"
 winit = { version = "0.25.0", features = [ "web-sys" ]}
-glow = "0.11.0"
+glow = "0.11.2"
 byteorder = "1.4.3"
 serde = "1.0.132"
 serde_json = "1.0.73"
