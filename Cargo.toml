@@ -30,7 +30,7 @@ opt-level = 1
 [dependencies]
 cfg-if = "1.0.0"
 wasm-bindgen = "0.2.81"
-winit = { version = "0.25.0", features = [ "web-sys" ]}
+winit = "0.27.0"
 glow = "0.11.2"
 byteorder = "1.4.3"
 serde = "1.0.140"
@@ -55,7 +55,7 @@ dirs = "4.0.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = { version = "0.11.11", features = [ "blocking" ]}
-glutin = "0.27.0"
+glutin = "0.29.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.7"
