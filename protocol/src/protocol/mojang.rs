@@ -16,7 +16,7 @@
 use serde_json::json;
 use sha1::{self, Digest};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Profile {
     pub username: String,
     pub id: String,

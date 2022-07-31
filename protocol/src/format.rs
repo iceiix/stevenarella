@@ -15,7 +15,7 @@
 use std::fmt;
 use std::mem;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Component {
     Text(TextComponent),
 }
@@ -115,7 +115,7 @@ impl Default for Component {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Modifier {
     pub extra: Option<Vec<Component>>,
     pub bold: Option<bool>,
@@ -159,7 +159,7 @@ impl Modifier {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextComponent {
     pub text: String,
     pub modifier: Modifier,
@@ -199,7 +199,7 @@ impl fmt::Display for TextComponent {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Color {
     Black,
     DarkBlue,
