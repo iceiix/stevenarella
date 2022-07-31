@@ -1023,6 +1023,9 @@ impl World {
         let mut data = Cursor::new(data);
 
         let cpos = CPos(x, z);
+        if x != 0 && z != 0 {
+            return Ok(());
+        }
         {
             if new {
                 self.chunks.insert(cpos, Chunk::new(cpos));
@@ -1047,7 +1050,9 @@ impl World {
 
                 if self.protocol_version >= 451 {
                     let _block_count = data.read_u16::<byteorder::LittleEndian>()?;
-                    // TODO: use block_count
+                    // TODO: use block_count, "The client will keep count of the blocks as they are
+                    // broken and placed, and, if the block count reaches 0, the whole chunk
+                    // section is not rendered, even if it still has blocks." per https://wiki.vg/Chunk_Format#Data_structure
                 }
 
                 let mut bit_size = data.read_u8()?;
@@ -1066,7 +1071,9 @@ impl World {
                 } else {
                     let count = VarInt::read_from(&mut data)?.0;
                     println!("count = {}", count);
-                    // TODO: handle direct palettes, bit_size >= 9 for block states
+                    if bit_size >= 9 {
+                        panic!("TODO: handle direct palettes, bit_size {} >= 9 for block states", bit_size);
+                    }
                     for i in 0..count {
                         let id = VarInt::read_from(&mut data)?.0;
                         let bl = self
@@ -1124,7 +1131,9 @@ impl World {
                         // Single-valued palette
                         let _single_value = VarInt::read_from(&mut data)?.0;
                     } else {
-                        // TODO: handle direct palettes, bit_size >= 4 for biomes
+                        if bit_size >= 4 {
+                            panic!("TODO: handle direct palettes, bit_size {} >= 4 for biomes", bit_size);
+                        }
 
                         let count = VarInt::read_from(&mut data)?.0;
                         for _i in 0..count {

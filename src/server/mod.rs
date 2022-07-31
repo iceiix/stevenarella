@@ -1981,6 +1981,7 @@ impl Server {
             )
             .unwrap();
         //self.load_block_entities(chunk_data.block_entities.data); // TODO: load entities
+        // TODO: update light
     }
 
     fn on_chunk_data_biomes3d_bitmasks(
