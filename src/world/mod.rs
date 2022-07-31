@@ -1054,15 +1054,18 @@ impl World {
                 let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> =
                     HashMap::with_hasher(BuildHasherDefault::default());
                 let mut single_value: Option<usize> = None;
+                println!("bit_size = {}", bit_size);
                 if bit_size == 0 {
                     if self.protocol_version >= 757 {
                         // Single-valued palette
                         single_value = Some(VarInt::read_from(&mut data)?.0.try_into().unwrap());
+                        println!("single-valued palette: {}", single_value.unwrap());
                     } else {
                         bit_size = 13;
                     }
                 } else {
                     let count = VarInt::read_from(&mut data)?.0;
+                    println!("count = {}", count);
                     // TODO: handle direct palettes, bit_size >= 9 for block states
                     for i in 0..count {
                         let id = VarInt::read_from(&mut data)?.0;
@@ -1070,6 +1073,7 @@ impl World {
                             .id_map
                             .by_vanilla_id(id as usize, &self.modded_block_ids);
                         mappings.insert(i as usize, bl);
+                        println!("mapping i {} = id {}", i, id);
                     }
                 }
                 if bit_size > 16 {
@@ -1093,6 +1097,7 @@ impl World {
                     );
                     // Spawn block entities
                     let b = section.blocks.get(bi);
+                    println!("bi {} = {} = {:?}", bi, id, b);
                     if block_entity::BlockEntityType::get_block_entity(b).is_some() {
                         let pos = Position::new(
                             (bi & 0xF) as i32,
