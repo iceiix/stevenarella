@@ -1062,11 +1062,7 @@ impl Server {
         &mut self,
         join: packet::play::clientbound::JoinGame_WorldNames_IsHard_SimDist,
     ) {
-        println!("dimension = {:?}", join.dimension);
-        if let Some(crate::nbt::NamedTag(_, crate::nbt::Tag::Compound(tags))) = join.dimension {
-            println!("tags = {:?}", tags);
-            // TODO: min_y
-        }
+        self.world.load_dimension_type(join.dimension);
         self.on_game_join(join.gamemode, join.entity_id)
     }
 
@@ -1074,7 +1070,7 @@ impl Server {
         &mut self,
         join: packet::play::clientbound::JoinGame_WorldNames_IsHard,
     ) {
-        // TODO: also load dimension tags
+        self.world.load_dimension_type(join.dimension);
         self.on_game_join(join.gamemode, join.entity_id)
     }
 

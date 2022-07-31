@@ -31,6 +31,7 @@ use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::hash::BuildHasherDefault;
 use std::io::Read;
+use log::info;
 
 pub mod biome;
 mod storage;
@@ -38,6 +39,7 @@ mod storage;
 #[derive(Default)]
 pub struct World {
     chunks: HashMap<CPos, Chunk, BuildHasherDefault<FNVHash>>,
+    min_y: i32,
 
     render_list: Vec<(i32, i32, i32)>,
 
@@ -1005,6 +1007,19 @@ impl World {
         self.load_chunk19_to_117(false, x, z, new, mask, num_sections, data)
     }
 
+    pub fn load_dimension_type(
+        &mut self,
+        dimension_tags: Option<crate::nbt::NamedTag>) {
+        if let Some(crate::nbt::NamedTag(_, crate::nbt::Tag::Compound(tags))) = dimension_tags {
+            info!("Dimension type: {:?}", tags);
+
+            if let Some(crate::nbt::Tag::Int(min_y)) = tags.get("min_y") {
+                self.min_y = *min_y;
+            }
+            // TODO: More tags https://wiki.vg/Protocol#Login_.28play.29
+        }
+    }
+
     #[allow(clippy::or_fun_call)]
     fn load_chunk19_to_117(
         &mut self,
@@ -1106,7 +1121,7 @@ impl World {
                     let b = section.blocks.get(bi);
                     let pos = Position::new(
                             (bi & 0xF) as i32,
-                            (bi >> 8) as i32,
+                            (bi >> 8) as i32 + self.min_y, // TODO: fix in chunks too
                             ((bi >> 4) & 0xF) as i32,
                         ) + (
                             chunk.position.0 << 4,
