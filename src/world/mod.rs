@@ -1023,7 +1023,7 @@ impl World {
         let mut data = Cursor::new(data);
 
         let cpos = CPos(x, z);
-        if x != 0 && z != 0 {
+        if x != 0 || z != 0 {
             return Ok(());
         }
         {
