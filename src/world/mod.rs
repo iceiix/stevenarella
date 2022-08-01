@@ -1212,10 +1212,6 @@ impl World {
                     let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
                 } else if self.protocol_version >= 451 {
                     // Skylight in update skylight packet for 1.14+
-                    // TODO: lighting in same packet in 1.18+
-                    // fullbright
-                    section.block_light.set_all();
-                    section.sky_light.set_all();
                 } else {
                     data.read_exact(&mut section.block_light.data)?;
                     data.read_exact(&mut section.sky_light.data)?;
