@@ -25,13 +25,13 @@ use crate::types::hash::FNVHash;
 use crate::types::{bit, nibble};
 use cgmath::prelude::*;
 use flate2::read::ZlibDecoder;
+use log::info;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::hash::BuildHasherDefault;
 use std::io::Read;
-use log::info;
 
 pub mod biome;
 mod storage;
@@ -1007,9 +1007,7 @@ impl World {
         self.load_chunk19_to_117(false, x, z, new, mask, num_sections, data)
     }
 
-    pub fn load_dimension_type(
-        &mut self,
-        dimension_tags: Option<crate::nbt::NamedTag>) {
+    pub fn load_dimension_type(&mut self, dimension_tags: Option<crate::nbt::NamedTag>) {
         if let Some(crate::nbt::NamedTag(_, crate::nbt::Tag::Compound(tags))) = dimension_tags {
             info!("Dimension type: {:?}", tags);
 
@@ -1061,7 +1059,10 @@ impl World {
                         panic!("TODO: support chunk data y<0 non-air (bit_size {}, single_value {:?}, block_count {})", bit_size, single_value, block_count);
                     }
                     let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-                    println!("skipping chunk section {} {} {:?} {:?}", block_count, bit_size, single_value, bits);
+                    println!(
+                        "skipping chunk section {} {} {:?} {:?}",
+                        block_count, bit_size, single_value, bits
+                    );
 
                     // biome
                     let _bit_size = data.read_u8()?;
@@ -1069,7 +1070,10 @@ impl World {
                         let _single_value = VarInt::read_from(&mut data)?.0;
                     } else {
                         if bit_size >= 4 {
-                            panic!("TODO: handle direct palettes, bit_size {} >= 4 for biomes", bit_size);
+                            panic!(
+                                "TODO: handle direct palettes, bit_size {} >= 4 for biomes",
+                                bit_size
+                            );
                         }
 
                         let count = VarInt::read_from(&mut data)?.0;
@@ -1120,7 +1124,10 @@ impl World {
                     let count = VarInt::read_from(&mut data)?.0;
                     println!("count = {}", count);
                     if bit_size >= 9 {
-                        panic!("TODO: handle direct palettes, bit_size {} >= 9 for block states", bit_size);
+                        panic!(
+                            "TODO: handle direct palettes, bit_size {} >= 9 for block states",
+                            bit_size
+                        );
                     }
                     for i in 0..count {
                         let id = VarInt::read_from(&mut data)?.0;
@@ -1153,14 +1160,14 @@ impl World {
                     // Spawn block entities
                     let b = section.blocks.get(bi);
                     let pos = Position::new(
-                            (bi & 0xF) as i32,
-                            (bi >> 8) as i32,
-                            ((bi >> 4) & 0xF) as i32,
-                        ) + (
-                            chunk.position.0 << 4,
-                            (i << 4) as i32,
-                            chunk.position.1 << 4,
-                        );
+                        (bi & 0xF) as i32,
+                        (bi >> 8) as i32,
+                        ((bi >> 4) & 0xF) as i32,
+                    ) + (
+                        chunk.position.0 << 4,
+                        (i << 4) as i32,
+                        chunk.position.1 << 4,
+                    );
 
                     println!("bi {} = {} = {:?} at {:?}", bi, id, b, pos);
                     if block_entity::BlockEntityType::get_block_entity(b).is_some() {
@@ -1190,7 +1197,10 @@ impl World {
                         let _single_value = VarInt::read_from(&mut data)?.0;
                     } else {
                         if bit_size >= 4 {
-                            panic!("TODO: handle direct palettes, bit_size {} >= 4 for biomes", bit_size);
+                            panic!(
+                                "TODO: handle direct palettes, bit_size {} >= 4 for biomes",
+                                bit_size
+                            );
                         }
 
                         let count = VarInt::read_from(&mut data)?.0;
