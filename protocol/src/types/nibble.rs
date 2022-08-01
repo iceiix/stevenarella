@@ -41,4 +41,10 @@ impl Array {
             self.data[i] = (old & 0x0F) | ((val & 0xF) << 4);
         }
     }
+
+    pub fn set_all(&mut self) {
+        for i in 0..self.data.len() {
+            self.data[i] = 0xFF;
+        }
+    }
 }
