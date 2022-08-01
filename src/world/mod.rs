@@ -1049,7 +1049,40 @@ impl World {
             }
             let chunk = self.chunks.get_mut(&cpos).unwrap();
 
-            for i in 0..num_sections {
+            for i1 in 0..num_sections {
+                let i: i32 = (i1 as i32) + (self.min_y >> 4);
+                println!("i1 = {}, min_y = {}, i = {}", i1, self.min_y, i);
+                if i < 0 {
+                    // TODO: support y<0 in the world (needs shifting in all section access)
+                    let block_count = data.read_u16::<byteorder::LittleEndian>()?;
+                    let bit_size = data.read_u8()?;
+                    let single_value = Some(VarInt::read_from(&mut data)?.0.try_into().unwrap());
+                    if bit_size != 0 || single_value != Some(0) || block_count != 0 {
+                        panic!("TODO: support chunk data y<0 non-air (bit_size {}, single_value {:?}, block_count {})", bit_size, single_value, block_count);
+                    }
+                    let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
+                    println!("skipping chunk section {} {} {:?} {:?}", block_count, bit_size, single_value, bits);
+
+                    // biome
+                    let _bit_size = data.read_u8()?;
+                    if _bit_size == 0 {
+                        let _single_value = VarInt::read_from(&mut data)?.0;
+                    } else {
+                        if bit_size >= 4 {
+                            panic!("TODO: handle direct palettes, bit_size {} >= 4 for biomes", bit_size);
+                        }
+
+                        let count = VarInt::read_from(&mut data)?.0;
+                        for _i in 0..count {
+                            let _id = VarInt::read_from(&mut data)?.0;
+                        }
+                    }
+                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
+
+                    continue;
+                }
+                let i = i as usize;
+
                 if chunk.sections[i].is_none() {
                     let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
@@ -1121,7 +1154,7 @@ impl World {
                     let b = section.blocks.get(bi);
                     let pos = Position::new(
                             (bi & 0xF) as i32,
-                            (bi >> 8) as i32 + self.min_y, // TODO: fix in chunks too
+                            (bi >> 8) as i32,
                             ((bi >> 4) & 0xF) as i32,
                         ) + (
                             chunk.position.0 << 4,
