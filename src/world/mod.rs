@@ -1036,9 +1036,6 @@ impl World {
         let mut data = Cursor::new(data);
 
         let cpos = CPos(x, z);
-        if x != 0 || z != 0 {
-            return Ok(());
-        }
         {
             if new {
                 self.chunks.insert(cpos, Chunk::new(cpos));
@@ -1169,7 +1166,7 @@ impl World {
                         chunk.position.1 << 4,
                     );
 
-                    println!("bi {} = {} = {:?} at {:?}", bi, id, b, pos);
+                    //println!("bi {} = {} = {:?} at {:?}", bi, id, b, pos);
                     if block_entity::BlockEntityType::get_block_entity(b).is_some() {
                         let pos = Position::new(
                             (bi & 0xF) as i32,
