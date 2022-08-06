@@ -1796,7 +1796,7 @@ state_packets!(
                 field entity_ids: LenPrefixed<u8, i32> =,
             }
             /// EntityRemoveEffect removes an effect from an entity.
-            packet EntityRemoveEffect {
+            packet EntityRemoveEffect_i8 {
                 field entity_id: VarInt =,
                 field effect_id: i8 =,
             }

@@ -107,7 +107,7 @@ protocol_packet_ids!(
             0x33 => EntityUsedBed
             0x34 => UnlockRecipes_WithSmelting
             0x35 => EntityDestroy
-            0x36 => EntityRemoveEffect
+            0x36 => EntityRemoveEffect_i8
             0x37 => ResourcePackSend
             0x38 => Respawn_Gamemode
             0x39 => EntityHeadLook

@@ -113,7 +113,7 @@ protocol_packet_ids!(
             0x36 => TeleportPlayer_WithConfirm
             0x37 => UnlockRecipes_WithSmelting
             0x38 => EntityDestroy
-            0x39 => EntityRemoveEffect
+            0x39 => EntityRemoveEffect_i8
             0x3a => ResourcePackSend
             0x3b => Respawn_HashedSeed
             0x3c => EntityHeadLook

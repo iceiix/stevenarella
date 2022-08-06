@@ -86,7 +86,7 @@ protocol_packet_ids!(
             0x2e => TeleportPlayer_NoConfirm
             0x2f => EntityUsedBed
             0x30 => EntityDestroy
-            0x31 => EntityRemoveEffect
+            0x31 => EntityRemoveEffect_i8
             0x32 => ResourcePackSend
             0x33 => Respawn_Gamemode
             0x34 => EntityHeadLook
