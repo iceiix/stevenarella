@@ -25,6 +25,7 @@ use crate::types::hash::FNVHash;
 use crate::types::{bit, nibble};
 use cgmath::prelude::*;
 use flate2::read::ZlibDecoder;
+use log::info;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::VecDeque;
@@ -38,6 +39,7 @@ mod storage;
 #[derive(Default)]
 pub struct World {
     chunks: HashMap<CPos, Chunk, BuildHasherDefault<FNVHash>>,
+    min_y: i32,
 
     render_list: Vec<(i32, i32, i32)>,
 
@@ -1005,6 +1007,17 @@ impl World {
         self.load_chunk19_to_117(false, x, z, new, mask, num_sections, data)
     }
 
+    pub fn load_dimension_type(&mut self, dimension_tags: Option<crate::nbt::NamedTag>) {
+        if let Some(crate::nbt::NamedTag(_, crate::nbt::Tag::Compound(tags))) = dimension_tags {
+            info!("Dimension type: {:?}", tags);
+
+            if let Some(crate::nbt::Tag::Int(min_y)) = tags.get("min_y") {
+                self.min_y = *min_y;
+            }
+            // TODO: More tags https://wiki.vg/Protocol#Login_.28play.29
+        }
+    }
+
     #[allow(clippy::or_fun_call)]
     fn load_chunk19_to_117(
         &mut self,
@@ -1031,10 +1044,48 @@ impl World {
             }
             let chunk = self.chunks.get_mut(&cpos).unwrap();
 
-            for i in 0..num_sections {
+            for i1 in 0..num_sections {
+                let i: i32 = (i1 as i32) + (self.min_y >> 4);
+                if i < 0 {
+                    // TODO: support y<0 in the world (needs shifting in all section access)
+                    let block_count = data.read_u16::<byteorder::LittleEndian>()?;
+                    let bit_size = data.read_u8()?;
+                    let single_value = Some(VarInt::read_from(&mut data)?.0);
+                    if bit_size != 0 || single_value != Some(0) || block_count != 0 {
+                        panic!("TODO: support chunk data y<0 non-air (bit_size {}, single_value {:?}, block_count {})", bit_size, single_value, block_count);
+                    }
+                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
+
+                    // biome
+                    let _bit_size = data.read_u8()?;
+                    if _bit_size == 0 {
+                        let _single_value = VarInt::read_from(&mut data)?.0;
+                    } else {
+                        if bit_size >= 4 {
+                            panic!(
+                                "TODO: handle direct palettes, bit_size {} >= 4 for biomes",
+                                bit_size
+                            );
+                        }
+
+                        let count = VarInt::read_from(&mut data)?.0;
+                        for _i in 0..count {
+                            let _id = VarInt::read_from(&mut data)?.0;
+                        }
+                    }
+                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
+
+                    continue;
+                }
+                let i = i as usize;
+
                 if chunk.sections[i].is_none() {
                     let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
+                    if self.protocol_version >= 757 {
+                        // TODO: fix conditionalizing fill sky on 1.18+
+                        fill_sky = true;
+                    }
                     if !fill_sky || mask & (1 << i) != 0 {
                         chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
                     }
@@ -1047,16 +1098,30 @@ impl World {
 
                 if self.protocol_version >= 451 {
                     let _block_count = data.read_u16::<byteorder::LittleEndian>()?;
-                    // TODO: use block_count
+                    // TODO: use block_count, "The client will keep count of the blocks as they are
+                    // broken and placed, and, if the block count reaches 0, the whole chunk
+                    // section is not rendered, even if it still has blocks." per https://wiki.vg/Chunk_Format#Data_structure
                 }
 
                 let mut bit_size = data.read_u8()?;
                 let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> =
                     HashMap::with_hasher(BuildHasherDefault::default());
+                let mut single_value: Option<usize> = None;
                 if bit_size == 0 {
-                    bit_size = 13;
+                    if self.protocol_version >= 757 {
+                        // Single-valued palette
+                        single_value = Some(VarInt::read_from(&mut data)?.0.try_into().unwrap());
+                    } else {
+                        bit_size = 13;
+                    }
                 } else {
                     let count = VarInt::read_from(&mut data)?.0;
+                    if bit_size >= 9 {
+                        panic!(
+                            "TODO: handle direct palettes, bit_size {} >= 9 for block states",
+                            bit_size
+                        );
+                    }
                     for i in 0..count {
                         let id = VarInt::read_from(&mut data)?.0;
                         let bl = self
@@ -1065,13 +1130,17 @@ impl World {
                         mappings.insert(i as usize, bl);
                     }
                 }
+                if bit_size > 16 {
+                    // https://wiki.vg/Chunk_Format#Data_structure "This increase can go up to 16 bits per block"...
+                    panic!("load_chunk19_to_117: bit_size={:?} > 16", bit_size);
+                }
 
                 let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
                 let padded = self.protocol_version >= 736;
                 let m = bit::Map::from_raw(bits, bit_size as usize, padded);
 
                 for bi in 0..4096 {
-                    let id = m.get(bi);
+                    let id = single_value.unwrap_or_else(|| m.get(bi));
                     section.blocks.set(
                         bi,
                         mappings
@@ -1101,7 +1170,31 @@ impl World {
                     }
                 }
 
-                if self.protocol_version >= 451 {
+                if self.protocol_version >= 757 {
+                    // Biomes palette TODO: refactor with block states, "palette container"
+                    let _bit_size = data.read_u8()?;
+                    if _bit_size == 0 {
+                        // Single-valued palette
+                        let _single_value = VarInt::read_from(&mut data)?.0;
+                    } else {
+                        if bit_size >= 4 {
+                            panic!(
+                                "TODO: handle direct palettes, bit_size {} >= 4 for biomes",
+                                bit_size
+                            );
+                        }
+
+                        let count = VarInt::read_from(&mut data)?.0;
+                        for _i in 0..count {
+                            let _id = VarInt::read_from(&mut data)?.0;
+                            //let bl = self
+                            //    .id_map
+                            //    .by_vanilla_id(id as usize, &self.modded_block_ids);
+                            //mappings.insert(i as usize, bl);
+                        }
+                    }
+                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
+                } else if self.protocol_version >= 451 {
                     // Skylight in update skylight packet for 1.14+
                 } else {
                     data.read_exact(&mut section.block_light.data)?;

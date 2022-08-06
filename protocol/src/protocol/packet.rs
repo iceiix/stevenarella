@@ -835,7 +835,12 @@ state_packets!(
             }
             /// UpdateBlockEntity updates the nbt tag of a block entity in the
             /// world.
-            packet UpdateBlockEntity {
+            packet UpdateBlockEntity_VarInt {
+                field location: Position =,
+                field action: VarInt =,
+                field nbt: Option<nbt::NamedTag> =,
+            }
+            packet UpdateBlockEntity_u8 {
                 field location: Position =,
                 field action: u8 =,
                 field nbt: Option<nbt::NamedTag> =,
@@ -1132,6 +1137,21 @@ state_packets!(
             }
             /// ChunkData sends or updates a single chunk on the client. If New is set
             /// then biome data should be sent too.
+            packet ChunkData_AndLight {
+                field chunk_x: i32 =,
+                field chunk_z: i32 =,
+                field heightmaps: Option<nbt::NamedTag> =,
+                field data: LenPrefixedBytes<VarInt> =,
+                field block_entities: LenPrefixed<VarInt, packet::BlockEntityAtPackedLocation> =,
+
+                field trust_edges: bool =,
+                field sky_light_mask: LenPrefixed<VarInt, i64> =,
+                field block_light_mask: LenPrefixed<VarInt, i64> =,
+                field empty_sky_light_mask: LenPrefixed<VarInt, i64> =,
+                field empty_block_light_mask: LenPrefixed<VarInt, i64> =,
+                field sky_light_arrays: LenPrefixed<VarInt, LenPrefixed<VarInt, u8>> =,
+                field block_light_arrays: LenPrefixed<VarInt, LenPrefixed<VarInt, u8>> =,
+            }
             packet ChunkData_Biomes3D_Bitmasks {
                 field chunk_x: i32 =,
                 field chunk_z: i32 =,
@@ -1324,6 +1344,41 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
+            packet JoinGame_WorldNames_IsHard_SimDist {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// Whether hardcore mode is enabled
+                field is_hardcore: bool =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The previous gamemode of the client
+                field previous_gamemode: u8 =,
+                /// Identifiers for all worlds on the server
+                field world_names: LenPrefixed<VarInt, String> =,
+                /// Represents a dimension registry
+                field dimension_codec: Option<nbt::NamedTag> =,
+                /// The dimension the client is starting in
+                field dimension: Option<nbt::NamedTag> =,
+                /// The world being spawned into
+                field world_name: String =,
+                /// Truncated SHA-256 hash of world's seed
+                field hashed_seed: i64 =,
+                /// The max number of players on the server
+                field max_players: VarInt =,
+                /// The render distance (2-32)
+                field view_distance: VarInt =,
+                /// The distance the client will process entities
+                field simulation_distance: VarInt =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+                /// Whether to prompt or immediately respawn
+                field enable_respawn_screen: bool =,
+                /// Whether the world is in debug mode
+                field is_debug: bool =,
+                /// Whether the world is a superflat world
+                field is_flat: bool =,
+            }
             packet JoinGame_WorldNames_IsHard {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -2019,6 +2074,10 @@ state_packets!(
                 field object_name: String =,
                 field value: Option<i32 > = when(|p: &UpdateScore_i32| p.action != 1),
             }
+            /// UpdateSimulationDistance is used to set how far the client will process entities.
+            packet UpdateSimulationDistance {
+                field simulation_distance: VarInt =,
+            }
             /// SpawnPosition is sent to change the player's current spawn point. Currently
             /// only used by the client for the compass.
             packet SpawnPosition_Angle {
@@ -2711,6 +2770,34 @@ impl Serializable for CriterionProgress {
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
         self.id.write_to(buf)?;
         self.date_of_achieving.write_to(buf)
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct BlockEntityAtPackedLocation {
+    /// The packed section coordinates, calculated from ((blockX & 15) << 4) | (blockZ & 15)
+    pub packed_xz: u8,
+    /// The height relative to the world
+    pub y: i16,
+    pub ty: VarInt,
+    pub data: Option<nbt::NamedTag>,
+}
+
+impl Serializable for BlockEntityAtPackedLocation {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        Ok(BlockEntityAtPackedLocation {
+            packed_xz: Serializable::read_from(buf)?,
+            y: Serializable::read_from(buf)?,
+            ty: Serializable::read_from(buf)?,
+            data: Serializable::read_from(buf)?,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.packed_xz.write_to(buf)?;
+        self.y.write_to(buf)?;
+        self.ty.write_to(buf)?;
+        self.data.write_to(buf)
     }
 }
 

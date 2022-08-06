@@ -581,6 +581,7 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_WorldNames_IsHard_SimDist => on_game_join_worldnames_ishard_simdist,
                             JoinGame_WorldNames_IsHard => on_game_join_worldnames_ishard,
                             JoinGame_WorldNames => on_game_join_worldnames,
                             JoinGame_HashedSeed_Respawn => on_game_join_hashedseed_respawn,
@@ -595,6 +596,7 @@ impl Server {
                             KeepAliveClientbound_i64 => on_keep_alive_i64,
                             KeepAliveClientbound_VarInt => on_keep_alive_varint,
                             KeepAliveClientbound_i32 => on_keep_alive_i32,
+                            ChunkData_AndLight => on_chunk_data_and_light,
                             ChunkData_Biomes3D_Bitmasks => on_chunk_data_biomes3d_bitmasks,
                             ChunkData_Biomes3D_VarInt => on_chunk_data_biomes3d_varint,
                             ChunkData_Biomes3D_bool => on_chunk_data_biomes3d_bool,
@@ -618,7 +620,8 @@ impl Server {
                             TeleportPlayer_OnGround => on_teleport_player_onground,
                             TimeUpdate => on_time_update,
                             ChangeGameState => on_game_state_change,
-                            UpdateBlockEntity => on_block_entity_update,
+                            UpdateBlockEntity_VarInt => on_block_entity_update_varint,
+                            UpdateBlockEntity_u8 => on_block_entity_update_u8,
                             UpdateBlockEntity_Data => on_block_entity_update_data,
                             UpdateSign => on_sign_update,
                             UpdateSign_u16 => on_sign_update_u16,
@@ -1055,10 +1058,19 @@ impl Server {
             .write_plugin_message(channel, data); // TODO handle errors
     }
 
+    fn on_game_join_worldnames_ishard_simdist(
+        &mut self,
+        join: packet::play::clientbound::JoinGame_WorldNames_IsHard_SimDist,
+    ) {
+        self.world.load_dimension_type(join.dimension);
+        self.on_game_join(join.gamemode, join.entity_id)
+    }
+
     fn on_game_join_worldnames_ishard(
         &mut self,
         join: packet::play::clientbound::JoinGame_WorldNames_IsHard,
     ) {
+        self.world.load_dimension_type(join.dimension);
         self.on_game_join(join.gamemode, join.entity_id)
     }
 
@@ -1677,9 +1689,27 @@ impl Server {
         }
     }
 
-    fn on_block_entity_update(
+    fn on_block_entity_update_varint(
         &mut self,
-        block_update: packet::play::clientbound::UpdateBlockEntity,
+        block_update: packet::play::clientbound::UpdateBlockEntity_VarInt,
+    ) {
+        self.on_block_entity_update_u8(packet::play::clientbound::UpdateBlockEntity_u8 {
+            location: block_update.location,
+            action: block_update.action.0 as u8,
+            nbt: block_update.nbt,
+        });
+    }
+
+    fn on_block_entity_update_data(
+        &mut self,
+        _block_update: packet::play::clientbound::UpdateBlockEntity_Data,
+    ) {
+        // TODO: handle UpdateBlockEntity_Data for 1.7, decompress gzipped_nbt
+    }
+
+    fn on_block_entity_update_u8(
+        &mut self,
+        block_update: packet::play::clientbound::UpdateBlockEntity_u8,
     ) {
         match block_update.nbt {
             None => {
@@ -1734,13 +1764,6 @@ impl Server {
                 }
             }
         }
-    }
-
-    fn on_block_entity_update_data(
-        &mut self,
-        _block_update: packet::play::clientbound::UpdateBlockEntity_Data,
-    ) {
-        // TODO: handle UpdateBlockEntity_Data for 1.7, decompress gzipped_nbt
     }
 
     fn on_sign_update(&mut self, mut update_sign: packet::play::clientbound::UpdateSign) {
@@ -1931,7 +1954,7 @@ impl Server {
                     // Not something we care about, so break the loop
                     _ => continue,
                 }
-                self.on_block_entity_update(packet::play::clientbound::UpdateBlockEntity {
+                self.on_block_entity_update_u8(packet::play::clientbound::UpdateBlockEntity_u8 {
                     location: Position::new(x, y, z),
                     action,
                     nbt: Some(block_entity.clone()),
@@ -1943,6 +1966,24 @@ impl Server {
                 );
             }
         }
+    }
+
+    fn on_chunk_data_and_light(
+        &mut self,
+        chunk_data: packet::play::clientbound::ChunkData_AndLight,
+    ) {
+        self.world
+            .load_chunk117(
+                chunk_data.chunk_x,
+                chunk_data.chunk_z,
+                true,
+                0xffff, // world height/16 (256/16 = 16) bits
+                16,     // TODO: get all bitmasks
+                chunk_data.data.data,
+            )
+            .unwrap();
+        //self.load_block_entities(chunk_data.block_entities.data); // TODO: load entities
+        // TODO: update light
     }
 
     fn on_chunk_data_biomes3d_bitmasks(

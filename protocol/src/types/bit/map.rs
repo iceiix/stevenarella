@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[derive(Debug)]
 pub struct Map {
     bits: Vec<u64>,
     pub bit_size: usize,
@@ -63,11 +64,20 @@ impl Map {
     }
 
     pub fn from_raw(bits: Vec<u64>, size: usize, padded: bool) -> Map {
-        Map {
-            length: (bits.len() * 64 + (size - 1)) / size,
-            bit_size: size,
-            bits,
-            padded,
+        if size == 0 {
+            Map {
+                length: 0,
+                bit_size: size,
+                bits,
+                padded,
+            }
+        } else {
+            Map {
+                length: (bits.len() * 64 + (size - 1)) / size,
+                bit_size: size,
+                bits,
+                padded,
+            }
         }
     }
 
@@ -80,6 +90,7 @@ impl Map {
     }
 
     fn get_bit_offset(&self, i: usize) -> usize {
+        assert!(self.length != 0);
         let padding = if self.padded {
             i / (64 / self.bit_size) * (64 % self.bit_size)
         } else {

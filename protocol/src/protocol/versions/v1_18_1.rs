@@ -68,7 +68,7 @@ protocol_packet_ids!(
             0x07 => Statistics
             0x08 => AcknowledgePlayerDigging
             0x09 => BlockBreakAnimation
-            0x0a => UpdateBlockEntity_u8
+            0x0a => UpdateBlockEntity_VarInt
             0x0b => BlockAction
             0x0c => BlockChange_VarInt
             0x0d => BossBar
@@ -92,11 +92,11 @@ protocol_packet_ids!(
             0x1f => WindowOpenHorse
             0x20 => WorldBorderInit
             0x21 => KeepAliveClientbound_i64
-            0x22 => ChunkData_Biomes3D_Bitmasks
+            0x22 => ChunkData_AndLight
             0x23 => Effect
             0x24 => Particle_f64
             0x25 => UpdateLight_Arrays
-            0x26 => JoinGame_WorldNames_IsHard
+            0x26 => JoinGame_WorldNames_IsHard_SimDist
             0x27 => Maps
             0x28 => TradeList_WithRestock
             0x29 => EntityMove_i16
@@ -145,22 +145,23 @@ protocol_packet_ids!(
             0x54 => SetPassengers
             0x55 => Teams_VarInt
             0x56 => UpdateScore
-            0x57 => TitleSubtitle
-            0x58 => TimeUpdate
-            0x59 => Title
-            0x5a => TitleTimes
-            0x5b => EntitySoundEffect
-            0x5c => SoundEffect
-            0x5d => StopSound
-            0x5e => PlayerListHeaderFooter
-            0x5f => NBTQueryResponse
-            0x60 => CollectItem
-            0x61 => EntityTeleport_f64
-            0x62 => Advancements
-            0x63 => EntityProperties_VarIntVarInt
-            0x64 => EntityEffect
-            0x65 => DeclareRecipes
-            0x66 => Tags_Nested
+            0x57 => UpdateSimulationDistance
+            0x58 => TitleSubtitle
+            0x59 => TimeUpdate
+            0x5a => Title
+            0x5b => TitleTimes
+            0x5c => EntitySoundEffect
+            0x5d => SoundEffect
+            0x5e => StopSound
+            0x5f => PlayerListHeaderFooter
+            0x60 => NBTQueryResponse
+            0x61 => CollectItem
+            0x62 => EntityTeleport_f64
+            0x63 => Advancements
+            0x64 => EntityProperties_VarIntVarInt
+            0x65 => EntityEffect
+            0x66 => DeclareRecipes
+            0x67 => Tags_Nested
         }
     }
     login Login {
