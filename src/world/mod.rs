@@ -1109,6 +1109,7 @@ impl World {
                 if chunk.sections[i].is_none() {
                     let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
+                    fill_sky = true;
                     if !fill_sky || mask & (1 << i) != 0 {
                         chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
                     }
@@ -1495,7 +1496,7 @@ impl Chunk {
     fn set_sky_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
         println!("set_sky_light {}", light);
         if (x==14 && y==5 && z==15) || (light == 15) {
-            panic!("set light {},{},{} = {}", x, y, z, light);
+            //panic!("set light {},{},{} = {}", x, y, z, light);
         }
         let s_idx = y >> 4;
         if !(0..=15).contains(&s_idx) {
