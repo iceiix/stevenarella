@@ -67,7 +67,7 @@ pub enum BlockEntityAction {
     ),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum LightType {
     Block,
     Sky,
@@ -88,6 +88,7 @@ impl LightType {
     }
 }
 
+#[derive(Debug)]
 struct LightUpdate {
     ty: LightType,
     pos: Position,
@@ -203,6 +204,7 @@ impl World {
     }
 
     fn update_light(&mut self, pos: Position, ty: LightType) {
+        println!("update_light {:?} {:?}", pos, ty);
         self.light_updates.push_back(LightUpdate { ty, pos });
     }
 
@@ -266,6 +268,7 @@ impl World {
     }
 
     fn do_light_update(&mut self) {
+        println!("do_light_update");
         use std::cmp;
         if let Some(update) = self.light_updates.pop_front() {
             if update.pos.y < 0
