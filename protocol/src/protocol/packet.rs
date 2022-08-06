@@ -2066,6 +2066,12 @@ state_packets!(
             }
             /// UpdateScore is used to update or remove an item from a scoreboard
             /// objective.
+            packet UpdateScore_VarInt {
+                field name: String =,
+                field action: VarInt =,
+                field object_name: String =,
+                field value: Option<VarInt> = when(|p: &UpdateScore_VarInt| p.action.0 != 1),
+            }
             packet UpdateScore_u8 {
                 field name: String =,
                 field action: u8 =,

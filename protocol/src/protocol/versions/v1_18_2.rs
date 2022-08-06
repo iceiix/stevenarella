@@ -144,7 +144,7 @@ protocol_packet_ids!(
             0x53 => ScoreboardObjective
             0x54 => SetPassengers
             0x55 => Teams_VarInt
-            0x56 => UpdateScore_u8
+            0x56 => UpdateScore_VarInt
             0x57 => UpdateSimulationDistance
             0x58 => TitleSubtitle
             0x59 => TimeUpdate
