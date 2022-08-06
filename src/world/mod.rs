@@ -1109,7 +1109,10 @@ impl World {
                 if chunk.sections[i].is_none() {
                     let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
-                    fill_sky = true;
+                    if self.protocol_version >= 757 {
+                        // TODO: fix conditionalizing fill sky on 1.18+
+                        fill_sky = true;
+                    }
                     if !fill_sky || mask & (1 << i) != 0 {
                         chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
                     }
