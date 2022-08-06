@@ -1279,6 +1279,7 @@ impl Snapshot {
     }
 
     pub fn get_block_light(&self, x: i32, y: i32, z: i32) -> u8 {
+        return 15;
         self.block_light.get(self.index(x, y, z))
     }
 
@@ -1288,6 +1289,7 @@ impl Snapshot {
     }
 
     pub fn get_sky_light(&self, x: i32, y: i32, z: i32) -> u8 {
+        return 15;
         self.sky_light.get(self.index(x, y, z))
     }
 
