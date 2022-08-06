@@ -132,7 +132,7 @@ protocol_packet_ids!(
             0x49 => ScoreboardObjective
             0x4a => SetPassengers
             0x4b => Teams_VarInt
-            0x4c => UpdateScore
+            0x4c => UpdateScore_u8
             0x4d => SpawnPosition_NoAngle
             0x4e => TimeUpdate
             0x4f => Title

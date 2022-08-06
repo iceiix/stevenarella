@@ -2066,17 +2066,17 @@ state_packets!(
             }
             /// UpdateScore is used to update or remove an item from a scoreboard
             /// objective.
-            packet UpdateScore {
+            packet UpdateScore_u8 {
                 field name: String =,
                 field action: u8 =,
                 field object_name: String =,
-                field value: Option<VarInt> = when(|p: &UpdateScore| p.action != 1),
+                field value: Option<VarInt> = when(|p: &UpdateScore_u8| p.action != 1),
             }
             packet UpdateScore_i32 {
                 field name: String =,
                 field action: u8 =,
                 field object_name: String =,
-                field value: Option<i32 > = when(|p: &UpdateScore_i32| p.action != 1),
+                field value: Option<i32> = when(|p: &UpdateScore_i32| p.action != 1),
             }
             /// UpdateSimulationDistance is used to set how far the client will process entities.
             packet UpdateSimulationDistance {

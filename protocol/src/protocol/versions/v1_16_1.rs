@@ -134,7 +134,7 @@ protocol_packet_ids!(
             0x4a => ScoreboardObjective
             0x4b => SetPassengers
             0x4c => Teams_VarInt
-            0x4d => UpdateScore
+            0x4d => UpdateScore_u8
             0x4e => TimeUpdate
             0x4f => Title
             0x50 => EntitySoundEffect

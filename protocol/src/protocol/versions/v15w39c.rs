@@ -102,7 +102,7 @@ protocol_packet_ids!(
             0x3e => UpdateHealth
             0x3f => ScoreboardObjective
             0x40 => Teams_u8
-            0x41 => UpdateScore
+            0x41 => UpdateScore_u8
             0x42 => SpawnPosition_NoAngle
             0x43 => TimeUpdate
             0x44 => Title_notext_component

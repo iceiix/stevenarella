@@ -96,7 +96,7 @@ protocol_packet_ids!(
             0x39 => PlayerAbilities
             0x3a => TabCompleteReply
             0x3b => ScoreboardObjective
-            0x3c => UpdateScore
+            0x3c => UpdateScore_u8
             0x3d => ScoreboardDisplay
             0x3e => Teams_u8
             0x3f => PluginMessageClientbound
