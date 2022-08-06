@@ -81,6 +81,7 @@ impl LightType {
         }
     }
     fn set_light(self, world: &mut World, pos: Position, light: u8) {
+        println!("LightType set_light {}", light);
         match self {
             LightType::Block => world.set_block_light(pos, light),
             LightType::Sky => world.set_sky_light(pos, light),
@@ -161,6 +162,7 @@ impl World {
                     if current != new {
                         self.set_block_raw(bp, new);
                         // Restore old lighting
+                        println!("update_range current={:?} new={:?} sky_light={:?} block_light={:?}", current, new, sky_light, block_light);
                         self.set_sky_light(bp, sky_light);
                         self.set_block_light(bp, block_light);
                     }
@@ -197,8 +199,19 @@ impl World {
 
     pub fn get_sky_light(&self, pos: Position) -> u8 {
         match self.chunks.get(&CPos(pos.x >> 4, pos.z >> 4)) {
-            Some(chunk) => chunk.get_sky_light(pos.x & 0xF, pos.y, pos.z & 0xF),
-            None => 15,
+            Some(chunk) => {
+                let light = chunk.get_sky_light(pos.x & 0xF, pos.y, pos.z & 0xF);
+                if pos.x==142 && pos.y==5 && pos.z==79 {
+                    println!("World get_sky_light {},{},{} ({},{},{}) = chunk {}", pos.x, pos.y, pos.z, pos.x&0xf, pos.y, pos.z&0xf, light);
+                }
+                light
+            },
+            None => {
+                if pos.x==142 && pos.y==5 && pos.z==79 {
+                    println!("World get_sky_light {},{},{} = no chunk {}", pos.x, pos.y, pos.z, 15);
+                }
+                15
+            },
         }
     }
 
@@ -268,10 +281,12 @@ impl World {
     fn do_light_update(&mut self) {
         use std::cmp;
         if let Some(update) = self.light_updates.pop_front() {
+            println!("do_light_update pos={},{}", update.pos.y, update.pos.x);
             if update.pos.y < 0
                 || update.pos.y > 255
                 || !self.is_chunk_loaded(update.pos.x >> 4, update.pos.z >> 4)
             {
+                println!("do_light_update returning chunk not loaded");
                 return;
             }
 
@@ -279,18 +294,22 @@ impl World {
             // Find the brightest source of light nearby
             let mut best = update.ty.get_light(self, update.pos);
             let old = best;
+            println!("do_light_update update.pos={:?}, old={}", update.pos, old);
             for dir in Direction::all() {
                 let light = update.ty.get_light(self, update.pos.shift(dir));
                 if light > best {
                     best = light;
                 }
             }
+            println!("best for = {}", best);
             best = best.saturating_sub(cmp::max(1, block.absorbed_light));
+            println!("best sat = {}", best);
             // If the light from the block itself is brighter than the light passing through
             // it use that.
             if update.ty == LightType::Block && block.emitted_light != 0 {
                 best = cmp::max(best, block.emitted_light);
             }
+            println!("best max = {}", best);
             // Sky light doesn't decrease when going down at full brightness
             if update.ty == LightType::Sky
                 && block.absorbed_light == 0
@@ -298,12 +317,14 @@ impl World {
             {
                 best = 15;
             }
+            println!("best sky = {}", best);
 
             // Nothing to do, we are already at the right value
             if best == old {
                 return;
             }
             // Use our new light value
+            println!("update.ty.set_light best={}", best);
             update.ty.set_light(self, update.pos, best);
             // Flag surrounding chunks as dirty
             for yy in -1..2 {
@@ -624,6 +645,7 @@ impl World {
     }
 
     fn dirty_chunks_by_bitmask(&mut self, x: i32, z: i32, mask: u64, num_sections: usize) {
+        println!("dirty_chunks_by_bitmask x={} z={} mask={} num_sections={}", x, z, mask, num_sections);
         for i in 0..num_sections {
             if mask & (1 << i) == 0 {
                 continue;
@@ -1288,7 +1310,12 @@ impl Snapshot {
     }
 
     pub fn get_sky_light(&self, x: i32, y: i32, z: i32) -> u8 {
-        self.sky_light.get(self.index(x, y, z))
+        let light = self.sky_light.get(self.index(x, y, z));
+        if x==14 && y==5 && z==15 {
+            println!("Snapshot get_sky_light {},{},{} -> {}", x, y, z, light);
+        }
+
+        light
     }
 
     pub fn set_sky_light(&mut self, x: i32, y: i32, z: i32, l: u8) {
@@ -1442,17 +1469,34 @@ impl Chunk {
     }
 
     fn get_sky_light(&self, x: i32, y: i32, z: i32) -> u8 {
+        if x==14 && y==5 && z==15 {
+            println!("chunk get_sky_light {},{},{}", x, y, z);
+        }
+
         let s_idx = y >> 4;
         if !(0..=15).contains(&s_idx) {
+            if x==14 && y==5 && z==15 { println!("s_idx = {}, returning 15", s_idx); }
+
             return 15;
         }
         match self.sections[s_idx as usize].as_ref() {
-            Some(sec) => sec.get_sky_light(x, y & 0xF, z),
-            None => 15,
+            Some(sec) => {
+                let light = sec.get_sky_light(x, y & 0xF, z);
+                if x==14 && y==5 && z==15 { println!("Chunk get_sky_light from y&0xf {} = {}", y & 0xf, light); }
+                light
+            },
+            None => {
+                if x==14 && y==5 && z==15 { println!("Chunk get_sky_light no section returning {}", 15); }
+                15
+            },
         }
     }
 
     fn set_sky_light(&mut self, x: i32, y: i32, z: i32, light: u8) {
+        println!("set_sky_light {}", light);
+        if (x==14 && y==5 && z==15) || (light == 15) {
+            panic!("set light {},{},{} = {}", x, y, z, light);
+        }
         let s_idx = y >> 4;
         if !(0..=15).contains(&s_idx) {
             return;
@@ -1541,6 +1585,7 @@ impl Section {
     }
 
     fn set_sky_light(&mut self, x: i32, y: i32, z: i32, l: u8) {
+        println!("section set_sky_light {}", l);
         self.sky_light.set(((y << 8) | (z << 4) | x) as usize, l);
     }
 }
