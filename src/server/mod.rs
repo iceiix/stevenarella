@@ -199,6 +199,23 @@ impl Server {
                         Some(rx),
                     ));
                 }
+                protocol::packet::Packet::LoginSuccess_Sig(val) => {
+                    warn!("Server is running in offline mode");
+                    debug!("Login: {} {:?} {:?}", val.username, val.uuid, val.properties);
+                    let mut read = conn.clone();
+                    let mut write = conn;
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    let rx = Self::spawn_reader(read);
+                    return Ok(Server::new(
+                        protocol_version,
+                        forge_mods,
+                        val.uuid,
+                        resources,
+                        Some(write),
+                        Some(rx),
+                    ));
+                }
                 protocol::packet::Packet::LoginDisconnect(val) => {
                     return Err(protocol::Error::Disconnect(val.reason))
                 }
@@ -264,6 +281,13 @@ impl Server {
                 }
                 protocol::packet::Packet::LoginSuccess_UUID(val) => {
                     debug!("Login: {} {:?}", val.username, val.uuid);
+                    uuid = val.uuid;
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    break;
+                }
+                protocol::packet::Packet::LoginSuccess_Sig(val) => {
+                    debug!("Login: {} {:?} {:?}", val.username, val.uuid, val.properties);
                     uuid = val.uuid;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
