@@ -2434,8 +2434,7 @@ state_packets!(
             /// authenicates with the session servers (online mode) or straight
             /// after LoginStart (offline mode).
             packet LoginSuccess_Sig {
-                /// String encoding of a uuid (with hyphens)
-                field uuid: String =,
+                field uuid: UUID =,
                 field username: String =,
                 field properties: LenPrefixed<VarInt, packet::LoginProperty> =,
             }
