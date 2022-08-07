@@ -2359,15 +2359,34 @@ state_packets!(
     }
     login Login {
         serverbound Serverbound {
-            /// LoginStart is sent immeditately after switching into the login
+            /// LoginStart is sent immediately after switching into the login
             /// state. The passed username is used by the server to authenticate
             /// the player in online mode.
+            packet LoginStart_Sig {
+                field username: String =,
+                field has_sign_data: bool =,
+                field timestamp: Option<u64> = when(|p: &LoginStart_Sig| p.has_sign_data),
+                field public_key: Option<LenPrefixedBytes<VarInt>> = when(|p: &LoginStart_Sig| p.has_sign_data),
+                field signature: Option<LenPrefixedBytes<VarInt>> = when(|p: &LoginStart_Sig| p.has_sign_data),
+            }
             packet LoginStart {
                 field username: String =,
             }
             /// EncryptionResponse is sent as a reply to EncryptionRequest. All
             /// packets following this one must be encrypted with AES/CFB8
             /// encryption.
+            packet EncryptionResponse_Sig {
+                /// The key for the AES/CFB8 cipher encrypted with the
+                /// public key
+                field shared_secret: LenPrefixedBytes<VarInt> =,
+                /// Whether or not the Verify Token should be sent. If not, then the salt and signature will be sent.
+                field has_verify_token: bool =,
+                /// The verify token from the request encrypted with the
+                /// public key
+                field verify_token: Option<LenPrefixedBytes<VarInt>> = when(|p: &EncryptionResponse_Sig| p.has_verify_token),
+                field salt: Option<u64> = when(|p: &EncryptionResponse_Sig| !p.has_verify_token),
+                field signature: Option<LenPrefixedBytes<VarInt>> = when(|p: &EncryptionResponse_Sig| !p.has_verify_token),
+            }
             packet EncryptionResponse {
                 /// The key for the AES/CFB8 cipher encrypted with the
                 /// public key

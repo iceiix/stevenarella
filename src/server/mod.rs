@@ -132,9 +132,19 @@ impl Server {
             next: protocol::VarInt(2),
         })?;
         conn.state = protocol::State::Login;
-        conn.write_packet(protocol::packet::login::serverbound::LoginStart {
-            username: profile.username.clone(),
-        })?;
+        if protocol_version >= 759 {
+            conn.write_packet(protocol::packet::login::serverbound::LoginStart_Sig {
+                username: profile.username.clone(),
+                has_sign_data: false,
+                public_key: None,
+                signature: None,
+                timestamp: None,
+            })?;
+        } else {
+            conn.write_packet(protocol::packet::login::serverbound::LoginStart {
+                username: profile.username.clone(),
+            })?;
+        }
 
         use std::rc::Rc;
         let (server_id, public_key, verify_token);
@@ -207,7 +217,17 @@ impl Server {
             profile.join_server(&server_id, &shared, &public_key)?;
         }
 
-        if protocol_version >= 47 {
+        if protocol_version >= 759 {
+            conn.write_packet(
+                protocol::packet::login::serverbound::EncryptionResponse_Sig {
+                    shared_secret: protocol::LenPrefixedBytes::new(shared_e),
+                    verify_token: Some(protocol::LenPrefixedBytes::new(token_e)),
+                    has_verify_token: true,
+                    salt: None,
+                    signature: None,
+                },
+            )?;
+        } else if protocol_version >= 47 {
             conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse {
                 shared_secret: protocol::LenPrefixedBytes::new(shared_e),
                 verify_token: protocol::LenPrefixedBytes::new(token_e),
