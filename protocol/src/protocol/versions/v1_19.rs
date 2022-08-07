@@ -173,7 +173,7 @@ protocol_packet_ids!(
         clientbound Clientbound {
             0x00 => LoginDisconnect
             0x01 => EncryptionRequest
-            0x02 => LoginSuccess_UUID
+            0x02 => LoginSuccess_Sig
             0x03 => SetInitialCompression
             0x04 => LoginPluginRequest
         }

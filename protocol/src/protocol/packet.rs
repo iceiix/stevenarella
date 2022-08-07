@@ -2433,6 +2433,12 @@ state_packets!(
             /// LoginSuccess is sent by the server if the player successfully
             /// authenicates with the session servers (online mode) or straight
             /// after LoginStart (offline mode).
+            packet LoginSuccess_Sig {
+                /// String encoding of a uuid (with hyphens)
+                field uuid: String =,
+                field username: String =,
+                field properties: LenPrefixed<VarInt, packet::LoginProperty> =,
+            }
             packet LoginSuccess_String {
                 /// String encoding of a uuid (with hyphens)
                 field uuid: String =,
@@ -2509,6 +2515,43 @@ state_packets!(
        }
     }
 );
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct LoginProperty {
+    pub name: String,
+    pub value: String,
+    pub is_signed: bool,
+    pub signature: Option<String>,
+}
+impl Serializable for LoginProperty {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let name: String = Serializable::read_from(buf)?;
+        let value: String = Serializable::read_from(buf)?;
+        let is_signed: bool = Serializable::read_from(buf)?;
+        let signature: Option<String> =
+        if is_signed {
+            Some(Serializable::read_from(buf)?)
+        } else {
+            None
+        };
+
+        Ok(LoginProperty {
+            name,
+            value,
+            is_signed,
+            signature,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.name.write_to(buf)?;
+        self.value.write_to(buf)?;
+        if self.is_signed {
+            self.signature.as_ref().unwrap().write_to(buf)?;
+        }
+        Ok(())
+    }
+}
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct SpawnProperty {
