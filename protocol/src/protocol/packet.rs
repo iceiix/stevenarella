@@ -1796,7 +1796,11 @@ state_packets!(
                 field entity_ids: LenPrefixed<u8, i32> =,
             }
             /// EntityRemoveEffect removes an effect from an entity.
-            packet EntityRemoveEffect {
+            packet EntityRemoveEffect_VarInt {
+                field entity_id: VarInt =,
+                field effect_id: VarInt =,
+            }
+            packet EntityRemoveEffect_i8 {
                 field entity_id: VarInt =,
                 field effect_id: i8 =,
             }
@@ -2062,17 +2066,23 @@ state_packets!(
             }
             /// UpdateScore is used to update or remove an item from a scoreboard
             /// objective.
-            packet UpdateScore {
+            packet UpdateScore_VarInt {
+                field name: String =,
+                field action: VarInt =,
+                field object_name: String =,
+                field value: Option<VarInt> = when(|p: &UpdateScore_VarInt| p.action.0 != 1),
+            }
+            packet UpdateScore_u8 {
                 field name: String =,
                 field action: u8 =,
                 field object_name: String =,
-                field value: Option<VarInt> = when(|p: &UpdateScore| p.action != 1),
+                field value: Option<VarInt> = when(|p: &UpdateScore_u8| p.action != 1),
             }
             packet UpdateScore_i32 {
                 field name: String =,
                 field action: u8 =,
                 field object_name: String =,
-                field value: Option<i32 > = when(|p: &UpdateScore_i32| p.action != 1),
+                field value: Option<i32> = when(|p: &UpdateScore_i32| p.action != 1),
             }
             /// UpdateSimulationDistance is used to set how far the client will process entities.
             packet UpdateSimulationDistance {
@@ -2255,7 +2265,14 @@ state_packets!(
                 field properties: LenPrefixed<i32, packet::EntityProperty_i16> =,
             }
             /// EntityEffect applies a status effect to an entity for a given duration.
-            packet EntityEffect {
+            packet EntityEffect_VarInt {
+                field entity_id: VarInt =,
+                field effect_id: VarInt =,
+                field amplifier: i8 =,
+                field duration: VarInt =,
+                field hide_particles: bool =,
+            }
+            packet EntityEffect_i8 {
                 field entity_id: VarInt =,
                 field effect_id: i8 =,
                 field amplifier: i8 =,

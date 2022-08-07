@@ -89,7 +89,7 @@ protocol_packet_ids!(
             0x2e => TeleportPlayer_WithConfirm
             0x2f => EntityUsedBed
             0x30 => EntityDestroy
-            0x31 => EntityRemoveEffect
+            0x31 => EntityRemoveEffect_i8
             0x32 => ResourcePackSend
             0x33 => Respawn_Gamemode
             0x34 => EntityHeadLook
@@ -106,7 +106,7 @@ protocol_packet_ids!(
             0x3f => ScoreboardObjective
             0x40 => SetPassengers
             0x41 => Teams_u8
-            0x42 => UpdateScore
+            0x42 => UpdateScore_u8
             0x43 => SpawnPosition_NoAngle
             0x44 => TimeUpdate
             0x45 => Title_notext
@@ -116,7 +116,7 @@ protocol_packet_ids!(
             0x49 => CollectItem_nocount
             0x4a => EntityTeleport_f64
             0x4b => EntityProperties_VarInt
-            0x4c => EntityEffect
+            0x4c => EntityEffect_i8
         }
     }
     login Login {

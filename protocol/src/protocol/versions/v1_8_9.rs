@@ -65,8 +65,8 @@ protocol_packet_ids!(
             0x1a => EntityStatus
             0x1b => EntityAttach_leashed
             0x1c => EntityMetadata
-            0x1d => EntityEffect
-            0x1e => EntityRemoveEffect
+            0x1d => EntityEffect_i8
+            0x1e => EntityRemoveEffect_i8
             0x1f => SetExperience
             0x20 => EntityProperties_VarInt
             0x21 => ChunkData_NoEntities_u16
@@ -96,7 +96,7 @@ protocol_packet_ids!(
             0x39 => PlayerAbilities
             0x3a => TabCompleteReply
             0x3b => ScoreboardObjective
-            0x3c => UpdateScore
+            0x3c => UpdateScore_u8
             0x3d => ScoreboardDisplay
             0x3e => Teams_u8
             0x3f => PluginMessageClientbound

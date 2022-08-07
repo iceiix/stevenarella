@@ -112,7 +112,7 @@ protocol_packet_ids!(
             0x35 => TeleportPlayer_WithConfirm
             0x36 => UnlockRecipes_WithSmelting
             0x37 => EntityDestroy
-            0x38 => EntityRemoveEffect
+            0x38 => EntityRemoveEffect_i8
             0x39 => ResourcePackSend
             0x3a => Respawn_Gamemode
             0x3b => EntityHeadLook
@@ -132,7 +132,7 @@ protocol_packet_ids!(
             0x49 => ScoreboardObjective
             0x4a => SetPassengers
             0x4b => Teams_VarInt
-            0x4c => UpdateScore
+            0x4c => UpdateScore_u8
             0x4d => SpawnPosition_NoAngle
             0x4e => TimeUpdate
             0x4f => Title
@@ -145,7 +145,7 @@ protocol_packet_ids!(
             0x56 => EntityTeleport_f64
             0x57 => Advancements
             0x58 => EntityProperties_VarInt
-            0x59 => EntityEffect
+            0x59 => EntityEffect_i8
             0x5a => DeclareRecipes
             0x5b => Tags_WithEntities
         }
