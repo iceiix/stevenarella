@@ -1009,13 +1009,17 @@ impl World {
 
     pub fn load_dimension_type(&mut self, dimension_tags: Option<crate::nbt::NamedTag>) {
         if let Some(crate::nbt::NamedTag(_, crate::nbt::Tag::Compound(tags))) = dimension_tags {
-            info!("Dimension type: {:?}", tags);
-
-            if let Some(crate::nbt::Tag::Int(min_y)) = tags.get("min_y") {
-                self.min_y = *min_y;
-            }
-            // TODO: More tags https://wiki.vg/Protocol#Login_.28play.29
+            self.load_dimension_type_tags(&tags);
         }
+    }
+
+    pub fn load_dimension_type_tags(&mut self, tags: &HashMap<String, crate::nbt::Tag>) {
+        info!("Dimension type: {:?}", tags);
+
+        if let Some(crate::nbt::Tag::Int(min_y)) = tags.get("min_y") {
+            self.min_y = *min_y;
+        }
+        // TODO: More tags https://wiki.vg/Protocol#Login_.28play.29
     }
 
     #[allow(clippy::or_fun_call)]

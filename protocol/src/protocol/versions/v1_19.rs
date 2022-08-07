@@ -11,7 +11,7 @@ protocol_packet_ids!(
             0x00 => TeleportConfirm
             0x01 => QueryBlockNBT
             0x02 => SetDifficulty
-            //TODO 0x03 => ChatCommand 
+            //TODO 0x03 => ChatCommand
             0x04 => ChatMessage
             //TODO 0x05 => ChatPreview
             //TODO 0x06 => ClientCommand
@@ -95,7 +95,7 @@ protocol_packet_ids!(
             0x20 => Effect
             0x21 => Particle_f64
             0x22 => UpdateLight_Arrays
-            0x23 => JoinGame_WorldNames_IsHard_SimDist
+            0x23 => JoinGame_WorldNames_IsHard_SimDist_HasDeath
             0x24 => Maps
             0x25 => TradeList_WithRestock
             0x26 => EntityMove_i16

@@ -15,6 +15,7 @@
 use crate::ecs;
 use crate::entity;
 use crate::format;
+use crate::nbt;
 use crate::protocol::{self, forge, mojang, packet};
 use crate::render;
 use crate::resources;
@@ -201,7 +202,10 @@ impl Server {
                 }
                 protocol::packet::Packet::LoginSuccess_Sig(val) => {
                     warn!("Server is running in offline mode");
-                    debug!("Login: {} {:?} {:?}", val.username, val.uuid, val.properties);
+                    debug!(
+                        "Login: {} {:?} {:?}",
+                        val.username, val.uuid, val.properties
+                    );
                     let mut read = conn.clone();
                     let mut write = conn;
                     read.state = protocol::State::Play;
@@ -287,7 +291,10 @@ impl Server {
                     break;
                 }
                 protocol::packet::Packet::LoginSuccess_Sig(val) => {
-                    debug!("Login: {} {:?} {:?}", val.username, val.uuid, val.properties);
+                    debug!(
+                        "Login: {} {:?} {:?}",
+                        val.username, val.uuid, val.properties
+                    );
                     uuid = val.uuid;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
@@ -625,6 +632,7 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_WorldNames_IsHard_SimDist_HasDeath => on_game_join_worldnames_ishard_simdist_hasdeath,
                             JoinGame_WorldNames_IsHard_SimDist => on_game_join_worldnames_ishard_simdist,
                             JoinGame_WorldNames_IsHard => on_game_join_worldnames_ishard,
                             JoinGame_WorldNames => on_game_join_worldnames,
@@ -1100,6 +1108,24 @@ impl Server {
             .as_mut()
             .unwrap()
             .write_plugin_message(channel, data); // TODO handle errors
+    }
+
+    fn on_game_join_worldnames_ishard_simdist_hasdeath(
+        &mut self,
+        join: packet::play::clientbound::JoinGame_WorldNames_IsHard_SimDist_HasDeath,
+    ) {
+        if let Some(nbt::NamedTag(_, nbt::Tag::Compound(registries))) = join.registry_codec {
+            if let Some(nbt::Tag::Compound(dimension_type)) =
+                registries.get("minecraft:dimension_type")
+            {
+                self.world.load_dimension_type_tags(dimension_type);
+            }
+
+            let _biome_registry = registries.get("minecraft:worldgen/biome");
+            let _chat_type_registry = registries.get("minecraft:chat_type");
+        }
+
+        self.on_game_join(join.gamemode, join.entity_id)
     }
 
     fn on_game_join_worldnames_ishard_simdist(
@@ -1984,7 +2010,7 @@ impl Server {
         self.received_chat_at = Some(Instant::now());
     }
 
-    fn load_block_entities(&mut self, block_entities: Vec<Option<crate::nbt::NamedTag>>) {
+    fn load_block_entities(&mut self, block_entities: Vec<Option<nbt::NamedTag>>) {
         for block_entity in block_entities.into_iter().flatten() {
             let x = block_entity.1.get("x").unwrap().as_int().unwrap();
             let y = block_entity.1.get("y").unwrap().as_int().unwrap();

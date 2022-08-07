@@ -1344,6 +1344,48 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
+            packet JoinGame_WorldNames_IsHard_SimDist_HasDeath {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// Whether hardcore mode is enabled
+                field is_hardcore: bool =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The previous gamemode of the client
+                field previous_gamemode: u8 =,
+                /// Identifiers for all worlds on the server
+                field world_names: LenPrefixed<VarInt, String> =,
+                /// Represents a dimension registry
+                field registry_codec: Option<nbt::NamedTag> =,
+                /// Name of the dimension type being spawned into
+                field dimension_type: String =,
+                /// The world being spawned into
+                field world_name: String =,
+                /// Truncated SHA-256 hash of world's seed
+                field hashed_seed: i64 =,
+                /// The max number of players on the server
+                field max_players: VarInt =,
+                /// The render distance (2-32)
+                field view_distance: VarInt =,
+                /// The distance the client will process entities
+                field simulation_distance: VarInt =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+                /// Whether to prompt or immediately respawn
+                field enable_respawn_screen: bool =,
+                /// Whether the world is in debug mode
+                field is_debug: bool =,
+                /// Whether the world is a superflat world
+                field is_flat: bool =,
+                /// If true, then the next two fields are present.
+                field has_death_location: bool =,
+                /// Name of the dimension the player died in
+                field death_dimension_name: String = when(|p: &JoinGame_WorldNames_IsHard_SimDist_HasDeath| p.has_death_location),
+                /// The location that the player died at
+                field death_location: Position = when(|p: &JoinGame_WorldNames_IsHard_SimDist_HasDeath| p.has_death_location),
+            }
+
             packet JoinGame_WorldNames_IsHard_SimDist {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -2527,8 +2569,7 @@ impl Serializable for LoginProperty {
         let name: String = Serializable::read_from(buf)?;
         let value: String = Serializable::read_from(buf)?;
         let is_signed: bool = Serializable::read_from(buf)?;
-        let signature: Option<String> =
-        if is_signed {
+        let signature: Option<String> = if is_signed {
             Some(Serializable::read_from(buf)?)
         } else {
             None
