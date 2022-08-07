@@ -122,7 +122,7 @@ protocol_packet_ids!(
             0x4c => EntityTeleport_f64
             0x4d => Advancements
             0x4e => EntityProperties_VarInt
-            0x4f => EntityEffect
+            0x4f => EntityEffect_i8
         }
     }
     login Login {

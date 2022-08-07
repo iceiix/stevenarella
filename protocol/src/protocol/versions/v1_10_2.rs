@@ -115,7 +115,7 @@ protocol_packet_ids!(
             0x48 => CollectItem_nocount
             0x49 => EntityTeleport_f64
             0x4a => EntityProperties_VarInt
-            0x4b => EntityEffect
+            0x4b => EntityEffect_i8
         }
     }
     login Login {

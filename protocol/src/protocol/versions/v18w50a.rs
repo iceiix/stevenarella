@@ -137,7 +137,7 @@ protocol_packet_ids!(
             0x52 => EntityTeleport_f64
             0x53 => Advancements
             0x54 => EntityProperties_VarInt
-            0x55 => EntityEffect
+            0x55 => EntityEffect_i8
             0x56 => DeclareRecipes
             0x57 => Tags_WithEntities
             0x58 => UpdateLight_NoTrust

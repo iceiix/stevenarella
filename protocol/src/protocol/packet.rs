@@ -2265,7 +2265,14 @@ state_packets!(
                 field properties: LenPrefixed<i32, packet::EntityProperty_i16> =,
             }
             /// EntityEffect applies a status effect to an entity for a given duration.
-            packet EntityEffect {
+            packet EntityEffect_VarInt {
+                field entity_id: VarInt =,
+                field effect_id: VarInt =,
+                field amplifier: i8 =,
+                field duration: VarInt =,
+                field hide_particles: bool =,
+            }
+            packet EntityEffect_i8 {
                 field entity_id: VarInt =,
                 field effect_id: i8 =,
                 field amplifier: i8 =,

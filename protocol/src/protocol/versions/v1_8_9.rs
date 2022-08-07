@@ -65,7 +65,7 @@ protocol_packet_ids!(
             0x1a => EntityStatus
             0x1b => EntityAttach_leashed
             0x1c => EntityMetadata
-            0x1d => EntityEffect
+            0x1d => EntityEffect_i8
             0x1e => EntityRemoveEffect_i8
             0x1f => SetExperience
             0x20 => EntityProperties_VarInt

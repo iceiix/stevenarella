@@ -158,7 +158,7 @@ protocol_packet_ids!(
             0x61 => EntityTeleport_f64
             0x62 => Advancements
             0x63 => EntityProperties_VarIntVarInt
-            0x64 => EntityEffect
+            0x64 => EntityEffect_i8
             0x65 => DeclareRecipes
             0x66 => Tags_Nested
         }
