@@ -3662,7 +3662,7 @@ impl Serializable for CommandNode {
                 "forge:enum" => CommandProperty::ForgeEnum {
                     cls: Serializable::read_from(buf)?,
                 },
-                _ => panic!("unsupported command node parser {}", parse),
+                _ => panic!("unsupported command node parser {:?}", parse),
             })
         } else {
             None
