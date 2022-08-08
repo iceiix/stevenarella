@@ -3525,6 +3525,12 @@ pub enum CommandProperty {
     EntitySummon,
     Dimension,
     UUID,
+    ResourceOrTag {
+        registry: String,
+    },
+    Resource {
+        registry: String,
+    },
     ForgeModId,
     ForgeEnum {
         cls: String,
@@ -3658,6 +3664,12 @@ impl Serializable for CommandNode {
                 "minecraft:entity_summon" => CommandProperty::EntitySummon,
                 "minecraft:dimension" => CommandProperty::Dimension,
                 "minecraft:uuid" => CommandProperty::UUID,
+                "minecraft:resource_or_tag" => CommandProperty::ResourceOrTag {
+                    registry: Serializable::read_from(buf)?,
+                },
+                "minecraft:resource" => CommandProperty::Resource {
+                    registry: Serializable::read_from(buf)?,
+                },
                 "forge:modid" => CommandProperty::ForgeModId,
                 "forge:enum" => CommandProperty::ForgeEnum {
                     cls: Serializable::read_from(buf)?,
