@@ -1920,6 +1920,13 @@ state_packets!(
                 field has_id: bool =,
                 field tab_id: String = when(|p: &SelectAdvancementTab| p.has_id),
             }
+            packet ServerData {
+                field has_motd: bool =,
+                field motd: Option<format::Component> = when(|p: &ServerData| p.has_motd),
+                field has_icon: bool =,
+                field icon: Option<String> = when(|p: &ServerData| p.has_icon),
+                field previews_chat: bool =,
+            }
             packet ActionBar {
                 field text: String =,
             }

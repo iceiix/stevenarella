@@ -123,7 +123,7 @@ protocol_packet_ids!(
             0x3c => EntityHeadLook
             0x3d => MultiBlockChange_Packed
             0x3e => SelectAdvancementTab
-            //0x3f => ServerData // TODO
+            0x3f => ServerData
             0x40 => ActionBar
             0x41 => WorldBorderCenter
             0x42 => WorldBorderLerpSize
