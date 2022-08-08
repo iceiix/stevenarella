@@ -641,6 +641,7 @@ impl Server {
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
                             JoinGame_i8_NoDebug => on_game_join_i8_nodebug,
+                            ServerData => on_server_data,
                             Respawn_Gamemode => on_respawn_gamemode,
                             Respawn_HashedSeed => on_respawn_hashedseed,
                             Respawn_WorldName => on_respawn_worldname,
@@ -1207,6 +1208,13 @@ impl Server {
         } else {
             self.write_packet(brand.into_message17());
         }
+    }
+
+    fn on_server_data(&mut self, server_data: packet::play::clientbound::ServerData) {
+        if let Some(motd) = server_data.motd {
+            info!("Server MOTD: {:?}", motd);
+        }
+        // TODO: show server_data.icon (base64 string)
     }
 
     fn on_respawn_hashedseed(&mut self, respawn: packet::play::clientbound::Respawn_HashedSeed) {
