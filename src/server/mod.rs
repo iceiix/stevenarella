@@ -1117,10 +1117,30 @@ impl Server {
         join: packet::play::clientbound::JoinGame_WorldNames_IsHard_SimDist_HasDeath,
     ) {
         if let Some(nbt::NamedTag(_, nbt::Tag::Compound(registries))) = join.registry_codec {
-            if let Some(nbt::Tag::Compound(dimension_type)) =
+            if let Some(nbt::Tag::Compound(dimension_types)) =
                 registries.get("minecraft:dimension_type")
             {
-                self.world.load_dimension_type_tags(dimension_type);
+                println!("world_name = {:?}", join.world_name);
+                println!("dimension_types = {:?}", dimension_types);
+                if let Some(nbt::Tag::List(list)) = dimension_types.get("value") {
+                    println!("list = {:?}", list);
+                    for item in list {
+                        if let nbt::Tag::Compound(item) = item {
+                            println!("item = {:?}", item);
+                            if let Some(nbt::Tag::String(name)) = item.get("name") {
+                                println!("name = {:?}", name);
+                                if name == &join.world_name {
+                                    if let Some(nbt::Tag::Compound(dimension_type)) =
+                                        item.get("element")
+                                    {
+                                        self.world.load_dimension_type_tags(dimension_type);
+                                    }
+                                }
+                                println!("match? {:?} ", name == &join.world_name);
+                            }
+                        }
+                    }
+                }
             }
 
             let _biome_registry = registries.get("minecraft:worldgen/biome");
@@ -1997,10 +2017,7 @@ impl Server {
         }
     }
 
-    fn on_system_chat_message(
-        &mut self,
-        m: packet::play::clientbound::SystemChatMessage,
-    ) {
+    fn on_system_chat_message(&mut self, m: packet::play::clientbound::SystemChatMessage) {
         // TODO: flag as system message (vs chat message)
         self.on_servermessage(&m.message, None, None);
     }
