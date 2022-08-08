@@ -3071,19 +3071,37 @@ impl Serializable for PlayerInfoData {
                         }
                         props.push(prop);
                     }
+
+                    let gamemode: VarInt = Serializable::read_from(buf)?;
+                    let ping: VarInt = Serializable::read_from(buf)?;
+                    let display: Option<format::Component> = if bool::read_from(buf)? {
+                        Some(Serializable::read_from(buf)?)
+                    } else {
+                        None
+                    };
+                    let mut timestamp: Option<u64> = None;
+                    let mut public_key: Option<LenPrefixedBytes<VarInt>> = None;
+                    let mut signature: Option<LenPrefixedBytes<VarInt>> = None;
+
+                    if super::current_protocol_version() >= 759 {
+                        let has_sig_data: bool = Serializable::read_from(buf)?;
+                        if has_sig_data {
+                            timestamp = Some(Serializable::read_from(buf)?);
+                            public_key = Some(Serializable::read_from(buf)?);
+                            signature = Some(Serializable::read_from(buf)?);
+                        }
+                    }
+
                     let p = PlayerDetail::Add {
                         uuid,
                         name,
                         properties: props,
-                        gamemode: Serializable::read_from(buf)?,
-                        ping: Serializable::read_from(buf)?,
-                        display: {
-                            if bool::read_from(buf)? {
-                                Some(Serializable::read_from(buf)?)
-                            } else {
-                                None
-                            }
-                        },
+                        gamemode,
+                        ping,
+                        display,
+                        timestamp,
+                        public_key,
+                        signature,
                     };
                     m.players.push(p);
                 }
@@ -3135,6 +3153,9 @@ pub enum PlayerDetail {
         gamemode: VarInt,
         ping: VarInt,
         display: Option<format::Component>,
+        timestamp: Option<u64>,
+        public_key: Option<LenPrefixedBytes<VarInt>>,
+        signature: Option<LenPrefixedBytes<VarInt>>,
     },
     UpdateGamemode {
         uuid: UUID,

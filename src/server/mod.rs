@@ -1900,6 +1900,9 @@ impl Server {
                     display,
                     gamemode,
                     ping,
+                    timestamp: _,
+                    public_key: _,
+                    signature: _,
                 } => {
                     let info = self.players.entry(uuid.clone()).or_insert(PlayerInfo {
                         name: name.clone(),
