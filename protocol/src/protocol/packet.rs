@@ -3564,8 +3564,75 @@ impl Serializable for CommandNode {
             } else {
                 None
             };
+
         let parser: Option<String> = if node_type == CommandNodeType::Argument {
-            Serializable::read_from(buf)?
+            if super::current_protocol_version() >= 759 {
+                let parser_id: VarInt = Serializable::read_from(buf)?;
+                // https://wiki.vg/Command_Data#Parsers
+                // "In 1.19, Parsers are identified by a varint id.
+                // Pre-1.19, parsers are identified by a string id."
+                // Map ID to string
+                let parsers = [
+                    "brigadier:bool",
+                    "brigadier:float",
+                    "brigadier:double",
+                    "brigadier:integer",
+                    "brigadier:long",
+                    "brigadier:string",
+                    "minecraft:entity",
+                    "minecraft:game_profile",
+                    "minecraft:block_pos",
+                    "minecraft:column_pos",
+                    "minecraft:vec3",
+                    "minecraft:vec2",
+                    "minecraft:block_state",
+                    "minecraft:block_predicate",
+                    "minecraft:item_stack",
+                    "minecraft:item_predicate",
+                    "minecraft:color",
+                    "minecraft:component",
+                    "minecraft:message",
+                    "minecraft:nbt",
+                    "minecraft:nbt_tag",
+                    "minecraft:nbt_path",
+                    "minecraft:objective",
+                    "minecraft:objective_criteria",
+                    "minecraft:operation",
+                    "minecraft:particle",
+                    "minecraft:angle",
+                    "minecraft:rotation",
+                    "minecraft:scoreboard_slot",
+                    "minecraft:score_holder",
+                    "minecraft:swizzle",
+                    "minecraft:team",
+                    "minecraft:item_slot",
+                    "minecraft:resource_location",
+                    "minecraft:mob_effect",
+                    "minecraft:function",
+                    "minecraft:entity_anchor",
+                    "minecraft:int_range",
+                    "minecraft:float_range",
+                    "minecraft:item_enchantment",
+                    "minecraft:entity_summon",
+                    "minecraft:dimension",
+                    "minecraft:time",
+                    "minecraft:resource_or_tag",
+                    "minecraft:resource",
+                    "(added in 1.19) Template mirror",
+                    "(added in 1.19) Template rotation",
+                    "minecraft:uuid",
+                ];
+                if parser_id.0 < 0 || parser_id.0 > parsers.len().try_into().unwrap() {
+                    panic!(
+                        "command node identifier out of range {} > {}",
+                        parser_id.0,
+                        parsers.len()
+                    );
+                }
+                Some(parsers[parser_id.0 as usize].to_string())
+            } else {
+                Serializable::read_from(buf)?
+            }
         } else {
             None
         };
