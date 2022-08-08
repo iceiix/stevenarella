@@ -911,6 +911,13 @@ state_packets!(
                 field nodes: LenPrefixed<VarInt, packet::CommandNode> =,
                 field root_index: VarInt =,
             }
+            /// SystemChatMessage is sent by the server for system messages, the system/chat
+            /// distinction exists to respect the user's chat visibility settings.
+            packet SystemChatMessage {
+                field message: format::Component =,
+                /// Whether the message is an actionbar or chat message
+                field overlay: bool =,
+            }
             /// ServerMessage is a message sent by the server. It could be from a player
             /// or just a system message. The Type field controls the location the
             /// message is displayed at and when the message is displayed.

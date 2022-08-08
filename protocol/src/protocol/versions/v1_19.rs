@@ -155,7 +155,7 @@ protocol_packet_ids!(
             0x5c => EntitySoundEffect
             0x5d => SoundEffect
             0x5e => StopSound
-            //0x5f => SystemChatMessage // TODO
+            0x5f => SystemChatMessage
             0x60 => PlayerListHeaderFooter
             0x61 => NBTQueryResponse
             0x62 => CollectItem

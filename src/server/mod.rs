@@ -680,6 +680,7 @@ impl Server {
                             UpdateSign_u16 => on_sign_update_u16,
                             PlayerInfo => on_player_info,
                             PlayerInfo_String => on_player_info_string,
+                            SystemChatMessage => on_system_chat_message,
                             ServerMessage_NoPosition => on_servermessage_noposition,
                             ServerMessage_Position => on_servermessage_position,
                             ServerMessage_Sender => on_servermessage_sender,
@@ -1994,6 +1995,14 @@ impl Server {
                 }
             }
         }
+    }
+
+    fn on_system_chat_message(
+        &mut self,
+        m: packet::play::clientbound::SystemChatMessage,
+    ) {
+        // TODO: flag as system message (vs chat message)
+        self.on_servermessage(&m.message, None, None);
     }
 
     fn on_servermessage_noposition(
