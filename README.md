@@ -3,8 +3,6 @@
 
 Multi-protocol Minecraft-compatible client written in Rust.
 
-Don't expect it to go anywhere, just doing this for fun.
-
 ## Images
 
 ![Steven on Hypixel](https://i.imgur.com/PM5fLuu.png)
