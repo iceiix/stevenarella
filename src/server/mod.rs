@@ -1947,13 +1947,12 @@ impl Server {
             let z = block_entity.1.get("z").unwrap().as_int().unwrap();
             if let Some(tile_id) = block_entity.1.get("id") {
                 let tile_id = tile_id.as_str().unwrap();
-                let action;
-                match tile_id {
+                let action = match tile_id {
                     // Fake a sign update
-                    "Sign" => action = 9,
+                    "Sign" => 9,
                     // Not something we care about, so break the loop
                     _ => continue,
-                }
+                };
                 self.on_block_entity_update_u8(packet::play::clientbound::UpdateBlockEntity_u8 {
                     location: Position::new(x, y, z),
                     action,
