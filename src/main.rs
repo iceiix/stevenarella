@@ -664,9 +664,7 @@ fn handle_window_event<T>(
             use std::f64::consts::PI;
 
             if game.focused {
-                window
-                    .set_cursor_grab(cursor_grab_mode)
-                    .unwrap();
+                window.set_cursor_grab(cursor_grab_mode).unwrap();
                 window.set_cursor_visible(false);
                 if let Some(player) = game.server.player {
                     let rotation = game
@@ -724,9 +722,7 @@ fn handle_window_event<T>(
                             && !game.screen_sys.is_current_closable()
                         {
                             game.focused = true;
-                            window
-                                .set_cursor_grab(cursor_grab_mode)
-                                .unwrap();
+                            window.set_cursor_grab(cursor_grab_mode).unwrap();
                             window.set_cursor_visible(false);
                         } else if !game.focused {
                             #[cfg(not(target_arch = "wasm32"))]
@@ -788,9 +784,7 @@ fn handle_window_event<T>(
                                     screen::SettingsMenu::new(game.vars.clone(), true),
                                 ));
                             } else if game.screen_sys.is_current_closable() {
-                                window
-                                    .set_cursor_grab(cursor_grab_mode)
-                                    .unwrap();
+                                window.set_cursor_grab(cursor_grab_mode).unwrap();
                                 window.set_cursor_visible(false);
                                 game.focused = true;
                                 game.screen_sys.pop_screen();
