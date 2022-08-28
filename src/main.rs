@@ -630,6 +630,11 @@ fn handle_window_event<T>(
     event: winit::event::Event<T>,
 ) -> bool {
     use winit::event::*;
+    let cursor_grab_mode = if cfg!(target_os = "macos") {
+        winit::window::CursorGrabMode::Locked
+    } else {
+        winit::window::CursorGrabMode::Confined
+    };
     match event {
         Event::MainEventsCleared => return true,
         Event::DeviceEvent {
@@ -660,7 +665,7 @@ fn handle_window_event<T>(
 
             if game.focused {
                 window
-                    .set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                    .set_cursor_grab(cursor_grab_mode)
                     .unwrap();
                 window.set_cursor_visible(false);
                 if let Some(player) = game.server.player {
@@ -720,7 +725,7 @@ fn handle_window_event<T>(
                         {
                             game.focused = true;
                             window
-                                .set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                                .set_cursor_grab(cursor_grab_mode)
                                 .unwrap();
                             window.set_cursor_visible(false);
                         } else if !game.focused {
@@ -784,7 +789,7 @@ fn handle_window_event<T>(
                                 ));
                             } else if game.screen_sys.is_current_closable() {
                                 window
-                                    .set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                                    .set_cursor_grab(cursor_grab_mode)
                                     .unwrap();
                                 window.set_cursor_visible(false);
                                 game.focused = true;
