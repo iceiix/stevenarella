@@ -99,7 +99,7 @@ impl Logo {
                 let mut texts = String::new();
                 file.read_to_string(&mut texts).unwrap();
                 for line in texts.lines() {
-                    text_strings.push(line.to_owned().replace("\r", ""));
+                    text_strings.push(line.to_owned().replace('\r', ""));
                 }
             }
             let mut r: rand_pcg::Pcg32 =
