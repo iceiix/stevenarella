@@ -13,6 +13,10 @@
 // limitations under the License.
 
 pub use steven_blocks as block;
+use steven_protocol::protocol::LenPrefixed;
+use steven_protocol::protocol::Serializable;
+use steven_protocol::protocol::VarInt;
+use steven_protocol::types::bit;
 
 use crate::chunk_builder;
 use crate::ecs;
@@ -22,7 +26,8 @@ use crate::protocol;
 use crate::render;
 use crate::shared::{Direction, Position};
 use crate::types::hash::FNVHash;
-use crate::types::{bit, nibble};
+use crate::types::{nibble};
+use byteorder::ReadBytesExt;
 use cgmath::prelude::*;
 use flate2::read::ZlibDecoder;
 use log::info;
@@ -31,6 +36,7 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::hash::BuildHasherDefault;
+use std::io::Cursor;
 use std::io::Read;
 
 pub mod biome;
@@ -415,7 +421,7 @@ impl World {
             .iter()
             .map(|v| {
                 let chunk = self.chunks.get(&CPos(v.0, v.2)).unwrap();
-                let sec = chunk.sections[v.1 as usize].as_ref().unwrap();
+                let sec = chunk.sections.get(&v.1).unwrap();
                 (*v, &sec.render_buffer)
             })
             .collect()
@@ -423,7 +429,7 @@ impl World {
 
     pub fn get_section_mut(&mut self, x: i32, y: i32, z: i32) -> Option<&mut Section> {
         if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
-            if let Some(sec) = chunk.sections[y as usize].as_mut() {
+            if let Some(sec) = chunk.sections.get_mut(&y) {
                 return Some(sec);
             }
         }
@@ -441,7 +447,7 @@ impl World {
         }
         if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
             let rendered = &mut chunk.sections_rendered_on[y as usize];
-            if let Some(sec) = chunk.sections[y as usize].as_mut() {
+            if let Some(sec) = chunk.sections.get_mut(&y) {
                 return Some((Some(sec), rendered));
             }
             return Some((None, rendered));
@@ -452,11 +458,9 @@ impl World {
     pub fn get_dirty_chunk_sections(&mut self) -> Vec<(i32, i32, i32)> {
         let mut out = vec![];
         for chunk in self.chunks.values_mut() {
-            for sec in &mut chunk.sections {
-                if let Some(sec) = sec.as_mut() {
-                    if !sec.building && sec.dirty {
-                        out.push((chunk.position.0, sec.y as i32, chunk.position.1));
-                    }
+            for (y, sec) in &mut chunk.sections {
+                if !sec.building && sec.dirty {
+                    out.push((chunk.position.0, *y, chunk.position.1));
                 }
             }
         }
@@ -465,7 +469,7 @@ impl World {
 
     fn set_dirty(&mut self, x: i32, y: i32, z: i32) {
         if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
-            if let Some(sec) = chunk.sections.get_mut(y as usize).and_then(|v| v.as_mut()) {
+            if let Some(sec) = chunk.sections.get_mut(&y) {
                 sec.dirty = true;
             }
         }
@@ -473,7 +477,7 @@ impl World {
 
     pub fn is_section_dirty(&self, pos: (i32, i32, i32)) -> bool {
         if let Some(chunk) = self.chunks.get(&CPos(pos.0, pos.2)) {
-            if let Some(sec) = chunk.sections[pos.1 as usize].as_ref() {
+            if let Some(sec) = chunk.sections.get(&pos.1) {
                 return sec.dirty && !sec.building;
             }
         }
@@ -482,7 +486,7 @@ impl World {
 
     pub fn set_building_flag(&mut self, pos: (i32, i32, i32)) {
         if let Some(chunk) = self.chunks.get_mut(&CPos(pos.0, pos.2)) {
-            if let Some(sec) = chunk.sections[pos.1 as usize].as_mut() {
+            if let Some(sec) = chunk.sections.get_mut(&pos.1) {
                 sec.building = true;
                 sec.dirty = false;
             }
@@ -491,7 +495,7 @@ impl World {
 
     pub fn reset_building_flag(&mut self, pos: (i32, i32, i32)) {
         if let Some(chunk) = self.chunks.get_mut(&CPos(pos.0, pos.2)) {
-            if let Some(section) = chunk.sections[pos.1 as usize].as_mut() {
+            if let Some(section) = chunk.sections.get_mut(&pos.1) {
                 section.building = false;
             }
         }
@@ -499,10 +503,8 @@ impl World {
 
     pub fn flag_dirty_all(&mut self) {
         for chunk in self.chunks.values_mut() {
-            for sec in &mut chunk.sections {
-                if let Some(sec) = sec.as_mut() {
-                    sec.dirty = true;
-                }
+            for sec in chunk.sections.values_mut() {
+                sec.dirty = true;
             }
         }
     }
@@ -549,7 +551,7 @@ impl World {
                     if !(0..=15).contains(&cy) {
                         continue;
                     }
-                    let section = &chunk.sections[cy as usize];
+                    let section = chunk.sections.get(&cy);
                     let y1 = min(16, max(0, y - (cy << 4)));
                     let y2 = min(16, max(0, y + h - (cy << 4)));
 
@@ -661,8 +663,6 @@ impl World {
         mask: u16,
         data: &mut std::io::Cursor<Vec<u8>>,
     ) -> Result<(), protocol::Error> {
-        use byteorder::ReadBytesExt;
-
         let cpos = CPos(x, z);
         {
             if new {
@@ -673,17 +673,17 @@ impl World {
             let chunk = self.chunks.get_mut(&cpos).unwrap();
 
             for i in 0..16 {
-                if chunk.sections[i].is_none() {
-                    let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
+                if !chunk.sections.contains_key(&i) {
+                    let mut fill_sky = chunk.sections.keys().any(|s_idx| *s_idx > i);
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
                     if !fill_sky || mask & (1 << i) != 0 {
-                        chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
+                        chunk.sections.insert(i, Section::new(fill_sky));
                     }
                 }
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
                 section.dirty = true;
 
                 for bi in 0..4096 {
@@ -720,7 +720,7 @@ impl World {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
 
                 data.read_exact(&mut section.block_light.data)?;
             }
@@ -729,7 +729,7 @@ impl World {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
 
                 data.read_exact(&mut section.sky_light.data)?;
             }
@@ -764,8 +764,6 @@ impl World {
         // Chunk metadata
         let mut metadata = std::io::Cursor::new(metadata);
         for _i in 0..chunk_column_count {
-            use byteorder::ReadBytesExt;
-
             let x = metadata.read_i32::<byteorder::BigEndian>()?;
             let z = metadata.read_i32::<byteorder::BigEndian>()?;
             let mask = metadata.read_u16::<byteorder::BigEndian>()?;
@@ -827,20 +825,20 @@ impl World {
             // Block type array - whole byte per block
             let mut block_types = [[0u8; 4096]; 16];
             for i in 0..16 {
-                if chunk.sections[i].is_none() {
-                    let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
+                if !chunk.sections.contains_key(&i) {
+                    let mut fill_sky = chunk.sections.keys().any(|s_idx| *s_idx > i);
                     fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
                     if !fill_sky || mask & (1 << i) != 0 {
-                        chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
+                        chunk.sections.insert(i, Section::new(fill_sky));
                     }
                 }
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
                 section.dirty = true;
 
-                data.read_exact(&mut block_types[i])?;
+                data.read_exact(&mut block_types[i as usize])?;
             }
 
             // Block metadata array - half byte per block
@@ -877,7 +875,7 @@ impl World {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
 
                 data.read_exact(&mut section.block_light.data)?;
             }
@@ -888,7 +886,7 @@ impl World {
                     if mask & (1 << i) == 0 {
                         continue;
                     }
-                    let section = chunk.sections[i as usize].as_mut().unwrap();
+                    let section = chunk.sections.get_mut(&i).unwrap();
 
                     data.read_exact(&mut section.sky_light.data)?;
                 }
@@ -928,7 +926,7 @@ impl World {
                     continue;
                 }
 
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&(i as i32)).unwrap();
 
                 for bi in 0..4096 {
                     let id = ((block_add[i].get(bi) as u16) << 12)
@@ -1029,10 +1027,6 @@ impl World {
         num_sections: usize,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
-        use crate::protocol::{LenPrefixed, Serializable, VarInt};
-        use byteorder::ReadBytesExt;
-        use std::io::Cursor;
-
         let mut data = Cursor::new(data);
 
         let cpos = CPos(x, z);
@@ -1044,57 +1038,8 @@ impl World {
             }
             let chunk = self.chunks.get_mut(&cpos).unwrap();
 
-            for i1 in 0..num_sections {
+            for i1 in 0..num_sections as i32 {
                 let i: i32 = (i1 as i32) + (self.min_y >> 4);
-                if i < 0 {
-                    // TODO: support y<0 in the world (needs shifting in all section access)
-                    let block_count = data.read_u16::<byteorder::LittleEndian>()?;
-                    let bit_size = data.read_u8()?;
-                    let single_value = Some(VarInt::read_from(&mut data)?.0);
-                    if bit_size != 0 || single_value != Some(0) || block_count != 0 {
-                        panic!("TODO: support chunk data y<0 non-air (bit_size {}, single_value {:?}, block_count {})", bit_size, single_value, block_count);
-                    }
-                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-
-                    // biome
-                    let _bit_size = data.read_u8()?;
-                    if _bit_size == 0 {
-                        let _single_value = VarInt::read_from(&mut data)?.0;
-                    } else {
-                        if bit_size >= 4 {
-                            panic!(
-                                "TODO: handle direct palettes, bit_size {} >= 4 for biomes",
-                                bit_size
-                            );
-                        }
-
-                        let count = VarInt::read_from(&mut data)?.0;
-                        for _i in 0..count {
-                            let _id = VarInt::read_from(&mut data)?.0;
-                        }
-                    }
-                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-
-                    continue;
-                }
-                let i = i as usize;
-
-                if chunk.sections[i].is_none() {
-                    let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
-                    fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
-                    if self.protocol_version >= 757 {
-                        // TODO: fix conditionalizing fill sky on 1.18+
-                        fill_sky = true;
-                    }
-                    if !fill_sky || mask & (1 << i) != 0 {
-                        chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
-                    }
-                }
-                if mask & (1 << i) == 0 {
-                    continue;
-                }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
-                section.dirty = true;
 
                 if self.protocol_version >= 451 {
                     let _block_count = data.read_u16::<byteorder::LittleEndian>()?;
@@ -1103,52 +1048,10 @@ impl World {
                     // section is not rendered, even if it still has blocks." per https://wiki.vg/Chunk_Format#Data_structure
                 }
 
-                let mut bit_size = data.read_u8()?;
-                let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> =
-                    HashMap::with_hasher(BuildHasherDefault::default());
-                let mut single_value: Option<usize> = None;
-                if bit_size == 0 {
-                    if self.protocol_version >= 757 {
-                        // Single-valued palette
-                        single_value = Some(VarInt::read_from(&mut data)?.0.try_into().unwrap());
-                    } else {
-                        bit_size = 13;
-                    }
-                } else {
-                    let count = VarInt::read_from(&mut data)?.0;
-                    if bit_size >= 9 {
-                        panic!(
-                            "TODO: handle direct palettes, bit_size {} >= 9 for block states",
-                            bit_size
-                        );
-                    }
-                    for i in 0..count {
-                        let id = VarInt::read_from(&mut data)?.0;
-                        let bl = self
-                            .id_map
-                            .by_vanilla_id(id as usize, &self.modded_block_ids);
-                        mappings.insert(i as usize, bl);
-                    }
-                }
-                if bit_size > 16 {
-                    // https://wiki.vg/Chunk_Format#Data_structure "This increase can go up to 16 bits per block"...
-                    panic!("load_chunk19_to_117: bit_size={:?} > 16", bit_size);
-                }
-
-                let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-                let padded = self.protocol_version >= 736;
-                let m = bit::Map::from_raw(bits, bit_size as usize, padded);
+                let palette = PaletteParser::new(self.protocol_version, PaletteKind::BlockStates, &mut data).parse()?;
+                let mut section = SectionParser::new(self.protocol_version, palette, &self.id_map, &self.modded_block_ids, &mut data).parse()?;
 
                 for bi in 0..4096 {
-                    let id = single_value.unwrap_or_else(|| m.get(bi));
-                    section.blocks.set(
-                        bi,
-                        mappings
-                            .get(&id)
-                            .cloned()
-                            // TODO: fix or_fun_call, but do not re-borrow self
-                            .unwrap_or(self.id_map.by_vanilla_id(id, &self.modded_block_ids)),
-                    );
                     // Spawn block entities
                     let b = section.blocks.get(bi);
                     if block_entity::BlockEntityType::get_block_entity(b).is_some() {
@@ -1170,36 +1073,20 @@ impl World {
                     }
                 }
 
+                // Version 1.18+
                 if self.protocol_version >= 757 {
-                    // Biomes palette TODO: refactor with block states, "palette container"
-                    let _bit_size = data.read_u8()?;
-                    if _bit_size == 0 {
-                        // Single-valued palette
-                        let _single_value = VarInt::read_from(&mut data)?.0;
-                    } else {
-                        if bit_size >= 4 {
-                            panic!(
-                                "TODO: handle direct palettes, bit_size {} >= 4 for biomes",
-                                bit_size
-                            );
-                        }
-
-                        let count = VarInt::read_from(&mut data)?.0;
-                        for _i in 0..count {
-                            let _id = VarInt::read_from(&mut data)?.0;
-                            //let bl = self
-                            //    .id_map
-                            //    .by_vanilla_id(id as usize, &self.modded_block_ids);
-                            //mappings.insert(i as usize, bl);
-                        }
-                    }
+                    let _palette = PaletteParser::new(self.protocol_version, PaletteKind::Biomes, &mut data).parse()?;
                     let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
+                    // TODO: Use biome data
+                // Version 1.14 - 1.17
                 } else if self.protocol_version >= 451 {
                     // Skylight in update skylight packet for 1.14+
                 } else {
                     data.read_exact(&mut section.block_light.data)?;
                     data.read_exact(&mut section.sky_light.data)?;
                 }
+
+                chunk.sections.insert(i, section);
             }
 
             if read_biomes && new {
@@ -1219,7 +1106,7 @@ impl World {
         }
         let cpos = CPos(x, z);
         if let Some(chunk) = self.chunks.get_mut(&cpos) {
-            if let Some(sec) = chunk.sections[y as usize].as_mut() {
+            if let Some(sec) = chunk.sections.get_mut(&y) {
                 sec.dirty = true;
             }
         }
@@ -1300,7 +1187,7 @@ pub struct CPos(i32, i32);
 pub struct Chunk {
     position: CPos,
 
-    sections: [Option<Section>; 16],
+    sections: HashMap<i32, Section>,
     sections_rendered_on: [u32; 16],
     biomes: [u8; 16 * 16],
 
@@ -1314,10 +1201,7 @@ impl Chunk {
     fn new(pos: CPos) -> Chunk {
         Chunk {
             position: pos,
-            sections: [
-                None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-                None, None,
-            ],
+            sections: HashMap::new(),
             sections_rendered_on: [0; 16],
             biomes: [0; 16 * 16],
             heightmap: [0; 16 * 16],
@@ -1348,16 +1232,16 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return false;
         }
-        let s_idx = s_idx as usize;
-        if self.sections[s_idx].is_none() {
+        if !self.sections.contains_key(&s_idx) {
             if let block::Air {} = b {
                 return false;
             }
-            let fill_sky = self.sections.iter().skip(s_idx).all(|v| v.is_none());
-            self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
+            // Fill the sky if there aren't any chunks above this one.
+            let fill_sky = self.sections.keys().any(|s_idx2| *s_idx2 > s_idx);
+            self.sections.insert(s_idx, Section::new(fill_sky));
         }
         {
-            let section = self.sections[s_idx as usize].as_mut().unwrap();
+            let section = self.sections.get_mut(&s_idx).unwrap();
             if !section.set_block(x, y & 0xF, z, b) {
                 return false;
             }
@@ -1390,7 +1274,7 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return block::Missing {};
         }
-        match self.sections[s_idx as usize].as_ref() {
+        match self.sections.get(&s_idx) {
             Some(sec) => sec.get_block(x, y & 0xF, z),
             None => block::Air {},
         }
@@ -1401,7 +1285,7 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return 0;
         }
-        match self.sections[s_idx as usize].as_ref() {
+        match self.sections.get(&s_idx) {
             Some(sec) => sec.get_block_light(x, y & 0xF, z),
             None => 0,
         }
@@ -1412,15 +1296,15 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return;
         }
-        let s_idx = s_idx as usize;
-        if self.sections[s_idx].is_none() {
+        if !self.sections.contains_key(&s_idx) {
             if light == 0 {
                 return;
             }
-            let fill_sky = self.sections.iter().skip(s_idx).all(|v| v.is_none());
-            self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
+            // Fill the sky if there aren't any chunks above this one.
+            let fill_sky = self.sections.keys().any(|s_idx2| *s_idx2 > s_idx);
+            self.sections.insert(s_idx, Section::new(fill_sky));
         }
-        if let Some(sec) = self.sections[s_idx].as_mut() {
+        if let Some(sec) = self.sections.get_mut(&s_idx) {
             sec.set_block_light(x, y & 0xF, z, light)
         }
     }
@@ -1430,7 +1314,7 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return 15;
         }
-        match self.sections[s_idx as usize].as_ref() {
+        match self.sections.get(&s_idx) {
             Some(sec) => sec.get_sky_light(x, y & 0xF, z),
             None => 15,
         }
@@ -1441,15 +1325,15 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return;
         }
-        let s_idx = s_idx as usize;
-        if self.sections[s_idx].is_none() {
+        if !self.sections.contains_key(&s_idx) {
             if light == 15 {
                 return;
             }
-            let fill_sky = self.sections.iter().skip(s_idx).all(|v| v.is_none());
-            self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
+            // Fill the sky if there aren't any chunks above this one.
+            let fill_sky = self.sections.keys().any(|s_idx2| *s_idx2 > s_idx);
+            self.sections.insert(s_idx, Section::new(fill_sky));
         }
-        if let Some(sec) = self.sections[s_idx as usize].as_mut() {
+        if let Some(sec) = self.sections.get_mut(&s_idx) {
             sec.set_sky_light(x, y & 0xF, z, light)
         }
     }
@@ -1463,8 +1347,6 @@ pub struct Section {
     pub cull_info: chunk_builder::CullInfo,
     pub render_buffer: render::ChunkBuffer,
 
-    y: u8,
-
     blocks: storage::BlockStorage,
 
     block_light: nibble::Array,
@@ -1475,11 +1357,10 @@ pub struct Section {
 }
 
 impl Section {
-    fn new(y: u8, fill_sky: bool) -> Section {
+    fn new(fill_sky: bool) -> Section {
         let mut section = Section {
             cull_info: chunk_builder::CullInfo::all_vis(),
             render_buffer: render::ChunkBuffer::new(),
-            y,
 
             blocks: storage::BlockStorage::new(4096),
 
@@ -1526,5 +1407,144 @@ impl Section {
 
     fn set_sky_light(&mut self, x: i32, y: i32, z: i32, l: u8) {
         self.sky_light.set(((y << 8) | (z << 4) | x) as usize, l);
+    }
+}
+
+/// The kind of palette we are reading. This can affect how we interpret bits
+/// per entry which is different between block states and biomes.
+enum PaletteKind {
+    BlockStates,
+    Biomes,
+}
+
+/// These are the different formats the palette data can be interpreted as.
+/// See https://wiki.vg/Chunk_Format#Palettes for more info.
+enum PaletteFormat {
+    SingleValued(usize),
+    Indirect(Vec<usize>, u8),
+    Direct(u8),
+}
+
+/// A struct to manage building a palette that can be used to resolve block
+/// states or biomes inside a chunk section.
+struct PaletteParser<'a> {
+    protocol_version: i32,
+    kind: PaletteKind,
+    data: &'a mut Cursor<Vec<u8>>
+}
+
+impl PaletteParser<'_> {
+    pub fn new(protocol_version: i32, kind: PaletteKind, data: &mut Cursor<Vec<u8>>) -> PaletteParser<'_> {
+        PaletteParser {
+            protocol_version,
+            kind,
+            data,
+        }
+    }
+
+    fn parse_single_valued_palette(&mut self) -> Result<PaletteFormat, protocol::Error> {
+        Ok(PaletteFormat::SingleValued(VarInt::read_from(self.data)?.0 as usize))
+    }
+
+    fn parse_indirect_palette(&mut self, bits_per_entry: u8) -> Result<PaletteFormat, protocol::Error> {
+        let count = VarInt::read_from(self.data)?.0 as usize;
+        let mut mapping = Vec::with_capacity(count);
+
+        for _i in 0..count {
+            mapping.push(VarInt::read_from(self.data)?.0 as usize);
+        }
+
+        Ok(PaletteFormat::Indirect(mapping, bits_per_entry))
+    }
+
+    pub fn parse(mut self) -> Result<PaletteFormat, protocol::Error> {
+        let mut bits_per_entry = self.data.read_u8()?;
+
+        if self.protocol_version < 757 && bits_per_entry == 0 {
+            bits_per_entry = 13;
+        }
+
+        // Figure out how we should interpret the palette based on bits_per_entry.
+        Ok(match self.kind {
+            PaletteKind::BlockStates => match bits_per_entry {
+                0 => self.parse_single_valued_palette()?,
+                n if (1..9).contains(&n) => self.parse_indirect_palette(n.max(4))?,
+                n if (9..17).contains(&n) => PaletteFormat::Direct(n),
+                // https://wiki.vg/Chunk_Format#Data_structure "This increase can go up to 16 bits per block"...
+                n => panic!("PaletteParser::parse: block state bits_per_entry={:?} > 16", n),
+            },
+            PaletteKind::Biomes => match bits_per_entry {
+                0 => self.parse_single_valued_palette()?,
+                n if (1..4).contains(&n) => self.parse_indirect_palette(n)?,
+                n if (4..17).contains(&n) => PaletteFormat::Direct(n),
+                n => panic!("PaletteParser::parse: biome bits_per_entry={:?} > 16", n),
+            },
+        })
+    }
+}
+
+/// A struct to manage building a chunk section struct from a palette and the
+/// data received from the server.
+struct SectionParser<'a> {
+    protocol_version: i32,
+    palette: PaletteFormat,
+    id_map: &'a block::VanillaIDMap,
+    modded_block_ids: &'a HashMap<usize, String>,
+    data: &'a mut Cursor<Vec<u8>>,
+}
+
+impl SectionParser<'_> {
+    pub fn new<'a>(
+        protocol_version: i32,
+        palette: PaletteFormat,
+        id_map: &'a block::VanillaIDMap,
+        modded_block_ids: &'a HashMap<usize, String>,
+        data: &'a mut Cursor<Vec<u8>>
+    ) -> SectionParser<'a> {
+        SectionParser {
+            protocol_version,
+            palette,
+            id_map,
+            modded_block_ids,
+            data,
+        }
+    }
+
+    pub fn parse(self) -> Result<Section, protocol::Error> {
+        // TODO: Figure out skylight
+        // TODO: Figure out dirty
+        let mut section = Section::new(true);
+        section.dirty = true;
+
+        let bits = LenPrefixed::<VarInt, u64>::read_from(self.data)?.data;
+        let padded = self.protocol_version >= 736;
+
+        match self.palette {
+            PaletteFormat::SingleValued(id) => {
+                let block = self.id_map.by_vanilla_id(id, self.modded_block_ids);
+                for i in 0..4096 {
+                    section.blocks.set(i, block);
+                }
+            },
+            PaletteFormat::Indirect(mapping, bits_per_entry) => {
+                let entries = bit::Map::from_raw(bits, bits_per_entry as usize, padded);
+                for i in 0..4096 {
+                    let index = entries.get(i);
+                    let id = *mapping.get(index).unwrap();
+                    let block = self.id_map.by_vanilla_id(id, self.modded_block_ids);
+                    section.blocks.set(i, block);
+                }
+            },
+            PaletteFormat::Direct(bits_per_entry) => {
+                let entries = bit::Map::from_raw(bits, bits_per_entry as usize, padded);
+                for i in 0..4096 {
+                    let id = entries.get(i);
+                    let block = self.id_map.by_vanilla_id(id, self.modded_block_ids);
+                    section.blocks.set(i, block);
+                }
+            },
+        }
+
+        Ok(section)
     }
 }
