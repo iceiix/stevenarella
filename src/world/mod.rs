@@ -1039,6 +1039,10 @@ impl World {
             let chunk = self.chunks.get_mut(&cpos).unwrap();
 
             for i1 in 0..num_sections as i32 {
+                if mask & (1 << i1) == 0 {
+                    continue;
+                }
+
                 let i: i32 = (i1 as i32) + (self.min_y >> 4);
 
                 if self.protocol_version >= 451 {
@@ -1412,6 +1416,7 @@ impl Section {
 
 /// The kind of palette we are reading. This can affect how we interpret bits
 /// per entry which is different between block states and biomes.
+#[derive(PartialEq)]
 enum PaletteKind {
     BlockStates,
     Biomes,
@@ -1435,6 +1440,10 @@ struct PaletteParser<'a> {
 
 impl PaletteParser<'_> {
     pub fn new(protocol_version: i32, kind: PaletteKind, data: &mut Cursor<Vec<u8>>) -> PaletteParser<'_> {
+        if protocol_version < 757 && kind == PaletteKind::Biomes {
+            panic!("Protocol {} doesn't support biome palettes", protocol_version);
+        }
+
         PaletteParser {
             protocol_version,
             kind,
@@ -1460,8 +1469,12 @@ impl PaletteParser<'_> {
     pub fn parse(mut self) -> Result<PaletteFormat, protocol::Error> {
         let mut bits_per_entry = self.data.read_u8()?;
 
+        // Pre 1.18, when bits_per_entry == 0, it indicates we should use
+        // an indirect palette rather than the new single valued one. We are
+        // setting this to 4 since it's the minimum value for indirect
+        // palettes.
         if self.protocol_version < 757 && bits_per_entry == 0 {
-            bits_per_entry = 13;
+            bits_per_entry = 4;
         }
 
         // Figure out how we should interpret the palette based on bits_per_entry.
@@ -1471,13 +1484,13 @@ impl PaletteParser<'_> {
                 n if (1..9).contains(&n) => self.parse_indirect_palette(n.max(4))?,
                 n if (9..17).contains(&n) => PaletteFormat::Direct(n),
                 // https://wiki.vg/Chunk_Format#Data_structure "This increase can go up to 16 bits per block"...
-                n => panic!("PaletteParser::parse: block state bits_per_entry={:?} > 16", n),
+                n => panic!("PaletteParser::parse: block state bits_per_entry={} > 16", n),
             },
             PaletteKind::Biomes => match bits_per_entry {
                 0 => self.parse_single_valued_palette()?,
                 n if (1..4).contains(&n) => self.parse_indirect_palette(n)?,
                 n if (4..17).contains(&n) => PaletteFormat::Direct(n),
-                n => panic!("PaletteParser::parse: biome bits_per_entry={:?} > 16", n),
+                n => panic!("PaletteParser::parse: biome bits_per_entry={} > 16", n),
             },
         })
     }
@@ -1517,7 +1530,7 @@ impl SectionParser<'_> {
         section.dirty = true;
 
         let bits = LenPrefixed::<VarInt, u64>::read_from(self.data)?.data;
-        let padded = self.protocol_version >= 736;
+        let padded = self.protocol_version >= 735;
 
         match self.palette {
             PaletteFormat::SingleValued(id) => {
@@ -1546,5 +1559,144 @@ impl SectionParser<'_> {
         }
 
         Ok(section)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_chunk_1_12_2() {
+        let mut world = World::new(340);
+        let chunk_data = std::fs::read("test/chunk_1.12.2.bin").unwrap();
+        world.load_chunk19_to_117(true, 7, 8, true, 63, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_13_2() {
+        let mut world = World::new(404);
+        let chunk_data = std::fs::read("test/chunk_1.13.2.bin").unwrap();
+        world.load_chunk19_to_117(true, -20, -7, true, 31, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_18w50a() {
+        let mut world = World::new(451);
+        let chunk_data = std::fs::read("test/chunk_18w50a.bin").unwrap();
+        world.load_chunk19_to_117(true, -25, -18, true, 31, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_19w02a() {
+        let mut world = World::new(452);
+        let chunk_data = std::fs::read("test/chunk_19w02a.bin").unwrap();
+        world.load_chunk19_to_117(true, -10, -26, true, 15, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14() {
+        let mut world = World::new(477);
+        let chunk_data = std::fs::read("test/chunk_1.14.bin").unwrap();
+        world.load_chunk19_to_117(true, -14, 0, true, 63, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14_1() {
+        let mut world = World::new(480);
+        let chunk_data = std::fs::read("test/chunk_1.14.1.bin").unwrap();
+        world.load_chunk19_to_117(true, 2, -25, true, 31, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14_2() {
+        let mut world = World::new(485);
+        let chunk_data = std::fs::read("test/chunk_1.14.2.bin").unwrap();
+        world.load_chunk19_to_117(true, 1, 5, true, 15, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14_3() {
+        let mut world = World::new(490);
+        let chunk_data = std::fs::read("test/chunk_1.14.3.bin").unwrap();
+        world.load_chunk19_to_117(true, -9, -25, true, 31, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14_4() {
+        let mut world = World::new(498);
+        let chunk_data = std::fs::read("test/chunk_1.14.4.bin").unwrap();
+        world.load_chunk19_to_117(true, 2, -14, true, 31, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_15_1() {
+        let mut world = World::new(575);
+        let chunk_data = std::fs::read("test/chunk_1.15.1.bin").unwrap();
+        world.load_chunk19_to_117(false, -10, -10, true, 63, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_15_2() {
+        let mut world = World::new(578);
+        let chunk_data = std::fs::read("test/chunk_1.15.2.bin").unwrap();
+        world.load_chunk19_to_117(false, -19, -18, true, 31, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16() {
+        let mut world = World::new(735);
+        let chunk_data = std::fs::read("test/chunk_1.16.bin").unwrap();
+        world.load_chunk19_to_117(false, 2, -26, true, 63, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16_1() {
+        let mut world = World::new(736);
+        let chunk_data = std::fs::read("test/chunk_1.16.1.bin").unwrap();
+        world.load_chunk19_to_117(false, -6, -5, true, 31, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16_2() {
+        let mut world = World::new(751);
+        let chunk_data = std::fs::read("test/chunk_1.16.2.bin").unwrap();
+        world.load_chunk19_to_117(false, -22, -20, true, 15, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16_3() {
+        let mut world = World::new(753);
+        let chunk_data = std::fs::read("test/chunk_1.16.3.bin").unwrap();
+        world.load_chunk19_to_117(false, 4, 2, true, 63, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16_4() {
+        let mut world = World::new(754);
+        let chunk_data = std::fs::read("test/chunk_1.16.4.bin").unwrap();
+        world.load_chunk19_to_117(false, -10, -8, true, 15, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_17_1() {
+        let mut world = World::new(756);
+        let chunk_data = std::fs::read("test/chunk_1.17.1.bin").unwrap();
+        world.load_chunk19_to_117(false, -3, -25, true, 31, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_18_1() {
+        let mut world = World::new(757);
+        let chunk_data = std::fs::read("test/chunk_1.18.1.bin").unwrap();
+        world.load_chunk19_to_117(false, -14, -5, true, 65535, 16, chunk_data).unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_18_2() {
+        let mut world = World::new(758);
+        let chunk_data = std::fs::read("test/chunk_1.18.2.bin").unwrap();
+        world.load_chunk19_to_117(false, -10, -8, true, 65535, 16, chunk_data).unwrap();
     }
 }
