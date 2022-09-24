@@ -1,3 +1,5 @@
+use steven_blocks as block;
+use steven_protocol::protocol::packet;
 pub mod block_entity;
 pub mod player;
 
@@ -22,6 +24,8 @@ pub fn add_systems(m: &mut ecs::Manager) {
     let sys = systems::LerpRotation::new(m);
     m.add_render_system(sys);
     let sys = systems::LightEntity::new(m);
+    m.add_render_system(sys);
+    let sys = systems::ApplyDigging::new(m);
     m.add_render_system(sys);
 
     block_entity::add_systems(m);
@@ -158,6 +162,40 @@ pub struct Light {
 
 impl Light {
     pub fn new() -> Light {
+        Default::default()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DiggingState {
+    pub block: block::Block,
+    pub position: shared::Position,
+    pub face: shared::Direction,
+    pub start: std::time::Instant,
+    pub finished: bool,
+}
+
+#[derive(Default)]
+pub struct Digging {
+    pub last: Option<DiggingState>,
+    pub current: Option<DiggingState>,
+    pub packets: std::collections::VecDeque<packet::play::serverbound::PlayerDigging>,
+}
+
+impl Digging {
+    pub fn new() -> Self {
+        Default::default()
+    }
+}
+
+#[derive(Default)]
+pub struct MouseButtons {
+    pub left: bool,
+    pub right: bool,
+}
+
+impl MouseButtons {
+    pub fn new() -> Self {
         Default::default()
     }
 }

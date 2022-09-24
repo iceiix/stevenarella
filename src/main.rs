@@ -739,9 +739,25 @@ fn handle_window_event<T>(
                                 height,
                             );
                         }
+
+                        if game.focused {
+                            game.server.on_left_mouse_button(false);
+                        }
+                    }
+                    (ElementState::Pressed, MouseButton::Left) => {
+                        if game.focused {
+                            game.server.on_left_mouse_button(true);
+                        }
+                    }
+                    (ElementState::Released, MouseButton::Right) => {
+                        if game.focused {
+                            game.server.on_right_mouse_button(false);
+                            game.server.on_right_click(&mut game.renderer);
+                        }
                     }
                     (ElementState::Pressed, MouseButton::Right) => {
                         if game.focused {
+                            game.server.on_right_mouse_button(true);
                             game.server.on_right_click(&mut game.renderer);
                         }
                     }

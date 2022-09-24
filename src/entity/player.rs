@@ -1,5 +1,5 @@
 use super::{
-    Bounds, GameInfo, Gravity, Light, Position, Rotation, TargetPosition, TargetRotation, Velocity,
+    Bounds, GameInfo, Gravity, Light, Position, Rotation, TargetPosition, TargetRotation, Velocity, MouseButtons, Digging
 };
 use crate::ecs;
 use crate::format;
@@ -43,6 +43,8 @@ pub fn create_local(m: &mut ecs::Manager) -> ecs::Entity {
     );
     m.add_component_direct(entity, PlayerModel::new("", false, false, true));
     m.add_component_direct(entity, Light::new());
+    m.add_component_direct(entity, Digging::new());
+    m.add_component_direct(entity, MouseButtons::new());
     entity
 }
 

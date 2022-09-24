@@ -61,6 +61,8 @@ pub struct Server {
     // Entity accessors
     game_info: ecs::Key<entity::GameInfo>,
     player_movement: ecs::Key<entity::player::PlayerMovement>,
+    mouse_buttons: ecs::Key<entity::MouseButtons>,
+    digging: ecs::Key<entity::Digging>,
     gravity: ecs::Key<entity::Gravity>,
     position: ecs::Key<entity::Position>,
     target_position: ecs::Key<entity::TargetPosition>,
@@ -477,6 +479,8 @@ impl Server {
             // Entity accessors
             game_info,
             player_movement: entities.get_key(),
+            mouse_buttons: entities.get_key(),
+            digging: entities.get_key(),
             gravity: entities.get_key(),
             position: entities.get_key(),
             target_position: entities.get_key(),
@@ -778,6 +782,12 @@ impl Server {
                 };
                 self.write_packet(packet);
             }
+
+            let digging = self.entities.get_component_mut(player, self.digging).unwrap();
+            let packets = &mut digging.packets;
+            while let Some(packet) = packets.pop_front() {
+                self.write_packet(packet);
+            }
         }
     }
 
@@ -788,6 +798,28 @@ impl Server {
                 .get_component_mut(player, self.player_movement)
             {
                 movement.pressed_keys.insert(key, down);
+            }
+        }
+    }
+
+    pub fn on_left_mouse_button(&mut self, pressed: bool) {
+        if let Some(player) = self.player {
+            if let Some(mouse_buttons) = self
+                .entities
+                .get_component_mut(player, self.mouse_buttons)
+            {
+                mouse_buttons.left = pressed;
+            }
+        }
+    }
+
+    pub fn on_right_mouse_button(&mut self, pressed: bool) {
+        if let Some(player) = self.player {
+            if let Some(mouse_buttons) = self
+                .entities
+                .get_component_mut(player, self.mouse_buttons)
+            {
+                mouse_buttons.right = pressed;
             }
         }
     }
