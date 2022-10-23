@@ -36,7 +36,7 @@ byteorder = "1.4.3"
 serde = "1.0.142"
 serde_json = "1.0.83"
 flate2 = { version = "1.0.24", features = ["rust_backend"], default-features = false }
-zip = { version = "0.6.2", features = ["deflate"], default-features = false }
+zip = { version = "0.6.3", features = ["deflate"], default-features = false }
 image = "0.24.4"
 getrandom = { version = "0.2.7", features = ["js"] }
 rand = "0.8.5"
