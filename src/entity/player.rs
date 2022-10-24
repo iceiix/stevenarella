@@ -1,5 +1,6 @@
 use super::{
-    Bounds, GameInfo, Gravity, Light, Position, Rotation, TargetPosition, TargetRotation, Velocity, MouseButtons, Digging
+    Bounds, Digging, GameInfo, Gravity, Light, MouseButtons, Position, Rotation, TargetPosition,
+    TargetRotation, Velocity,
 };
 use crate::ecs;
 use crate::format;

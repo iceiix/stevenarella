@@ -797,9 +797,7 @@ impl Server {
 
     pub fn on_left_mouse_button(&mut self, pressed: bool) {
         if let Some(player) = self.player {
-            if let Some(mouse_buttons) = self
-                .entities
-                .get_component_mut(player, self.mouse_buttons)
+            if let Some(mouse_buttons) = self.entities.get_component_mut(player, self.mouse_buttons)
             {
                 mouse_buttons.left = pressed;
             }
@@ -808,9 +806,7 @@ impl Server {
 
     pub fn on_right_mouse_button(&mut self, pressed: bool) {
         if let Some(player) = self.player {
-            if let Some(mouse_buttons) = self
-                .entities
-                .get_component_mut(player, self.mouse_buttons)
+            if let Some(mouse_buttons) = self.entities.get_component_mut(player, self.mouse_buttons)
             {
                 mouse_buttons.right = pressed;
             }
@@ -1079,10 +1075,7 @@ impl Server {
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
         let mut conn = self.conn.write().unwrap();
-        let _ = conn
-            .as_mut()
-            .unwrap()
-            .write_plugin_message(channel, data); // TODO handle errors
+        let _ = conn.as_mut().unwrap().write_plugin_message(channel, data); // TODO handle errors
     }
 
     fn on_game_join_worldnames_ishard_simdist(

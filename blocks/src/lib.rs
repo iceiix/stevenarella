@@ -6647,97 +6647,199 @@ mod tests {
 
     #[test]
     fn verify_blocks() {
-        let dirt = Block::Dirt { snowy: true, variant: DirtVariant::Normal };
-        let stone = Block::Stone { variant: StoneVariant::Normal };
-        let vine = Block::Vine { up: false, south: false, west: false, north: true, east: false };
-        let pumpkin_lit = Block::PumpkinLit { facing: Direction::North, without_face: true };
-        let cocoa = Block::Cocoa { age: 1, facing: Direction::North };
-        let leaves = Block::Leaves { variant: TreeVariant::Oak, decayable: false, check_decay: false, distance: 1 };
-        let leaves2 = Block::Leaves2 { variant: TreeVariant::Oak, decayable: false, check_decay: false };
-        let wool = Block::Wool { color: ColoredVariant::White };
-        let tall_seagrass = Block::TallSeagrass { half: TallSeagrassHalf::Upper };
+        let dirt = Block::Dirt {
+            snowy: true,
+            variant: DirtVariant::Normal,
+        };
+        let stone = Block::Stone {
+            variant: StoneVariant::Normal,
+        };
+        let vine = Block::Vine {
+            up: false,
+            south: false,
+            west: false,
+            north: true,
+            east: false,
+        };
+        let pumpkin_lit = Block::PumpkinLit {
+            facing: Direction::North,
+            without_face: true,
+        };
+        let cocoa = Block::Cocoa {
+            age: 1,
+            facing: Direction::North,
+        };
+        let leaves = Block::Leaves {
+            variant: TreeVariant::Oak,
+            decayable: false,
+            check_decay: false,
+            distance: 1,
+        };
+        let leaves2 = Block::Leaves2 {
+            variant: TreeVariant::Oak,
+            decayable: false,
+            check_decay: false,
+        };
+        let wool = Block::Wool {
+            color: ColoredVariant::White,
+        };
+        let tall_seagrass = Block::TallSeagrass {
+            half: TallSeagrassHalf::Upper,
+        };
         let data = [
             (dirt, None, Some(0.75)),
             (dirt, Some(Tool::Shovel(ToolMaterial::Wood)), Some(0.4)),
             (dirt, Some(Tool::Pickaxe(ToolMaterial::Wood)), Some(0.75)),
-
             (stone, None, Some(7.5)),
             (stone, Some(Tool::Shovel(ToolMaterial::Wood)), Some(7.5)),
             (stone, Some(Tool::Pickaxe(ToolMaterial::Wood)), Some(1.15)),
-
             (Block::Obsidian {}, None, Some(250.0)),
-            (Block::Obsidian {}, Some(Tool::Pickaxe(ToolMaterial::Wood)), Some(125.0)),
-            (Block::Obsidian {}, Some(Tool::Pickaxe(ToolMaterial::Stone)), Some(62.5)),
-            (Block::Obsidian {}, Some(Tool::Pickaxe(ToolMaterial::Iron)), Some(41.7)),
-            (Block::Obsidian {}, Some(Tool::Pickaxe(ToolMaterial::Diamond)), Some(9.4)),
-            (Block::Obsidian {}, Some(Tool::Pickaxe(ToolMaterial::Netherite)), Some(8.35)),
-            (Block::Obsidian {}, Some(Tool::Pickaxe(ToolMaterial::Gold)), Some(20.85)),
-
+            (
+                Block::Obsidian {},
+                Some(Tool::Pickaxe(ToolMaterial::Wood)),
+                Some(125.0),
+            ),
+            (
+                Block::Obsidian {},
+                Some(Tool::Pickaxe(ToolMaterial::Stone)),
+                Some(62.5),
+            ),
+            (
+                Block::Obsidian {},
+                Some(Tool::Pickaxe(ToolMaterial::Iron)),
+                Some(41.7),
+            ),
+            (
+                Block::Obsidian {},
+                Some(Tool::Pickaxe(ToolMaterial::Diamond)),
+                Some(9.4),
+            ),
+            (
+                Block::Obsidian {},
+                Some(Tool::Pickaxe(ToolMaterial::Netherite)),
+                Some(8.35),
+            ),
+            (
+                Block::Obsidian {},
+                Some(Tool::Pickaxe(ToolMaterial::Gold)),
+                Some(20.85),
+            ),
             (Block::Bedrock {}, None, None),
-            (Block::Bedrock {}, Some(Tool::Pickaxe(ToolMaterial::Wood)), None),
-            (Block::Bedrock {}, Some(Tool::Pickaxe(ToolMaterial::Stone)), None),
-            (Block::Bedrock {}, Some(Tool::Pickaxe(ToolMaterial::Iron)), None),
-            (Block::Bedrock {}, Some(Tool::Pickaxe(ToolMaterial::Diamond)), None),
-            (Block::Bedrock {}, Some(Tool::Pickaxe(ToolMaterial::Netherite)), None),
-            (Block::Bedrock {}, Some(Tool::Pickaxe(ToolMaterial::Gold)), None),
-
+            (
+                Block::Bedrock {},
+                Some(Tool::Pickaxe(ToolMaterial::Wood)),
+                None,
+            ),
+            (
+                Block::Bedrock {},
+                Some(Tool::Pickaxe(ToolMaterial::Stone)),
+                None,
+            ),
+            (
+                Block::Bedrock {},
+                Some(Tool::Pickaxe(ToolMaterial::Iron)),
+                None,
+            ),
+            (
+                Block::Bedrock {},
+                Some(Tool::Pickaxe(ToolMaterial::Diamond)),
+                None,
+            ),
+            (
+                Block::Bedrock {},
+                Some(Tool::Pickaxe(ToolMaterial::Netherite)),
+                None,
+            ),
+            (
+                Block::Bedrock {},
+                Some(Tool::Pickaxe(ToolMaterial::Gold)),
+                None,
+            ),
             (Block::Web {}, None, Some(20.0)),
-            (Block::Web {}, Some(Tool::Pickaxe(ToolMaterial::Wood)), Some(20.0)),
-
+            (
+                Block::Web {},
+                Some(Tool::Pickaxe(ToolMaterial::Wood)),
+                Some(20.0),
+            ),
             (vine, None, Some(0.3)),
             (vine, Some(Tool::Pickaxe(ToolMaterial::Wood)), Some(0.3)),
             (vine, Some(Tool::Axe(ToolMaterial::Wood)), Some(0.15)),
             (vine, Some(Tool::Axe(ToolMaterial::Stone)), Some(0.1)),
             (vine, Some(Tool::Axe(ToolMaterial::Iron)), Some(0.05)),
             (vine, Some(Tool::Axe(ToolMaterial::Diamond)), Some(0.05)),
-
             (wool, None, Some(1.2)),
-
             (leaves, None, Some(0.3)),
             (leaves, Some(Tool::Hoe(ToolMaterial::Wood)), Some(0.15)),
             (leaves, Some(Tool::Hoe(ToolMaterial::Stone)), Some(0.1)),
             (leaves, Some(Tool::Hoe(ToolMaterial::Iron)), Some(0.05)),
             (leaves, Some(Tool::Hoe(ToolMaterial::Diamond)), Some(0.05)),
-
             (leaves2, None, Some(0.3)),
             (leaves2, Some(Tool::Hoe(ToolMaterial::Wood)), Some(0.15)),
             (leaves2, Some(Tool::Hoe(ToolMaterial::Stone)), Some(0.1)),
             (leaves2, Some(Tool::Hoe(ToolMaterial::Iron)), Some(0.05)),
             (leaves2, Some(Tool::Hoe(ToolMaterial::Diamond)), Some(0.05)),
-
             (Block::DeadBush {}, None, Some(0.05)),
             (Block::DeadBush {}, Some(Tool::Shears), Some(0.05)),
-
             (Block::Seagrass {}, None, Some(0.05)),
             (Block::Seagrass {}, Some(Tool::Shears), Some(0.05)),
-
             (tall_seagrass, None, Some(0.05)),
             (tall_seagrass, Some(Tool::Shears), Some(0.05)),
-
             (cocoa, None, Some(0.3)),
             (cocoa, Some(Tool::Axe(ToolMaterial::Wood)), Some(0.15)),
             (cocoa, Some(Tool::Axe(ToolMaterial::Stone)), Some(0.1)),
             (cocoa, Some(Tool::Axe(ToolMaterial::Iron)), Some(0.05)),
             (cocoa, Some(Tool::Axe(ToolMaterial::Diamond)), Some(0.05)),
-
             (Block::MelonBlock {}, None, Some(1.5)),
-            (Block::MelonBlock {}, Some(Tool::Axe(ToolMaterial::Wood)), Some(0.75)),
-            (Block::MelonBlock {}, Some(Tool::Axe(ToolMaterial::Stone)), Some(0.4)),
-            (Block::MelonBlock {}, Some(Tool::Axe(ToolMaterial::Iron)), Some(0.25)),
-            (Block::MelonBlock {}, Some(Tool::Axe(ToolMaterial::Diamond)), Some(0.2)),
-            (Block::MelonBlock {}, Some(Tool::Axe(ToolMaterial::Netherite)), Some(0.2)),
-            (Block::MelonBlock {}, Some(Tool::Axe(ToolMaterial::Gold)), Some(0.15)),
-
+            (
+                Block::MelonBlock {},
+                Some(Tool::Axe(ToolMaterial::Wood)),
+                Some(0.75),
+            ),
+            (
+                Block::MelonBlock {},
+                Some(Tool::Axe(ToolMaterial::Stone)),
+                Some(0.4),
+            ),
+            (
+                Block::MelonBlock {},
+                Some(Tool::Axe(ToolMaterial::Iron)),
+                Some(0.25),
+            ),
+            (
+                Block::MelonBlock {},
+                Some(Tool::Axe(ToolMaterial::Diamond)),
+                Some(0.2),
+            ),
+            (
+                Block::MelonBlock {},
+                Some(Tool::Axe(ToolMaterial::Netherite)),
+                Some(0.2),
+            ),
+            (
+                Block::MelonBlock {},
+                Some(Tool::Axe(ToolMaterial::Gold)),
+                Some(0.15),
+            ),
             (Block::Pumpkin {}, None, Some(1.5)),
-            (Block::Pumpkin {}, Some(Tool::Axe(ToolMaterial::Wood)), Some(0.75)),
-            (Block::Pumpkin {}, Some(Tool::Axe(ToolMaterial::Stone)), Some(0.4)),
-            (Block::Pumpkin {}, Some(Tool::Axe(ToolMaterial::Iron)), Some(0.25)),
-
+            (
+                Block::Pumpkin {},
+                Some(Tool::Axe(ToolMaterial::Wood)),
+                Some(0.75),
+            ),
+            (
+                Block::Pumpkin {},
+                Some(Tool::Axe(ToolMaterial::Stone)),
+                Some(0.4),
+            ),
+            (
+                Block::Pumpkin {},
+                Some(Tool::Axe(ToolMaterial::Iron)),
+                Some(0.25),
+            ),
             (pumpkin_lit, None, Some(1.5)),
             (pumpkin_lit, Some(Tool::Axe(ToolMaterial::Wood)), Some(0.75)),
             (pumpkin_lit, Some(Tool::Axe(ToolMaterial::Stone)), Some(0.4)),
             (pumpkin_lit, Some(Tool::Axe(ToolMaterial::Iron)), Some(0.25)),
-
             // TODO: Fix special sword rules
             //(Block::Web {}, Some(Tool::Sword(ToolMaterial::Wood)), Some(0.4)),
             //(Block::Web {}, Some(Tool::Sword(ToolMaterial::Stone)), Some(0.4)),
@@ -8810,7 +8912,7 @@ impl ToolMaterial {
             ToolMaterial::Gold => 12.0,
             ToolMaterial::Iron => 6.0,
             ToolMaterial::Diamond => 8.0,
-            ToolMaterial::Netherite => 9.0
+            ToolMaterial::Netherite => 9.0,
         }
     }
 }
@@ -8833,7 +8935,7 @@ impl Tool {
             Tool::Shovel(m) => m.get_multiplier(),
             Tool::Hoe(m) => m.get_multiplier(),
             Tool::Sword(_) => 1.5, // TODO: Handle different block values.
-            Tool::Shears => 2.0, // TODO: Handle different block values.
+            Tool::Shears => 2.0,   // TODO: Handle different block values.
         }
     }
 }
