@@ -1988,7 +1988,8 @@ impl Server {
             chunk_data.chunk_z,
             world::LightType::Block,
             chunk_data.block_light_mask.data,
-            chunk_data.block_light_arrays.data);
+            chunk_data.block_light_arrays.data,
+        );
 
         // Set sky light data
         self.world.set_light_data(
@@ -1996,21 +1997,24 @@ impl Server {
             chunk_data.chunk_z,
             world::LightType::Sky,
             chunk_data.sky_light_mask.data,
-            chunk_data.sky_light_arrays.data);
+            chunk_data.sky_light_arrays.data,
+        );
 
         // Clear block light data
         self.world.clear_light_data(
             chunk_data.chunk_x,
             chunk_data.chunk_z,
             world::LightType::Block,
-            chunk_data.empty_block_light_mask.data);
+            chunk_data.empty_block_light_mask.data,
+        );
 
         // Clear sky light data
         self.world.clear_light_data(
             chunk_data.chunk_x,
             chunk_data.chunk_z,
             world::LightType::Sky,
-            chunk_data.empty_sky_light_mask.data);
+            chunk_data.empty_sky_light_mask.data,
+        );
     }
 
     fn on_chunk_data_biomes3d_bitmasks(
@@ -2280,14 +2284,16 @@ impl Server {
             light_update.chunk_x.0,
             light_update.chunk_z.0,
             world::LightType::Block,
-            light_update.empty_block_light_mask.data);
+            light_update.empty_block_light_mask.data,
+        );
 
         // Clear sky light data
         self.world.clear_light_data(
             light_update.chunk_x.0,
             light_update.chunk_z.0,
             world::LightType::Sky,
-            light_update.empty_sky_light_mask.data);
+            light_update.empty_sky_light_mask.data,
+        );
 
         // Set block light data
         self.world.set_light_data(
@@ -2295,7 +2301,8 @@ impl Server {
             light_update.chunk_z.0,
             world::LightType::Block,
             light_update.block_light_mask.data,
-            light_update.block_light_arrays.data);
+            light_update.block_light_arrays.data,
+        );
 
         // Set sky light data
         self.world.set_light_data(
@@ -2303,7 +2310,8 @@ impl Server {
             light_update.chunk_z.0,
             world::LightType::Sky,
             light_update.sky_light_mask.data,
-            light_update.sky_light_arrays.data);
+            light_update.sky_light_arrays.data,
+        );
     }
 }
 
