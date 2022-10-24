@@ -1,4 +1,5 @@
-use std::collections::VecDeque;
+use std::sync::Arc;
+use std::sync::RwLock;
 
 use super::*;
 use crate::ecs;
@@ -7,6 +8,7 @@ use crate::shared::Position as BPos;
 use crate::world;
 use cgmath::InnerSpace;
 use steven_protocol::protocol;
+use steven_protocol::protocol::Conn;
 
 pub struct ApplyVelocity {
     filter: ecs::Filter,
@@ -293,6 +295,7 @@ pub struct ApplyDigging {
     filter: ecs::Filter,
     mouse_buttons: ecs::Key<MouseButtons>,
     digging: ecs::Key<Digging>,
+    conn: ecs::Key<Arc<RwLock<Option<Conn>>>>,
 }
 
 impl ApplyDigging {
@@ -303,11 +306,12 @@ impl ApplyDigging {
             filter: ecs::Filter::new().with(mouse_buttons).with(digging),
             mouse_buttons,
             digging,
+            conn: m.get_key(),
         }
     }
 
     fn send_packet(&self,
-        packets: &mut VecDeque<packet::play::serverbound::PlayerDigging>,
+        conn: &mut Conn,
         target: &DiggingState,
         state: i32
     ) {
@@ -318,11 +322,28 @@ impl ApplyDigging {
             n => panic!("Invalid dig state {}", n),
         }
 
-        packets.push_back(packet::play::serverbound::PlayerDigging {
-            status: protocol::VarInt(state),
-            location: target.position,
-            face: target.face.index() as u8,
-        });
+        match conn.protocol_version {
+            // 1.7.10
+            5 => conn.write_packet(packet::play::serverbound::PlayerDigging_u8_u8y {
+                status: state as u8,
+                x: target.position.x,
+                y: target.position.y as u8,
+                z: target.position.z,
+                face: target.face.index() as u8,
+            }).unwrap(),
+            // 1.8.9 or v15w39c
+            47|74 => conn.write_packet(packet::play::serverbound::PlayerDigging_u8 {
+                status: state as u8,
+                location: target.position,
+                face: target.face.index() as u8,
+            }).unwrap(),
+            // 1.9+
+            _ => conn.write_packet(packet::play::serverbound::PlayerDigging {
+                status: protocol::VarInt(state),
+                location: target.position,
+                face: target.face.index() as u8,
+            }).unwrap(),
+        }
     }
 
     fn next_state(&self,
@@ -381,6 +402,15 @@ impl ecs::System for ApplyDigging {
         use crate::server::target::{trace_ray, test_block};
         use cgmath::EuclideanSpace;
 
+        let world_entity = m.get_world();
+        let mut conn = m.get_component(world_entity, self.conn).unwrap().write().unwrap();
+        let conn = match conn.as_mut() {
+            Some(conn) => conn,
+            // Don't keep processing digging operations if the connection was
+            // closed.
+            None => return,
+        };
+
         let target = trace_ray(
             world,
             4.0,
@@ -392,7 +422,6 @@ impl ecs::System for ApplyDigging {
         for e in m.find(&self.filter) {
             let mouse_buttons = m.get_component(e, self.mouse_buttons).unwrap();
             let digging = m.get_component_mut(e, self.digging).unwrap();
-            let packets = &mut digging.packets;
 
             // Update last and current state
             std::mem::swap(&mut digging.last, &mut digging.current);
@@ -401,21 +430,21 @@ impl ecs::System for ApplyDigging {
             // Handle digging packets
             match (&digging.last, &mut digging.current) {
                 // Start the new digging operation.
-                (None, Some(current)) => self.send_packet(packets, current, 0),
+                (None, Some(current)) => self.send_packet(conn, current, 0),
                 // Cancel the previous digging operation.
-                (Some(last), None) if !last.finished => self.send_packet(packets, last, 1),
+                (Some(last), None) if !last.finished => self.send_packet(conn, last, 1),
                 // Move to digging a new block
                 (Some(last), Some(current)) if last.position != current.position => {
                     // Cancel the previous digging operation.
                     if !current.finished {
-                        self.send_packet(packets, last, 1);
+                        self.send_packet(conn, last, 1);
                     }
                     // Start the new digging operation.
-                    self.send_packet(packets, current, 0);
+                    self.send_packet(conn, current, 0);
                 },
                 // Finish the new digging operation.
                 (Some(_), Some(current)) if !self.is_finished(current) && !current.finished => {
-                    self.send_packet(packets, current, 2);
+                    self.send_packet(conn, current, 2);
                     current.finished = true;
                 },
                 _ => {},

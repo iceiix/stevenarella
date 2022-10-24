@@ -179,7 +179,6 @@ pub struct DiggingState {
 pub struct Digging {
     pub last: Option<DiggingState>,
     pub current: Option<DiggingState>,
-    pub packets: std::collections::VecDeque<packet::play::serverbound::PlayerDigging>,
 }
 
 impl Digging {
