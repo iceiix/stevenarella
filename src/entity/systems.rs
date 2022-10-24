@@ -7,6 +7,7 @@ use crate::render;
 use crate::shared::Position as BPos;
 use crate::world;
 use cgmath::InnerSpace;
+use log::debug;
 use steven_protocol::protocol;
 use steven_protocol::protocol::Conn;
 
@@ -316,9 +317,9 @@ impl ApplyDigging {
         state: i32
     ) {
         match state {
-            0 => println!("Send start dig packet {:?}", target),
-            1 => println!("Send cancel dig packet {:?}", target),
-            2 => println!("Send finish dig packet {:?}", target),
+            0 => debug!("Send start dig packet {:?}", target),
+            1 => debug!("Send cancel dig packet {:?}", target),
+            2 => debug!("Send finish dig packet {:?}", target),
             n => panic!("Invalid dig state {}", n),
         }
 
