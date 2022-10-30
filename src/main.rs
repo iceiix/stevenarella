@@ -369,8 +369,7 @@ fn main2() {
 
     let textures = renderer.get_textures();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
-        opt.default_protocol_version
-            .unwrap_or_else(|| "".to_string()),
+        opt.default_protocol_version.unwrap_or_default(),
     );
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),

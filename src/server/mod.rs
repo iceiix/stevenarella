@@ -623,6 +623,7 @@ impl Server {
                             UpdateBlockEntity_VarInt => on_block_entity_update_varint,
                             UpdateBlockEntity_u8 => on_block_entity_update_u8,
                             UpdateBlockEntity_Data => on_block_entity_update_data,
+                            UpdateLight_Arrays => on_update_light_arrays,
                             UpdateSign => on_sign_update,
                             UpdateSign_u16 => on_sign_update_u16,
                             PlayerInfo => on_player_info,
@@ -1972,17 +1973,48 @@ impl Server {
         chunk_data: packet::play::clientbound::ChunkData_AndLight,
     ) {
         self.world
-            .load_chunk117(
+            .load_chunk118(
                 chunk_data.chunk_x,
                 chunk_data.chunk_z,
                 true,
-                0xffff, // world height/16 (256/16 = 16) bits
-                16,     // TODO: get all bitmasks
                 chunk_data.data.data,
             )
             .unwrap();
         //self.load_block_entities(chunk_data.block_entities.data); // TODO: load entities
-        // TODO: update light
+
+        // Set block light data
+        self.world.set_light_data(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            world::LightType::Block,
+            chunk_data.block_light_mask.data,
+            chunk_data.block_light_arrays.data,
+        );
+
+        // Set sky light data
+        self.world.set_light_data(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            world::LightType::Sky,
+            chunk_data.sky_light_mask.data,
+            chunk_data.sky_light_arrays.data,
+        );
+
+        // Clear block light data
+        self.world.clear_light_data(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            world::LightType::Block,
+            chunk_data.empty_block_light_mask.data,
+        );
+
+        // Clear sky light data
+        self.world.clear_light_data(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            world::LightType::Sky,
+            chunk_data.empty_sky_light_mask.data,
+        );
     }
 
     fn on_chunk_data_biomes3d_bitmasks(
@@ -1995,7 +2027,6 @@ impl Server {
                 chunk_data.chunk_z,
                 true,
                 chunk_data.bitmasks.data[0] as u64, // TODO: get all bitmasks
-                16,                                 // TODO: get all bitmasks
                 chunk_data.data.data,
             )
             .unwrap();
@@ -2242,6 +2273,45 @@ impl Server {
                     .by_vanilla_id(id as usize, &self.world.modded_block_ids),
             );
         }
+    }
+
+    fn on_update_light_arrays(
+        &mut self,
+        light_update: packet::play::clientbound::UpdateLight_Arrays,
+    ) {
+        // Clear block light data
+        self.world.clear_light_data(
+            light_update.chunk_x.0,
+            light_update.chunk_z.0,
+            world::LightType::Block,
+            light_update.empty_block_light_mask.data,
+        );
+
+        // Clear sky light data
+        self.world.clear_light_data(
+            light_update.chunk_x.0,
+            light_update.chunk_z.0,
+            world::LightType::Sky,
+            light_update.empty_sky_light_mask.data,
+        );
+
+        // Set block light data
+        self.world.set_light_data(
+            light_update.chunk_x.0,
+            light_update.chunk_z.0,
+            world::LightType::Block,
+            light_update.block_light_mask.data,
+            light_update.block_light_arrays.data,
+        );
+
+        // Set sky light data
+        self.world.set_light_data(
+            light_update.chunk_x.0,
+            light_update.chunk_z.0,
+            world::LightType::Sky,
+            light_update.sky_light_mask.data,
+            light_update.sky_light_arrays.data,
+        );
     }
 }
 

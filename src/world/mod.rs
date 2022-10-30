@@ -13,6 +13,10 @@
 // limitations under the License.
 
 pub use steven_blocks as block;
+use steven_protocol::protocol::LenPrefixed;
+use steven_protocol::protocol::Serializable;
+use steven_protocol::protocol::VarInt;
+use steven_protocol::types::bit;
 
 use crate::chunk_builder;
 use crate::ecs;
@@ -22,15 +26,18 @@ use crate::protocol;
 use crate::render;
 use crate::shared::{Direction, Position};
 use crate::types::hash::FNVHash;
-use crate::types::{bit, nibble};
+use crate::types::nibble;
+use byteorder::ReadBytesExt;
 use cgmath::prelude::*;
 use flate2::read::ZlibDecoder;
 use log::info;
 use std::cmp::Ordering;
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::hash::BuildHasherDefault;
+use std::io::Cursor;
 use std::io::Read;
 
 pub mod biome;
@@ -40,6 +47,7 @@ mod storage;
 pub struct World {
     chunks: HashMap<CPos, Chunk, BuildHasherDefault<FNVHash>>,
     min_y: i32,
+    height: i32,
 
     render_list: Vec<(i32, i32, i32)>,
 
@@ -68,7 +76,7 @@ pub enum BlockEntityAction {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum LightType {
+pub enum LightType {
     Block,
     Sky,
 }
@@ -99,6 +107,7 @@ impl World {
         World {
             protocol_version,
             id_map,
+            height: 256,
             ..Default::default()
         }
     }
@@ -415,7 +424,7 @@ impl World {
             .iter()
             .map(|v| {
                 let chunk = self.chunks.get(&CPos(v.0, v.2)).unwrap();
-                let sec = chunk.sections[v.1 as usize].as_ref().unwrap();
+                let sec = chunk.sections.get(&v.1).unwrap();
                 (*v, &sec.render_buffer)
             })
             .collect()
@@ -423,7 +432,7 @@ impl World {
 
     pub fn get_section_mut(&mut self, x: i32, y: i32, z: i32) -> Option<&mut Section> {
         if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
-            if let Some(sec) = chunk.sections[y as usize].as_mut() {
+            if let Some(sec) = chunk.sections.get_mut(&y) {
                 return Some(sec);
             }
         }
@@ -441,7 +450,7 @@ impl World {
         }
         if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
             let rendered = &mut chunk.sections_rendered_on[y as usize];
-            if let Some(sec) = chunk.sections[y as usize].as_mut() {
+            if let Some(sec) = chunk.sections.get_mut(&y) {
                 return Some((Some(sec), rendered));
             }
             return Some((None, rendered));
@@ -452,11 +461,9 @@ impl World {
     pub fn get_dirty_chunk_sections(&mut self) -> Vec<(i32, i32, i32)> {
         let mut out = vec![];
         for chunk in self.chunks.values_mut() {
-            for sec in &mut chunk.sections {
-                if let Some(sec) = sec.as_mut() {
-                    if !sec.building && sec.dirty {
-                        out.push((chunk.position.0, sec.y as i32, chunk.position.1));
-                    }
+            for (y, sec) in &mut chunk.sections {
+                if !sec.building && sec.dirty {
+                    out.push((chunk.position.0, *y, chunk.position.1));
                 }
             }
         }
@@ -465,7 +472,7 @@ impl World {
 
     fn set_dirty(&mut self, x: i32, y: i32, z: i32) {
         if let Some(chunk) = self.chunks.get_mut(&CPos(x, z)) {
-            if let Some(sec) = chunk.sections.get_mut(y as usize).and_then(|v| v.as_mut()) {
+            if let Some(sec) = chunk.sections.get_mut(&y) {
                 sec.dirty = true;
             }
         }
@@ -473,7 +480,7 @@ impl World {
 
     pub fn is_section_dirty(&self, pos: (i32, i32, i32)) -> bool {
         if let Some(chunk) = self.chunks.get(&CPos(pos.0, pos.2)) {
-            if let Some(sec) = chunk.sections[pos.1 as usize].as_ref() {
+            if let Some(sec) = chunk.sections.get(&pos.1) {
                 return sec.dirty && !sec.building;
             }
         }
@@ -482,7 +489,7 @@ impl World {
 
     pub fn set_building_flag(&mut self, pos: (i32, i32, i32)) {
         if let Some(chunk) = self.chunks.get_mut(&CPos(pos.0, pos.2)) {
-            if let Some(sec) = chunk.sections[pos.1 as usize].as_mut() {
+            if let Some(sec) = chunk.sections.get_mut(&pos.1) {
                 sec.building = true;
                 sec.dirty = false;
             }
@@ -491,7 +498,7 @@ impl World {
 
     pub fn reset_building_flag(&mut self, pos: (i32, i32, i32)) {
         if let Some(chunk) = self.chunks.get_mut(&CPos(pos.0, pos.2)) {
-            if let Some(section) = chunk.sections[pos.1 as usize].as_mut() {
+            if let Some(section) = chunk.sections.get_mut(&pos.1) {
                 section.building = false;
             }
         }
@@ -499,10 +506,8 @@ impl World {
 
     pub fn flag_dirty_all(&mut self) {
         for chunk in self.chunks.values_mut() {
-            for sec in &mut chunk.sections {
-                if let Some(sec) = sec.as_mut() {
-                    sec.dirty = true;
-                }
+            for sec in chunk.sections.values_mut() {
+                sec.dirty = true;
             }
         }
     }
@@ -549,7 +554,7 @@ impl World {
                     if !(0..=15).contains(&cy) {
                         continue;
                     }
-                    let section = &chunk.sections[cy as usize];
+                    let section = chunk.sections.get(&cy);
                     let y1 = min(16, max(0, y - (cy << 4)));
                     let y2 = min(16, max(0, y + h - (cy << 4)));
 
@@ -661,8 +666,6 @@ impl World {
         mask: u16,
         data: &mut std::io::Cursor<Vec<u8>>,
     ) -> Result<(), protocol::Error> {
-        use byteorder::ReadBytesExt;
-
         let cpos = CPos(x, z);
         {
             if new {
@@ -673,17 +676,16 @@ impl World {
             let chunk = self.chunks.get_mut(&cpos).unwrap();
 
             for i in 0..16 {
-                if chunk.sections[i].is_none() {
-                    let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
-                    fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
+                let fill_sky = Self::should_fill_sky(i, chunk, mask as u64);
+                if let Entry::Vacant(e) = chunk.sections.entry(i) {
                     if !fill_sky || mask & (1 << i) != 0 {
-                        chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
+                        e.insert(Section::new(fill_sky));
                     }
                 }
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
                 section.dirty = true;
 
                 for bi in 0..4096 {
@@ -720,7 +722,7 @@ impl World {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
 
                 data.read_exact(&mut section.block_light.data)?;
             }
@@ -729,7 +731,7 @@ impl World {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
 
                 data.read_exact(&mut section.sky_light.data)?;
             }
@@ -764,8 +766,6 @@ impl World {
         // Chunk metadata
         let mut metadata = std::io::Cursor::new(metadata);
         for _i in 0..chunk_column_count {
-            use byteorder::ReadBytesExt;
-
             let x = metadata.read_i32::<byteorder::BigEndian>()?;
             let z = metadata.read_i32::<byteorder::BigEndian>()?;
             let mask = metadata.read_u16::<byteorder::BigEndian>()?;
@@ -827,20 +827,19 @@ impl World {
             // Block type array - whole byte per block
             let mut block_types = [[0u8; 4096]; 16];
             for i in 0..16 {
-                if chunk.sections[i].is_none() {
-                    let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
-                    fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
+                let fill_sky = Self::should_fill_sky(i, chunk, mask as u64);
+                if let Entry::Vacant(e) = chunk.sections.entry(i) {
                     if !fill_sky || mask & (1 << i) != 0 {
-                        chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
+                        e.insert(Section::new(fill_sky));
                     }
                 }
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
                 section.dirty = true;
 
-                data.read_exact(&mut block_types[i])?;
+                data.read_exact(&mut block_types[i as usize])?;
             }
 
             // Block metadata array - half byte per block
@@ -877,7 +876,7 @@ impl World {
                 if mask & (1 << i) == 0 {
                     continue;
                 }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&i).unwrap();
 
                 data.read_exact(&mut section.block_light.data)?;
             }
@@ -888,7 +887,7 @@ impl World {
                     if mask & (1 << i) == 0 {
                         continue;
                     }
-                    let section = chunk.sections[i as usize].as_mut().unwrap();
+                    let section = chunk.sections.get_mut(&i).unwrap();
 
                     data.read_exact(&mut section.sky_light.data)?;
                 }
@@ -928,7 +927,7 @@ impl World {
                     continue;
                 }
 
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                let section = chunk.sections.get_mut(&(i as i32)).unwrap();
 
                 for bi in 0..4096 {
                     let id = ((block_add[i].get(bi) as u16) << 12)
@@ -981,7 +980,7 @@ impl World {
         mask: u16,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
-        self.load_chunk19_to_117(true, x, z, new, mask.into(), 16, data)
+        self.load_chunk19_to_118(true, x, z, new, mask.into(), 16, data)
     }
 
     pub fn load_chunk115(
@@ -992,7 +991,7 @@ impl World {
         mask: u16,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
-        self.load_chunk19_to_117(false, x, z, new, mask.into(), 16, data)
+        self.load_chunk19_to_118(false, x, z, new, mask.into(), 16, data)
     }
 
     pub fn load_chunk117(
@@ -1001,10 +1000,25 @@ impl World {
         z: i32,
         new: bool,
         mask: u64,
-        num_sections: usize,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
-        self.load_chunk19_to_117(false, x, z, new, mask, num_sections, data)
+        let num_sections = (self.height >> 4) as usize;
+        self.load_chunk19_to_118(false, x, z, new, mask, num_sections, data)
+    }
+
+    pub fn load_chunk118(
+        &mut self,
+        x: i32,
+        z: i32,
+        new: bool,
+        data: Vec<u8>,
+    ) -> Result<(), protocol::Error> {
+        let num_sections = (self.height >> 4) as usize;
+        let mut mask = 0;
+        for _ in 0..num_sections {
+            mask = (mask << 1) | 1;
+        }
+        self.load_chunk19_to_118(false, x, z, new, mask, num_sections, data)
     }
 
     pub fn load_dimension_type(&mut self, dimension_tags: Option<crate::nbt::NamedTag>) {
@@ -1014,12 +1028,16 @@ impl World {
             if let Some(crate::nbt::Tag::Int(min_y)) = tags.get("min_y") {
                 self.min_y = *min_y;
             }
+
+            if let Some(crate::nbt::Tag::Int(height)) = tags.get("height") {
+                self.height = *height;
+            }
             // TODO: More tags https://wiki.vg/Protocol#Login_.28play.29
         }
     }
 
     #[allow(clippy::or_fun_call)]
-    fn load_chunk19_to_117(
+    fn load_chunk19_to_118(
         &mut self,
         read_biomes: bool,
         x: i32,
@@ -1029,10 +1047,6 @@ impl World {
         num_sections: usize,
         data: Vec<u8>,
     ) -> Result<(), protocol::Error> {
-        use crate::protocol::{LenPrefixed, Serializable, VarInt};
-        use byteorder::ReadBytesExt;
-        use std::io::Cursor;
-
         let mut data = Cursor::new(data);
 
         let cpos = CPos(x, z);
@@ -1044,56 +1058,22 @@ impl World {
             }
             let chunk = self.chunks.get_mut(&cpos).unwrap();
 
-            for i1 in 0..num_sections {
+            for i1 in 0..num_sections as i32 {
+                // Convert the section index to the chunk section's position,
+                // including negative values.
                 let i: i32 = (i1 as i32) + (self.min_y >> 4);
-                if i < 0 {
-                    // TODO: support y<0 in the world (needs shifting in all section access)
-                    let block_count = data.read_u16::<byteorder::LittleEndian>()?;
-                    let bit_size = data.read_u8()?;
-                    let single_value = Some(VarInt::read_from(&mut data)?.0);
-                    if bit_size != 0 || single_value != Some(0) || block_count != 0 {
-                        panic!("TODO: support chunk data y<0 non-air (bit_size {}, single_value {:?}, block_count {})", bit_size, single_value, block_count);
-                    }
-                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
 
-                    // biome
-                    let _bit_size = data.read_u8()?;
-                    if _bit_size == 0 {
-                        let _single_value = VarInt::read_from(&mut data)?.0;
-                    } else {
-                        if bit_size >= 4 {
-                            panic!(
-                                "TODO: handle direct palettes, bit_size {} >= 4 for biomes",
-                                bit_size
-                            );
-                        }
-
-                        let count = VarInt::read_from(&mut data)?.0;
-                        for _i in 0..count {
-                            let _id = VarInt::read_from(&mut data)?.0;
-                        }
-                    }
-                    let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-
+                // Skip this chunk section if not in the mask bitmap.
+                if mask & (1 << i1) == 0 {
                     continue;
                 }
-                let i = i as usize;
 
-                if chunk.sections[i].is_none() {
-                    let mut fill_sky = chunk.sections.iter().skip(i).all(|v| v.is_none());
-                    fill_sky &= (mask & !((1 << i) | ((1 << i) - 1))) == 0;
-                    if self.protocol_version >= 757 {
-                        // TODO: fix conditionalizing fill sky on 1.18+
-                        fill_sky = true;
-                    }
-                    if !fill_sky || mask & (1 << i) != 0 {
-                        chunk.sections[i] = Some(Section::new(i as u8, fill_sky));
-                    }
-                }
-                if mask & (1 << i) == 0 {
-                    continue;
-                }
-                let section = chunk.sections[i as usize].as_mut().unwrap();
+                // Populate the section in this chunk if not already present.
+                let fill_sky = Self::should_fill_sky(i1, chunk, mask as u64);
+                let section = chunk
+                    .sections
+                    .entry(i)
+                    .or_insert_with(|| Section::new(fill_sky));
                 section.dirty = true;
 
                 if self.protocol_version >= 451 {
@@ -1103,52 +1083,20 @@ impl World {
                     // section is not rendered, even if it still has blocks." per https://wiki.vg/Chunk_Format#Data_structure
                 }
 
-                let mut bit_size = data.read_u8()?;
-                let mut mappings: HashMap<usize, block::Block, BuildHasherDefault<FNVHash>> =
-                    HashMap::with_hasher(BuildHasherDefault::default());
-                let mut single_value: Option<usize> = None;
-                if bit_size == 0 {
-                    if self.protocol_version >= 757 {
-                        // Single-valued palette
-                        single_value = Some(VarInt::read_from(&mut data)?.0.try_into().unwrap());
-                    } else {
-                        bit_size = 13;
-                    }
-                } else {
-                    let count = VarInt::read_from(&mut data)?.0;
-                    if bit_size >= 9 {
-                        panic!(
-                            "TODO: handle direct palettes, bit_size {} >= 9 for block states",
-                            bit_size
-                        );
-                    }
-                    for i in 0..count {
-                        let id = VarInt::read_from(&mut data)?.0;
-                        let bl = self
-                            .id_map
-                            .by_vanilla_id(id as usize, &self.modded_block_ids);
-                        mappings.insert(i as usize, bl);
-                    }
-                }
-                if bit_size > 16 {
-                    // https://wiki.vg/Chunk_Format#Data_structure "This increase can go up to 16 bits per block"...
-                    panic!("load_chunk19_to_117: bit_size={:?} > 16", bit_size);
-                }
-
-                let bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
-                let padded = self.protocol_version >= 736;
-                let m = bit::Map::from_raw(bits, bit_size as usize, padded);
+                let palette =
+                    PaletteParser::new(self.protocol_version, PaletteKind::BlockStates, &mut data)
+                        .parse()?;
+                SectionParser::new(
+                    self.protocol_version,
+                    palette,
+                    &self.id_map,
+                    &self.modded_block_ids,
+                    &mut data,
+                    section,
+                )
+                .parse()?;
 
                 for bi in 0..4096 {
-                    let id = single_value.unwrap_or_else(|| m.get(bi));
-                    section.blocks.set(
-                        bi,
-                        mappings
-                            .get(&id)
-                            .cloned()
-                            // TODO: fix or_fun_call, but do not re-borrow self
-                            .unwrap_or(self.id_map.by_vanilla_id(id, &self.modded_block_ids)),
-                    );
                     // Spawn block entities
                     let b = section.blocks.get(bi);
                     if block_entity::BlockEntityType::get_block_entity(b).is_some() {
@@ -1170,30 +1118,14 @@ impl World {
                     }
                 }
 
+                // Version 1.18+
                 if self.protocol_version >= 757 {
-                    // Biomes palette TODO: refactor with block states, "palette container"
-                    let _bit_size = data.read_u8()?;
-                    if _bit_size == 0 {
-                        // Single-valued palette
-                        let _single_value = VarInt::read_from(&mut data)?.0;
-                    } else {
-                        if bit_size >= 4 {
-                            panic!(
-                                "TODO: handle direct palettes, bit_size {} >= 4 for biomes",
-                                bit_size
-                            );
-                        }
-
-                        let count = VarInt::read_from(&mut data)?.0;
-                        for _i in 0..count {
-                            let _id = VarInt::read_from(&mut data)?.0;
-                            //let bl = self
-                            //    .id_map
-                            //    .by_vanilla_id(id as usize, &self.modded_block_ids);
-                            //mappings.insert(i as usize, bl);
-                        }
-                    }
+                    let _palette =
+                        PaletteParser::new(self.protocol_version, PaletteKind::Biomes, &mut data)
+                            .parse()?;
                     let _bits = LenPrefixed::<VarInt, u64>::read_from(&mut data)?.data;
+                    // TODO: Use biome data
+                    // Version 1.14 - 1.17
                 } else if self.protocol_version >= 451 {
                     // Skylight in update skylight packet for 1.14+
                 } else {
@@ -1203,13 +1135,29 @@ impl World {
             }
 
             if read_biomes && new {
-                data.read_exact(&mut chunk.biomes)?;
+                if self.protocol_version > 340 {
+                    for i in 0..256 {
+                        chunk.biomes[i] = data.read_i32::<byteorder::BigEndian>()? as u8;
+                    }
+                } else {
+                    data.read_exact(&mut chunk.biomes)?;
+                }
             }
 
             chunk.calculate_heightmap();
         }
 
         self.dirty_chunks_by_bitmask(x, z, mask, num_sections);
+        let mut remaining = Vec::new();
+        data.read_to_end(&mut remaining)?;
+
+        // The rest of the chunk data might be padded out with zeros.
+        // See https://bugs.mojang.com/browse/MC-131684.
+        assert!(
+            remaining.iter().all(|b| *b == 0),
+            "Failed to read all chunk data, had {} bytes left",
+            remaining.len()
+        );
         Ok(())
     }
 
@@ -1219,8 +1167,79 @@ impl World {
         }
         let cpos = CPos(x, z);
         if let Some(chunk) = self.chunks.get_mut(&cpos) {
-            if let Some(sec) = chunk.sections[y as usize].as_mut() {
+            if let Some(sec) = chunk.sections.get_mut(&y) {
                 sec.dirty = true;
+            }
+        }
+    }
+
+    /// Determine if we should fill the sky in this section based on already
+    /// existing chunks, and if we are expecting more chunks in the current
+    /// chunk data.
+    fn should_fill_sky(s_idx: i32, chunk: &Chunk, mask: u64) -> bool {
+        // Check if the chunk already contains previously loaded sections
+        // above this one.
+        if chunk.sections.keys().any(|s_idx2| *s_idx2 > s_idx) {
+            return false;
+        }
+
+        // Check if the chunk data we are currently reading is going to load
+        // another section above this one.
+        let above_mask = !((1 << s_idx) | ((1 << s_idx) - 1));
+        (mask & above_mask) == 0
+    }
+
+    pub fn set_light_data(
+        &mut self,
+        x: i32,
+        z: i32,
+        light_type: LightType,
+        masks: Vec<i64>,
+        data: Vec<LenPrefixed<VarInt, u8>>,
+    ) {
+        let cpos = CPos(x, z);
+        let chunk = self.chunks.entry(cpos).or_insert_with(|| Chunk::new(cpos));
+        let mut data = data.iter();
+
+        for (i, mask) in masks.iter().enumerate() {
+            for j in 0..64 {
+                if mask & (1 << j) != 0 {
+                    let new_light = &data.next().unwrap().data;
+                    let s_idx = i as i32 * 64 + j + self.min_y - 1;
+                    let section = chunk
+                        .sections
+                        .entry(s_idx)
+                        .or_insert_with(|| Section::new(false));
+                    let current_light = match light_type {
+                        LightType::Block => &mut section.block_light,
+                        LightType::Sky => &mut section.sky_light,
+                    };
+                    current_light.data.copy_from_slice(new_light);
+                }
+            }
+        }
+    }
+
+    pub fn clear_light_data(&mut self, x: i32, z: i32, light_type: LightType, masks: Vec<i64>) {
+        let chunk = match self.chunks.get_mut(&CPos(x, z)) {
+            Some(c) => c,
+            None => return,
+        };
+
+        for (i, mask) in masks.iter().enumerate() {
+            for j in 0..64 {
+                if mask & (1 << j) != 0 {
+                    let s_idx = i as i32 * 64 + j + self.min_y - 1;
+                    let section = match chunk.sections.get_mut(&s_idx) {
+                        Some(s) => s,
+                        None => return,
+                    };
+                    let current_light = match light_type {
+                        LightType::Block => &mut section.block_light,
+                        LightType::Sky => &mut section.sky_light,
+                    };
+                    current_light.data.copy_from_slice(&[0u8; 2048]);
+                }
             }
         }
     }
@@ -1300,7 +1319,7 @@ pub struct CPos(i32, i32);
 pub struct Chunk {
     position: CPos,
 
-    sections: [Option<Section>; 16],
+    sections: HashMap<i32, Section>,
     sections_rendered_on: [u32; 16],
     biomes: [u8; 16 * 16],
 
@@ -1314,10 +1333,7 @@ impl Chunk {
     fn new(pos: CPos) -> Chunk {
         Chunk {
             position: pos,
-            sections: [
-                None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-                None, None,
-            ],
+            sections: HashMap::new(),
             sections_rendered_on: [0; 16],
             biomes: [0; 16 * 16],
             heightmap: [0; 16 * 16],
@@ -1348,16 +1364,15 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return false;
         }
-        let s_idx = s_idx as usize;
-        if self.sections[s_idx].is_none() {
+        if !self.sections.contains_key(&s_idx) {
             if let block::Air {} = b {
                 return false;
             }
-            let fill_sky = self.sections.iter().skip(s_idx).all(|v| v.is_none());
-            self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
+            let fill_sky = self.sections.keys().any(|s_idx2| *s_idx2 > s_idx);
+            self.sections.insert(s_idx, Section::new(fill_sky));
         }
         {
-            let section = self.sections[s_idx as usize].as_mut().unwrap();
+            let section = self.sections.get_mut(&s_idx).unwrap();
             if !section.set_block(x, y & 0xF, z, b) {
                 return false;
             }
@@ -1390,7 +1405,7 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return block::Missing {};
         }
-        match self.sections[s_idx as usize].as_ref() {
+        match self.sections.get(&s_idx) {
             Some(sec) => sec.get_block(x, y & 0xF, z),
             None => block::Air {},
         }
@@ -1401,7 +1416,7 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return 0;
         }
-        match self.sections[s_idx as usize].as_ref() {
+        match self.sections.get(&s_idx) {
             Some(sec) => sec.get_block_light(x, y & 0xF, z),
             None => 0,
         }
@@ -1412,15 +1427,14 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return;
         }
-        let s_idx = s_idx as usize;
-        if self.sections[s_idx].is_none() {
+        if !self.sections.contains_key(&s_idx) {
             if light == 0 {
                 return;
             }
-            let fill_sky = self.sections.iter().skip(s_idx).all(|v| v.is_none());
-            self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
+            let fill_sky = self.sections.keys().any(|s_idx2| *s_idx2 > s_idx);
+            self.sections.insert(s_idx, Section::new(fill_sky));
         }
-        if let Some(sec) = self.sections[s_idx].as_mut() {
+        if let Some(sec) = self.sections.get_mut(&s_idx) {
             sec.set_block_light(x, y & 0xF, z, light)
         }
     }
@@ -1430,7 +1444,7 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return 15;
         }
-        match self.sections[s_idx as usize].as_ref() {
+        match self.sections.get(&s_idx) {
             Some(sec) => sec.get_sky_light(x, y & 0xF, z),
             None => 15,
         }
@@ -1441,15 +1455,14 @@ impl Chunk {
         if !(0..=15).contains(&s_idx) {
             return;
         }
-        let s_idx = s_idx as usize;
-        if self.sections[s_idx].is_none() {
+        if !self.sections.contains_key(&s_idx) {
             if light == 15 {
                 return;
             }
-            let fill_sky = self.sections.iter().skip(s_idx).all(|v| v.is_none());
-            self.sections[s_idx] = Some(Section::new(s_idx as u8, fill_sky));
+            let fill_sky = self.sections.keys().any(|s_idx2| *s_idx2 > s_idx);
+            self.sections.insert(s_idx, Section::new(fill_sky));
         }
-        if let Some(sec) = self.sections[s_idx as usize].as_mut() {
+        if let Some(sec) = self.sections.get_mut(&s_idx) {
             sec.set_sky_light(x, y & 0xF, z, light)
         }
     }
@@ -1463,8 +1476,6 @@ pub struct Section {
     pub cull_info: chunk_builder::CullInfo,
     pub render_buffer: render::ChunkBuffer,
 
-    y: u8,
-
     blocks: storage::BlockStorage,
 
     block_light: nibble::Array,
@@ -1475,11 +1486,10 @@ pub struct Section {
 }
 
 impl Section {
-    fn new(y: u8, fill_sky: bool) -> Section {
+    fn new(fill_sky: bool) -> Section {
         let mut section = Section {
             cull_info: chunk_builder::CullInfo::all_vis(),
             render_buffer: render::ChunkBuffer::new(),
-            y,
 
             blocks: storage::BlockStorage::new(4096),
 
@@ -1526,5 +1536,342 @@ impl Section {
 
     fn set_sky_light(&mut self, x: i32, y: i32, z: i32, l: u8) {
         self.sky_light.set(((y << 8) | (z << 4) | x) as usize, l);
+    }
+}
+
+/// The kind of palette we are reading. This can affect how we interpret bits
+/// per entry which is different between block states and biomes.
+#[derive(PartialEq)]
+enum PaletteKind {
+    BlockStates,
+    Biomes,
+}
+
+/// These are the different formats the palette data can be interpreted as.
+/// See https://wiki.vg/Chunk_Format#Palettes for more info.
+enum PaletteFormat {
+    SingleValued(usize),
+    Indirect(Vec<usize>, u8),
+    Direct(u8),
+}
+
+/// A struct to manage building a palette that can be used to resolve block
+/// states or biomes inside a chunk section.
+struct PaletteParser<'a> {
+    protocol_version: i32,
+    kind: PaletteKind,
+    data: &'a mut Cursor<Vec<u8>>,
+}
+
+impl PaletteParser<'_> {
+    pub fn new(
+        protocol_version: i32,
+        kind: PaletteKind,
+        data: &mut Cursor<Vec<u8>>,
+    ) -> PaletteParser<'_> {
+        if protocol_version < 757 && kind == PaletteKind::Biomes {
+            panic!(
+                "Protocol {} doesn't support biome palettes",
+                protocol_version
+            );
+        }
+
+        PaletteParser {
+            protocol_version,
+            kind,
+            data,
+        }
+    }
+
+    fn parse_single_valued_palette(&mut self) -> Result<PaletteFormat, protocol::Error> {
+        Ok(PaletteFormat::SingleValued(
+            VarInt::read_from(self.data)?.0 as usize,
+        ))
+    }
+
+    fn parse_indirect_palette(
+        &mut self,
+        bits_per_entry: u8,
+    ) -> Result<PaletteFormat, protocol::Error> {
+        let count = VarInt::read_from(self.data)?.0 as usize;
+        let mut mapping = Vec::with_capacity(count);
+
+        for _i in 0..count {
+            mapping.push(VarInt::read_from(self.data)?.0 as usize);
+        }
+
+        Ok(PaletteFormat::Indirect(mapping, bits_per_entry))
+    }
+
+    pub fn parse(mut self) -> Result<PaletteFormat, protocol::Error> {
+        let mut bits_per_entry = self.data.read_u8()?;
+
+        // Pre 1.18, when bits_per_entry == 0, it indicates we should use
+        // an indirect palette rather than the new single valued one. We are
+        // setting this to 4 since it's the minimum value for indirect
+        // palettes.
+        if self.protocol_version < 757 && bits_per_entry == 0 {
+            bits_per_entry = 4;
+        }
+
+        // Figure out how we should interpret the palette based on bits_per_entry.
+        Ok(match self.kind {
+            PaletteKind::BlockStates => match bits_per_entry {
+                0 => self.parse_single_valued_palette()?,
+                n if (1..9).contains(&n) => self.parse_indirect_palette(n.max(4))?,
+                n if (9..17).contains(&n) => PaletteFormat::Direct(n),
+                // https://wiki.vg/Chunk_Format#Data_structure "This increase can go up to 16 bits per block"...
+                n => panic!(
+                    "PaletteParser::parse: block state bits_per_entry={} > 16",
+                    n
+                ),
+            },
+            PaletteKind::Biomes => match bits_per_entry {
+                0 => self.parse_single_valued_palette()?,
+                n if (1..4).contains(&n) => self.parse_indirect_palette(n)?,
+                n if (4..17).contains(&n) => PaletteFormat::Direct(n),
+                n => panic!("PaletteParser::parse: biome bits_per_entry={} > 16", n),
+            },
+        })
+    }
+}
+
+/// A struct to manage building a chunk section struct from a palette and the
+/// data received from the server.
+struct SectionParser<'a> {
+    protocol_version: i32,
+    palette: PaletteFormat,
+    id_map: &'a block::VanillaIDMap,
+    modded_block_ids: &'a HashMap<usize, String>,
+    data: &'a mut Cursor<Vec<u8>>,
+    section: &'a mut Section,
+}
+
+impl SectionParser<'_> {
+    pub fn new<'a>(
+        protocol_version: i32,
+        palette: PaletteFormat,
+        id_map: &'a block::VanillaIDMap,
+        modded_block_ids: &'a HashMap<usize, String>,
+        data: &'a mut Cursor<Vec<u8>>,
+        section: &'a mut Section,
+    ) -> SectionParser<'a> {
+        SectionParser {
+            protocol_version,
+            palette,
+            id_map,
+            modded_block_ids,
+            data,
+            section,
+        }
+    }
+
+    pub fn parse(self) -> Result<(), protocol::Error> {
+        let bits = LenPrefixed::<VarInt, u64>::read_from(self.data)?.data;
+        let padded = self.protocol_version >= 735;
+
+        match self.palette {
+            PaletteFormat::SingleValued(id) => {
+                let block = self.id_map.by_vanilla_id(id, self.modded_block_ids);
+                for i in 0..4096 {
+                    self.section.blocks.set(i, block);
+                }
+            }
+            PaletteFormat::Indirect(mapping, bits_per_entry) => {
+                let entries = bit::Map::from_raw(bits, bits_per_entry as usize, padded);
+                for i in 0..4096 {
+                    let index = entries.get(i);
+                    let id = *mapping.get(index).unwrap();
+                    let block = self.id_map.by_vanilla_id(id, self.modded_block_ids);
+                    self.section.blocks.set(i, block);
+                }
+            }
+            PaletteFormat::Direct(bits_per_entry) => {
+                let entries = bit::Map::from_raw(bits, bits_per_entry as usize, padded);
+                for i in 0..4096 {
+                    let id = entries.get(i);
+                    let block = self.id_map.by_vanilla_id(id, self.modded_block_ids);
+                    self.section.blocks.set(i, block);
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_chunk_1_12_2() {
+        let mut world = World::new(340);
+        let chunk_data = std::fs::read("test/chunk_1.12.2.bin").unwrap();
+        world
+            .load_chunk19_to_118(true, 7, 8, true, 63, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_13_2() {
+        let mut world = World::new(404);
+        let chunk_data = std::fs::read("test/chunk_1.13.2.bin").unwrap();
+        world
+            .load_chunk19_to_118(true, -20, -7, true, 31, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_18w50a() {
+        let mut world = World::new(451);
+        let chunk_data = std::fs::read("test/chunk_18w50a.bin").unwrap();
+        world
+            .load_chunk19_to_118(true, -25, -18, true, 31, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_19w02a() {
+        let mut world = World::new(452);
+        let chunk_data = std::fs::read("test/chunk_19w02a.bin").unwrap();
+        world
+            .load_chunk19_to_118(true, -10, -26, true, 15, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14() {
+        let mut world = World::new(477);
+        let chunk_data = std::fs::read("test/chunk_1.14.bin").unwrap();
+        world
+            .load_chunk19_to_118(true, -14, 0, true, 63, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14_1() {
+        let mut world = World::new(480);
+        let chunk_data = std::fs::read("test/chunk_1.14.1.bin").unwrap();
+        world
+            .load_chunk19_to_118(true, 2, -25, true, 31, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14_2() {
+        let mut world = World::new(485);
+        let chunk_data = std::fs::read("test/chunk_1.14.2.bin").unwrap();
+        world
+            .load_chunk19_to_118(true, 1, 5, true, 15, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14_3() {
+        let mut world = World::new(490);
+        let chunk_data = std::fs::read("test/chunk_1.14.3.bin").unwrap();
+        world
+            .load_chunk19_to_118(true, -9, -25, true, 31, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_14_4() {
+        let mut world = World::new(498);
+        let chunk_data = std::fs::read("test/chunk_1.14.4.bin").unwrap();
+        world
+            .load_chunk19_to_118(true, 2, -14, true, 31, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_15_1() {
+        let mut world = World::new(575);
+        let chunk_data = std::fs::read("test/chunk_1.15.1.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, -10, -10, true, 63, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_15_2() {
+        let mut world = World::new(578);
+        let chunk_data = std::fs::read("test/chunk_1.15.2.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, -19, -18, true, 31, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16() {
+        let mut world = World::new(735);
+        let chunk_data = std::fs::read("test/chunk_1.16.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, 2, -26, true, 63, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16_1() {
+        let mut world = World::new(736);
+        let chunk_data = std::fs::read("test/chunk_1.16.1.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, -6, -5, true, 31, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16_2() {
+        let mut world = World::new(751);
+        let chunk_data = std::fs::read("test/chunk_1.16.2.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, -22, -20, true, 15, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16_3() {
+        let mut world = World::new(753);
+        let chunk_data = std::fs::read("test/chunk_1.16.3.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, 4, 2, true, 63, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_16_4() {
+        let mut world = World::new(754);
+        let chunk_data = std::fs::read("test/chunk_1.16.4.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, -10, -8, true, 15, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_17_1() {
+        let mut world = World::new(756);
+        let chunk_data = std::fs::read("test/chunk_1.17.1.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, -3, -25, true, 31, 16, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_18_1() {
+        let mut world = World::new(757);
+        let chunk_data = std::fs::read("test/chunk_1.18.1.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, -14, -5, true, 0xffffff, 24, chunk_data)
+            .unwrap();
+    }
+
+    #[test]
+    fn parse_chunk_1_18_2() {
+        let mut world = World::new(758);
+        let chunk_data = std::fs::read("test/chunk_1.18.2.bin").unwrap();
+        world
+            .load_chunk19_to_118(false, -10, -8, true, 0xffffff, 24, chunk_data)
+            .unwrap();
     }
 }
