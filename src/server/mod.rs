@@ -41,7 +41,7 @@ pub mod target;
 
 pub struct Server {
     uuid: protocol::UUID,
-    conn: Option<protocol::Conn>,
+    conn: Arc<RwLock<Option<protocol::Conn>>>,
     protocol_version: i32,
     forge_mods: Vec<forge::ForgeMod>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
@@ -61,6 +61,7 @@ pub struct Server {
     // Entity accessors
     game_info: ecs::Key<entity::GameInfo>,
     player_movement: ecs::Key<entity::player::PlayerMovement>,
+    mouse_buttons: ecs::Key<entity::MouseButtons>,
     gravity: ecs::Key<entity::Gravity>,
     position: ecs::Key<entity::Position>,
     target_position: ecs::Key<entity::TargetPosition>,
@@ -168,7 +169,7 @@ impl Server {
                         forge_mods,
                         protocol::UUID::from_str(&val.uuid).unwrap(),
                         resources,
-                        Some(write),
+                        Arc::new(RwLock::new(Some(write))),
                         Some(rx),
                     ));
                 }
@@ -185,7 +186,7 @@ impl Server {
                         forge_mods,
                         val.uuid,
                         resources,
-                        Some(write),
+                        Arc::new(RwLock::new(Some(write))),
                         Some(rx),
                     ));
                 }
@@ -329,7 +330,7 @@ impl Server {
             forge_mods,
             uuid,
             resources,
-            Some(write),
+            Arc::new(RwLock::new(Some(write))),
             Some(rx),
         ))
     }
@@ -357,7 +358,7 @@ impl Server {
             vec![],
             protocol::UUID::default(),
             resources,
-            None,
+            Arc::new(RwLock::new(None)),
             None,
         );
         let mut rng = rand::thread_rng();
@@ -445,7 +446,7 @@ impl Server {
         forge_mods: Vec<forge::ForgeMod>,
         uuid: protocol::UUID,
         resources: Arc<RwLock<resources::Manager>>,
-        conn: Option<protocol::Conn>,
+        conn: Arc<RwLock<Option<protocol::Conn>>>,
         read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     ) -> Server {
         let mut entities = ecs::Manager::new();
@@ -454,6 +455,7 @@ impl Server {
         let world_entity = entities.get_world();
         let game_info = entities.get_key();
         entities.add_component(world_entity, game_info, entity::GameInfo::new());
+        entities.add_component(world_entity, entities.get_key(), conn.clone());
 
         let version = resources.read().unwrap().version();
         Server {
@@ -477,6 +479,7 @@ impl Server {
             // Entity accessors
             game_info,
             player_movement: entities.get_key(),
+            mouse_buttons: entities.get_key(),
             gravity: entities.get_key(),
             position: entities.get_key(),
             target_position: entities.get_key(),
@@ -500,7 +503,7 @@ impl Server {
     }
 
     pub fn disconnect(&mut self, reason: Option<format::Component>) {
-        self.conn = None;
+        self.conn.write().unwrap().take();
         self.disconnect_reason = reason;
         if let Some(player) = self.player.take() {
             self.entities.remove_entity(player);
@@ -509,7 +512,7 @@ impl Server {
     }
 
     pub fn is_connected(&self) -> bool {
-        self.conn.is_some()
+        self.conn.read().unwrap().is_some()
     }
 
     pub fn tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
@@ -656,12 +659,12 @@ impl Server {
                     Err(err) => panic!("Err: {:?}", err),
                 }
                 // Disconnected
-                if self.conn.is_none() {
+                if self.conn.read().unwrap().is_none() {
                     break;
                 }
             }
 
-            if self.conn.is_some() {
+            if self.conn.read().unwrap().is_some() {
                 self.read_queue = Some(rx);
             }
         }
@@ -793,6 +796,24 @@ impl Server {
         }
     }
 
+    pub fn on_left_mouse_button(&mut self, pressed: bool) {
+        if let Some(player) = self.player {
+            if let Some(mouse_buttons) = self.entities.get_component_mut(player, self.mouse_buttons)
+            {
+                mouse_buttons.left = pressed;
+            }
+        }
+    }
+
+    pub fn on_right_mouse_button(&mut self, pressed: bool) {
+        if let Some(player) = self.player {
+            if let Some(mouse_buttons) = self.entities.get_component_mut(player, self.mouse_buttons)
+            {
+                mouse_buttons.right = pressed;
+            }
+        }
+    }
+
     pub fn on_right_click(&mut self, renderer: &mut render::Renderer) {
         use crate::shared::Direction;
         if self.player.is_some() {
@@ -900,8 +921,9 @@ impl Server {
         }
     }
 
-    pub fn write_packet<T: protocol::PacketType>(&mut self, p: T) {
-        let _ = self.conn.as_mut().unwrap().write_packet(p); // TODO handle errors
+    pub fn write_packet<T: protocol::PacketType>(&self, p: T) {
+        let mut conn = self.conn.write().unwrap();
+        let _ = conn.as_mut().unwrap().write_packet(p); // TODO handle errors
     }
 
     fn on_keep_alive_i64(
@@ -1048,15 +1070,13 @@ impl Server {
 
     // TODO: remove wrappers and directly call on Conn
     fn write_fmlhs_plugin_message(&mut self, msg: &forge::FmlHs) {
-        let _ = self.conn.as_mut().unwrap().write_fmlhs_plugin_message(msg); // TODO handle errors
+        let mut conn = self.conn.write().unwrap();
+        let _ = conn.as_mut().unwrap().write_fmlhs_plugin_message(msg); // TODO handle errors
     }
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
-        let _ = self
-            .conn
-            .as_mut()
-            .unwrap()
-            .write_plugin_message(channel, data); // TODO handle errors
+        let mut conn = self.conn.write().unwrap();
+        let _ = conn.as_mut().unwrap().write_plugin_message(channel, data); // TODO handle errors
     }
 
     fn on_game_join_worldnames_ishard_simdist(
