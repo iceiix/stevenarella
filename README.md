@@ -70,7 +70,7 @@ from [GitHub Actions](https://actions-badge.atrox.dev/iceiix/stevenarella/goto?r
 
 ## Dependencies
 
-Requires Rust stable version 1.62.0 or newer.
+Requires Rust stable version 1.63.0 or newer.
 
 **Debian/Ubuntu**
 
