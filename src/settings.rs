@@ -115,12 +115,9 @@ impl Stevenkey {
     }
 
     pub fn get_by_keycode(keycode: VirtualKeyCode, vars: &console::Vars) -> Option<Stevenkey> {
-        for steven_key in Stevenkey::values() {
-            if keycode as i64 == *vars.get(steven_key.get_cvar()) {
-                return Some(steven_key);
-            }
-        }
-        None
+        Stevenkey::values()
+            .into_iter()
+            .find(|steven_key| keycode as i64 == *vars.get(steven_key.get_cvar()))
     }
 
     pub fn get_cvar(&self) -> console::CVar<i64> {
