@@ -42,7 +42,7 @@ pub mod target;
 
 pub struct Server {
     uuid: protocol::UUID,
-    conn: Option<protocol::Conn>,
+    conn: Arc<RwLock<Option<protocol::Conn>>>,
     protocol_version: i32,
     forge_mods: Vec<forge::ForgeMod>,
     read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
@@ -62,6 +62,7 @@ pub struct Server {
     // Entity accessors
     game_info: ecs::Key<entity::GameInfo>,
     player_movement: ecs::Key<entity::player::PlayerMovement>,
+    mouse_buttons: ecs::Key<entity::MouseButtons>,
     gravity: ecs::Key<entity::Gravity>,
     position: ecs::Key<entity::Position>,
     target_position: ecs::Key<entity::TargetPosition>,
@@ -179,7 +180,7 @@ impl Server {
                         forge_mods,
                         protocol::UUID::from_str(&val.uuid).unwrap(),
                         resources,
-                        Some(write),
+                        Arc::new(RwLock::new(Some(write))),
                         Some(rx),
                     ));
                 }
@@ -196,7 +197,7 @@ impl Server {
                         forge_mods,
                         val.uuid,
                         resources,
-                        Some(write),
+                        Arc::new(RwLock::new(Some(write))),
                         Some(rx),
                     ));
                 }
@@ -216,7 +217,7 @@ impl Server {
                         forge_mods,
                         val.uuid,
                         resources,
-                        Some(write),
+                        Arc::new(RwLock::new(Some(write))),
                         Some(rx),
                     ));
                 }
@@ -380,7 +381,7 @@ impl Server {
             forge_mods,
             uuid,
             resources,
-            Some(write),
+            Arc::new(RwLock::new(Some(write))),
             Some(rx),
         ))
     }
@@ -408,7 +409,7 @@ impl Server {
             vec![],
             protocol::UUID::default(),
             resources,
-            None,
+            Arc::new(RwLock::new(None)),
             None,
         );
         let mut rng = rand::thread_rng();
@@ -496,7 +497,7 @@ impl Server {
         forge_mods: Vec<forge::ForgeMod>,
         uuid: protocol::UUID,
         resources: Arc<RwLock<resources::Manager>>,
-        conn: Option<protocol::Conn>,
+        conn: Arc<RwLock<Option<protocol::Conn>>>,
         read_queue: Option<mpsc::Receiver<Result<packet::Packet, protocol::Error>>>,
     ) -> Server {
         let mut entities = ecs::Manager::new();
@@ -505,6 +506,7 @@ impl Server {
         let world_entity = entities.get_world();
         let game_info = entities.get_key();
         entities.add_component(world_entity, game_info, entity::GameInfo::new());
+        entities.add_component(world_entity, entities.get_key(), conn.clone());
 
         let version = resources.read().unwrap().version();
         Server {
@@ -528,6 +530,7 @@ impl Server {
             // Entity accessors
             game_info,
             player_movement: entities.get_key(),
+            mouse_buttons: entities.get_key(),
             gravity: entities.get_key(),
             position: entities.get_key(),
             target_position: entities.get_key(),
@@ -551,7 +554,7 @@ impl Server {
     }
 
     pub fn disconnect(&mut self, reason: Option<format::Component>) {
-        self.conn = None;
+        self.conn.write().unwrap().take();
         self.disconnect_reason = reason;
         if let Some(player) = self.player.take() {
             self.entities.remove_entity(player);
@@ -560,7 +563,7 @@ impl Server {
     }
 
     pub fn is_connected(&self) -> bool {
-        self.conn.is_some()
+        self.conn.read().unwrap().is_some()
     }
 
     pub fn tick(&mut self, renderer: &mut render::Renderer, delta: f64) {
@@ -676,6 +679,7 @@ impl Server {
                             UpdateBlockEntity_VarInt => on_block_entity_update_varint,
                             UpdateBlockEntity_u8 => on_block_entity_update_u8,
                             UpdateBlockEntity_Data => on_block_entity_update_data,
+                            UpdateLight_Arrays => on_update_light_arrays,
                             UpdateSign => on_sign_update,
                             UpdateSign_u16 => on_sign_update_u16,
                             PlayerInfo => on_player_info,
@@ -709,12 +713,12 @@ impl Server {
                     Err(err) => panic!("Err: {:?}", err),
                 }
                 // Disconnected
-                if self.conn.is_none() {
+                if self.conn.read().unwrap().is_none() {
                     break;
                 }
             }
 
-            if self.conn.is_some() {
+            if self.conn.read().unwrap().is_some() {
                 self.read_queue = Some(rx);
             }
         }
@@ -846,6 +850,24 @@ impl Server {
         }
     }
 
+    pub fn on_left_mouse_button(&mut self, pressed: bool) {
+        if let Some(player) = self.player {
+            if let Some(mouse_buttons) = self.entities.get_component_mut(player, self.mouse_buttons)
+            {
+                mouse_buttons.left = pressed;
+            }
+        }
+    }
+
+    pub fn on_right_mouse_button(&mut self, pressed: bool) {
+        if let Some(player) = self.player {
+            if let Some(mouse_buttons) = self.entities.get_component_mut(player, self.mouse_buttons)
+            {
+                mouse_buttons.right = pressed;
+            }
+        }
+    }
+
     pub fn on_right_click(&mut self, renderer: &mut render::Renderer) {
         use crate::shared::Direction;
         if self.player.is_some() {
@@ -953,8 +975,9 @@ impl Server {
         }
     }
 
-    pub fn write_packet<T: protocol::PacketType>(&mut self, p: T) {
-        let _ = self.conn.as_mut().unwrap().write_packet(p); // TODO handle errors
+    pub fn write_packet<T: protocol::PacketType>(&self, p: T) {
+        let mut conn = self.conn.write().unwrap();
+        let _ = conn.as_mut().unwrap().write_packet(p); // TODO handle errors
     }
 
     fn on_keep_alive_i64(
@@ -1101,15 +1124,13 @@ impl Server {
 
     // TODO: remove wrappers and directly call on Conn
     fn write_fmlhs_plugin_message(&mut self, msg: &forge::FmlHs) {
-        let _ = self.conn.as_mut().unwrap().write_fmlhs_plugin_message(msg); // TODO handle errors
+        let mut conn = self.conn.write().unwrap();
+        let _ = conn.as_mut().unwrap().write_fmlhs_plugin_message(msg); // TODO handle errors
     }
 
     fn write_plugin_message(&mut self, channel: &str, data: &[u8]) {
-        let _ = self
-            .conn
-            .as_mut()
-            .unwrap()
-            .write_plugin_message(channel, data); // TODO handle errors
+        let mut conn = self.conn.write().unwrap();
+        let _ = conn.as_mut().unwrap().write_plugin_message(channel, data); // TODO handle errors
     }
 
     fn on_game_join_worldnames_ishard_simdist_hasdeath(
@@ -2055,13 +2076,12 @@ impl Server {
             let z = block_entity.1.get("z").unwrap().as_int().unwrap();
             if let Some(tile_id) = block_entity.1.get("id") {
                 let tile_id = tile_id.as_str().unwrap();
-                let action;
-                match tile_id {
+                let action = match tile_id {
                     // Fake a sign update
-                    "Sign" => action = 9,
+                    "Sign" => 9,
                     // Not something we care about, so break the loop
                     _ => continue,
-                }
+                };
                 self.on_block_entity_update_u8(packet::play::clientbound::UpdateBlockEntity_u8 {
                     location: Position::new(x, y, z),
                     action,
@@ -2081,17 +2101,48 @@ impl Server {
         chunk_data: packet::play::clientbound::ChunkData_AndLight,
     ) {
         self.world
-            .load_chunk117(
+            .load_chunk118(
                 chunk_data.chunk_x,
                 chunk_data.chunk_z,
                 true,
-                0xffff, // world height/16 (256/16 = 16) bits
-                16,     // TODO: get all bitmasks
                 chunk_data.data.data,
             )
             .unwrap();
         //self.load_block_entities(chunk_data.block_entities.data); // TODO: load entities
-        // TODO: update light
+
+        // Set block light data
+        self.world.set_light_data(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            world::LightType::Block,
+            chunk_data.block_light_mask.data,
+            chunk_data.block_light_arrays.data,
+        );
+
+        // Set sky light data
+        self.world.set_light_data(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            world::LightType::Sky,
+            chunk_data.sky_light_mask.data,
+            chunk_data.sky_light_arrays.data,
+        );
+
+        // Clear block light data
+        self.world.clear_light_data(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            world::LightType::Block,
+            chunk_data.empty_block_light_mask.data,
+        );
+
+        // Clear sky light data
+        self.world.clear_light_data(
+            chunk_data.chunk_x,
+            chunk_data.chunk_z,
+            world::LightType::Sky,
+            chunk_data.empty_sky_light_mask.data,
+        );
     }
 
     fn on_chunk_data_biomes3d_bitmasks(
@@ -2104,7 +2155,6 @@ impl Server {
                 chunk_data.chunk_z,
                 true,
                 chunk_data.bitmasks.data[0] as u64, // TODO: get all bitmasks
-                16,                                 // TODO: get all bitmasks
                 chunk_data.data.data,
             )
             .unwrap();
@@ -2351,6 +2401,45 @@ impl Server {
                     .by_vanilla_id(id as usize, &self.world.modded_block_ids),
             );
         }
+    }
+
+    fn on_update_light_arrays(
+        &mut self,
+        light_update: packet::play::clientbound::UpdateLight_Arrays,
+    ) {
+        // Clear block light data
+        self.world.clear_light_data(
+            light_update.chunk_x.0,
+            light_update.chunk_z.0,
+            world::LightType::Block,
+            light_update.empty_block_light_mask.data,
+        );
+
+        // Clear sky light data
+        self.world.clear_light_data(
+            light_update.chunk_x.0,
+            light_update.chunk_z.0,
+            world::LightType::Sky,
+            light_update.empty_sky_light_mask.data,
+        );
+
+        // Set block light data
+        self.world.set_light_data(
+            light_update.chunk_x.0,
+            light_update.chunk_z.0,
+            world::LightType::Block,
+            light_update.block_light_mask.data,
+            light_update.block_light_arrays.data,
+        );
+
+        // Set sky light data
+        self.world.set_light_data(
+            light_update.chunk_x.0,
+            light_update.chunk_z.0,
+            world::LightType::Sky,
+            light_update.sky_light_mask.data,
+            light_update.sky_light_arrays.data,
+        );
     }
 }
 

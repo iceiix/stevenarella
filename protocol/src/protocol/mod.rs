@@ -948,19 +948,36 @@ impl fmt::Debug for VarLong {
 impl Serializable for Position {
     fn read_from<R: io::Read>(buf: &mut R) -> Result<Position, Error> {
         let pos = buf.read_u64::<BigEndian>()?;
-        Ok(Position::new(
-            ((pos as i64) >> 38) as i32,
-            ((pos as i64) & 0xFFF) as i32,
-            ((pos as i64) << 26 >> 38) as i32,
-        ))
+        let protocol_version = current_protocol_version();
+        if protocol_version < 477 {
+            Ok(Position::new(
+                ((pos as i64) >> 38) as i32,
+                (((pos as i64) >> 26) & 0xFFF) as i32,
+                ((pos as i64) << 38 >> 38) as i32,
+            ))
+        } else {
+            Ok(Position::new(
+                ((pos as i64) >> 38) as i32,
+                ((pos as i64) << 52 >> 52) as i32,
+                ((pos as i64) << 26 >> 38) as i32,
+            ))
+        }
     }
     fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
-        let pos = (((self.x as u64) & 0x3FFFFFF) << 38)
-            | ((self.y as u64) & 0xFFF)
-            | (((self.z as u64) & 0x3FFFFFF) << 12);
+        let pos;
+        let protocol_version = current_protocol_version();
+        if protocol_version < 477 {
+            pos = (((self.x as u64) & 0x3FFFFFF) << 38)
+                | (((self.y as u64) & 0xFFF) << 26)
+                | ((self.z as u64) & 0x3FFFFFF);
+        } else {
+            pos = (((self.x as u64) & 0x3FFFFFF) << 38)
+                | ((self.y as u64) & 0xFFF)
+                | (((self.z as u64) & 0x3FFFFFF) << 12);
+        }
 
         buf.write_u64::<BigEndian>(pos)?;
-        Result::Ok(())
+        Ok(())
     }
 }
 

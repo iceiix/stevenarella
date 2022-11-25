@@ -135,7 +135,7 @@ impl Var for CVar<String> {
     }
 
     fn deserialize(&self, input: &str) -> Box<dyn Any> {
-        Box::new((&input[1..input.len() - 1]).to_owned())
+        Box::new(input[1..input.len() - 1].to_owned())
     }
 
     fn description(&self) -> &'static str {
@@ -370,7 +370,7 @@ impl Console {
             }
         }
 
-        let mut file = &record.file().unwrap_or("").replace("\\", "/")[..];
+        let mut file = &record.file().unwrap_or("").replace('\\', "/")[..];
         if let Some(pos) = file.rfind("src/") {
             file = &file[pos + 4..];
         }

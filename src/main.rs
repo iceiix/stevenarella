@@ -369,8 +369,7 @@ fn main2() {
 
     let textures = renderer.get_textures();
     let default_protocol_version = protocol::versions::protocol_name_to_protocol_version(
-        opt.default_protocol_version
-            .unwrap_or_else(|| "".to_string()),
+        opt.default_protocol_version.unwrap_or_default(),
     );
     let mut game = Game {
         server: server::Server::dummy_server(resource_manager.clone()),
@@ -630,6 +629,11 @@ fn handle_window_event<T>(
     event: winit::event::Event<T>,
 ) -> bool {
     use winit::event::*;
+    let cursor_grab_mode = if cfg!(target_os = "macos") {
+        winit::window::CursorGrabMode::Locked
+    } else {
+        winit::window::CursorGrabMode::Confined
+    };
     match event {
         Event::MainEventsCleared => return true,
         Event::DeviceEvent {
@@ -659,9 +663,7 @@ fn handle_window_event<T>(
             use std::f64::consts::PI;
 
             if game.focused {
-                window
-                    .set_cursor_grab(winit::window::CursorGrabMode::Locked)
-                    .unwrap();
+                window.set_cursor_grab(cursor_grab_mode).unwrap();
                 window.set_cursor_visible(false);
                 if let Some(player) = game.server.player {
                     let rotation = game
@@ -719,9 +721,7 @@ fn handle_window_event<T>(
                             && !game.screen_sys.is_current_closable()
                         {
                             game.focused = true;
-                            window
-                                .set_cursor_grab(winit::window::CursorGrabMode::Locked)
-                                .unwrap();
+                            window.set_cursor_grab(cursor_grab_mode).unwrap();
                             window.set_cursor_visible(false);
                         } else if !game.focused {
                             #[cfg(not(target_arch = "wasm32"))]
@@ -738,9 +738,25 @@ fn handle_window_event<T>(
                                 height,
                             );
                         }
+
+                        if game.focused {
+                            game.server.on_left_mouse_button(false);
+                        }
+                    }
+                    (ElementState::Pressed, MouseButton::Left) => {
+                        if game.focused {
+                            game.server.on_left_mouse_button(true);
+                        }
+                    }
+                    (ElementState::Released, MouseButton::Right) => {
+                        if game.focused {
+                            game.server.on_right_mouse_button(false);
+                            game.server.on_right_click(&mut game.renderer);
+                        }
                     }
                     (ElementState::Pressed, MouseButton::Right) => {
                         if game.focused {
+                            game.server.on_right_mouse_button(true);
                             game.server.on_right_click(&mut game.renderer);
                         }
                     }
@@ -783,9 +799,7 @@ fn handle_window_event<T>(
                                     screen::SettingsMenu::new(game.vars.clone(), true),
                                 ));
                             } else if game.screen_sys.is_current_closable() {
-                                window
-                                    .set_cursor_grab(winit::window::CursorGrabMode::Locked)
-                                    .unwrap();
+                                window.set_cursor_grab(cursor_grab_mode).unwrap();
                                 window.set_cursor_visible(false);
                                 game.focused = true;
                                 game.screen_sys.pop_screen();

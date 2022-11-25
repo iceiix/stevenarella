@@ -603,7 +603,7 @@ impl ComponentMem {
             drop_func: Box::new(|data| unsafe {
                 let mut val = mem::MaybeUninit::<T>::uninit();
                 ptr::copy(data as *mut T, val.as_mut_ptr(), 1);
-                mem::drop(val);
+                val.assume_init_drop();
             }),
         }
     }
