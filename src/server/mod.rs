@@ -15,6 +15,7 @@
 use crate::ecs;
 use crate::entity;
 use crate::format;
+use crate::nbt;
 use crate::protocol::{self, forge, mojang, packet};
 use crate::render;
 use crate::resources;
@@ -133,9 +134,19 @@ impl Server {
             next: protocol::VarInt(2),
         })?;
         conn.state = protocol::State::Login;
-        conn.write_packet(protocol::packet::login::serverbound::LoginStart {
-            username: profile.username.clone(),
-        })?;
+        if protocol_version >= 759 {
+            conn.write_packet(protocol::packet::login::serverbound::LoginStart_Sig {
+                username: profile.username.clone(),
+                has_sign_data: false,
+                public_key: None,
+                signature: None,
+                timestamp: None,
+            })?;
+        } else {
+            conn.write_packet(protocol::packet::login::serverbound::LoginStart {
+                username: profile.username.clone(),
+            })?;
+        }
 
         use std::rc::Rc;
         let (server_id, public_key, verify_token);
@@ -190,6 +201,26 @@ impl Server {
                         Some(rx),
                     ));
                 }
+                protocol::packet::Packet::LoginSuccess_Sig(val) => {
+                    warn!("Server is running in offline mode");
+                    debug!(
+                        "Login: {} {:?} {:?}",
+                        val.username, val.uuid, val.properties
+                    );
+                    let mut read = conn.clone();
+                    let mut write = conn;
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    let rx = Self::spawn_reader(read);
+                    return Ok(Server::new(
+                        protocol_version,
+                        forge_mods,
+                        val.uuid,
+                        resources,
+                        Arc::new(RwLock::new(Some(write))),
+                        Some(rx),
+                    ));
+                }
                 protocol::packet::Packet::LoginDisconnect(val) => {
                     return Err(protocol::Error::Disconnect(val.reason))
                 }
@@ -208,7 +239,17 @@ impl Server {
             profile.join_server(&server_id, &shared, &public_key)?;
         }
 
-        if protocol_version >= 47 {
+        if protocol_version >= 759 {
+            conn.write_packet(
+                protocol::packet::login::serverbound::EncryptionResponse_Sig {
+                    shared_secret: protocol::LenPrefixedBytes::new(shared_e),
+                    verify_token: Some(protocol::LenPrefixedBytes::new(token_e)),
+                    has_verify_token: true,
+                    salt: None,
+                    signature: None,
+                },
+            )?;
+        } else if protocol_version >= 47 {
             conn.write_packet(protocol::packet::login::serverbound::EncryptionResponse {
                 shared_secret: protocol::LenPrefixedBytes::new(shared_e),
                 verify_token: protocol::LenPrefixedBytes::new(token_e),
@@ -245,6 +286,16 @@ impl Server {
                 }
                 protocol::packet::Packet::LoginSuccess_UUID(val) => {
                     debug!("Login: {} {:?}", val.username, val.uuid);
+                    uuid = val.uuid;
+                    read.state = protocol::State::Play;
+                    write.state = protocol::State::Play;
+                    break;
+                }
+                protocol::packet::Packet::LoginSuccess_Sig(val) => {
+                    debug!(
+                        "Login: {} {:?} {:?}",
+                        val.username, val.uuid, val.properties
+                    );
                     uuid = val.uuid;
                     read.state = protocol::State::Play;
                     write.state = protocol::State::Play;
@@ -584,6 +635,7 @@ impl Server {
                         self pck {
                             PluginMessageClientbound_i16 => on_plugin_message_clientbound_i16,
                             PluginMessageClientbound => on_plugin_message_clientbound_1,
+                            JoinGame_WorldNames_IsHard_SimDist_HasDeath => on_game_join_worldnames_ishard_simdist_hasdeath,
                             JoinGame_WorldNames_IsHard_SimDist => on_game_join_worldnames_ishard_simdist,
                             JoinGame_WorldNames_IsHard => on_game_join_worldnames_ishard,
                             JoinGame_WorldNames => on_game_join_worldnames,
@@ -592,6 +644,7 @@ impl Server {
                             JoinGame_i32 => on_game_join_i32,
                             JoinGame_i8 => on_game_join_i8,
                             JoinGame_i8_NoDebug => on_game_join_i8_nodebug,
+                            ServerData => on_server_data,
                             Respawn_Gamemode => on_respawn_gamemode,
                             Respawn_HashedSeed => on_respawn_hashedseed,
                             Respawn_WorldName => on_respawn_worldname,
@@ -631,6 +684,7 @@ impl Server {
                             UpdateSign_u16 => on_sign_update_u16,
                             PlayerInfo => on_player_info,
                             PlayerInfo_String => on_player_info_string,
+                            SystemChatMessage => on_system_chat_message,
                             ServerMessage_NoPosition => on_servermessage_noposition,
                             ServerMessage_Position => on_servermessage_position,
                             ServerMessage_Sender => on_servermessage_sender,
@@ -1079,6 +1133,45 @@ impl Server {
         let _ = conn.as_mut().unwrap().write_plugin_message(channel, data); // TODO handle errors
     }
 
+    fn on_game_join_worldnames_ishard_simdist_hasdeath(
+        &mut self,
+        join: packet::play::clientbound::JoinGame_WorldNames_IsHard_SimDist_HasDeath,
+    ) {
+        let mut found_dimension = false;
+        if let Some(nbt::NamedTag(_, nbt::Tag::Compound(registries))) = join.registry_codec {
+            if let Some(nbt::Tag::Compound(dimension_types)) =
+                registries.get("minecraft:dimension_type")
+            {
+                if let Some(nbt::Tag::List(list)) = dimension_types.get("value") {
+                    for item in list {
+                        if let nbt::Tag::Compound(item) = item {
+                            if let Some(nbt::Tag::String(name)) = item.get("name") {
+                                debug!("Dimension {:?} = {:?}", name, item);
+                                if name == &join.world_name {
+                                    if let Some(nbt::Tag::Compound(dimension_type)) =
+                                        item.get("element")
+                                    {
+                                        self.world.load_dimension_type_tags(dimension_type);
+                                        found_dimension = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let _biome_registry = registries.get("minecraft:worldgen/biome");
+            let _chat_type_registry = registries.get("minecraft:chat_type");
+        }
+        if !found_dimension {
+            warn!("Failed to find world name {} in dimension types of JoinGame - expect broken offsets", join.world_name);
+            //self.world.min_y = -64;
+        }
+
+        self.on_game_join(join.gamemode, join.entity_id)
+    }
+
     fn on_game_join_worldnames_ishard_simdist(
         &mut self,
         join: packet::play::clientbound::JoinGame_WorldNames_IsHard_SimDist,
@@ -1158,6 +1251,13 @@ impl Server {
         } else {
             self.write_packet(brand.into_message17());
         }
+    }
+
+    fn on_server_data(&mut self, server_data: packet::play::clientbound::ServerData) {
+        if let Some(motd) = server_data.motd {
+            info!("Server MOTD: {:?}", motd);
+        }
+        // TODO: show server_data.icon (base64 string)
     }
 
     fn on_respawn_hashedseed(&mut self, respawn: packet::play::clientbound::Respawn_HashedSeed) {
@@ -1851,6 +1951,9 @@ impl Server {
                     display,
                     gamemode,
                     ping,
+                    timestamp: _,
+                    public_key: _,
+                    signature: _,
                 } => {
                     let info = self.players.entry(uuid.clone()).or_insert(PlayerInfo {
                         name: name.clone(),
@@ -1936,6 +2039,11 @@ impl Server {
         }
     }
 
+    fn on_system_chat_message(&mut self, m: packet::play::clientbound::SystemChatMessage) {
+        // TODO: flag as system message (vs chat message)
+        self.on_servermessage(&m.message, None, None);
+    }
+
     fn on_servermessage_noposition(
         &mut self,
         m: packet::play::clientbound::ServerMessage_NoPosition,
@@ -1961,7 +2069,7 @@ impl Server {
         self.received_chat_at = Some(Instant::now());
     }
 
-    fn load_block_entities(&mut self, block_entities: Vec<Option<crate::nbt::NamedTag>>) {
+    fn load_block_entities(&mut self, block_entities: Vec<Option<nbt::NamedTag>>) {
         for block_entity in block_entities.into_iter().flatten() {
             let x = block_entity.1.get("x").unwrap().as_int().unwrap();
             let y = block_entity.1.get("y").unwrap().as_int().unwrap();
