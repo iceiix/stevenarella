@@ -151,7 +151,7 @@ impl UIState {
         // Prevent clipping with the world
         gl::clear(gl::ClearFlags::Depth);
         gl::enable(gl::BLEND);
-        gl::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        gl::blend_func(gl::ONE_FACTOR, gl::ONE_MINUS_SRC_ALPHA);
 
         self.shader.program.use_program();
         self.shader.texture.set_int(0);
