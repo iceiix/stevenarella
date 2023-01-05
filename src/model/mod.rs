@@ -312,11 +312,23 @@ impl Factory {
         {
             Some(val) => val,
             None => {
-                error!(
-                    "Couldn't find model {}",
-                    format!("models/block/{}.json", model_name)
-                );
-                return None;
+                // 1.13+ paths remove implicit blocks/
+                // TODO: remove fallback, look for specific asset version?
+                match self
+                    .resources
+                    .read()
+                    .unwrap()
+                    .open(plugin, &format!("models/{}.json", model_name))
+                {
+                    Some(val) => val,
+                    None => {
+                        error!(
+                            "Couldn't find model models/block/{}.json or models/{}.json",
+                            model_name, model_name
+                        );
+                        return None;
+                    }
+                }
             }
         };
         let block_model: serde_json::Value = try_log!(opt serde_json::from_reader(file));
