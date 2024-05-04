@@ -14,7 +14,7 @@ cfb8 = "0.7.1"
 byteorder = "1.4.3"
 log = { version = "0.4.17", features = ["std"] }
 flate2 = { version = "1.0.25", features = ["rust_backend"], default-features = false }
-num-traits = "0.2.15"
+num-traits = "0.2.19"
 instant = "0.1.12"
 
 [dependencies.steven_shared]
