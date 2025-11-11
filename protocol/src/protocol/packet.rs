@@ -911,6 +911,13 @@ state_packets!(
                 field nodes: LenPrefixed<VarInt, packet::CommandNode> =,
                 field root_index: VarInt =,
             }
+            /// SystemChatMessage is sent by the server for system messages, the system/chat
+            /// distinction exists to respect the user's chat visibility settings.
+            packet SystemChatMessage {
+                field message: format::Component =,
+                /// Whether the message is an actionbar or chat message
+                field overlay: bool =,
+            }
             /// ServerMessage is a message sent by the server. It could be from a player
             /// or just a system message. The Type field controls the location the
             /// message is displayed at and when the message is displayed.
@@ -1344,6 +1351,48 @@ state_packets!(
             }
             /// JoinGame is sent after completing the login process. This
             /// sets the initial state for the client.
+            packet JoinGame_WorldNames_IsHard_SimDist_HasDeath {
+                /// The entity id the client will be referenced by
+                field entity_id: i32 =,
+                /// Whether hardcore mode is enabled
+                field is_hardcore: bool =,
+                /// The starting gamemode of the client
+                field gamemode: u8 =,
+                /// The previous gamemode of the client
+                field previous_gamemode: u8 =,
+                /// Identifiers for all worlds on the server
+                field world_names: LenPrefixed<VarInt, String> =,
+                /// Represents a dimension registry
+                field registry_codec: Option<nbt::NamedTag> =,
+                /// Name of the dimension type being spawned into
+                field dimension_type: String =,
+                /// The world being spawned into
+                field world_name: String =,
+                /// Truncated SHA-256 hash of world's seed
+                field hashed_seed: i64 =,
+                /// The max number of players on the server
+                field max_players: VarInt =,
+                /// The render distance (2-32)
+                field view_distance: VarInt =,
+                /// The distance the client will process entities
+                field simulation_distance: VarInt =,
+                /// Whether the client should reduce the amount of debug
+                /// information it displays in F3 mode
+                field reduced_debug_info: bool =,
+                /// Whether to prompt or immediately respawn
+                field enable_respawn_screen: bool =,
+                /// Whether the world is in debug mode
+                field is_debug: bool =,
+                /// Whether the world is a superflat world
+                field is_flat: bool =,
+                /// If true, then the next two fields are present.
+                field has_death_location: bool =,
+                /// Name of the dimension the player died in
+                field death_dimension_name: String = when(|p: &JoinGame_WorldNames_IsHard_SimDist_HasDeath| p.has_death_location),
+                /// The location that the player died at
+                field death_location: Position = when(|p: &JoinGame_WorldNames_IsHard_SimDist_HasDeath| p.has_death_location),
+            }
+
             packet JoinGame_WorldNames_IsHard_SimDist {
                 /// The entity id the client will be referenced by
                 field entity_id: i32 =,
@@ -1878,6 +1927,13 @@ state_packets!(
                 field has_id: bool =,
                 field tab_id: String = when(|p: &SelectAdvancementTab| p.has_id),
             }
+            packet ServerData {
+                field has_motd: bool =,
+                field motd: Option<format::Component> = when(|p: &ServerData| p.has_motd),
+                field has_icon: bool =,
+                field icon: Option<String> = when(|p: &ServerData| p.has_icon),
+                field previews_chat: bool =,
+            }
             packet ActionBar {
                 field text: String =,
             }
@@ -2359,15 +2415,34 @@ state_packets!(
     }
     login Login {
         serverbound Serverbound {
-            /// LoginStart is sent immeditately after switching into the login
+            /// LoginStart is sent immediately after switching into the login
             /// state. The passed username is used by the server to authenticate
             /// the player in online mode.
+            packet LoginStart_Sig {
+                field username: String =,
+                field has_sign_data: bool =,
+                field timestamp: Option<u64> = when(|p: &LoginStart_Sig| p.has_sign_data),
+                field public_key: Option<LenPrefixedBytes<VarInt>> = when(|p: &LoginStart_Sig| p.has_sign_data),
+                field signature: Option<LenPrefixedBytes<VarInt>> = when(|p: &LoginStart_Sig| p.has_sign_data),
+            }
             packet LoginStart {
                 field username: String =,
             }
             /// EncryptionResponse is sent as a reply to EncryptionRequest. All
             /// packets following this one must be encrypted with AES/CFB8
             /// encryption.
+            packet EncryptionResponse_Sig {
+                /// The key for the AES/CFB8 cipher encrypted with the
+                /// public key
+                field shared_secret: LenPrefixedBytes<VarInt> =,
+                /// Whether or not the Verify Token should be sent. If not, then the salt and signature will be sent.
+                field has_verify_token: bool =,
+                /// The verify token from the request encrypted with the
+                /// public key
+                field verify_token: Option<LenPrefixedBytes<VarInt>> = when(|p: &EncryptionResponse_Sig| p.has_verify_token),
+                field salt: Option<u64> = when(|p: &EncryptionResponse_Sig| !p.has_verify_token),
+                field signature: Option<LenPrefixedBytes<VarInt>> = when(|p: &EncryptionResponse_Sig| !p.has_verify_token),
+            }
             packet EncryptionResponse {
                 /// The key for the AES/CFB8 cipher encrypted with the
                 /// public key
@@ -2414,6 +2489,11 @@ state_packets!(
             /// LoginSuccess is sent by the server if the player successfully
             /// authenicates with the session servers (online mode) or straight
             /// after LoginStart (offline mode).
+            packet LoginSuccess_Sig {
+                field uuid: UUID =,
+                field username: String =,
+                field properties: LenPrefixed<VarInt, packet::LoginProperty> =,
+            }
             packet LoginSuccess_String {
                 /// String encoding of a uuid (with hyphens)
                 field uuid: String =,
@@ -2490,6 +2570,42 @@ state_packets!(
        }
     }
 );
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct LoginProperty {
+    pub name: String,
+    pub value: String,
+    pub is_signed: bool,
+    pub signature: Option<String>,
+}
+impl Serializable for LoginProperty {
+    fn read_from<R: io::Read>(buf: &mut R) -> Result<Self, Error> {
+        let name: String = Serializable::read_from(buf)?;
+        let value: String = Serializable::read_from(buf)?;
+        let is_signed: bool = Serializable::read_from(buf)?;
+        let signature: Option<String> = if is_signed {
+            Some(Serializable::read_from(buf)?)
+        } else {
+            None
+        };
+
+        Ok(LoginProperty {
+            name,
+            value,
+            is_signed,
+            signature,
+        })
+    }
+
+    fn write_to<W: io::Write>(&self, buf: &mut W) -> Result<(), Error> {
+        self.name.write_to(buf)?;
+        self.value.write_to(buf)?;
+        if self.is_signed {
+            self.signature.as_ref().unwrap().write_to(buf)?;
+        }
+        Ok(())
+    }
+}
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct SpawnProperty {
@@ -2969,19 +3085,37 @@ impl Serializable for PlayerInfoData {
                         }
                         props.push(prop);
                     }
+
+                    let gamemode: VarInt = Serializable::read_from(buf)?;
+                    let ping: VarInt = Serializable::read_from(buf)?;
+                    let display: Option<format::Component> = if bool::read_from(buf)? {
+                        Some(Serializable::read_from(buf)?)
+                    } else {
+                        None
+                    };
+                    let mut timestamp: Option<u64> = None;
+                    let mut public_key: Option<LenPrefixedBytes<VarInt>> = None;
+                    let mut signature: Option<LenPrefixedBytes<VarInt>> = None;
+
+                    if super::current_protocol_version() >= 759 {
+                        let has_sig_data: bool = Serializable::read_from(buf)?;
+                        if has_sig_data {
+                            timestamp = Some(Serializable::read_from(buf)?);
+                            public_key = Some(Serializable::read_from(buf)?);
+                            signature = Some(Serializable::read_from(buf)?);
+                        }
+                    }
+
                     let p = PlayerDetail::Add {
                         uuid,
                         name,
                         properties: props,
-                        gamemode: Serializable::read_from(buf)?,
-                        ping: Serializable::read_from(buf)?,
-                        display: {
-                            if bool::read_from(buf)? {
-                                Some(Serializable::read_from(buf)?)
-                            } else {
-                                None
-                            }
-                        },
+                        gamemode,
+                        ping,
+                        display,
+                        timestamp,
+                        public_key,
+                        signature,
                     };
                     m.players.push(p);
                 }
@@ -3033,6 +3167,9 @@ pub enum PlayerDetail {
         gamemode: VarInt,
         ping: VarInt,
         display: Option<format::Component>,
+        timestamp: Option<u64>,
+        public_key: Option<LenPrefixedBytes<VarInt>>,
+        signature: Option<LenPrefixedBytes<VarInt>>,
     },
     UpdateGamemode {
         uuid: UUID,
@@ -3423,6 +3560,12 @@ pub enum CommandProperty {
     EntitySummon,
     Dimension,
     UUID,
+    ResourceOrTag {
+        registry: String,
+    },
+    Resource {
+        registry: String,
+    },
     ForgeModId,
     ForgeEnum {
         cls: String,
@@ -3456,8 +3599,75 @@ impl Serializable for CommandNode {
             } else {
                 None
             };
+
         let parser: Option<String> = if node_type == CommandNodeType::Argument {
-            Serializable::read_from(buf)?
+            if super::current_protocol_version() >= 759 {
+                let parser_id: VarInt = Serializable::read_from(buf)?;
+                // https://wiki.vg/Command_Data#Parsers
+                // "In 1.19, Parsers are identified by a varint id.
+                // Pre-1.19, parsers are identified by a string id."
+                // Map ID to string
+                let parsers = [
+                    "brigadier:bool",
+                    "brigadier:float",
+                    "brigadier:double",
+                    "brigadier:integer",
+                    "brigadier:long",
+                    "brigadier:string",
+                    "minecraft:entity",
+                    "minecraft:game_profile",
+                    "minecraft:block_pos",
+                    "minecraft:column_pos",
+                    "minecraft:vec3",
+                    "minecraft:vec2",
+                    "minecraft:block_state",
+                    "minecraft:block_predicate",
+                    "minecraft:item_stack",
+                    "minecraft:item_predicate",
+                    "minecraft:color",
+                    "minecraft:component",
+                    "minecraft:message",
+                    "minecraft:nbt",
+                    "minecraft:nbt_tag",
+                    "minecraft:nbt_path",
+                    "minecraft:objective",
+                    "minecraft:objective_criteria",
+                    "minecraft:operation",
+                    "minecraft:particle",
+                    "minecraft:angle",
+                    "minecraft:rotation",
+                    "minecraft:scoreboard_slot",
+                    "minecraft:score_holder",
+                    "minecraft:swizzle",
+                    "minecraft:team",
+                    "minecraft:item_slot",
+                    "minecraft:resource_location",
+                    "minecraft:mob_effect",
+                    "minecraft:function",
+                    "minecraft:entity_anchor",
+                    "minecraft:int_range",
+                    "minecraft:float_range",
+                    "minecraft:item_enchantment",
+                    "minecraft:entity_summon",
+                    "minecraft:dimension",
+                    "minecraft:time",
+                    "minecraft:resource_or_tag",
+                    "minecraft:resource",
+                    "(added in 1.19) Template mirror",
+                    "(added in 1.19) Template rotation",
+                    "minecraft:uuid",
+                ];
+                if parser_id.0 < 0 || parser_id.0 > parsers.len().try_into().unwrap() {
+                    panic!(
+                        "command node identifier out of range {} > {}",
+                        parser_id.0,
+                        parsers.len()
+                    );
+                }
+                Some(parsers[parser_id.0 as usize].to_string())
+            } else {
+                Serializable::read_from(buf)?
+            }
         } else {
             None
         };
@@ -3556,11 +3766,17 @@ impl Serializable for CommandNode {
                 "minecraft:entity_summon" => CommandProperty::EntitySummon,
                 "minecraft:dimension" => CommandProperty::Dimension,
                 "minecraft:uuid" => CommandProperty::UUID,
+                "minecraft:resource_or_tag" => CommandProperty::ResourceOrTag {
+                    registry: Serializable::read_from(buf)?,
+                },
+                "minecraft:resource" => CommandProperty::Resource {
+                    registry: Serializable::read_from(buf)?,
+                },
                 "forge:modid" => CommandProperty::ForgeModId,
                 "forge:enum" => CommandProperty::ForgeEnum {
                     cls: Serializable::read_from(buf)?,
                 },
-                _ => panic!("unsupported command node parser {}", parse),
+                _ => panic!("unsupported command node parser {:?}", parse),
             })
         } else {
             None
