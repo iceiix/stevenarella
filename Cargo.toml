@@ -49,7 +49,7 @@ collision = "0.20.1"
 rsa_public_encrypt_pkcs1 = "0.4.0"
 structopt = "0.3.26"
 clipboard = { git = "https://github.com/iceiix/rust-clipboard", rev = "71089e792fd5e52f05d5b22c54bd2d206d20ec0d" }
-instant = "0.1.12"
+instant = "0.1.13"
 dirs = "4.0.0"
 # clippy = "*"
 
