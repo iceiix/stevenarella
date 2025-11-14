@@ -42,7 +42,7 @@ getrandom = { version = "0.2.8", features = ["js"] }
 rand = "0.8.5"
 rand_pcg = "0.3.1"
 base64 = "0.13.1"
-log = { version = "0.4.17", features = ["std"] }
+log = { version = "0.4.28", features = ["std"] }
 cgmath = "0.17.0"
 lazy_static = "1.4.0"
 collision = "0.20.1"
