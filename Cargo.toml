@@ -33,23 +33,23 @@ wasm-bindgen = "0.2.88"
 winit = "0.27.5"
 glow = "0.11.2"
 byteorder = "1.4.3"
-serde = "1.0.152"
-serde_json = "1.0.91"
+serde = "1.0.228"
+serde_json = "1.0.145"
 flate2 = { version = "1.0.25", features = ["rust_backend"], default-features = false }
 zip = { version = "0.6.3", features = ["deflate"], default-features = false }
-image = "0.24.5"
+image = "0.25.8"
 getrandom = { version = "0.2.8", features = ["js"] }
 rand = "0.8.5"
 rand_pcg = "0.3.1"
 base64 = "0.13.1"
-log = { version = "0.4.17", features = ["std"] }
+log = { version = "0.4.28", features = ["std"] }
 cgmath = "0.17.0"
 lazy_static = "1.4.0"
 collision = "0.20.1"
 rsa_public_encrypt_pkcs1 = "0.4.0"
 structopt = "0.3.26"
 clipboard = { git = "https://github.com/iceiix/rust-clipboard", rev = "71089e792fd5e52f05d5b22c54bd2d206d20ec0d" }
-instant = "0.1.12"
+instant = "0.1.13"
 dirs = "4.0.0"
 # clippy = "*"
 
