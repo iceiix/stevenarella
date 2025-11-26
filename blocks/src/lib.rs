@@ -236,8 +236,9 @@ macro_rules! define_blocks {
                         Block::$name {
                             $($fname,)?
                         } => {
-                            $(return String::from($variant);)?
-                            "normal".to_owned()
+                            $(return String::from($variant);)*
+                            //"normal".to_owned()
+                            "".to_owned()
                         }
                     )+
                 }
@@ -6142,7 +6143,7 @@ define_blocks! {
         },
         data Some(facing.horizontal_index()),
         offset Some(facing.horizontal_offset()),
-        model { ("minecraft", "silver_glazed_terracotta") },
+        model { ("minecraft", "light_gray_glazed_terracotta") },
         variant format!("facing={}", facing.as_string()),
         hardness 1.4,
         harvest_tools [ Tool::Pickaxe(_), ],
